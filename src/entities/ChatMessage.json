@@ -1,0 +1,12 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "room_id": { "type": "string" },
+    "sender_email": { "type": "string" },
+    "sender_name": { "type": "string" },
+    "recipient_email": { "type": "string" },
+    "content": { "type": "string" }
+  },
+  "required": ["room_id", "sender_email", "content"]
+}
