@@ -1,0 +1,35 @@
+{
+  "name": "TutorReview",
+  "type": "object",
+  "properties": {
+    "tutor_email": {
+      "type": "string"
+    },
+    "tutor_name": {
+      "type": "string"
+    },
+    "student_email": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "comment": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "booking_id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tutor_email",
+    "student_email",
+    "rating"
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "name": "TutorProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "subjects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "grades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "qualifications": {
+      "type": "string"
+    },
+    "sace_number": {
+      "type": "string"
+    },
+    "hourly_rate": {
+      "type": "number"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "total_reviews": {
+      "type": "number",
+      "default": 0
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email",
+    "full_name"
+  ]
+}
