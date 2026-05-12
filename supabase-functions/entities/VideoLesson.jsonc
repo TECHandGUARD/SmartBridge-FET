@@ -1,0 +1,60 @@
+{
+  "name": "VideoLesson",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 10",
+        "Grade 11",
+        "Grade 12",
+        "All Grades"
+      ]
+    },
+    "description": {
+      "type": "string"
+    },
+    "video_url": {
+      "type": "string"
+    },
+    "thumbnail_url": {
+      "type": "string"
+    },
+    "tutor_email": {
+      "type": "string"
+    },
+    "tutor_name": {
+      "type": "string"
+    },
+    "duration_minutes": {
+      "type": "number"
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_approved": {
+      "type": "boolean",
+      "default": false
+    },
+    "view_count": {
+      "type": "number",
+      "default": 0
+    },
+    "topic": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "subject",
+    "grade",
+    "video_url"
+  ]
+}

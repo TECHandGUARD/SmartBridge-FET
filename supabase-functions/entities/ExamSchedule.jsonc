@@ -1,0 +1,45 @@
+{
+  "name": "ExamSchedule",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 10",
+        "Grade 11",
+        "Grade 12"
+      ]
+    },
+    "exam_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "exam_type": {
+      "type": "string",
+      "enum": [
+        "Test",
+        "Mid-Year Exam",
+        "Trial Exam",
+        "Final Exam",
+        "Assignment",
+        "Oral"
+      ]
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_email",
+    "subject",
+    "grade",
+    "exam_date",
+    "exam_type"
+  ]
+}

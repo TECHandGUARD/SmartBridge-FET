@@ -1,0 +1,15 @@
+{
+  "name": "BannerClick",
+  "type": "object",
+  "properties": {
+    "banner_name": {
+      "type": "string"
+    },
+    "user_email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "banner_name"
+  ]
+}

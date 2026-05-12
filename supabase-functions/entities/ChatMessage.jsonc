@@ -1,0 +1,24 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "Unique chat room identifier (e.g. student_email+tutor_email)"
+    },
+    "sender_email": {
+      "type": "string"
+    },
+    "sender_name": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "room_id",
+    "sender_email",
+    "message"
+  ]
+}

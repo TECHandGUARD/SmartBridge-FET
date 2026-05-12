@@ -1,0 +1,48 @@
+{
+  "name": "Subscription",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "free",
+        "premium"
+      ],
+      "default": "free"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "cancelled"
+      ],
+      "default": "inactive"
+    },
+    "amount_paid": {
+      "type": "number"
+    },
+    "currency": {
+      "type": "string",
+      "default": "ZAR"
+    },
+    "payment_reference": {
+      "type": "string"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "user_email",
+    "plan"
+  ]
+}

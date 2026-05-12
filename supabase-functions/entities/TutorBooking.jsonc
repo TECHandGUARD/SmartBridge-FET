@@ -1,0 +1,55 @@
+{
+  "name": "TutorBooking",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "tutor_email": {
+      "type": "string"
+    },
+    "tutor_name": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time": {
+      "type": "string"
+    },
+    "duration_hours": {
+      "type": "number",
+      "default": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "confirmed",
+        "cancelled",
+        "completed"
+      ],
+      "default": "pending"
+    },
+    "message": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number"
+    },
+    "session_link": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_email",
+    "tutor_email",
+    "subject",
+    "date",
+    "time"
+  ]
+}
