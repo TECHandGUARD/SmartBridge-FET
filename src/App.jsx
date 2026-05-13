@@ -31,9 +31,8 @@ import TermsOfService from './pages/TermsOfService';
 import AboutTechAndGuard from './pages/AboutTechAndGuard';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, authChecked, isAuthenticated } = useAuth();
+  const { isLoadingAuth, authChecked, isAuthenticated } = useAuth();
 
-  // Remove Base44's public settings logic - Supabase doesn't need it
   if (isLoadingAuth || !authChecked) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -42,15 +41,16 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // If not authenticated, show login page (routes without AppLayout)
+  // If not authenticated, ONLY show login page (no Home page access)
   if (!isAuthenticated) {
     return (
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
-        <Route path="*" element={<PageNotFound />} />
+        <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
+        <Route path="*" element={<Login />} />
       </Routes>
     );
   }
