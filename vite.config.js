@@ -15,7 +15,7 @@ export default defineConfig({
     open: true
   },
   build: {
-    outDir: 'docs',  // Change from 'dist' to 'docs'
+    outDir: 'docs',
     sourcemap: false,
     minify: 'esbuild',
     chunkSizeWarningLimit: 1000
