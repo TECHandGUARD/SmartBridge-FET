@@ -159,11 +159,62 @@ export default function Onboarding({ user, userProfile, onComplete }) {
             .eq('user_email', user.email);
         }
 
-        // Log activity (console for now)
-        console.log(`Activity: New ${tutorType} registered: ${user.email} — Awaiting verification.`);
+        // 3. Send email notification to admin using Resend + Supabase Edge Function
+        const tutorName = user.user_metadata?.full_name || user.email;
+        const adminEmail = ADMIN_EMAILS[0];
+        
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-email', {
+            body: {
+              to: adminEmail,
+              subject: `📋 New Tutor Pending Verification: ${tutorName}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                  <h2 style="color: #0F766E;">New Tutor Registration</h2>
+                  
+                  <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #166534;">📝 Tutor Details</h3>
+                    <p><strong>Name:</strong> ${tutorName}</p>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Tutor Type:</strong> ${resolvedRole === 'sace_tutor' ? 'SACE Registered Tutor' : 'Student Tutor'}</p>
+                    ${resolvedRole === 'sace_tutor' ? `<p><strong>SACE Number:</strong> ${saceNumber}</p>` : ''}
+                    ${resolvedRole === 'student_tutor' ? `<p><strong>University:</strong> ${university}</p>` : ''}
+                    ${resolvedRole === 'student_tutor' ? `<p><strong>Student Number:</strong> ${studentNumber}</p>` : ''}
+                  </div>
+                  
+                  <div style="background-color: #fef3c7; padding: 15px; border-radius: 10px; margin: 20px 0;">
+                    <h3 style="margin-top: 0; color: #92400e;">⏳ Action Required</h3>
+                    <p>This tutor is waiting for verification. Please review their credentials and approve or reject their application.</p>
+                  </div>
+                  
+                  <div style="text-align: center; margin: 30px 0;">
+                    <a href="${window.location.origin}/admin" 
+                       style="background-color: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
+                      🚀 Go to Admin Dashboard
+                    </a>
+                  </div>
+                  
+                  <hr style="margin: 20px 0; border-color: #e5e7eb;">
+                  
+                  <p style="font-size: 11px; color: #999; text-align: center;">
+                    — EduConnect FET / Tech &amp; GUARD Pty Ltd<br>
+                    <a href="${window.location.origin}" style="color: #0F766E;">${window.location.origin}</a>
+                  </p>
+                </div>
+              `,
+            },
+          });
+          
+          if (emailError) {
+            console.error('Failed to send admin email:', emailError);
+          } else {
+            console.log('Admin notification email sent successfully');
+          }
+        } catch (emailError) {
+          console.error('Error sending admin email:', emailError);
+        }
 
-        // Toast for manual admin check (email sending will be added later)
-        toast.info(`Admin verification required for ${user.email}. Please check admin dashboard manually.`);
+        toast.info(`Admin verification required for ${user.email}. An email notification has been sent to the admin.`);
       }
 
       toast.success(
@@ -316,7 +367,7 @@ export default function Onboarding({ user, userProfile, onComplete }) {
             onCheckedChange={setPolicyConsent}
             className="mt-1 flex-shrink-0"
           />
-          <Label htmlFor="policyConsent" className="text-xs text-foreground cursor-pointer leading-relaxed">
+          <label htmlFor="policyConsent" className="text-xs text-foreground cursor-pointer leading-relaxed">
             I have read and agree to the{' '}
             <Link to="/privacy" target="_blank" className="text-primary font-semibold hover:underline">
               Privacy Policy
@@ -326,7 +377,7 @@ export default function Onboarding({ user, userProfile, onComplete }) {
               Terms of Service
             </Link>
             .
-          </Label>
+          </label>
         </div>
 
         <Button
