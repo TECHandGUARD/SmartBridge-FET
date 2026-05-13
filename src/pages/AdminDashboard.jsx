@@ -469,7 +469,7 @@ export default function AdminDashboard() {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
                     <p className="font-semibold text-amber-800 text-sm mb-1">⚠️ Email Service Not Configured</p>
                     <p className="text-xs text-amber-700">Supabase does not send emails automatically. To enable email notifications (admin alerts, booking reminders, password reset), please set up an external email service like Resend (free tier available).</p>
-                    <p className="text-xs text-amber-600 mt-2">For now, please check the Admin Dashboard > Verification Hub manually to approve tutors.</p>
+                    <p className="text-xs text-amber-600 mt-2">For now, please check the Admin Dashboard - Verification Hub manually to approve tutors.</p>
                   </div>
 
                   <div>
