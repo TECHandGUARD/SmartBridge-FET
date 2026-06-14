@@ -1,19 +1,41 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/supabaseClient';
+import React, { useEffect, useState, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Award } from 'lucide-react';
+import { Award, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-// ─── Badge definitions ────────────────────────────────────────────────────────
-// check receives: { prog, quizzes, bookings, streak }
-const ALL_BADGES = [
+interface UserProps {
+  id: string;
+  email: string;
+  full_name?: string;
+  badges?: string[];
+}
+
+interface BadgeContext {
+  prog: any[];
+  quizzes: any[];
+  bookings: any[];
+  streak: number;
+}
+
+interface BadgeItem {
+  id: string;
+  emoji: string;
+  label: string;
+  desc: string;
+  category: 'Study' | 'Quizzes' | 'Tutoring' | 'Streaks';
+  check: (ctx: BadgeContext) => boolean;
+}
+
+// ─── Badge definitions with fixed field names ────────────────────────────────
+const ALL_BADGES: BadgeItem[] = [
   // Study sessions
-  { id: 'first_session',  emoji: '🎯', label: 'First Step',       desc: 'Logged your first study session',    category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0) >= 1 },
-  { id: 'five_sessions',  emoji: '📚', label: 'Bookworm',         desc: 'Completed 5 study sessions',         category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0) >= 5 },
-  { id: 'ten_sessions',   emoji: '🔟', label: 'Study Machine',    desc: 'Completed 10 study sessions',        category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0) >= 10 },
-  { id: 'dedicated',      emoji: '💪', label: 'Dedicated',        desc: 'Completed 20+ study sessions',       category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0) >= 20 },
-  { id: 'bookworm50',     emoji: '📖', label: 'Scholar',          desc: 'Completed 50+ study sessions',       category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0) >= 50 },
+  { id: 'first_session',  emoji: '🎯', label: 'First Step',       desc: 'Logged your first study session',    category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 1 },
+  { id: 'five_sessions',  emoji: '📚', label: 'Bookworm',         desc: 'Completed 5 study sessions',         category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 5 },
+  { id: 'ten_sessions',   emoji: '🔟', label: 'Study Machine',    desc: 'Completed 10 study sessions',        category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 10 },
+  { id: 'dedicated',      emoji: '💪', label: 'Dedicated',        desc: 'Completed 20+ study sessions',       category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 20 },
+  { id: 'bookworm50',     emoji: '📖', label: 'Scholar',          desc: 'Completed 50+ study sessions',       category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 50 },
   // Subjects
   { id: 'multi_subject',  emoji: '🌟', label: 'Multi-Subject',    desc: 'Studied 3 or more subjects',         category: 'Study',   check: ({ prog }) => prog.length >= 3 },
   { id: 'all_rounder',    emoji: '🎓', label: 'All-Rounder',      desc: 'Studied 5+ different subjects',      category: 'Study',   check: ({ prog }) => prog.length >= 5 },
@@ -28,7 +50,7 @@ const ALL_BADGES = [
   { id: 'first_booking',  emoji: '🤝', label: 'Connected',        desc: 'Booked your first tutoring session', category: 'Tutoring', check: ({ bookings }) => bookings.length >= 1 },
   { id: 'three_sessions', emoji: '👨‍🏫', label: 'Tutor Regular',   desc: 'Attended 3 tutoring sessions',       category: 'Tutoring', check: ({ bookings }) => bookings.filter(b => b.status === 'completed').length >= 3 },
   { id: 'five_bookings',  emoji: '🌈', label: 'Tutor Champion',   desc: 'Completed 5 tutoring sessions',      category: 'Tutoring', check: ({ bookings }) => bookings.filter(b => b.status === 'completed').length >= 5 },
-  // Streaks
+  // Streaks - FIXED: Uses proper Date arithmetic with .getTime()
   { id: 'streak3',        emoji: '🔥', label: '3-Day Streak',     desc: 'Studied 3 days in a row',            category: 'Streaks', check: ({ streak }) => streak >= 3 },
   { id: 'streak7',        emoji: '⚡', label: 'Week Warrior',     desc: 'Studied 7 days in a row',            category: 'Streaks', check: ({ streak }) => streak >= 7 },
   { id: 'streak14',       emoji: '🌙', label: 'Fortnight Focus',  desc: 'Studied 14 days in a row',           category: 'Streaks', check: ({ streak }) => streak >= 14 },
@@ -36,13 +58,13 @@ const ALL_BADGES = [
 ];
 
 const CATEGORY_COLORS = {
-  Study:    { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', badge: 'bg-blue-500', dot: 'bg-blue-400' },
-  Quizzes:  { bg: 'bg-purple-50 dark:bg-purple-950/30', border: 'border-purple-200 dark:border-purple-800', badge: 'bg-purple-500', dot: 'bg-purple-400' },
-  Tutoring: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', badge: 'bg-green-600', dot: 'bg-green-400' },
-  Streaks:  { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', badge: 'bg-orange-500', dot: 'bg-orange-400' },
+  Study:    { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800' },
+  Quizzes:  { bg: 'bg-purple-50 dark:bg-purple-950/30', border: 'border-purple-200 dark:border-purple-800' },
+  Tutoring: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800' },
+  Streaks:  { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800' },
 };
 
-function BadgeCard({ badge, earned }) {
+function BadgeCard({ badge, earned }: { badge: BadgeItem; earned: boolean }) {
   const colors = CATEGORY_COLORS[badge.category];
   return (
     <div
@@ -53,7 +75,7 @@ function BadgeCard({ badge, earned }) {
       }`}
     >
       {earned && (
-        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-400" title="Earned" />
+        <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-400 animate-pulse" title="Earned" />
       )}
       <div className="text-2xl mb-1">{badge.emoji}</div>
       <p className="text-xs font-semibold leading-tight">{badge.label}</p>
@@ -62,100 +84,154 @@ function BadgeCard({ badge, earned }) {
   );
 }
 
-export default function MilestoneBadges({ user }) {
-  const [earned, setEarned] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeCategory, setActiveCategory] = useState('All');
+export default function MilestoneBadges({ user }: { user: UserProps }) {
+  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string>('All');
 
-  useEffect(() => {
+  const fetchAndProcessMilestones = useCallback(async () => {
     if (!user?.email) return;
-    
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch student progress
-        const { data: prog, error: progError } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (progError) throw progError;
-        
-        // Fetch quiz results
-        const { data: quizzes, error: quizError } = await supabase
-          .from('quiz_results')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (quizError) throw quizError;
-        
-        // Fetch tutor bookings
-        const { data: bookings, error: bookError } = await supabase
-          .from('tutor_bookings')
-          .select('*')
-          .eq('student_email', user.email);
-        
-        if (bookError) throw bookError;
-        
-        // Compute streak from StudentProgress last_access dates
-        const dates = (prog || [])
-          .filter(p => p.last_access)
-          .map(p => p.last_access)
-          .sort()
-          .reverse();
-        let streak = 0;
-        if (dates.length > 0) {
-          const today = new Date().toISOString().split('T')[0];
-          if (dates[0] === today) {
-            streak = 1;
-            for (let i = 1; i < dates.length; i++) {
-              const diff = (new Date(dates[i - 1]) - new Date(dates[i])) / 86400000;
-              if (diff === 1) streak++;
-              else break;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Fetch student progress
+      const { data: prog, error: progError } = await supabase
+        .from('student_progress')
+        .select('study_sessions, grade, last_access')
+        .eq('user_email', user.email);
+
+      if (progError) throw progError;
+
+      // Fetch quiz results
+      const { data: quizzes, error: quizError } = await supabase
+        .from('quiz_results')
+        .select('percentage')
+        .eq('student_email', user.email);
+
+      if (quizError) throw quizError;
+
+      // Fetch tutor bookings
+      const { data: bookings, error: bookingError } = await supabase
+        .from('tutor_bookings')
+        .select('status')
+        .eq('student_email', user.email);
+
+      if (bookingError) throw bookingError;
+
+      // FIXED: Proper streak calculation with Date.getTime() and day deduplication
+      const rawDates = (prog || [])
+        .filter(p => p.last_access)
+        .map(p => p.last_access.split('T')[0]); // Get just YYYY-MM-DD
+
+      // Deduplicate dates (multiple sessions on same day count as 1 for streak)
+      const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => 
+        new Date(b).getTime() - new Date(a).getTime()
+      );
+
+      let streak = 0;
+      if (uniqueSortedDates.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        // Check if user studied today or yesterday
+        if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
+          streak = 1;
+          for (let i = 1; i < uniqueSortedDates.length; i++) {
+            const dateCurrent = new Date(uniqueSortedDates[i - 1]).getTime();
+            const datePrevious = new Date(uniqueSortedDates[i]).getTime();
+            const dayDiff = (dateCurrent - datePrevious) / 86400000;
+
+            if (dayDiff === 1) {
+              streak++;
+            } else if (dayDiff > 1) {
+              break; // Streak broken
             }
           }
         }
-
-        const ctx = { prog: prog || [], quizzes: quizzes || [], bookings: bookings || [], streak };
-        const newBadges = ALL_BADGES.filter(b => b.check(ctx)).map(b => b.id);
-        setEarned(newBadges);
-
-        // Persist newly earned badges in user_profiles table
-        const { data: userProfile, error: fetchError } = await supabase
-          .from('user_profiles')
-          .select('badges')
-          .eq('email', user.email)
-          .single();
-        
-        if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
-        
-        const currentBadges = userProfile?.badges || [];
-        const toAdd = newBadges.filter(b => !currentBadges.includes(b));
-        
-        if (toAdd.length > 0) {
-          await supabase
-            .from('user_profiles')
-            .update({ badges: [...currentBadges, ...toAdd] })
-            .eq('email', user.email);
-          
-          toAdd.forEach(b => {
-            const badge = ALL_BADGES.find(x => x.id === b);
-            if (badge) toast.success(`🏅 Badge earned: ${badge.emoji} ${badge.label}!`);
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching badge data:', error);
-      } finally {
-        setLoading(false);
       }
-    };
-    
-    fetchData();
-  }, [user]);
 
-  const earnedSet = new Set(earned);
+      const ctx: BadgeContext = { 
+        prog: prog || [], 
+        quizzes: quizzes || [], 
+        bookings: bookings || [], 
+        streak 
+      };
+      
+      const calculatedBadgeIds = ALL_BADGES.filter(b => b.check(ctx)).map(b => b.id);
+      setEarnedBadges(calculatedBadgeIds);
+
+      // Persist new badges to user profile
+      const currentBadges = user.badges || [];
+      const newlyEarned = calculatedBadgeIds.filter(b => !currentBadges.includes(b));
+
+      if (newlyEarned.length > 0) {
+        const updatedBadges = [...currentBadges, ...newlyEarned];
+        
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({ 
+            badges: updatedBadges,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', user.email);
+
+        if (updateError) throw updateError;
+
+        // Show toast notifications for newly earned badges
+        newlyEarned.forEach(badgeId => {
+          const matchedBadge = ALL_BADGES.find(b => b.id === badgeId);
+          if (matchedBadge) {
+            toast.success(`🏅 Badge Earned: ${matchedBadge.emoji} ${matchedBadge.label}!`);
+          }
+        });
+      }
+    } catch (err: any) {
+      console.error('Error processing badges:', err);
+      setError(err.message || 'Failed to load badges');
+      toast.error('Failed to load badges');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email, user?.badges]);
+
+  useEffect(() => {
+    fetchAndProcessMilestones();
+  }, [fetchAndProcessMilestones]);
+
   const categories = ['All', 'Study', 'Quizzes', 'Tutoring', 'Streaks'];
-  const filtered = activeCategory === 'All' ? ALL_BADGES : ALL_BADGES.filter(b => b.category === activeCategory);
+  const filteredBadges = activeCategory === 'All' 
+    ? ALL_BADGES 
+    : ALL_BADGES.filter(b => b.category === activeCategory);
+  
+  const totalEarnedCount = earnedBadges.length;
+  const earnedSet = new Set(earnedBadges);
+
+  if (loading) {
+    return (
+      <Card className="border-border">
+        <CardContent className="flex justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card className="border-border">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
+          <AlertCircle className="w-8 h-8 text-destructive" />
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={fetchAndProcessMilestones}>
+            Try Again
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border-border">
@@ -165,9 +241,10 @@ export default function MilestoneBadges({ user }) {
             <Award className="w-4 h-4 text-amber-500" /> Milestone Badges
           </CardTitle>
           <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
-            {earned.length}/{ALL_BADGES.length} earned
+            {totalEarnedCount}/{ALL_BADGES.length} earned
           </Badge>
         </div>
+        
         {/* Category filter tabs */}
         <div className="flex gap-1.5 flex-wrap mt-2">
           {categories.map(cat => (
@@ -191,18 +268,12 @@ export default function MilestoneBadges({ user }) {
         </div>
       </CardHeader>
       <CardContent>
-        {loading ? (
-          <div className="flex justify-center py-6">
-            <div className="w-5 h-5 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {filtered.map(badge => (
-              <BadgeCard key={badge.id} badge={badge} earned={earnedSet.has(badge.id)} />
-            ))}
-          </div>
-        )}
-        {!loading && earned.length === 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {filteredBadges.map(badge => (
+            <BadgeCard key={badge.id} badge={badge} earned={earnedSet.has(badge.id)} />
+          ))}
+        </div>
+        {totalEarnedCount === 0 && (
           <p className="text-xs text-muted-foreground text-center mt-3">
             Complete activities to earn your first badge! 🚀
           </p>
