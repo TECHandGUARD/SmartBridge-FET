@@ -2,10 +2,17 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CheckCircle, AlertTriangle } from 'lucide-react';
+import { CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
+import { toast } from 'sonner';
 
-export default function TutorConsentModal({ open, onAccept, onDecline }) {
+// Agreement version tracking
+const AGREEMENT_VERSION = '1.0.0';
+const AGREEMENT_EFFECTIVE_DATE = '2025-01-01';
+
+export default function TutorConsentModal({ open, onAccept, onDecline, user }) {
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
+  const [recordingConsent, setRecordingConsent] = useState(false);
 
   // Reset scroll state each time modal opens
   useEffect(() => {
@@ -19,8 +26,85 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
     }
   };
 
+  // Function to record consent in database
+  const recordConsent = async () => {
+    if (!user?.email) {
+      console.error('Cannot record consent: No user email');
+      return false;
+    }
+
+    try {
+      // Check if consent already recorded for this version
+      const { data: existingConsent, error: checkError } = await supabase
+        .from('consent_records')
+        .select('*')
+        .eq('user_email', user.email)
+        .eq('agreement_type', 'tutor_service_agreement')
+        .eq('version', AGREEMENT_VERSION);
+
+      if (checkError) throw checkError;
+
+      if (existingConsent && existingConsent.length > 0) {
+        console.log('Consent already recorded for version', AGREEMENT_VERSION);
+        return true;
+      }
+
+      // Record new consent
+      const { error: insertError } = await supabase
+        .from('consent_records')
+        .insert({
+          user_email: user.email,
+          user_name: user.full_name || user.email,
+          agreement_type: 'tutor_service_agreement',
+          version: AGREEMENT_VERSION,
+          effective_date: AGREEMENT_EFFECTIVE_DATE,
+          accepted_at: new Date().toISOString(),
+          ip_address: 'recorded-on-client',
+          user_agent: navigator.userAgent
+        });
+
+      if (insertError) throw insertError;
+
+      // Also log activity
+      const { error: logError } = await supabase
+        .from('activity_logs')
+        .insert({
+          event_type: 'tutor_consent_accepted',
+          user_email: user.email,
+          description: `Accepted Tutor Service Agreement v${AGREEMENT_VERSION}`,
+        });
+
+      if (logError) console.error('Failed to log activity:', logError);
+
+      return true;
+    } catch (error) {
+      console.error('Failed to record consent:', error);
+      return false;
+    }
+  };
+
+  // Handle accept with consent recording
+  const handleAccept = async () => {
+    setRecordingConsent(true);
+    
+    // Record consent in database
+    const consentRecorded = await recordConsent();
+    
+    if (!consentRecorded) {
+      toast.warning('Could not record consent. Your acceptance has been noted, but please contact support if you experience issues.');
+    }
+    
+    setRecordingConsent(false);
+    onAccept();
+  };
+
+  // Handle decline
+  const handleDecline = () => {
+    onDecline();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onDecline(); }}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) handleDecline(); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col gap-0 p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b border-border flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -29,7 +113,12 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
             </div>
             <div>
               <DialogTitle className="font-playfair text-xl">Independent Tutor Service Agreement</DialogTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">EduConnect FET — Please read carefully before proceeding</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                SmartBridge FET — Please read carefully before proceeding
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Version {AGREEMENT_VERSION} · Effective {AGREEMENT_EFFECTIVE_DATE}
+              </p>
             </div>
           </div>
         </DialogHeader>
@@ -41,12 +130,12 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
         >
           <section>
             <h3 className="font-bold text-base mb-2">1. Nature of Relationship</h3>
-            <p className="text-muted-foreground">The Tutor acknowledges that they are an <strong className="text-foreground">Independent Contractor</strong> and not an employee of EduConnect FET. This agreement does not create a partnership, joint venture, or employer-employee relationship. The Tutor is responsible for their own tax obligations (SARS) and does not qualify for UIF or COIDA benefits through EduConnect FET.</p>
+            <p className="text-muted-foreground">The Tutor acknowledges that they are an <strong className="text-foreground">Independent Contractor</strong> and not an employee of SmartBridge FET. This agreement does not create a partnership, joint venture, or employer-employee relationship. The Tutor is responsible for their own tax obligations (SARS) and does not qualify for UIF or COIDA benefits through SmartBridge FET.</p>
           </section>
 
           <section>
             <h3 className="font-bold text-base mb-2">2. Verification Lockdown</h3>
-            <p className="text-muted-foreground">Upon registration, the Tutor's account will be placed in a <strong className="text-foreground">"Pending Verification"</strong> state. The Tutor will not have access to dashboard features, file uploads, or the public tutor directory until the EduConnect Admin has verified their SACE registration or University credentials. This process typically takes <strong className="text-foreground">1–2 business days</strong>.</p>
+            <p className="text-muted-foreground">Upon registration, the Tutor's account will be placed in a <strong className="text-foreground">"Pending Verification"</strong> state. The Tutor will not have access to dashboard features, file uploads, or the public tutor directory until the SmartBridge FET Admin has verified their SACE registration or University credentials. This process typically takes <strong className="text-foreground">1–2 business days</strong>.</p>
           </section>
 
           <section>
@@ -60,7 +149,7 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
 
           <section>
             <h3 className="font-bold text-base mb-2">4. Tutor Payment Plans &amp; Commissions</h3>
-            <p className="text-muted-foreground text-xs mb-3">All subscription payments are collected via <strong className="text-foreground">Yoco</strong> (Yoco Technologies Pty Ltd), linked exclusively to the Tech &amp; GUARD Pty Ltd merchant account (Public Key: pk_live_2a11173e2rggAWL2ada4). The Tutor agrees to the following commission structure:</p>
+            <p className="text-muted-foreground text-xs mb-3">All subscription payments are collected via <strong className="text-foreground">Yoco</strong> (Yoco Technologies Pty Ltd), linked exclusively to the Tech &amp; GUARD Pty Ltd merchant account. The Tutor agrees to the following commission structure:</p>
             <div className="space-y-3">
               <div className="bg-muted rounded-xl p-4">
                 <p className="font-semibold text-foreground mb-1">Standard Plan — R0/month (Free)</p>
@@ -84,7 +173,7 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
           <section>
             <h3 className="font-bold text-base mb-2">5. Thursday Payouts by Tech &amp; GUARD Pty Ltd</h3>
             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 text-xs text-muted-foreground">
-              <p>• All student-to-tutor payments are held and processed by <strong className="text-foreground">Tech &amp; GUARD Pty Ltd</strong> via the EduConnect FET platform.</p>
+              <p>• All student-to-tutor payments are held and processed by <strong className="text-foreground">Tech &amp; GUARD Pty Ltd</strong> via the SmartBridge FET platform.</p>
               <p>• Tutor net payouts are disbursed <strong className="text-foreground">every Thursday of the week</strong> via EFT to the tutor's registered South African bank account.</p>
               <p>• Tutors must submit valid South African banking details to <strong className="text-foreground">aneleq@techandguard.co.za</strong> before their first payout.</p>
               <p>• Tech &amp; GUARD Pty Ltd reserves the right to hold payouts pending identity verification in compliance with FICA regulations.</p>
@@ -104,7 +193,7 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
 
           <section>
             <h3 className="font-bold text-base mb-2">8. Indemnity</h3>
-            <p className="text-muted-foreground">The Tutor indemnifies EduConnect FET and <strong className="text-foreground">Tech &amp; GUARD Pty Ltd</strong> against any claims, losses, or damages arising from the Tutor's sessions, conduct, or study materials.</p>
+            <p className="text-muted-foreground">The Tutor indemnifies SmartBridge FET and <strong className="text-foreground">Tech &amp; GUARD Pty Ltd</strong> against any claims, losses, or damages arising from the Tutor's sessions, conduct, or study materials.</p>
           </section>
 
           {!scrolledToBottom && (
@@ -113,16 +202,20 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
         </div>
 
         <div className="px-6 py-4 border-t border-border flex-shrink-0 flex flex-col sm:flex-row gap-3">
-          <Button variant="outline" className="flex-1" onClick={onDecline}>
+          <Button variant="outline" className="flex-1" onClick={handleDecline} disabled={recordingConsent}>
             Decline
           </Button>
           <Button
             className="flex-1 bg-primary gap-2"
-            disabled={!scrolledToBottom}
-            onClick={onAccept}
+            disabled={!scrolledToBottom || recordingConsent}
+            onClick={handleAccept}
           >
-            <CheckCircle className="w-4 h-4" />
-            I Accept — Proceed to Sign Up
+            {recordingConsent ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCircle className="w-4 h-4" />
+            )}
+            {recordingConsent ? 'Recording Consent...' : 'I Accept — Proceed to Sign Up'}
           </Button>
         </div>
       </DialogContent>
