@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, MessageSquare, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
@@ -16,7 +16,7 @@ export default function CAPSDocRating({ docId, user }) {
 
   const userEmail = user?.email;
 
-  const fetchRatings = async () => {
+  const fetchRatings = useCallback(async () => {
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -32,38 +32,48 @@ export default function CAPSDocRating({ docId, user }) {
         setSelected(mine.rating); 
         setComment(mine.comment || ''); 
       }
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
+    } catch (err) {
+      console.error('Error fetching ratings:', err);
+      toast.error('Failed to load ratings');
     } finally {
       setLoading(false);
     }
-  };
+  }, [docId, userEmail]);
 
   useEffect(() => {
     if (showPanel) fetchRatings();
-  }, [showPanel]);
+  }, [showPanel, fetchRatings]);
 
   const avgRating = ratings.length
     ? (ratings.reduce((s, r) => s + r.rating, 0) / ratings.length).toFixed(1)
     : null;
 
   const handleSubmit = async () => {
-    if (!userEmail) { toast.error('Please log in to rate documents.'); return; }
-    if (!selected) { toast.error('Please select a star rating.'); return; }
+    if (!userEmail) { 
+      toast.error('Please log in to rate documents.'); 
+      return; 
+    }
+    if (!selected) { 
+      toast.error('Please select a star rating.'); 
+      return; 
+    }
+    
     setSubmitting(true);
     try {
       const existing = ratings.find(r => r.user_email === userEmail);
       
       if (existing) {
-        // Update existing rating
         const { error } = await supabase
           .from('resource_ratings')
-          .update({ rating: selected, comment: comment })
+          .update({ 
+            rating: selected, 
+            comment: comment,
+            updated_at: new Date().toISOString()
+          })
           .eq('id', existing.id);
         
         if (error) throw error;
       } else {
-        // Create new rating
         const { error } = await supabase
           .from('resource_ratings')
           .insert({
@@ -77,10 +87,10 @@ export default function CAPSDocRating({ docId, user }) {
       }
       
       toast.success('Rating saved — thank you!');
-      fetchRatings();
-    } catch (error) {
-      console.error('Error saving rating:', error);
-      toast.error('Failed to save rating');
+      await fetchRatings();
+    } catch (err) {
+      console.error('Error saving rating:', err);
+      toast.error(`Failed to save: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
