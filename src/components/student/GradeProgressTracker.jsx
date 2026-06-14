@@ -4,7 +4,6 @@ import { SUBJECTS } from '@/lib/subjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { TrendingUp, Plus, BookOpen, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -24,7 +23,7 @@ export default function GradeProgressTracker({ user }) {
       const { data, error } = await supabase
         .from('student_progress')
         .select('*')
-        .eq('student_email', user.email);
+        .eq('user_email', user.email);  // Using user_email
       
       if (error) throw error;
       setProgress(data || []);
@@ -66,7 +65,7 @@ export default function GradeProgressTracker({ user }) {
         const { error } = await supabase
           .from('student_progress')
           .insert({
-            student_email: user.email,
+            user_email: user.email,  // Using user_email
             subject: form.subject,
             grade: form.grade,
             study_sessions: 1,
