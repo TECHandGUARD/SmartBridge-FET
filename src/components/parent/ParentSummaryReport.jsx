@@ -1,68 +1,62 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BarChart2, Search, TrendingUp, BookOpen, Bell } from 'lucide-react';
+import { BarChart2, Search, TrendingUp, BookOpen, Bell, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function ParentSummaryReport({ user, userProfile }) {
+export default function ParentSummaryReport() {
   const [email, setEmail] = useState('');
   const [searched, setSearched] = useState('');
   const [progress, setProgress] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Auto-populate with linked child email if available
-  useEffect(() => {
-    if (userProfile?.linked_student_email && !email) {
-      setEmail(userProfile.linked_student_email);
-      // Auto-search if we have a linked email
-      if (userProfile.linked_student_email) {
-        performSearch(userProfile.linked_student_email);
-      }
+  const search = async () => {
+    if (!email.trim()) {
+      toast.error('Please enter a student email');
+      return;
     }
-  }, [userProfile]);
-
-  const performSearch = async (searchEmail) => {
-    if (!searchEmail?.trim()) return;
-    setLoading(true);
     
+    setLoading(true);
     try {
-      // Fetch student progress
-      const { data: progData, error: progError } = await supabase
+      // Load student progress
+      const { data: prog, error: progError } = await supabase
         .from('student_progress')
         .select('*')
-        .eq('user_email', searchEmail.trim());
+        .eq('student_email', email.trim());
       
-      if (progError) console.error('Progress fetch error:', progError);
+      if (progError) throw progError;
       
-      // Fetch study reminders
-      const { data: remData, error: remError } = await supabase
+      // Load study reminders
+      const { data: rems, error: remsError } = await supabase
         .from('study_reminders')
         .select('*')
-        .eq('user_email', searchEmail.trim())
+        .eq('student_email', email.trim())
         .eq('is_active', true);
       
-      if (remError) console.error('Reminders fetch error:', remError);
+      if (remsError) throw remsError;
       
-      setProgress(progData || []);
-      setReminders(remData || []);
-      setSearched(searchEmail.trim());
-    } catch (error) {
-      console.error('Search error:', error);
+      setProgress(prog || []);
+      setReminders(rems || []);
+      setSearched(email.trim());
+      
+      if ((prog || []).length === 0) {
+        toast.info('No progress data found for this student');
+      }
+    } catch (err) {
+      console.error('Error searching:', err);
+      toast.error(`Failed to load data: ${err.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = () => {
-    performSearch(email);
-  };
-
-  const totalSessions = progress.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0);
-  const topSubject = [...progress].sort((a, b) => (b.study_sessions || b.resources_accessed || 0) - (a.study_sessions || a.resources_accessed || 0))[0];
+  const totalSessions = progress.reduce((s, p) => s + (p.study_sessions || 0), 0);
+  const topSubject = [...progress].sort((a, b) => (b.study_sessions || 0) - (a.study_sessions || 0))[0];
 
   return (
     <Card className="border-border">
@@ -77,15 +71,15 @@ export default function ParentSummaryReport({ user, userProfile }) {
             placeholder="Enter child's email address..."
             value={email}
             onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+            onKeyDown={e => e.key === 'Enter' && search()}
           />
-          <Button onClick={handleSearch} disabled={loading} className="bg-primary shrink-0">
-            <Search className="w-4 h-4" />
+          <Button onClick={search} disabled={loading} className="bg-primary shrink-0">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </Button>
         </div>
 
         {searched && !loading && (
-          progress.length === 0 && reminders.length === 0 ? (
+          progress.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-6">No progress data found for this student yet.</p>
           ) : (
             <div className="space-y-4">
@@ -105,38 +99,47 @@ export default function ParentSummaryReport({ user, userProfile }) {
                 </div>
               </div>
 
-              {/* Per subject */}
-              {progress.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Subject Activity</p>
-                  <div className="space-y-2">
-                    {progress.map(p => {
-                      const sub = SUBJECTS.find(s => s.name === p.subject);
-                      const sessions = p.study_sessions || p.resources_accessed || 0;
-                      const pct = Math.min(100, sessions * 10);
-                      return (
-                        <div key={p.id} className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1.5">
-                              {sub?.icon || '📚'} <span className="font-medium">{p.subject}</span>
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <Badge className="text-xs bg-muted text-muted-foreground">{p.grade}</Badge>
-                              <span className="text-xs text-muted-foreground">{sessions} sessions</span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
-                          </div>
-                          {p.last_access && (
-                            <p className="text-xs text-muted-foreground">Last studied: {new Date(p.last_access).toLocaleDateString()}</p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* Top subject highlight */}
+              {topSubject && (
+                <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+                  <p className="text-xs font-semibold text-green-700 flex items-center gap-1">
+                    <TrendingUp className="w-3 h-3" /> Most Studied Subject
+                  </p>
+                  <p className="text-sm font-medium mt-1">
+                    {topSubject.subject} — {topSubject.study_sessions} sessions
+                  </p>
                 </div>
               )}
+
+              {/* Per subject */}
+              <div>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Subject Activity</p>
+                <div className="space-y-2">
+                  {progress.map(p => {
+                    const sub = SUBJECTS.find(s => s.name === p.subject);
+                    const pct = Math.min(100, (p.study_sessions || 0) * 10);
+                    return (
+                      <div key={p.id} className="space-y-1">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-1.5">
+                            {sub?.icon || '📚'} <span className="font-medium">{p.subject}</span>
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <Badge className="text-xs bg-muted text-muted-foreground">{p.grade || 'N/A'}</Badge>
+                            <span className="text-xs text-muted-foreground">{p.study_sessions} sessions</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                        </div>
+                        {p.last_accessed && (
+                          <p className="text-xs text-muted-foreground">Last studied: {p.last_accessed}</p>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
 
               {/* Reminders */}
               {reminders.length > 0 && (
@@ -147,7 +150,7 @@ export default function ParentSummaryReport({ user, userProfile }) {
                   <div className="flex flex-wrap gap-2">
                     {reminders.map(r => (
                       <Badge key={r.id} variant="secondary" className="text-xs gap-1">
-                        {SUBJECTS.find(s => s.name === r.subject)?.icon} {r.subject}
+                        {SUBJECTS.find(s => s.name === r.subject)?.icon} {r.subject} — {r.day_of_week} {r.time}
                       </Badge>
                     ))}
                   </div>
