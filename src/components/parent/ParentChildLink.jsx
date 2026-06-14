@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,31 +8,37 @@ import { Badge } from '@/components/ui/badge';
 import { Users, CheckCircle, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function ParentChildLink({ user, userProfile, onUpdate }) {
-  const [childEmail, setChildEmail] = useState(userProfile?.linked_student_email || '');
+export default function ParentChildLink({ user }) {
+  const [childEmail, setChildEmail] = useState(user?.linked_student_email || '');
   const [saving, setSaving] = useState(false);
-  const linked = userProfile?.linked_student_email;
+  const linked = user?.linked_student_email;
 
   const saveLink = async () => {
-    if (!childEmail.trim()) { toast.error('Enter your child\'s email.'); return; }
-    setSaving(true);
+    if (!childEmail.trim()) {
+      toast.error('Enter your child\'s email.');
+      return;
+    }
     
+    setSaving(true);
     try {
+      // Update user profile with linked student email
       const { error } = await supabase
         .from('user_profiles')
-        .update({ linked_student_email: childEmail.trim() })
+        .update({ 
+          linked_student_email: childEmail.trim(),
+          updated_at: new Date().toISOString()
+        })
         .eq('email', user.email);
       
       if (error) throw error;
       
       toast.success('Child account linked! Progress reports will now auto-populate.');
       
-      // Call onUpdate callback if provided to refresh parent component
-      if (onUpdate) onUpdate();
-      
-    } catch (error) {
-      console.error('Error linking child account:', error);
-      toast.error('Failed to link child account. Please try again.');
+      // Refresh user data (optional - you might want to trigger a refetch)
+      // window.location.reload() or use a callback to refresh parent component
+    } catch (err) {
+      console.error('Link error:', err);
+      toast.error(`Failed to link account: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -56,7 +62,7 @@ export default function ParentChildLink({ user, userProfile, onUpdate }) {
           <p className="text-xs text-muted-foreground">Link your child's account to auto-load their progress in weekly reports.</p>
         )}
         <div className="space-y-1.5">
-          <Label className="text-xs">Child's EduConnect Email</Label>
+          <Label className="text-xs">Child's SmartBridge FET Email</Label>
           <Input
             type="email"
             placeholder="child@example.com"
