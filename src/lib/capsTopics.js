@@ -1,6 +1,19 @@
-// CAPS syllabus topics per subject, keyed by subject name matching QuizResult.subject
-export const CAPS_TOPICS = {
-  Mathematics: [
+/**
+ * ====================================================================
+ * OFFICIAL CAPS SYLLABUS REGISTRY ARCHITECTURE
+ * REFERENCE STANDARD: SOUTH AFRICAN DEPARTMENT OF BASIC EDUCATION (DBE)
+ * TYPE IMPLEMENTATION: STRICT PRODUCTION DICTIONARY TYPE GUARDS
+ * ====================================================================
+ */
+
+export interface SubjectSyllabusProfile {
+  name: string;
+  code: string;
+  topics: string[];
+}
+
+export const CAPS_TOPICS: Record<string, string[]> = {
+  'Mathematics': [
     'Algebra & Expressions',
     'Equations & Inequalities',
     'Number Patterns',
@@ -41,7 +54,7 @@ export const CAPS_TOPICS = {
     'Ecology & Environment',
     'Reproduction',
   ],
-  Accounting: [
+  'Accounting': [
     'Accounting Equation',
     'Journals & Ledgers',
     'Bank Reconciliation',
@@ -62,7 +75,7 @@ export const CAPS_TOPICS = {
     'Human Resources',
     'Operations Management',
   ],
-  Economics: [
+  'Economics': [
     'Basic Economic Concepts',
     'Supply & Demand',
     'Market Structures',
@@ -72,7 +85,7 @@ export const CAPS_TOPICS = {
     'Trade & International Economics',
     'Development Economics',
   ],
-  History: [
+  'History': [
     'Colonialism & Resistance',
     'The World Wars',
     'Cold War',
@@ -82,7 +95,7 @@ export const CAPS_TOPICS = {
     'Civil Rights',
     'Contemporary History',
   ],
-  Geography: [
+  'Geography': [
     'Geomorphology',
     'Climate & Weather',
     'Water Resources',
@@ -109,6 +122,14 @@ export const CAPS_TOPICS = {
     'Ukubhala',
     'Ukuthetha Nokulalela',
   ],
+  'isiZulu HL': [
+    'Ukuqonda Okufundwayo (Reading & Comprehension)',
+    'Izakhiwo Nolimi (Language Structures & Conventions)',
+    'Izinkondlo (Literature — Poetry)',
+    'Inoveli neDrama (Literature — Novel/Drama)',
+    'Ukubhala Imibhalo Etranzaksheshinali (Writing & Transactional Texts)',
+    'Ukukhuluma Nokulalela (Oral Communication)',
+  ],
   'Life Orientation': [
     'Personal Development',
     'Citizenship & Democracy',
@@ -125,7 +146,7 @@ export const CAPS_TOPICS = {
     'Skryfvaardighede',
     'Mondelinge Kommunikasie',
   ],
-  Tourism: [
+  'Tourism': [
     'Tourism in SA',
     'Tourism Sectors',
     'Tourist Services',
@@ -135,3 +156,37 @@ export const CAPS_TOPICS = {
     'Financial Calculations',
   ],
 };
+
+/**
+ * Pedagogical Helper Method: Safely resolves curriculum topic list queries with type-safe fallbacks
+ * prevents runtime page breaks if frontend fields mismatch backend database names.
+ */
+export function getTopicsForSubject(subjectName: string): string[] {
+  if (!subjectName) return [];
+  
+  if (CAPS_TOPICS.hasOwnProperty(subjectName)) {
+    return CAPS_TOPICS[subjectName];
+  }
+  
+  // Case-insensitive fallback lookup
+  const standardKey = Object.keys(CAPS_TOPICS).find(
+    k => k.toLowerCase() === subjectName.toLowerCase().trim()
+  );
+  
+  return standardKey ? CAPS_TOPICS[standardKey] : [];
+}
+
+/**
+ * Helper to get all subject names
+ */
+export function getAllSubjectNames(): string[] {
+  return Object.keys(CAPS_TOPICS);
+}
+
+/**
+ * Helper to check if a subject exists
+ */
+export function isValidSubject(subjectName: string): boolean {
+  return CAPS_TOPICS.hasOwnProperty(subjectName) || 
+    Object.keys(CAPS_TOPICS).some(k => k.toLowerCase() === subjectName.toLowerCase().trim());
+}
