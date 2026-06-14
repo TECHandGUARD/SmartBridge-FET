@@ -13,7 +13,7 @@ export default function PremiumBanner() {
           <div className="relative grid sm:grid-cols-2 gap-8 items-center">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <Star className="w-5 h-5 fill-secondary text-secondary" />
+                <Star className="w-5 h-5 text-secondary fill-secondary" />
                 <span className="font-semibold text-secondary">Premium Membership</span>
               </div>
               <h2 className="font-playfair text-3xl sm:text-4xl font-bold mb-4 leading-tight">
