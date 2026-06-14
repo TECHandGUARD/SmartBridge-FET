@@ -1,14 +1,41 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Target, Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
-import { SUBJECTS } from '@/lib/subjects';
+import { Target, Plus, Trash2, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface UserProps {
+  email: string;
+}
+
+interface DBGoalItem {
+  id: string;
+  goal_type: string;
+  subject: string;
+  target_value: number;
+  week_start_date: string;
+  custom_label: string;
+}
+
+interface DBQuizResult {
+  completed_at: string;
+  subject: string;
+}
+
+interface DBProgressItem {
+  last_accessed: string;
+  subject: string;
+}
+
+interface DBBookingItem {
+  status: string;
+  session_date: string;
+}
 
 const GOAL_TYPES = [
   { value: 'quizzes_completed',  label: 'Quizzes Completed',   unit: 'quizzes',  icon: '🧩' },
@@ -17,47 +44,45 @@ const GOAL_TYPES = [
   { value: 'tutoring_sessions',  label: 'Tutoring Sessions',    unit: 'sessions', icon: '👨‍🏫' },
 ];
 
-// Return the ISO date string for the most recent Monday
-function getWeekStart() {
+const SUBJECT_OPTIONS = ['Mathematics', 'Physical Sciences', 'Life Sciences', 'Accounting', 'Economics', 'History', 'Geography', 'Business Studies'];
+
+// FIXED: Exact ISO week-start Monday date mapping
+function getWeekStartDateString(): string {
   const d = new Date();
-  const day = d.getDay(); // 0=Sun
+  const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().split('T')[0];
+  const targetMonday = new Date(d.setDate(d.getDate() + diff));
+  return targetMonday.toISOString().split('T')[0];
 }
 
-// Compute actual progress for a goal given fetched data
-function computeProgress(goal, quizzes, progress, bookings) {
-  const weekStart = new Date(goal.week_start);
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 7);
+function computeProgressValue(goal: DBGoalItem, quizzes: DBQuizResult[], progress: DBProgressItem[], bookings: DBBookingItem[]): number {
+  const startTime = new Date(goal.week_start_date + 'T00:00:00Z').getTime();
+  const endTime = startTime + (7 * 24 * 60 * 60 * 1000);
 
   switch (goal.goal_type) {
     case 'quizzes_completed': {
-      const filtered = quizzes.filter(q => {
-        const d = new Date(q.created_at);
-        return d >= weekStart && d < weekEnd && (!goal.subject || q.subject === goal.subject);
-      });
-      return filtered.length;
+      return quizzes.filter(q => {
+        const time = new Date(q.completed_at).getTime();
+        return time >= startTime && time < endTime && (!goal.subject || q.subject === goal.subject);
+      }).length;
     }
     case 'study_sessions': {
-      return progress
-        .filter(p => !goal.subject || p.subject === goal.subject)
-        .reduce((sum, p) => {
-          const d = new Date(p.updated_at || p.last_access || '');
-          return d >= weekStart && d < weekEnd ? sum + 1 : sum;
-        }, 0);
+      return progress.filter(p => {
+        const time = new Date(p.last_accessed).getTime();
+        return time >= startTime && time < endTime && (!goal.subject || p.subject === goal.subject);
+      }).length;
     }
     case 'subjects_studied': {
-      return progress.filter(p => {
-        const d = new Date(p.updated_at || p.last_access || '');
-        return d >= weekStart && d < weekEnd;
-      }).length;
+      const activeWeekSubjects = progress.filter(p => {
+        const time = new Date(p.last_accessed).getTime();
+        return time >= startTime && time < endTime;
+      }).map(p => p.subject);
+      return new Set(activeWeekSubjects).size;
     }
     case 'tutoring_sessions': {
       return bookings.filter(b => {
-        const d = new Date(b.booking_date || b.created_at || '');
-        return d >= weekStart && d < weekEnd && b.status === 'completed';
+        const time = new Date(b.session_date + 'T00:00:00Z').getTime();
+        return time >= startTime && time < endTime && b.status === 'completed';
       }).length;
     }
     default:
@@ -65,170 +90,184 @@ function computeProgress(goal, quizzes, progress, bookings) {
   }
 }
 
-const EMPTY_FORM = { goal_type: 'quizzes_completed', subject: '', target: 5, label: '' };
+export default function WeeklyGoals({ user }: { user: UserProps }) {
+  const [goals, setGoals] = useState<DBGoalItem[]>([]);
+  const [quizzes, setQuizzes] = useState<DBQuizResult[]>([]);
+  const [progress, setProgress] = useState<DBProgressItem[]>([]);
+  const [bookings, setBookings] = useState<DBBookingItem[]>([]);
+  
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [expanded, setExpanded] = useState<boolean>(true);
 
-export default function WeeklyGoals({ user }) {
-  const [goals, setGoals] = useState([]);
-  const [progress, setProgress] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [expanded, setExpanded] = useState(true);
+  const [form, setForm] = useState({
+    goal_type: 'quizzes_completed',
+    subject: 'All',
+    target_value: '3',
+    custom_label: ''
+  });
 
-  const weekStart = getWeekStart();
+  const currentMondayStr = getWeekStartDateString();
 
   useEffect(() => {
     if (!user?.email) return;
-    
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch weekly goals
-        const { data: goalsData, error: goalsError } = await supabase
-          .from('weekly_goals')
-          .select('*')
-          .eq('user_email', user.email)
-          .eq('week_start', weekStart);
-        
-        if (goalsError) throw goalsError;
-        
-        // Fetch student progress
-        const { data: progData, error: progError } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (progError) throw progError;
-        
-        // Fetch quiz results
-        const { data: quizData, error: quizError } = await supabase
-          .from('quiz_results')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (quizError) throw quizError;
-        
-        // Fetch tutor bookings
-        const { data: bookData, error: bookError } = await supabase
-          .from('tutor_bookings')
-          .select('*')
-          .eq('student_email', user.email);
-        
-        if (bookError) throw bookError;
-        
-        setGoals(goalsData || []);
-        setProgress(progData || []);
-        setQuizzes(quizData || []);
-        setBookings(bookData || []);
-      } catch (error) {
-        console.error('Error fetching weekly goals data:', error);
-        toast.error('Failed to load goals');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
-  }, [user, weekStart]);
+    fetchWeeklyMetricsPipeline();
+  }, [user]);
 
-  const addGoal = async () => {
-    if (!form.target || form.target < 1) { toast.error('Target must be at least 1.'); return; }
-    const goalType = GOAL_TYPES.find(t => t.value === form.goal_type);
-    const label = form.label.trim() ||
-      `${goalType.label}${form.subject ? ` (${form.subject})` : ''}`;
-    
+  const fetchWeeklyMetricsPipeline = async () => {
     try {
-      const { data, error } = await supabase
-        .from('weekly_goals')
-        .insert({
-          user_email: user.email,
-          goal_type: form.goal_type,
-          subject: form.subject || '',
-          target: Number(form.target),
-          week_start: weekStart,
-          label: label,
-        })
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      setGoals(prev => [...prev, data]);
-      setForm(EMPTY_FORM);
-      setShowForm(false);
-      toast.success('Goal added!');
-    } catch (error) {
-      console.error('Error adding goal:', error);
-      toast.error('Failed to add goal');
+      setLoading(true);
+      setError(null);
+
+      const [goalsQuery, quizzesQuery, progressQuery, bookingsQuery] = await Promise.all([
+        supabase.from('weekly_goals').select('*').eq('student_email', user.email).eq('week_start_date', currentMondayStr),
+        supabase.from('quiz_results').select('completed_at, subject').eq('student_email', user.email),
+        supabase.from('student_progress').select('last_accessed, subject').eq('user_email', user.email),
+        supabase.from('tutor_bookings').select('status, session_date').eq('student_email', user.email)
+      ]);
+
+      if (goalsQuery.error) throw goalsQuery.error;
+      if (quizzesQuery.error) throw quizzesQuery.error;
+      if (progressQuery.error) throw progressQuery.error;
+      if (bookingsQuery.error) throw bookingsQuery.error;
+
+      setGoals(goalsQuery.data || []);
+      setQuizzes(quizzesQuery.data || []);
+      setProgress(progressQuery.data || []);
+      setBookings(bookingsQuery.data || []);
+    } catch (err: any) {
+      console.error('Goals dashboard pipeline crash:', err);
+      setError(err.message || 'Failed to load weekly goals');
+      toast.error('Failed to load goals');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const deleteGoal = async (id) => {
+  const handleAddGoalSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const targetNum = parseInt(form.target_value) || 0;
+    if (targetNum < 1) {
+      toast.error('Target must be at least 1');
+      return;
+    }
+
     try {
-      const { error } = await supabase
+      setIsSubmitting(true);
+      const goalTypeMeta = GOAL_TYPES.find(t => t.value === form.goal_type);
+      const computedLabel = form.custom_label.trim() || 
+        `${goalTypeMeta?.label}${form.subject !== 'All' ? ` (${form.subject})` : ''}`;
+
+      const { data, error: insertError } = await supabase
+        .from('weekly_goals')
+        .insert([
+          {
+            student_email: user.email,
+            goal_type: form.goal_type,
+            subject: form.subject === 'All' ? '' : form.subject,
+            target_value: targetNum,
+            week_start_date: currentMondayStr,
+            custom_label: computedLabel
+          }
+        ])
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      if (data) {
+        setGoals(prev => [...prev, data]);
+        setForm({ goal_type: 'quizzes_completed', subject: 'All', target_value: '3', custom_label: '' });
+        setShowForm(false);
+        toast.success('Goal added successfully!');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add goal');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteGoal = async (id: string) => {
+    try {
+      const { error: deleteError } = await supabase
         .from('weekly_goals')
         .delete()
         .eq('id', id);
-      
-      if (error) throw error;
+
+      if (deleteError) throw deleteError;
       setGoals(prev => prev.filter(g => g.id !== id));
-      toast.success('Goal deleted');
-    } catch (error) {
-      console.error('Error deleting goal:', error);
-      toast.error('Failed to delete goal');
+      toast.success('Goal removed');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete goal');
     }
   };
 
   if (loading) {
     return (
-      <Card className="border-border">
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" /> Weekly Goals
-            </CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-6">
-            <div className="w-5 h-5 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
+      <Card className="border-border shadow-md max-w-xl mx-auto bg-card">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading goals...</span>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
+    <Card className="border-border shadow-md max-w-xl mx-auto bg-card">
+      <CardHeader className="pb-3 border-b bg-muted/30">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-playfair flex items-center gap-2">
-            <Target className="w-4 h-4 text-primary" /> Weekly Goals
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Target className="w-4 h-4 text-primary shrink-0" /> Weekly Goals
           </CardTitle>
-          <div className="flex items-center gap-1">
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1 px-2" onClick={() => setShowForm(v => !v)}>
-              <Plus className="w-3.5 h-3.5" /> Add Goal
+          <div className="flex items-center gap-1.5">
+            <Button 
+              type="button"
+              size="sm" 
+              variant="outline" 
+              className="h-8 text-xs font-bold px-2.5" 
+              onClick={() => setShowForm(prev => !prev)}
+            >
+              <Plus className="w-3.5 h-3.5" /> {showForm ? 'Cancel' : 'Add Goal'}
             </Button>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded(v => !v)}>
+            <Button 
+              type="button"
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8" 
+              onClick={() => setExpanded(prev => !prev)}
+            >
               {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </Button>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Week of {weekStart}</p>
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mt-0.5">
+          Week of {currentMondayStr}
+        </p>
       </CardHeader>
 
       {expanded && (
-        <CardContent className="space-y-4">
-          {/* Add goal form */}
+        <CardContent className="space-y-4 pt-4">
+          {error && (
+            <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[11px] font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Add Goal Form */}
           {showForm && (
-            <div className="bg-muted/40 rounded-xl p-3 space-y-3">
-              <div className="grid sm:grid-cols-2 gap-3">
+            <form onSubmit={handleAddGoalSubmit} className="bg-muted/30 border border-border rounded-xl p-3.5 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">Goal Type *</Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Goal Type</Label>
                   <Select value={form.goal_type} onValueChange={v => setForm({ ...form, goal_type: v })}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="text-xs h-8">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       {GOAL_TYPES.map(t => (
                         <SelectItem key={t.value} value={t.value}>{t.icon} {t.label}</SelectItem>
@@ -236,78 +275,89 @@ export default function WeeklyGoals({ user }) {
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div className="space-y-1">
-                  <Label className="text-xs">Subject (optional)</Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Subject</Label>
                   <Select value={form.subject} onValueChange={v => setForm({ ...form, subject: v })}>
-                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="All subjects" /></SelectTrigger>
+                    <SelectTrigger className="text-xs h-8">
+                      <SelectValue placeholder="All subjects" />
+                    </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">All subjects</SelectItem>
-                      {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>)}
+                      <SelectItem value="All">All subjects</SelectItem>
+                      {SUBJECT_OPTIONS.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
+                
                 <div className="space-y-1">
-                  <Label className="text-xs">Target *</Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Target</Label>
                   <Input
-                    type="number" min={1} className="h-8 text-xs"
-                    value={form.target}
-                    onChange={e => setForm({ ...form, target: e.target.value })}
-                    placeholder="e.g. 5"
+                    type="number"
+                    min={1}
+                    value={form.target_value}
+                    onChange={e => setForm({ ...form, target_value: e.target.value })}
+                    className="text-xs h-8"
+                    placeholder="e.g., 5"
                   />
                 </div>
+                
                 <div className="space-y-1">
-                  <Label className="text-xs">Custom Label (optional)</Label>
+                  <Label className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Custom Label</Label>
                   <Input
-                    className="h-8 text-xs"
-                    placeholder="e.g. Finish Maths quizzes"
-                    value={form.label}
-                    onChange={e => setForm({ ...form, label: e.target.value })}
+                    value={form.custom_label}
+                    onChange={e => setForm({ ...form, custom_label: e.target.value })}
+                    className="text-xs h-8"
+                    placeholder="Optional custom name"
                   />
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" className="h-8 text-xs bg-primary" onClick={addGoal}>Save Goal</Button>
-                <Button size="sm" variant="ghost" className="h-8 text-xs" onClick={() => setShowForm(false)}>Cancel</Button>
-              </div>
-            </div>
+              
+              <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-white text-xs h-8">
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                Save Goal
+              </Button>
+            </form>
           )}
 
-          {/* Goals list */}
+          {/* Goals List */}
           {goals.length === 0 ? (
             <p className="text-xs text-muted-foreground text-center py-4">
-              No goals set for this week. Click <strong>Add Goal</strong> to get started! 🎯
+              No goals set for this week. Click "Add Goal" to get started! 🎯
             </p>
           ) : (
             <div className="space-y-3">
               {goals.map(goal => {
                 const goalType = GOAL_TYPES.find(t => t.value === goal.goal_type);
-                const current = computeProgress(goal, quizzes, progress, bookings);
-                const pct = Math.min(100, Math.round((current / goal.target) * 100));
+                const current = computeProgressValue(goal, quizzes, progress, bookings);
+                const pct = Math.min(100, Math.round((current / goal.target_value) * 100));
                 const done = pct >= 100;
+                
                 return (
-                  <div key={goal.id} className={`rounded-xl border p-3 transition-all ${done ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' : 'bg-card border-border'}`}>
+                  <div key={goal.id} className={`rounded-xl border p-3 transition-all ${done ? 'bg-green-50 border-green-200 dark:bg-green-950/20' : 'bg-card border-border'}`}>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-lg leading-none">{goalType?.icon || '🎯'}</span>
+                        <span className="text-lg">{goalType?.icon || '🎯'}</span>
                         <div className="min-w-0">
-                          <p className="text-sm font-semibold truncate">{goal.label}</p>
+                          <p className="text-sm font-semibold truncate">{goal.custom_label}</p>
                           {goal.subject && <p className="text-xs text-muted-foreground">{goal.subject}</p>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         <span className={`text-xs font-bold ${done ? 'text-green-600' : 'text-foreground'}`}>
-                          {current}/{goal.target}
+                          {current}/{goal.target_value}
                           <span className="font-normal text-muted-foreground ml-1">{goalType?.unit}</span>
                         </span>
                         {done && <span className="text-green-600 text-sm">✅</span>}
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => deleteGoal(goal.id)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => handleDeleteGoal(goal.id)}>
                           <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
                     <Progress value={pct} className={`h-2 ${done ? '[&>div]:bg-green-500' : '[&>div]:bg-primary'}`} />
                     <p className="text-xs text-muted-foreground mt-1">
-                      {done ? '🎉 Goal complete!' : `${pct}% — ${goal.target - current} more to go`}
+                      {done ? '🎉 Goal complete!' : `${pct}% — ${goal.target_value - current} more to go`}
                     </p>
                   </div>
                 );
