@@ -1,23 +1,50 @@
-import { useEffect } from 'react';
-import { Outlet } from 'react-router-dom';
-import { useAuth } from '@/lib/AuthContext';
+// lib/AuthContext.jsx - Remove hardcoded admin email checks
+// Instead, rely on database queries for admin status
 
-const DefaultFallback = () => (
-  <div className="fixed inset-0 flex items-center justify-center">
-    <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin"></div>
-  </div>
-);
+// ... inside your checkUserAuth function:
 
-export default function ProtectedRoute({ fallback = <DefaultFallback />, unauthenticatedElement }) {
-  const { isAuthenticated, isLoadingAuth, authChecked } = useAuth();
-
-  if (isLoadingAuth || !authChecked) {
-    return fallback;
+const checkUserAuth = useCallback(async () => {
+  setIsLoadingAuth(true);
+  try {
+    const { data: { user: authUser }, error } = await supabase.auth.getUser();
+    
+    if (error) throw error;
+    
+    if (authUser) {
+      // Get user profile from user_profiles table
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('email', authUser.email)
+        .single();
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Profile fetch error:', profileError);
+      }
+      
+      const userData = {
+        ...authUser,
+        ...profile,
+        email: authUser.email,
+        full_name: profile?.full_name || authUser.user_metadata?.full_name,
+        role: profile?.role || 'user',
+        is_super_admin: profile?.is_super_admin || false,
+      };
+      
+      setUser(userData);
+      setIsAuthenticated(true);
+      setAuthError(null);
+    } else {
+      setUser(null);
+      setIsAuthenticated(false);
+    }
+  } catch (err) {
+    console.error('Auth check error:', err);
+    setAuthError({ type: 'auth_required', message: err.message });
+    setUser(null);
+    setIsAuthenticated(false);
+  } finally {
+    setIsLoadingAuth(false);
+    setAuthChecked(true);
   }
-
-  if (!isAuthenticated) {
-    return unauthenticatedElement;
-  }
-
-  return <Outlet />;
-}
+}, []);
