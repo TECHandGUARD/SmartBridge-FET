@@ -1,44 +1,44 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, Plus, BookOpen } from 'lucide-react';
+import { TrendingUp, Plus, BookOpen, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function GradeProgressTracker({ user }) {
   const [progress, setProgress] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ subject: '', grade: 'Grade 10' });
 
-  // Fetch progress from Supabase
-  useEffect(() => {
+  const loadProgress = useCallback(async () => {
     if (!user?.email) return;
     
-    const fetchProgress = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (error) throw error;
-        setProgress(data || []);
-      } catch (error) {
-        console.error('Error fetching progress:', error);
-        toast.error('Failed to load progress data');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchProgress();
-  }, [user]);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('student_progress')
+        .select('*')
+        .eq('student_email', user.email);
+      
+      if (error) throw error;
+      setProgress(data || []);
+    } catch (err) {
+      console.error('Error loading progress:', err);
+      toast.error('Failed to load progress');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
 
   const save = async () => {
     if (!form.subject) {
@@ -46,50 +46,45 @@ export default function GradeProgressTracker({ user }) {
       return;
     }
     
-    const today = new Date().toISOString().split('T')[0];
-    const existing = progress.find(p => p.subject === form.subject && p.grade === form.grade);
-    
+    setSaving(true);
     try {
+      const existing = progress.find(p => p.subject === form.subject && p.grade === form.grade);
+      const today = new Date().toISOString().split('T')[0];
+      
       if (existing) {
-        // Update existing record
         const { error } = await supabase
           .from('student_progress')
           .update({
-            study_sessions: (existing.study_sessions || existing.resources_accessed || 0) + 1,
+            study_sessions: (existing.study_sessions || 0) + 1,
             last_access: today,
+            updated_at: new Date().toISOString()
           })
           .eq('id', existing.id);
         
         if (error) throw error;
       } else {
-        // Create new record
         const { error } = await supabase
           .from('student_progress')
           .insert({
-            user_email: user.email,
+            student_email: user.email,
             subject: form.subject,
             grade: form.grade,
             study_sessions: 1,
-            last_access: today,
+            last_access: today
           });
         
         if (error) throw error;
       }
       
-      // Refresh data
-      const { data, error } = await supabase
-        .from('student_progress')
-        .select('*')
-        .eq('user_email', user.email);
-      
-      if (error) throw error;
-      setProgress(data || []);
+      await loadProgress();
       setShowForm(false);
       setForm({ subject: '', grade: 'Grade 10' });
       toast.success('Study session logged!');
-    } catch (error) {
-      console.error('Error saving progress:', error);
-      toast.error('Failed to log session');
+    } catch (err) {
+      console.error('Error saving progress:', err);
+      toast.error(`Failed to save: ${err.message}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -102,8 +97,8 @@ export default function GradeProgressTracker({ user }) {
   if (loading) {
     return (
       <Card className="border-border">
-        <CardContent className="pt-6 pb-6 flex justify-center">
-          <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -136,7 +131,10 @@ export default function GradeProgressTracker({ user }) {
                 {['Grade 10','Grade 11','Grade 12'].map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button size="sm" className="w-full bg-primary" onClick={save}>Log Study Session</Button>
+            <Button size="sm" className="w-full bg-primary" onClick={save} disabled={saving}>
+              {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : null}
+              {saving ? 'Saving...' : 'Log Study Session'}
+            </Button>
           </div>
         )}
 
@@ -149,8 +147,7 @@ export default function GradeProgressTracker({ user }) {
           <div className="space-y-2">
             {progress.map((p) => {
               const sub = SUBJECTS.find(s => s.name === p.subject);
-              const sessions = p.study_sessions || p.resources_accessed || 0;
-              const pct = Math.min(100, sessions * 10);
+              const pct = Math.min(100, (p.study_sessions || 0) * 10);
               return (
                 <div key={p.id} className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
@@ -159,12 +156,15 @@ export default function GradeProgressTracker({ user }) {
                     </span>
                     <div className="flex items-center gap-2">
                       <Badge className={`text-xs ${gradeColor(p.grade)}`}>{p.grade}</Badge>
-                      <span className="text-xs text-muted-foreground">{sessions} sessions</span>
+                      <span className="text-xs text-muted-foreground">{p.study_sessions} sessions</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
                   </div>
+                  {p.last_access && (
+                    <p className="text-[10px] text-muted-foreground">Last studied: {p.last_access}</p>
+                  )}
                 </div>
               );
             })}
