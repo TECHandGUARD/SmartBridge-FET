@@ -1,174 +1,236 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  LineChart, Line, CartesianGrid, Legend,
+  LineChart, Line, CartesianGrid,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  PieChart, Pie,
+  PieChart, Pie, Legend
 } from 'recharts';
-import { Button } from '@/components/ui/button';
-import { TrendingUp, BookOpen, Flame, Target, BarChart2, Activity, Download } from 'lucide-react';
+import { TrendingUp, BookOpen, Flame, Target, BarChart2, Activity, Download, Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
-function exportCSV(progress, user) {
-  const headers = ['Subject', 'Grade', 'Resources Accessed', 'Last Accessed', 'Notes'];
+interface UserProps {
+  full_name?: string;
+  email: string;
+}
+
+interface DBProgressItem {
+  id?: string;
+  subject: string;
+  grade_level: number;
+  study_sessions: number;
+  last_access: string | null;
+  notes?: string;
+}
+
+interface StatCardProps {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string | number;
+  sub?: string | null;
+  color: string;
+}
+
+// Production CSV Exporter Engine
+function exportCSV(progress: DBProgressItem[], user: UserProps) {
+  const headers = ['Subject', 'Grade Level', 'Study Sessions', 'Last Access', 'Notes'];
   const rows = progress.map(p => [
     p.subject || '',
-    p.grade || '',
-    p.study_sessions || p.resources_accessed || 0,
+    `Grade ${p.grade_level}`,
+    p.study_sessions || 0,
     p.last_access || '',
     (p.notes || '').replace(/,/g, ';'),
   ]);
-  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  
+  const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `progress-report-${user?.user_metadata?.full_name?.replace(/\s+/g, '-') || 'student'}-${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  
+  const dateStamp = new Date().toISOString().split('T')[0];
+  anchor.download = `progress-report-${user?.full_name?.replace(/\s+/g, '-') || 'student'}-${dateStamp}.csv`;
+  anchor.click();
   URL.revokeObjectURL(url);
 }
 
-const COLORS = ['#2e7d52','#f59e0b','#3b82f6','#8b5cf6','#ef4444','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16','#a78bfa'];
+const COLORS = ['#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', '#db2777', '#059669', '#4f46e5', '#0891b2', '#84cc16'];
 
-const SHORT = (s) => s?.length > 10 ? s.slice(0, 10) + '…' : s;
+const SHORT = (s: string) => s?.length > 10 ? s.slice(0, 10) + '…' : s;
 
-function StatCard({ icon: Icon, label, value, sub, color }) {
+function StatCard({ icon: Icon, label, value, sub, color }: StatCardProps) {
   return (
-    <Card className="border-border">
+    <Card className="border-border bg-card shadow-sm">
       <CardContent className="pt-5 pb-4">
-        <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-2`}>
+        <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-2 shadow-sm`}>
           <Icon className="w-4 h-4" />
         </div>
-        <p className="font-playfair text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-        {sub && <p className="text-xs text-primary font-medium mt-1">{sub}</p>}
+        <p className="text-2xl font-black text-foreground leading-none">{value}</p>
+        <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide mt-1.5">{label}</p>
+        {sub && <p className="text-xs text-primary font-semibold mt-1 truncate" title={sub}>{sub}</p>}
       </CardContent>
     </Card>
   );
 }
 
-export default function StudentProgressDashboard({ user }) {
-  const [progress, setProgress] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function StudentProgressDashboard({ user }: { user: UserProps }) {
+  const [progress, setProgress] = useState<DBProgressItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchDashboardTelemetry = useCallback(async () => {
+    if (!user?.email) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: dbError } = await supabase
+        .from('student_progress')
+        .select('subject, grade_level, study_sessions, last_access, notes')
+        .eq('user_email', user.email);
+
+      if (dbError) throw dbError;
+      setProgress(data || []);
+    } catch (err: any) {
+      console.error('Dashboard pipeline failure:', err);
+      setError(err.message || 'Failed to sync analytics data.');
+      toast.error('Failed to load progress data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email]);
 
   useEffect(() => {
-    if (!user?.email) return;
-    
-    const fetchProgress = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (error) throw error;
-        setProgress(data || []);
-      } catch (error) {
-        console.error('Error fetching student progress:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchProgress();
-  }, [user]);
+    fetchDashboardTelemetry();
+  }, [fetchDashboardTelemetry]);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40 text-muted-foreground text-sm">
-        <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin mr-2" />
-        Loading your progress…
+      <div className="flex flex-col items-center justify-center h-48 gap-2 text-muted-foreground font-bold text-xs">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <span>Loading progress data...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold flex items-center gap-2 max-w-xl mx-auto">
+        <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+        <span>Error: {error}</span>
       </div>
     );
   }
 
   if (progress.length === 0) {
     return (
-      <Card className="border-border">
-        <CardContent className="py-12 text-center">
-          <Activity className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-          <p className="text-muted-foreground text-sm">No progress data yet. Start exploring subjects and resources!</p>
+      <Card className="border-border bg-card shadow-md">
+        <CardContent className="py-12 text-center space-y-2">
+          <Activity className="w-10 h-10 text-muted-foreground mx-auto stroke-[1.5]" />
+          <h4 className="text-sm font-bold text-foreground">No Data Found</h4>
+          <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+            Start exploring subjects and resources to see your progress here!
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  // --- Derived data ---
-  const totalSessions = progress.reduce((a, p) => a + (p.study_sessions || p.resources_accessed || 0), 0);
-  const topSubject = [...progress].sort((a, b) => (b.study_sessions || b.resources_accessed || 0) - (a.study_sessions || a.resources_accessed || 0))[0];
-  const activeSubjects = progress.filter(p => (p.study_sessions || p.resources_accessed || 0) > 0).length;
+  // Core Metrics
+  const totalSessions = progress.reduce((a, p) => a + (p.study_sessions || 0), 0);
+  const topSubject = [...progress].sort((a, b) => (b.study_sessions || 0) - (a.study_sessions || 0))[0];
+  const activeSubjects = progress.filter(p => (p.study_sessions || 0) > 0).length;
 
-  // Streak
-  const dates = progress.filter(p => p.last_access).map(p => p.last_access).sort().reverse();
+  // Streak Calculation
+  const rawDates = progress
+    .filter(p => p.last_access)
+    .map(p => p.last_access!.split('T')[0]);
+  const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  
   let streak = 0;
-  if (dates.length > 0) {
-    const today = new Date().toISOString().split('T')[0];
-    if (dates[0] === today) {
+  if (uniqueSortedDates.length > 0) {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+    if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
       streak = 1;
-      for (let i = 1; i < dates.length; i++) {
-        const diff = (new Date(dates[i - 1]) - new Date(dates[i])) / 86400000;
-        if (diff === 1) streak++; else break;
+      for (let i = 1; i < uniqueSortedDates.length; i++) {
+        const prevTime = new Date(uniqueSortedDates[i - 1]).getTime();
+        const currTime = new Date(uniqueSortedDates[i]).getTime();
+        if ((prevTime - currTime) / 86400000 === 1) streak++;
+        else break;
       }
     }
   }
 
-  // Bar chart: resources accessed per subject
+  // Bar Chart Data
   const barData = progress
-    .filter(p => (p.study_sessions || p.resources_accessed || 0) > 0)
+    .filter(p => (p.study_sessions || 0) > 0)
     .map((p, i) => ({
       name: SHORT(p.subject),
       fullName: p.subject,
-      sessions: p.study_sessions || p.resources_accessed || 0,
+      sessions: p.study_sessions || 0,
       fill: COLORS[i % COLORS.length],
     }))
     .sort((a, b) => b.sessions - a.sessions);
 
-  // Radar chart: subject engagement
+  // Radar Chart Data
   const radarData = progress.map((p, i) => ({
     subject: SHORT(p.subject),
-    sessions: p.study_sessions || p.resources_accessed || 0,
+    sessions: p.study_sessions || 0,
   }));
 
-  // Pie chart: distribution across grades
-  const gradeMap = {};
+  // Pie Chart Data by Grade
+  const gradeMap: Record<number, number> = {};
   progress.forEach(p => {
-    gradeMap[p.grade] = (gradeMap[p.grade] || 0) + (p.study_sessions || p.resources_accessed || 0);
+    gradeMap[p.grade_level] = (gradeMap[p.grade_level] || 0) + (p.study_sessions || 0);
   });
-  const pieData = Object.entries(gradeMap).map(([grade, val], i) => ({
-    name: grade, value: val, fill: COLORS[i % COLORS.length],
+  const pieData = Object.entries(gradeMap).map(([gradeNum, val], i) => ({
+    name: `Grade ${gradeNum}`,
+    value: val,
+    fill: COLORS[(i + 2) % COLORS.length],
   }));
 
-  // Timeline: last_access dates sorted for a line chart (last 14 days)
-  const last14 = Array.from({ length: 14 }, (_, i) => {
+  // Timeline Data (Last 14 Days)
+  const last14DaysArray = Array.from({ length: 14 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (13 - i));
     return d.toISOString().split('T')[0];
   });
-  const dailyCounts = {};
+  const dailyCounts: Record<string, number> = {};
   progress.forEach(p => {
-    if (p.last_access) dailyCounts[p.last_access] = (dailyCounts[p.last_access] || 0) + 1;
+    if (p.last_access) {
+      const dateKey = p.last_access.split('T')[0];
+      dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
+    }
   });
-  const lineData = last14.map(date => ({
-    date: date.slice(5), // MM-DD
-    subjects: dailyCounts[date] || 0,
+  const lineData = last14DaysArray.map(dateStr => ({
+    date: dateStr.slice(5),
+    subjects: dailyCounts[dateStr] || 0,
   }));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-1">
+    <div className="space-y-5 w-full max-w-6xl mx-auto p-1">
+      
+      {/* Header */}
+      <div className="flex items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm flex-wrap gap-3">
         <div className="flex items-center gap-2">
           <TrendingUp className="w-5 h-5 text-primary" />
-          <h2 className="font-playfair text-xl font-bold">My Progress Dashboard</h2>
+          <div>
+            <h2 className="text-base font-bold text-foreground">My Progress Dashboard</h2>
+            <p className="text-xs text-muted-foreground">Track your learning journey</p>
+          </div>
         </div>
-        <Button size="sm" variant="outline" className="gap-1.5" onClick={() => exportCSV(progress, user)}>
+        <Button size="sm" variant="outline" className="gap-1.5 font-bold text-xs h-8" onClick={() => exportCSV(progress, user)}>
           <Download className="w-3.5 h-3.5" /> Export CSV
         </Button>
       </div>
 
-      {/* Stat Cards */}
+      {/* Stats Row */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard icon={BookOpen} label="Total Sessions" value={totalSessions} color="bg-primary/10 text-primary" />
         <StatCard icon={Target} label="Active Subjects" value={activeSubjects} color="bg-blue-100 text-blue-700" />
@@ -176,35 +238,36 @@ export default function StudentProgressDashboard({ user }) {
           icon={Flame}
           label="Day Streak"
           value={streak}
-          sub={streak >= 3 ? '🔥 On fire!' : streak === 1 ? 'Started today!' : null}
+          sub={streak >= 3 ? '🔥 On fire!' : streak === 1 ? 'Started today' : null}
           color="bg-orange-100 text-orange-600"
         />
         <StatCard
           icon={BarChart2}
           label="Top Subject"
-          value={topSubject?.study_sessions || topSubject?.resources_accessed || 0}
+          value={topSubject?.study_sessions || 0}
           sub={topSubject?.subject || '—'}
           color="bg-green-100 text-green-700"
         />
       </div>
 
-      {/* Bar + Line row */}
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Sessions per Subject */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary" /> Sessions per Subject
+      {/* Charts Row 1 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        {/* Bar Chart */}
+        <Card className="border-border bg-card shadow-md">
+          <CardHeader className="pb-2 border-b bg-muted/30">
+            <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <BarChart2 className="w-4 h-4 text-primary" /> Study Sessions per Subject
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={barData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={barData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={{ stroke: 'hsl(var(--border))' }} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} tickLine={false} axisLine={{ stroke: 'hsl(var(--border))' }} />
                 <Tooltip
-                  formatter={(v, _, props) => [v, props.payload?.fullName || 'Sessions']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  formatter={(val: any, _, props) => [val, props?.payload?.fullName || 'Sessions']}
+                  contentStyle={{ fontSize: 11, borderRadius: 8, backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                 />
                 <Bar dataKey="sessions" radius={[4, 4, 0, 0]}>
                   {barData.map((entry, i) => (
@@ -216,71 +279,59 @@ export default function StudentProgressDashboard({ user }) {
           </CardContent>
         </Card>
 
-        {/* Activity over last 14 days */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" /> Activity — Last 14 Days
+        {/* Line Chart */}
+        <Card className="border-border bg-card shadow-md">
+          <CardHeader className="pb-2 border-b bg-muted/30">
+            <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Activity className="w-4 h-4 text-primary" /> Activity (Last 14 Days)
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={lineData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
+          <CardContent className="pt-4">
+            <ResponsiveContainer width="100%" height={220}>
+              <LineChart data={lineData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" tick={{ fontSize: 9 }} interval={1} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => [v, 'Subjects studied']} />
-                <Line
-                  type="monotone"
-                  dataKey="subjects"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: 'hsl(var(--primary))' }}
-                  activeDot={{ r: 5 }}
-                />
+                <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} interval={1} />
+                <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} />
+                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                <Line type="monotone" dataKey="subjects" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Radar + Pie row */}
-      <div className="grid sm:grid-cols-2 gap-6">
-        {/* Radar */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <Target className="w-4 h-4 text-primary" /> Subject Engagement
+      {/* Charts Row 2 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        
+        {/* Radar Chart */}
+        <Card className="border-border bg-card shadow-md">
+          <CardHeader className="pb-2 border-b bg-muted/30">
+            <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+              <Target className="w-4 h-4 text-primary" /> Subject Balance
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex justify-center">
+          <CardContent className="pt-4 flex justify-center">
             <ResponsiveContainer width="100%" height={220}>
               <RadarChart data={radarData}>
                 <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
                 <PolarRadiusAxis tick={{ fontSize: 8 }} />
-                <Radar
-                  name="Sessions"
-                  dataKey="sessions"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary))"
-                  fillOpacity={0.25}
-                />
-                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Radar name="Sessions" dataKey="sessions" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} />
+                <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
               </RadarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Pie — grade distribution */}
-        {pieData.length > 1 ? (
-          <Card className="border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-playfair flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" /> Sessions by Grade
+        {/* Pie Chart */}
+        {pieData.length > 0 && (
+          <Card className="border-border bg-card shadow-md">
+            <CardHeader className="pb-2 border-b bg-muted/30">
+              <CardTitle className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                <BookOpen className="w-4 h-4 text-primary" /> Distribution by Grade
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-4">
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
                   <Pie
@@ -289,7 +340,7 @@ export default function StudentProgressDashboard({ user }) {
                     nameKey="name"
                     cx="50%"
                     cy="50%"
-                    outerRadius={80}
+                    outerRadius={70}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     labelLine={false}
                   >
@@ -297,30 +348,10 @@ export default function StudentProgressDashboard({ user }) {
                       <Cell key={i} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} formatter={(v) => [v, 'Sessions']} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Tooltip contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
                 </PieChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        ) : (
-          // Fallback: subject notes list
-          <Card className="border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-playfair flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-primary" /> Subject Notes
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {progress.filter(p => p.notes).slice(0, 5).map(p => (
-                <div key={p.id} className="flex items-start gap-2 text-sm">
-                  <Badge variant="outline" className="shrink-0 text-xs">{p.subject}</Badge>
-                  <p className="text-muted-foreground text-xs">{p.notes}</p>
-                </div>
-              ))}
-              {progress.filter(p => p.notes).length === 0 && (
-                <p className="text-sm text-muted-foreground">No notes added yet.</p>
-              )}
             </CardContent>
           </Card>
         )}
