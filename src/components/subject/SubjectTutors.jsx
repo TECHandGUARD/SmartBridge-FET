@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Users, Star, Mail, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,7 +16,6 @@ export default function SubjectTutors({ subjectName }) {
     const fetchTutors = async () => {
       setLoading(true);
       try {
-        // Fetch all verified tutors
         const { data, error } = await supabase
           .from('tutor_profiles')
           .select('*')
@@ -26,8 +24,6 @@ export default function SubjectTutors({ subjectName }) {
         
         if (error) throw error;
         
-        // Filter tutors that teach this subject
-        // Since subjects might be stored as JSON array or comma-separated string
         const filtered = (data || []).filter(t => {
           if (t.subjects && Array.isArray(t.subjects)) {
             return t.subjects.includes(subjectName);
