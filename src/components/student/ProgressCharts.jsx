@@ -1,128 +1,243 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
-import { SUBJECTS } from '@/lib/subjects';
+import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
+import { toast } from 'sonner';
 import StudyStreakTracker from './StudyStreakTracker';
 
-const COLORS = ['#2e7d52','#4a9e6a','#f59e0b','#3b82f6','#8b5cf6','#ef4444','#ec4899','#14b8a6','#f97316','#06b6d4','#84cc16'];
+interface UserProps {
+  email: string;
+  full_name?: string;
+}
 
-export default function ProgressCharts({ user }) {
-  const [progress, setProgress] = useState([]);
-  const [streak, setStreak] = useState(0);
-  const [loading, setLoading] = useState(true);
+interface DBProgressItem {
+  id?: string;
+  subject: string;
+  study_sessions: number;
+  last_access: string | null;
+  grade?: string;
+}
+
+interface ChartDataItem {
+  name: string;
+  sessions: number;
+  fill: string;
+}
+
+const COLORS = [
+  '#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', 
+  '#db2777', '#059669', '#4f46e5', '#0891b2', '#e11d48'
+];
+
+export default function ProgressCharts({ user }: { user: UserProps }) {
+  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
+  const [streak, setStreak] = useState<number>(0);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchAnalyticsTelemetry = useCallback(async () => {
+    if (!user?.email) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Fetch from Supabase using correct field names
+      const { data, error: dbError } = await supabase
+        .from('student_progress')
+        .select('subject, study_sessions, last_access')
+        .eq('user_email', user.email);
+
+      if (dbError) throw dbError;
+
+      const progressData: DBProgressItem[] = (data || []).map(item => ({
+        ...item,
+        study_sessions: item.study_sessions || 0
+      }));
+
+      // ============================================
+      // FIXED STREAK CALCULATION
+      // Forgiving policy: preserves streak until day ends
+      // ============================================
+      const rawDates = progressData
+        .filter(p => p.last_access)
+        .map(p => p.last_access!.split('T')[0]);
+      
+      // Deduplicate dates (multiple sessions on same day count as 1)
+      const uniqueSortedDates = [...new Set(rawDates)].sort(
+        (a, b) => new Date(b).getTime() - new Date(a).getTime()
+      );
+
+      let calculatedStreak = 0;
+      
+      if (uniqueSortedDates.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        // FORGIVING POLICY: Check if active today OR yesterday
+        // Student hasn't studied yet today? That's fine - streak continues until day ends
+        if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
+          calculatedStreak = 1;
+          
+          for (let i = 1; i < uniqueSortedDates.length; i++) {
+            const prevTime = new Date(uniqueSortedDates[i - 1]).getTime();
+            const currTime = new Date(uniqueSortedDates[i]).getTime();
+            const dayDifference = (prevTime - currTime) / 86400000;
+
+            if (dayDifference === 1) {
+              calculatedStreak++;
+            } else if (dayDifference > 1) {
+              break; // Streak broken
+            }
+          }
+        }
+      }
+      setStreak(calculatedStreak);
+
+      // ============================================
+      // TRANSFORM FOR RECHARTS
+      // ============================================
+      const formattedChartData: ChartDataItem[] = progressData
+        .filter(p => (p.study_sessions || 0) > 0)
+        .map((p, i) => {
+          const shortSubjectName = p.subject.length > 10 
+            ? p.subject.slice(0, 10) + '…' 
+            : p.subject;
+          
+          return {
+            name: shortSubjectName,
+            sessions: p.study_sessions || 0,
+            fill: COLORS[i % COLORS.length]
+          };
+        })
+        .sort((a, b) => b.sessions - a.sessions); // Sort by most studied
+
+      setChartData(formattedChartData);
+      
+    } catch (err: any) {
+      console.error('Error fetching progress:', err);
+      setError(err.message || 'Failed to load progress data');
+      toast.error('Failed to load progress data');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email]);
 
   useEffect(() => {
-    if (!user?.email) return;
-    
-    const fetchProgress = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (error) throw error;
-        
-        setProgress(data || []);
-        
-        // Calculate streak from last_access dates
-        const dates = (data || [])
-          .filter(p => p.last_access)
-          .map(p => p.last_access)
-          .sort()
-          .reverse();
-          
-        if (dates.length === 0) { 
-          setStreak(0); 
-          return; 
-        }
-        
-        let s = 1;
-        const today = new Date().toISOString().split('T')[0];
-        if (dates[0] !== today) { 
-          setStreak(0); 
-          return; 
-        }
-        
-        for (let i = 1; i < dates.length; i++) {
-          const prev = new Date(dates[i - 1]);
-          const curr = new Date(dates[i]);
-          const diff = (prev - curr) / (1000 * 60 * 60 * 24);
-          if (diff === 1) s++;
-          else break;
-        }
-        setStreak(s);
-        
-      } catch (error) {
-        console.error('Error fetching progress charts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchProgress();
-  }, [user]);
+    fetchAnalyticsTelemetry();
+  }, [fetchAnalyticsTelemetry]);
 
-  const chartData = progress.map((p, i) => ({
-    name: p.subject?.length > 8 ? p.subject.slice(0, 8) + '…' : (p.subject || 'Unknown'),
-    sessions: p.study_sessions || p.resources_accessed || 0,
-    fill: COLORS[i % COLORS.length],
-  })).filter(d => d.sessions > 0);
+  // Calculate total study time for summary
+  const totalSessions = chartData.reduce((sum, item) => sum + item.sessions, 0);
+  const activeSubjects = chartData.length;
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <StudyStreakTracker streak={0} />
-        <Card className="border-border">
-          <CardContent className="pt-8 pb-8 flex justify-center">
-            <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-border">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading your progress data...</span>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
+      
+      {/* Streak Tracker Component */}
       <StudyStreakTracker streak={streak} />
 
+      {/* Error Banner */}
+      {error && (
+        <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+          <span>{error}</span>
+          <button 
+            onClick={fetchAnalyticsTelemetry}
+            className="ml-auto text-primary hover:underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      {!error && chartData.length > 0 && (
+        <div className="grid grid-cols-2 gap-3">
+          <Card className="border-border bg-muted/20">
+            <CardContent className="pt-4 pb-3 text-center">
+              <p className="text-2xl font-bold text-primary">{totalSessions}</p>
+              <p className="text-xs text-muted-foreground">Total Study Sessions</p>
+            </CardContent>
+          </Card>
+          <Card className="border-border bg-muted/20">
+            <CardContent className="pt-4 pb-3 text-center">
+              <p className="text-2xl font-bold text-primary">{activeSubjects}</p>
+              <p className="text-xs text-muted-foreground">Subjects Studied</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Bar Chart */}
-      {chartData.length > 0 && (
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary" /> Sessions per Subject
+      {chartData.length > 0 && !error && (
+        <Card className="border-border shadow-sm">
+          <CardHeader className="pb-2 border-b bg-muted/30">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-primary" /> 
+              Study Sessions by Subject
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip
-                  formatter={(v) => [v, 'Sessions']}
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                />
-                <Bar dataKey="sessions" radius={[4, 4, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <CardContent className="pt-4">
+            <div className="w-full h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickLine={false}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
+                    allowDecimals={false} 
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    formatter={(value: any) => [`${value} sessions`, 'Study Time']}
+                    contentStyle={{ 
+                      fontSize: 11, 
+                      borderRadius: 8, 
+                      backgroundColor: 'hsl(var(--card))',
+                      borderColor: 'hsl(var(--border))',
+                      color: 'hsl(var(--foreground))'
+                    }}
+                    labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                  />
+                  <Bar dataKey="sessions" radius={[6, 6, 0, 0]} maxBarSize={40}>
+                    {chartData.map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       )}
-      
-      {chartData.length === 0 && !loading && (
+
+      {/* Empty State */}
+      {chartData.length === 0 && !error && !loading && (
         <Card className="border-border">
-          <CardContent className="pt-8 pb-8 text-center">
-            <BarChart2 className="w-10 h-10 text-muted-foreground mx-auto mb-2 opacity-30" />
-            <p className="text-sm text-muted-foreground">No study data yet.</p>
-            <p className="text-xs text-muted-foreground">Complete some study sessions to see your progress chart.</p>
+          <CardContent className="text-center py-12 text-muted-foreground">
+            <TrendingUp className="w-10 h-10 mx-auto mb-2 opacity-30" />
+            <p className="text-sm font-medium">No study data yet</p>
+            <p className="text-xs mt-1">
+              Start logging study sessions to see your progress!
+            </p>
           </CardContent>
         </Card>
       )}
