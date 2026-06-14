@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Star, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ResourceRating({ resource, user }) {
@@ -11,12 +11,9 @@ export default function ResourceRating({ resource, user }) {
   const [hover, setHover] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  const fetchRatings = useCallback(async () => {
     if (!resource?.id) return;
-    fetchRatings();
-  }, [resource, user]);
-
-  const fetchRatings = async () => {
+    
     try {
       const { data, error } = await supabase
         .from('resource_ratings')
@@ -25,46 +22,54 @@ export default function ResourceRating({ resource, user }) {
       
       if (error) throw error;
       
-      const ratings = data || [];
-      setTotalRatings(ratings.length);
-      if (ratings.length) {
-        setAvgRating(ratings.reduce((s, r) => s + r.rating, 0) / ratings.length);
+      setTotalRatings(data?.length || 0);
+      if (data?.length) {
+        const avg = data.reduce((s, r) => s + r.rating, 0) / data.length;
+        setAvgRating(avg);
       }
+      
       if (user?.email) {
-        const mine = ratings.find(r => r.user_email === user.email);
+        const mine = data?.find(r => r.user_email === user.email);
         if (mine) setMyRating(mine.rating);
       }
-    } catch (error) {
-      console.error('Error fetching ratings:', error);
+    } catch (err) {
+      console.error('Error fetching ratings:', err);
     }
-  };
+  }, [resource?.id, user?.email]);
+
+  useEffect(() => {
+    fetchRatings();
+  }, [fetchRatings]);
 
   const rate = async (val) => {
-    if (!user) { toast.error('Sign in to rate resources.'); return; }
-    setSaving(true);
+    if (!user) { 
+      toast.error('Sign in to rate resources.'); 
+      return; 
+    }
     
+    setSaving(true);
     try {
-      // Check if user already rated this resource
+      // Check if already rated
       const { data: existing, error: findError } = await supabase
         .from('resource_ratings')
-        .select('id')
+        .select('*')
         .eq('resource_id', resource.id)
-        .eq('user_email', user.email)
-        .maybeSingle();
+        .eq('user_email', user.email);
       
-      if (findError && findError.code !== 'PGRST116') throw findError;
+      if (findError) throw findError;
       
-      if (existing) {
-        // Update existing rating
+      if (existing && existing.length > 0) {
         const { error: updateError } = await supabase
           .from('resource_ratings')
-          .update({ rating: val })
-          .eq('id', existing.id);
+          .update({ 
+            rating: val,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing[0].id);
         
         if (updateError) throw updateError;
       } else {
-        // Create new rating
-        const { error: createError } = await supabase
+        const { error: insertError } = await supabase
           .from('resource_ratings')
           .insert({
             resource_id: resource.id,
@@ -72,17 +77,15 @@ export default function ResourceRating({ resource, user }) {
             rating: val
           });
         
-        if (createError) throw createError;
+        if (insertError) throw insertError;
       }
       
       setMyRating(val);
       toast.success('Rating saved!');
-      
-      // Refresh ratings to update average
       fetchRatings();
-    } catch (error) {
-      console.error('Error saving rating:', error);
-      toast.error('Failed to save rating');
+    } catch (err) {
+      console.error('Error saving rating:', err);
+      toast.error(`Failed to save: ${err.message}`);
     } finally {
       setSaving(false);
     }
@@ -104,6 +107,7 @@ export default function ResourceRating({ resource, user }) {
           </button>
         ))}
       </div>
+      {saving && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
       {totalRatings > 0 && (
         <span className="text-xs text-muted-foreground">
           {avgRating.toFixed(1)} ({totalRatings})
