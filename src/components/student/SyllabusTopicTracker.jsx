@@ -1,271 +1,229 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseClient';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { supabase } from '@/lib/supabaseClient'; // Path to your initialized Supabase Client instance
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Star, Loader2, X, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  email: string;
-}
-
-interface DBQuizResult {
+interface BookingType {
   id: string;
+  status: string;
+  tutor_email: string;
+  tutor_name: string;
   subject: string;
-  percentage: number;
-  caps_topic_id: string;
 }
 
-interface CAPSTopicItem {
-  id: string;
-  topic_code: string;
-  title: string;
+interface UserType {
+  email: string;
+  full_name?: string;
 }
 
-interface SubjectItem {
-  code: string;
-  name: string;
-  icon: string;
+interface TutorReviewModalProps {
+  booking: BookingType;
+  user: UserType;
+  onClose: () => void;
+  onReviewed?: () => void;
 }
 
-const SUBJECTS: SubjectItem[] = [
-  { code: 'Mathematics', name: 'Mathematics', icon: '📐' },
-  { code: 'Physical Sciences', name: 'Physical Sciences', icon: '⚗️' },
-  { code: 'Life Sciences', name: 'Life Sciences', icon: '🧬' },
-  { code: 'Accounting', name: 'Accounting', icon: '📊' },
-  { code: 'Economics', name: 'Economics', icon: '📈' },
-  { code: 'History', name: 'History', icon: '⏳' },
-  { code: 'Geography', name: 'Geography', icon: '🌍' },
-  { code: 'Business Studies', name: 'Business Studies', icon: '💼' },
-];
+export default function TutorReviewModal({ booking, user, onClose, onReviewed }: TutorReviewModalProps) {
+  const [rating, setRating] = useState<number>(0);
+  const [hovered, setHovered] = useState<number>(0);
+  const [comment, setComment] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-const MASTERY_THRESHOLD = 70;
-
-function TopicBadge({ mastered, score, topicTitle }: { mastered: boolean; score: number | null; topicTitle: string }) {
-  return (
-    <div className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
-      mastered
-        ? 'bg-emerald-50/60 border-emerald-100 text-emerald-900 shadow-sm'
-        : 'bg-slate-50 border-slate-100 text-slate-500'
-    }`}>
-      {mastered ? (
-        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-      ) : (
-        <Circle className="w-4 h-4 text-slate-300 shrink-0" />
-      )}
-      <span className="text-[11px] font-bold flex-1 truncate">{topicTitle}</span>
-      {score !== null && (
-        <span className={`text-xs font-black ${mastered ? 'text-emerald-700' : 'text-slate-400'}`}>
-          {score}%
-        </span>
-      )}
-    </div>
-  );
-}
-
-function SubjectBlock({ subject, quizResults }: { subject: SubjectItem; quizResults: DBQuizResult[] }) {
-  const [expanded, setExpanded] = useState<boolean>(false);
-  const [topics, setTopics] = useState<CAPSTopicItem[]>([]);
-  const [loadingTopics, setLoadingTopics] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (expanded && topics.length === 0) {
-      fetchSubjectSyllabus();
-    }
-  }, [expanded]);
-
-  const fetchSubjectSyllabus = async () => {
-    try {
-      setLoadingTopics(true);
-      const { data, error } = await supabase
-        .from('caps_syllabus_topics')
-        .select('id, topic_code, title')
-        .eq('subject', subject.name);
-
-      if (error) throw error;
-      setTopics(data || []);
-    } catch (err) {
-      console.error('Failed compiling subject metadata:', err);
-      toast.error('Failed to load syllabus topics');
-    } finally {
-      setLoadingTopics(false);
-    }
-  };
-
-  const topicScores: Record<string, number> = {};
-  topics.forEach(topic => {
-    const relevantQuizScores = quizResults
-      .filter(r => r.caps_topic_id === topic.id)
-      .map(r => r.percentage);
-
-    if (relevantQuizScores.length > 0) {
-      topicScores[topic.id] = Math.max(...relevantQuizScores);
-    }
-  });
-
-  const masteredCount = topics.filter(t => (topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD).length;
-  const masteryPercent = topics.length > 0 ? Math.round((masteredCount / topics.length) * 100) : 0;
-  const attemptedCount = Object.keys(topicScores).length;
-
-  return (
-    <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-      <div className="p-4 cursor-pointer select-none" onClick={() => setExpanded(prev => !prev)}>
-        <div className="flex items-center gap-3">
-          <span className="text-2xl shrink-0 select-none">{subject.icon}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-xs font-black text-foreground uppercase tracking-wide truncate">{subject.name}</h4>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge variant="outline" className="text-[10px] font-bold px-2 h-5">
-                  {masteredCount}/{topics.length || '—'} Mastered
-                </Badge>
-                {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 mt-2">
-              <Progress value={masteryPercent} className="h-2 flex-1" />
-              <span className="text-xs font-black text-primary w-8 text-right leading-none">{masteryPercent}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {expanded && (
-        <CardContent className="pt-2 border-t border-border bg-muted/20">
-          {loadingTopics ? (
-            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground font-bold text-xs">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>Loading syllabus topics...</span>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                {topics.map(t => (
-                  <TopicBadge
-                    key={t.id}
-                    topicTitle={t.title}
-                    mastered={(topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD}
-                    score={topicScores[t.id] ?? null}
-                  />
-                ))}
-              </div>
-              
-              {topics.length === 0 && (
-                <p className="text-center py-4 text-[11px] font-medium text-muted-foreground italic">
-                  No syllabus topics configured for this subject yet.
-                </p>
-              )}
-              
-              {attemptedCount > 0 && (
-                <p className="text-[10px] text-muted-foreground mt-3 text-center font-medium">
-                  * Mastery threshold: {MASTERY_THRESHOLD}% or higher on topic quizzes
-                </p>
-              )}
-            </>
-          )}
-        </CardContent>
-      )}
-    </Card>
-  );
-}
-
-export default function SyllabusTopicTracker({ user }: { user: UserProps }) {
-  const [quizResults, setQuizResults] = useState<DBQuizResult[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (!user?.email) { 
-      setLoading(false); 
+  // PRINCIPAL'S COMPLIANCE POLICY: Double-validation guard against fraud or uncompleted session inputs
+  const handleValidateAndSubmit = async () => {
+    if (rating === 0) { 
+      toast.error('Please select a star evaluation metric.'); 
       return; 
     }
-    fetchStudentQuizPerformance();
-  }, [user]);
-
-  const fetchStudentQuizPerformance = async () => {
+    
+    setIsSubmitting(true);
+    setErrorMessage(null);
+    
     try {
-      setLoading(true);
-      setError(null);
+      // 1. Strict Institutional Validation: Check session completion state
+      if (booking.status !== 'completed') {
+        setErrorMessage('Access Denied: Appraising sessions that are not marked as completed is forbidden.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // 2. Anti-Fraud Lookup: Check for existing entries using a select count query
+      const { data: existingReview, error: lookupError } = await supabase
+        .from('tutor_reviews')
+        .select('id')
+        .eq('booking_id', booking.id)
+        .eq('student_email', user.email)
+        .maybeSingle();
 
-      const { data, error: dbError } = await supabase
-        .from('quiz_results')
-        .select('id, subject, percentage, caps_topic_id')
-        .eq('student_email', user.email);
+      if (lookupError) throw lookupError;
 
-      if (dbError) throw dbError;
-      setQuizResults(data || []);
-    } catch (err: any) {
-      console.error('Mastery pipeline failure:', err);
-      setError(err.message || 'Failed to load mastery data');
-      toast.error('Failed to load mastery data');
-    } finally {
-      setLoading(false);
+      if (existingReview) {
+        setErrorMessage('Validation Exception: A feedback profile has already been uploaded for this matching booking token identifier.');
+        setIsSubmitting(false);
+        return;
+      }
+      
+      // Validation checks passed -> Execute transaction pipelines
+      await executeReviewSubmission();
+    } catch (error: any) {
+      console.error('Validation parameters breakdown:', error);
+      setErrorMessage(error.message || 'Verification pipeline timeout.');
+      setIsSubmitting(false);
     }
   };
 
-  const displayedSubjects = showAll ? SUBJECTS : SUBJECTS.slice(0, 4);
+  const executeReviewSubmission = async () => {
+    try {
+      // 1. Write the permanent review record to Supabase
+      const { error: insertError } = await supabase
+        .from('tutor_reviews')
+        .insert([
+          {
+            booking_id: booking.id,
+            tutor_email: booking.tutor_email,
+            tutor_name: booking.tutor_name,
+            student_email: user.email,
+            student_name: user.full_name || user.email,
+            rating: rating,
+            comment: comment.trim().slice(0, 500), // Enforce strict length containment limits
+            subject: booking.subject
+          }
+        ]);
 
-  if (loading) {
-    return (
-      <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
-        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
-          <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-xs text-muted-foreground">Loading mastery data...</span>
-        </CardContent>
-      </Card>
-    );
-  }
+      if (insertError) throw insertError;
+      
+      // 2. Log activity securely for administrator compliance audits
+      await supabase
+        .from('activity_logs')
+        .insert([
+          {
+            event_type: 'review_submitted',
+            user_email: user.email,
+            description: `Left a verified ${rating}-star evaluation profile for SACE registered tutor: ${booking.tutor_name}`
+          }
+        ]).catch((e) => console.warn('Activity logging fallback bypassed.', e));
+      
+      toast.success('Evaluation cataloged into marketplace matrices successfully!');
+      onReviewed?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Review mutation submission error:', error);
+      setErrorMessage(error.message || 'Database connection loss processing transactional metrics.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
-    <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
-      <CardHeader className="pb-3 border-b bg-muted/30">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary shrink-0" /> CAPS Syllabus Tracker
-          </CardTitle>
-          <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30 px-2.5 h-6">
-            DBE Aligned
-          </Badge>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 select-none font-sans">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 border border-slate-100 animate-scaleUp">
+        
+        {/* Dynamic Modal Header Description Title */}
+        <div className="flex items-center justify-between border-b border-slate-50 pb-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-800">Rate Professional Tutor Session</h3>
+            <p className="text-xs text-slate-400 mt-0.5 font-medium">Instructor: {booking.tutor_name} · {booking.subject}</p>
+          </div>
+          <Button 
+            type="button"
+            variant="ghost" 
+            size="icon" 
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-600 rounded-lg h-8 w-8"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Track your mastery of CAPS curriculum topics based on quiz performance.
-        </p>
-      </CardHeader>
-      
-      <CardContent className="pt-5">
-        {error && (
-          <div className="p-3 mb-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
-            <span>{error}</span>
+
+        {/* Dynamic Safety Exception Notification Alert Bar */}
+        {errorMessage && (
+          <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-[11px] font-bold flex items-start gap-2 animate-shake">
+            <ShieldAlert className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+            <div>{errorMessage}</div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {displayedSubjects.map(subject => (
-            <SubjectBlock key={subject.code} subject={subject} quizResults={quizResults} />
-          ))}
+        {/* Interactive Star Rating Matrix Selector Core Elements */}
+        <div className="flex flex-col items-center justify-center py-2 bg-slate-50/50 rounded-xl border border-slate-100/50">
+          <div className="flex justify-center gap-2">
+            {[1, 2, 3, 4, 5].map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => {
+                  if (!isSubmitting) {
+                    setRating(s);
+                    setErrorMessage(null);
+                  }
+                }}
+                onMouseEnter={() => !isSubmitting && setHovered(s)}
+                onMouseLeave={() => !isSubmitting && setHovered(0)}
+                className="transition-transform hover:scale-110 active:scale-95 focus:outline-none"
+                disabled={isSubmitting}
+              >
+                <Star className={`w-8 h-8 transition-colors stroke-[1.5] ${
+                  s <= (hovered || rating) 
+                    ? 'fill-amber-400 text-amber-500 drop-shadow-sm' 
+                    : 'text-slate-300'
+                }`} />
+              </button>
+            ))}
+          </div>
+          <div className="h-4 mt-2">
+            {rating > 0 && (
+              <p className="text-center text-xs font-black text-slate-500 uppercase tracking-wider">
+                Rank: {['', 'Deficient Performance', 'Marginal Progress', 'Satisfactory Outcome', 'Very Competent', 'Exceptional Instruction'][rating]}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Formatted Text Description Box */}
+        <div className="space-y-1">
+          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Institutional Feedback Notes</label>
+          <Textarea
+            placeholder="Provide concise descriptive notes regarding the instructor's communication accuracy, pacing support, and CAPS topic clarity..."
+            value={comment}
+            disabled={isSubmitting}
+            onChange={e => setComment(e.target.value.slice(0, 500))}
+            className="resize-none h-24 text-xs font-medium bg-white border-slate-200 text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none rounded-xl p-3"
+          />
+          <div className="text-right text-[9px] font-bold text-slate-400 uppercase tracking-wide">
+            {comment.length} / 500 Characters Max
+          </div>
+        </div>
+
+        {/* Action Trays Panel Controls */}
+        <div className="flex gap-2 pt-2 border-t border-slate-50">
+          <Button 
+            type="button"
+            onClick={handleValidateAndSubmit} 
+            disabled={isSubmitting || rating === 0} 
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs h-9 shadow-md gap-1.5 transition-transform transform active:scale-95"
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Star className="w-4 h-4 fill-current text-white" />
+            )}
+            {isSubmitting ? 'Verifying Integrity...' : 'Publish Session Evaluation'}
+          </Button>
+          
+          <Button 
+            type="button"
+            variant="outline" 
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs h-9 rounded-xl bg-white"
+          >
+            Cancel
+          </Button>
         </div>
         
-        {SUBJECTS.length > 4 && (
-          <button
-            type="button"
-            onClick={() => setShowAll(prev => !prev)}
-            className="mt-4 text-xs font-bold text-primary hover:text-primary/80 hover:underline w-full text-center block transition-all"
-          >
-            {showAll ? 'Show Fewer Subjects' : `Show All ${SUBJECTS.length} Subjects`}
-          </button>
-        )}
-        
-        {quizResults.length === 0 && !error && (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">No quiz results yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Complete some quizzes to start tracking your CAPS mastery!</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
