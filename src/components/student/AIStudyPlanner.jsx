@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,31 +29,44 @@ export default function AIStudyPlanner({ user }) {
   const [loading, setLoading] = useState(false);
   const [showAddExam, setShowAddExam] = useState(false);
   const [expanded, setExpanded] = useState(true);
+  const [termDatesContext, setTermDatesContext] = useState('');
   const [newExam, setNewExam] = useState({
     subject: '', grade: 'Grade 12', exam_date: '', exam_type: 'Test', notes: ''
   });
 
-  // Fetch exams from Supabase
-  useEffect(() => {
+  const loadData = useCallback(async () => {
     if (!user?.email) return;
     
-    const fetchExams = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('exam_schedules')
-          .select('*')
-          .eq('user_email', user.email)
-          .order('exam_date', { ascending: true });
-        
-        if (error) throw error;
-        setExams(data || []);
-      } catch (error) {
-        console.error('Error fetching exams:', error);
+    try {
+      // Load exams for this student
+      const { data: examsData, error: examsError } = await supabase
+        .from('exam_schedules')
+        .select('*')
+        .eq('student_email', user.email)
+        .order('exam_date', { ascending: true });
+      
+      if (examsError) throw examsError;
+      setExams(examsData || []);
+      
+      // Load term dates from system configuration
+      const { data: configData, error: configError } = await supabase
+        .from('system_configurations')
+        .select('*')
+        .eq('is_active', true)
+        .eq('key', 'academic_term_dates');
+      
+      if (!configError && configData && configData.length > 0 && configData[0].value?.text) {
+        setTermDatesContext(configData[0].value.text);
       }
-    };
-    
-    fetchExams();
+    } catch (err) {
+      console.error('Error loading data:', err);
+      toast.error('Failed to load exam data');
+    }
   }, [user?.email]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const addExam = async () => {
     if (!newExam.subject || !newExam.exam_date) {
@@ -65,13 +78,12 @@ export default function AIStudyPlanner({ user }) {
       const { data, error } = await supabase
         .from('exam_schedules')
         .insert({
-          user_email: user.email,
+          student_email: user.email,
           subject: newExam.subject,
           grade: newExam.grade,
           exam_date: newExam.exam_date,
           exam_type: newExam.exam_type,
-          notes: newExam.notes,
-          priority: 1
+          notes: newExam.notes || null
         })
         .select()
         .single();
@@ -82,9 +94,9 @@ export default function AIStudyPlanner({ user }) {
       setNewExam({ subject: '', grade: 'Grade 12', exam_date: '', exam_type: 'Test', notes: '' });
       setShowAddExam(false);
       toast.success('Exam added!');
-    } catch (error) {
-      console.error('Error adding exam:', error);
-      toast.error('Failed to add exam');
+    } catch (err) {
+      console.error('Error adding exam:', err);
+      toast.error(`Failed to add: ${err.message}`);
     }
   };
 
@@ -96,11 +108,12 @@ export default function AIStudyPlanner({ user }) {
         .eq('id', id);
       
       if (error) throw error;
+      
       setExams(prev => prev.filter(e => e.id !== id));
       toast.success('Exam removed');
-    } catch (error) {
-      console.error('Error removing exam:', error);
-      toast.error('Failed to remove exam');
+    } catch (err) {
+      console.error('Error removing exam:', err);
+      toast.error(`Failed to remove: ${err.message}`);
     }
   };
 
@@ -109,6 +122,7 @@ export default function AIStudyPlanner({ user }) {
       toast.error('Please add at least one upcoming exam first.');
       return;
     }
+    
     setLoading(true);
     try {
       const today = new Date().toISOString().split('T')[0];
@@ -116,50 +130,63 @@ export default function AIStudyPlanner({ user }) {
         `• ${e.subject} (${e.grade}) — ${e.exam_type} on ${e.exam_date}${e.notes ? ` [${e.notes}]` : ''}`
       ).join('\n');
 
-      const systemPrompt = `You are an expert study coach for South African Grade 10-12 students (CAPS curriculum).
+      const termContext = termDatesContext
+        ? `\n\nSouth African Academic Calendar Context:\n${termDatesContext}\n`
+        : '';
+
+      // Call Supabase Edge Function for LLM
+      const { data, error } = await supabase.functions.invoke('invoke-llm', {
+        body: {
+          prompt: `You are an expert study coach for South African Grade 10-12 students (CAPS curriculum).
 Today is ${today}. The student has these upcoming exams:
 
 ${examList}
-
+${termContext}
 Create a practical weekly study schedule for the NEXT 7 DAYS starting from today.
 Allocate study time based on exam proximity (closer exams get more time), subject difficulty, and balanced study.
+Align study blocks with the current academic term if term context is provided above.
 Include short breaks. Limit to 3-4 study blocks per day (each 45-60 min). Allow at least 1 rest day or light day.
 
-Respond with a structured JSON study plan.`;
-
-      // Call Supabase Edge Function for AI generation
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: {
-          messages: [{ role: 'user', content: 'Generate a study schedule based on these exams.' }],
-          systemPrompt,
-          userEmail: user.email,
-        },
+Respond with a structured JSON study plan.`,
+          response_json_schema: {
+            type: 'object',
+            properties: {
+              weekly_plan: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    day: { type: 'string' },
+                    date: { type: 'string' },
+                    total_hours: { type: 'number' },
+                    sessions: {
+                      type: 'array',
+                      items: {
+                        type: 'object',
+                        properties: {
+                          time: { type: 'string' },
+                          subject: { type: 'string' },
+                          duration_min: { type: 'number' },
+                          focus: { type: 'string' },
+                          priority: { type: 'string', enum: ['High', 'Medium', 'Low'] }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              tips: { type: 'array', items: { type: 'string' } },
+              summary: { type: 'string' }
+            }
+          }
+        }
       });
-
+      
       if (error) throw error;
-      
-      if (data.error) {
-        toast.error(data.error);
-        return;
-      }
-
-      // Try to parse JSON from the response
-      let parsedSchedule;
-      try {
-        // Extract JSON from message if it's wrapped in markdown
-        const jsonMatch = data.message.match(/```json\n([\s\S]*?)\n```/) || data.message.match(/{[\s\S]*}/);
-        const jsonStr = jsonMatch ? (jsonMatch[1] || jsonMatch[0]) : data.message;
-        parsedSchedule = JSON.parse(jsonStr);
-      } catch (parseError) {
-        console.error('JSON parse error:', parseError);
-        toast.error('Could not parse schedule. Please try again.');
-        return;
-      }
-      
-      setSchedule(parsedSchedule);
+      setSchedule(data);
       toast.success('Study schedule generated!');
     } catch (err) {
-      console.error('AI generation error:', err);
+      console.error('Generation error:', err);
       toast.error('Failed to generate schedule. Please try again.');
     } finally {
       setLoading(false);
@@ -172,10 +199,7 @@ Respond with a structured JSON study plan.`;
     return 'bg-green-100 text-green-700 border-green-200';
   };
 
-  const daysUntil = (dateStr) => {
-    const diff = Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
-    return diff;
-  };
+  const daysUntil = (dateStr) => Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
 
   return (
     <Card className="border-border">
@@ -192,7 +216,6 @@ Respond with a structured JSON study plan.`;
 
       {expanded && (
         <CardContent className="space-y-4">
-          {/* Exams list */}
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-semibold">Upcoming Exams / Tests</p>
@@ -241,7 +264,7 @@ Respond with a structured JSON study plan.`;
               </div>
             )}
 
-            {exams.length === 0 ? (
+            if (exams.length === 0) ? (
               <p className="text-xs text-muted-foreground text-center py-3">No exams added yet. Add your upcoming exams to generate a study plan.</p>
             ) : (
               <div className="space-y-1.5">
@@ -266,13 +289,11 @@ Respond with a structured JSON study plan.`;
             )}
           </div>
 
-          {/* Generate button */}
           <Button onClick={generateSchedule} disabled={loading || exams.length === 0} className="w-full gap-2 bg-primary">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             {loading ? 'Generating your personalised plan...' : 'Generate AI Study Schedule'}
           </Button>
 
-          {/* Generated schedule */}
           {schedule && (
             <div className="space-y-4 pt-2">
               {schedule.summary && (
@@ -281,7 +302,6 @@ Respond with a structured JSON study plan.`;
                   {schedule.summary}
                 </div>
               )}
-
               <div className="grid sm:grid-cols-2 gap-3">
                 {schedule.weekly_plan?.map((day) => (
                   <div key={day.day} className={`rounded-xl border p-3 ${dayColors[day.day] || 'bg-muted/40 border-border'}`}>
@@ -291,11 +311,11 @@ Respond with a structured JSON study plan.`;
                         <Clock className="w-3 h-3" /> {day.total_hours}h
                       </div>
                     </div>
-                    {!day.sessions || day.sessions.length === 0 ? (
+                    {day.sessions?.length === 0 ? (
                       <p className="text-xs opacity-60">Rest day — recharge!</p>
                     ) : (
                       <div className="space-y-1.5">
-                        {day.sessions.map((s, i) => (
+                        {day.sessions?.map((s, i) => (
                           <div key={i} className="bg-white/60 rounded-lg px-2 py-1.5 text-xs">
                             <div className="flex items-center justify-between">
                               <span className="font-semibold">{s.subject}</span>
@@ -310,8 +330,7 @@ Respond with a structured JSON study plan.`;
                   </div>
                 ))}
               </div>
-
-              {schedule.tips && schedule.tips.length > 0 && (
+              {schedule.tips?.length > 0 && (
                 <div className="bg-muted/50 rounded-xl p-3">
                   <p className="text-xs font-semibold mb-2">💡 Study Tips</p>
                   <ul className="space-y-1">
