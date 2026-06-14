@@ -1,91 +1,122 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Flame, Star, Zap, BookOpen, Target } from 'lucide-react';
+import { Trophy, Flame, Loader2, AlertCircle, Award, Target, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-const BADGES = [
-  { id: 'first_quiz', label: 'First Quiz', icon: '🎯', desc: 'Completed your first quiz', color: 'bg-blue-100 text-blue-700' },
-  { id: 'streak_3', label: '3-Day Streak', icon: '🔥', desc: 'Studied 3 days in a row', color: 'bg-orange-100 text-orange-700' },
-  { id: 'streak_7', label: 'Week Warrior', icon: '⚡', desc: 'Studied 7 days in a row', color: 'bg-purple-100 text-purple-700' },
-  { id: 'quiz_master', label: 'Quiz Master', icon: '🏆', desc: 'Scored 80%+ on 5 quizzes', color: 'bg-amber-100 text-amber-700' },
-  { id: 'top_scorer', label: 'Top Scorer', icon: '⭐', desc: 'Scored 100% on any quiz', color: 'bg-yellow-100 text-yellow-700' },
-  { id: 'bookworm', label: 'Bookworm', icon: '📚', desc: 'Accessed 10+ resources', color: 'bg-green-100 text-green-700' },
+interface UserProps {
+  email: string;
+}
+
+interface DBQuizResult {
+  percentage: number;
+  score: number;
+}
+
+interface DBProgressItem {
+  study_sessions: number;
+  last_access: string | null;
+}
+
+interface BadgeItem {
+  id: string;
+  label: string;
+  icon: string;
+  desc: string;
+  colorClass: string;
+}
+
+const BADGES: BadgeItem[] = [
+  { id: 'first_quiz', label: 'First Quiz', icon: '🎯', desc: 'Completed your first quiz', colorClass: 'bg-blue-50 text-blue-700 border-blue-200' },
+  { id: 'streak_3', label: '3-Day Streak', icon: '🔥', desc: 'Studied 3 days in a row', colorClass: 'bg-orange-50 text-orange-700 border-orange-200' },
+  { id: 'streak_7', label: 'Week Warrior', icon: '⚡', desc: 'Studied 7 days in a row', colorClass: 'bg-purple-50 text-purple-700 border-purple-200' },
+  { id: 'quiz_master', label: 'Quiz Master', icon: '🏆', desc: 'Scored 80%+ on 5 quizzes', colorClass: 'bg-amber-50 text-amber-700 border-amber-200' },
+  { id: 'top_scorer', label: 'Top Scorer', icon: '⭐', desc: 'Scored 100% on any quiz', colorClass: 'bg-yellow-50 text-yellow-700 border-yellow-200' },
+  { id: 'bookworm', label: 'Bookworm', icon: '📚', desc: 'Accessed 10+ resources', colorClass: 'bg-green-50 text-green-700 border-green-200' },
 ];
 
-export default function StudyGamification({ user }) {
-  const [quizResults, setQuizResults] = useState([]);
-  const [progress, setProgress] = useState([]);
-  const [earnedBadges, setEarnedBadges] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function StudyGamification({ user }: { user: UserProps }) {
+  const [quizResults, setQuizResults] = useState<DBQuizResult[]>([]);
+  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user?.email) return;
-    
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        // Fetch quiz results
-        const { data: qr, error: qrError } = await supabase
-          .from('quiz_results')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (qrError) throw qrError;
-        
-        // Fetch student progress
-        const { data: prog, error: progError } = await supabase
-          .from('student_progress')
-          .select('*')
-          .eq('user_email', user.email);
-        
-        if (progError) throw progError;
-        
-        setQuizResults(qr || []);
-        setProgress(prog || []);
-        
-        // Compute earned badges
-        const badges = [];
-        if ((qr || []).length >= 1) badges.push('first_quiz');
-        if ((qr || []).some(q => q.percentage >= 100 || (q.score === q.total_questions))) badges.push('top_scorer');
-        if ((qr || []).filter(q => q.percentage >= 80 || (q.score / q.total_questions * 100) >= 80).length >= 5) badges.push('quiz_master');
-        
-        const totalAccess = (prog || []).reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0);
-        if (totalAccess >= 10) badges.push('bookworm');
-        
-        // Streak logic: check last_access dates
-        const dates = (prog || [])
-          .filter(p => p.last_access)
-          .map(p => p.last_access)
-          .sort()
-          .reverse();
-        const uniqueDates = [...new Set(dates)];
-        let streak = 0;
-        let checkDate = new Date();
-        for (const d of uniqueDates) {
-          const diff = Math.round((checkDate - new Date(d)) / (1000 * 60 * 60 * 24));
-          if (diff <= 1) { 
-            streak++; 
-            checkDate = new Date(d); 
-          } else break;
-        }
-        if (streak >= 3) badges.push('streak_3');
-        if (streak >= 7) badges.push('streak_7');
-        
-        setEarnedBadges(badges);
-      } catch (error) {
-        console.error('Error fetching gamification data:', error);
-        toast.error('Failed to load achievements');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchData();
+    fetchAndProcessGamificationMetrics();
   }, [user?.email]);
 
-  // Points calculation
+  const fetchAndProcessGamificationMetrics = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [quizQuery, progressQuery] = await Promise.all([
+        supabase.from('quiz_results').select('percentage, score').eq('student_email', user.email),
+        supabase.from('student_progress').select('study_sessions, last_access').eq('user_email', user.email)
+      ]);
+
+      if (quizQuery.error) throw quizQuery.error;
+      if (progressQuery.error) throw progressQuery.error;
+
+      const qr: DBQuizResult[] = quizQuery.data || [];
+      const prog: DBProgressItem[] = progressQuery.data || [];
+
+      setQuizResults(qr);
+
+      // Calculate earned badges
+      const badges: string[] = [];
+      if (qr.length >= 1) badges.push('first_quiz');
+      if (qr.some(q => q.percentage >= 100)) badges.push('top_scorer');
+      if (qr.filter(q => q.percentage >= 80).length >= 5) badges.push('quiz_master');
+      
+      const totalAccess = prog.reduce((s, p) => s + (p.study_sessions || 0), 0);
+      if (totalAccess >= 10) badges.push('bookworm');
+
+      // Streak calculation
+      const rawDates = prog
+        .filter(p => p.last_access)
+        .map(p => p.last_access!.split('T')[0]);
+      
+      const uniqueSortedDates = [...new Set(rawDates)].sort(
+        (a, b) => new Date(b).getTime() - new Date(a).getTime()
+      );
+
+      let streak = 0;
+      if (uniqueSortedDates.length > 0) {
+        const todayStr = new Date().toISOString().split('T')[0];
+        const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
+          streak = 1;
+          for (let i = 1; i < uniqueSortedDates.length; i++) {
+            const prevTime = new Date(uniqueSortedDates[i - 1]).getTime();
+            const currTime = new Date(uniqueSortedDates[i]).getTime();
+            const dayDifference = (prevTime - currTime) / 86400000;
+
+            if (dayDifference === 1) {
+              streak++;
+            } else if (dayDifference > 1) {
+              break;
+            }
+          }
+        }
+      }
+
+      if (streak >= 3) badges.push('streak_3');
+      if (streak >= 7) badges.push('streak_7');
+
+      setEarnedBadges(badges);
+    } catch (err: any) {
+      console.error('Gamification tracking failure:', err);
+      setError(err.message || 'Failed to pull player reward data.');
+      toast.error('Failed to load achievements');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const totalPoints = (quizResults.length * 10) +
     (quizResults.reduce((s, q) => s + (q.score || 0), 0)) +
     (earnedBadges.length * 50);
@@ -96,49 +127,54 @@ export default function StudyGamification({ user }) {
   if (loading) {
     return (
       <Card className="border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="font-playfair text-lg flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-500" /> Study Achievements
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-6">
-            <div className="w-5 h-5 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-xs">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span>Loading achievements...</span>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
-        <CardTitle className="font-playfair text-lg flex items-center gap-2">
-          <Trophy className="w-5 h-5 text-amber-500" /> Study Achievements
+    <Card className="border-border shadow-md max-w-sm mx-auto bg-card">
+      <CardHeader className="pb-3 border-b bg-muted/30">
+        <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-500 shrink-0" /> Study Achievements
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      
+      <CardContent className="space-y-4 pt-4">
+        {error && (
+          <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[11px] font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         {/* Level + Points */}
-        <div className="bg-gradient-to-r from-primary/10 to-amber-500/10 rounded-xl p-4">
+        <div className="bg-gradient-to-r from-primary/5 to-amber-500/10 border border-border rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <p className="text-xs text-muted-foreground">Level {level}</p>
-              <p className="font-playfair font-bold text-xl">{totalPoints} XP</p>
+              <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Level {level}</p>
+              <p className="text-2xl font-black text-foreground leading-none mt-0.5">{totalPoints} <span className="text-xs font-bold text-muted-foreground uppercase">XP</span></p>
             </div>
-            <div className="flex items-center gap-2">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <span className="font-bold text-sm">{quizResults.length} quizzes</span>
+            <div className="flex items-center gap-1.5 bg-card px-2 py-1 rounded-lg border border-border">
+              <Flame className="w-4 h-4 text-orange-500" />
+              <span className="font-extrabold text-xs text-foreground">{quizResults.length} Quizzes</span>
             </div>
           </div>
-          <div className="w-full bg-muted rounded-full h-2">
-            <div className="bg-primary rounded-full h-2 transition-all" style={{ width: `${progressToNext}%` }} />
+          
+          <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+            <div className="bg-primary rounded-full h-2 transition-all duration-500" style={{ width: `${progressToNext}%` }} />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">{100 - progressToNext} XP to Level {level + 1}</p>
+          <p className="text-[10px] font-semibold text-muted-foreground mt-1.5">
+            {100 - progressToNext} XP to Level {level + 1}
+          </p>
         </div>
 
-        {/* Badges grid */}
+        {/* Badges Grid */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Badges</p>
+          <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider mb-2">Unlocked Badges</p>
           <div className="grid grid-cols-3 gap-2">
             {BADGES.map(badge => {
               const earned = earnedBadges.includes(badge.id);
@@ -146,29 +182,33 @@ export default function StudyGamification({ user }) {
                 <div
                   key={badge.id}
                   title={badge.desc}
-                  className={`flex flex-col items-center p-2 rounded-xl border text-center transition-all ${earned ? badge.color + ' border-current/20' : 'bg-muted/30 border-border opacity-40 grayscale'}`}
+                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all duration-300 ${
+                    earned 
+                      ? `${badge.colorClass} shadow-sm` 
+                      : 'bg-muted/30 border-border opacity-40 grayscale'
+                  }`}
                 >
-                  <span className="text-xl mb-1">{badge.icon}</span>
-                  <p className="text-[10px] font-semibold leading-tight">{badge.label}</p>
+                  <span className="text-xl mb-1 select-none">{badge.icon}</span>
+                  <p className="text-[9px] font-bold leading-tight uppercase tracking-tight truncate w-full">{badge.label}</p>
                 </div>
               );
             })}
           </div>
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-bold text-sm">{quizResults.length}</p>
-            <p className="text-[10px] text-muted-foreground">Quizzes</p>
+        {/* Stats Footer */}
+        <div className="grid grid-cols-3 gap-2 text-center pt-2.5 border-t border-border">
+          <div className="bg-muted/30 rounded-xl p-2">
+            <p className="font-black text-foreground text-sm">{quizResults.length}</p>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">Quizzes</p>
           </div>
-          <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-bold text-sm">{earnedBadges.length}</p>
-            <p className="text-[10px] text-muted-foreground">Badges</p>
+          <div className="bg-muted/30 rounded-xl p-2">
+            <p className="font-black text-foreground text-sm">{earnedBadges.length}</p>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">Badges</p>
           </div>
-          <div className="bg-muted/40 rounded-lg p-2">
-            <p className="font-bold text-sm">Lv.{level}</p>
-            <p className="text-[10px] text-muted-foreground">Level</p>
+          <div className="bg-muted/30 rounded-xl p-2">
+            <p className="font-black text-foreground text-sm">Lv.{level}</p>
+            <p className="text-[9px] font-bold text-muted-foreground uppercase mt-0.5">Rank</p>
           </div>
         </div>
       </CardContent>
