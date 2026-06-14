@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
+import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import MobileHeader from './MobileHeader';
+import MobileBottomTabs from './MobileBottomTabs';
 import Onboarding from '@/pages/Onboarding';
 import TutorPendingScreen from '@/components/onboarding/TutorPendingScreen';
 
@@ -15,137 +18,227 @@ function getDashboardPath(role) {
   return '/student-dashboard';
 }
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return isMobile;
+}
+
+const pageVariants = {
+  initial: { opacity: 0, x: 24 },
+  animate: { opacity: 1, x: 0 },
+  exit:    { opacity: 0, x: -24 },
+};
+const pageTransition = { duration: 0.22, ease: 'easeInOut' };
+
 export default function AppLayout() {
   const [user, setUser] = useState(null);
-  const [userProfile, setUserProfile] = useState(null);
   const [tutorVerified, setTutorVerified] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isMobile = useIsMobile();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const fetchUserAndProfile = async () => {
+  const fetchUser = useCallback(async () => {
     setLoading(true);
     try {
-      // Get current session from Supabase
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Get current user from Supabase Auth
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
-      if (sessionError) throw sessionError;
-      
-      if (!session) {
+      if (authError || !authUser) {
         setUser(null);
-        setUserProfile(null);
         setTutorVerified(null);
-        setLoading(false);
         return;
       }
 
-      const supabaseUser = session.user;
-      setUser(supabaseUser);
-
-      // Fetch user profile from user_profiles table
+      // Get user profile from user_profiles table
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
-        .eq('email', supabaseUser.email)
+        .eq('email', authUser.email)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Error fetching profile:', profileError);
+        console.error('Profile fetch error:', profileError);
       }
 
-      setUserProfile(profile);
+      const userData = {
+        ...authUser,
+        ...profile,
+        email: authUser.email,
+        full_name: profile?.full_name || authUser.user_metadata?.full_name,
+        role: profile?.role || 'user',
+        onboarding_complete: profile?.onboarding_complete || false,
+      };
+      
+      setUser(userData);
 
-      // Check tutor verification for tutor roles
-      if (profile && TUTOR_ROLES.includes(profile.role) && profile.onboarding_complete) {
-        const { data: tutorData, error: tutorError } = await supabase
+      if (userData && TUTOR_ROLES.includes(userData.role)) {
+        // Check tutor profile verification
+        const { data: profiles, error: tutorError } = await supabase
           .from('tutor_profiles')
-          .select('is_verified')
-          .eq('user_email', supabaseUser.email)
-          .maybeSingle();
-
-        if (!tutorError && tutorData) {
-          setTutorVerified(tutorData.is_verified === true);
+          .select('*')
+          .eq('user_email', userData.email);
+        
+        if (!tutorError) {
+          const isProfileVerified = profiles?.length > 0 ? profiles[0].is_verified === true : false;
+          const isRoleCorrect = userData.role !== 'tutor_pending' && userData.role !== 'user';
+          setTutorVerified(isProfileVerified || isRoleCorrect);
         } else {
-          setTutorVerified(false);
+          setTutorVerified(null);
         }
       } else {
         setTutorVerified(null);
       }
     } catch (error) {
-      console.error('Error fetching user:', error);
+      console.error('Fetch user failed:', error);
       setUser(null);
-      setUserProfile(null);
       setTutorVerified(null);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchUserAndProfile();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        fetchUserAndProfile();
-      } else {
-        setUser(null);
-        setUserProfile(null);
-        setTutorVerified(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
+  useEffect(() => { fetchUser(); }, [fetchUser]);
+
   const handleOnboardingComplete = async () => {
-    // Refresh user data after onboarding
-    await fetchUserAndProfile();
+    setLoading(true);
+    const maxAttempts = 10;
+    let attempts = 0;
+    let updatedUser = null;
     
-    const role = userProfile?.role;
-    if (role && TUTOR_ROLES.includes(role)) {
-      // Tutors go to pending screen
-      setLoading(false);
-    } else if (role) {
-      setLoading(false);
+    while (attempts < maxAttempts && !updatedUser) {
+      await new Promise(r => setTimeout(r, 500));
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('email', authUser.email)
+          .single();
+        
+        if (profile && profile.role !== 'user') {
+          updatedUser = { ...authUser, ...profile };
+        }
+      }
+      attempts++;
+    }
+    
+    setUser(updatedUser);
+    const role = updatedUser?.role;
+
+    if (TUTOR_ROLES.includes(role)) {
+      const { data: profiles } = await supabase
+        .from('tutor_profiles')
+        .select('*')
+        .eq('user_email', updatedUser.email);
+      const isProfileVerified = profiles?.length > 0 ? profiles[0].is_verified === true : false;
+      setTutorVerified(isProfileVerified);
+    } else {
+      setTutorVerified(null);
       navigate(getDashboardPath(role), { replace: true });
     }
+    setLoading(false);
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+  if (loading) return (
+    <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!user) {
+    return isMobile ? (
+      <div className="min-h-screen bg-background flex flex-col">
+        <MobileHeader />
+        <main className="flex-1 pt-14 pb-16">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+              <Outlet context={{ user }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <MobileBottomTabs user={user} />
+      </div>
+    ) : (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar user={user} />
+        <main className="flex-1">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+              <Outlet context={{ user }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <Footer />
       </div>
     );
   }
 
-  // No user logged in - redirect to login
-  if (!user) {
-    navigate('/login', { replace: true });
-    return null;
+  if (user.role === 'admin') {
+    return isMobile ? (
+      <div className="min-h-screen bg-background flex flex-col">
+        <MobileHeader />
+        <main className="flex-1 pt-14 pb-16">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+              <Outlet context={{ user }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <MobileBottomTabs user={user} />
+      </div>
+    ) : (
+      <div className="min-h-screen bg-background flex flex-col">
+        <Navbar user={user} />
+        <main className="flex-1">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+              <Outlet context={{ user }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
-  // Needs onboarding: logged in, no role set yet, not admin
-  const needsOnboarding = userProfile && !userProfile.onboarding_complete && userProfile.role !== 'admin' && !TUTOR_ROLES.includes(userProfile?.role);
-  
-  if (needsOnboarding) {
-    return <Onboarding user={user} userProfile={userProfile} onComplete={handleOnboardingComplete} />;
+  const shouldOnboard = user.role === 'user';
+  if (shouldOnboard) {
+    return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
   }
 
-  // tutor_pending = newly registered tutor awaiting admin verification
-  const isTutorRole = userProfile && TUTOR_ROLES.includes(userProfile.role);
-  const isTutorPending = isTutorRole && userProfile?.onboarding_complete && tutorVerified === false;
-  
+  const isTutorRole = TUTOR_ROLES.includes(user.role);
+  const isTutorPending = isTutorRole && tutorVerified === false;
   if (isTutorPending) {
-    return <TutorPendingScreen user={user} userProfile={userProfile} onRefresh={fetchUserAndProfile} />;
+    return <TutorPendingScreen user={user} onRefresh={fetchUser} />;
   }
 
-  return (
+  return isMobile ? (
     <div className="min-h-screen bg-background flex flex-col">
-      <Navbar user={user} userProfile={userProfile} />
+      <MobileHeader />
+      <main className="flex-1 pt-14 pb-16">
+        <AnimatePresence mode="wait">
+          <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+            <Outlet context={{ user }} />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+      <MobileBottomTabs user={user} />
+    </div>
+  ) : (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar user={user} />
       <main className="flex-1">
-        <Outlet context={{ user, userProfile }} />
+        <AnimatePresence mode="wait">
+          <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+            <Outlet context={{ user }} />
+          </motion.div>
+        </AnimatePresence>
       </main>
       <Footer />
     </div>
