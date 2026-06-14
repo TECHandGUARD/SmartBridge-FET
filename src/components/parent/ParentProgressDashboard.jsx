@@ -1,50 +1,52 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { TrendingUp, BookOpen, Star, Calendar, Trophy, Loader2, RefreshCw, Link2 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { TrendingUp, BookOpen, Star, Calendar, Trophy, Loader2, RefreshCw, Link2, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  LineChart, Line, CartesianGrid, Legend
+} from 'recharts';
 import { SUBJECTS } from '@/lib/subjects';
 import { toast } from 'sonner';
 
-export default function ParentProgressDashboard({ user, userProfile, onUpdate }) {
-  const [childEmail, setChildEmail] = useState(userProfile?.linked_student_email || '');
-  const [linked, setLinked] = useState(userProfile?.linked_student_email || '');
+export default function ParentProgressDashboard({ user, onLinked }) {
+  const [childEmail, setChildEmail] = useState(user?.linked_student_email || '');
+  const [linked, setLinked] = useState(user?.linked_student_email || '');
   const [progress, setProgress] = useState([]);
   const [quizResults, setQuizResults] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [linking, setLinking] = useState(false);
 
-  useEffect(() => {
-    if (linked) loadChildData(linked);
-  }, [linked]);
-
-  const loadChildData = async (email) => {
+  const loadChildData = useCallback(async (email) => {
     if (!email) return;
+    
     setLoading(true);
     try {
-      // Fetch student progress
+      // Load student progress
       const { data: prog, error: progError } = await supabase
         .from('student_progress')
         .select('*')
-        .eq('user_email', email);
+        .eq('student_email', email);
       
-      if (progError) console.error('Progress fetch error:', progError);
+      if (progError) throw progError;
       
-      // Fetch quiz results
+      // Load quiz results
       const { data: quiz, error: quizError } = await supabase
         .from('quiz_results')
         .select('*')
-        .eq('user_email', email)
+        .eq('student_email', email)
         .order('created_at', { ascending: false })
         .limit(20);
       
-      if (quizError) console.error('Quiz results fetch error:', quizError);
+      if (quizError) throw quizError;
       
-      // Fetch tutor bookings
+      // Load tutor bookings
       const { data: book, error: bookError } = await supabase
         .from('tutor_bookings')
         .select('*')
@@ -52,68 +54,163 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
         .order('created_at', { ascending: false })
         .limit(10);
       
-      if (bookError) console.error('Bookings fetch error:', bookError);
+      if (bookError) throw bookError;
       
       setProgress(prog || []);
       setQuizResults(quiz || []);
       setBookings(book || []);
-    } catch (error) {
-      console.error('Error loading child data:', error);
+    } catch (err) {
+      console.error('Error loading child data:', err);
       toast.error('Failed to load child progress data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (linked) loadChildData(linked);
+  }, [linked, loadChildData]);
 
   const saveLink = async () => {
-    if (!childEmail.trim()) { toast.error('Enter your child\'s email.'); return; }
-    setLinking(true);
+    if (!childEmail.trim()) {
+      toast.error('Enter your child\'s email.');
+      return;
+    }
     
+    setLinking(true);
     try {
       const { error } = await supabase
         .from('user_profiles')
-        .update({ linked_student_email: childEmail.trim() })
+        .update({ 
+          linked_student_email: childEmail.trim(),
+          updated_at: new Date().toISOString()
+        })
         .eq('email', user.email);
       
       if (error) throw error;
       
       setLinked(childEmail.trim());
       toast.success('Child account linked!');
-      
-      if (onUpdate) onUpdate();
-      
-    } catch (error) {
-      console.error('Error linking child:', error);
-      toast.error('Failed to link child account');
+      if (onLinked) onLinked();
+    } catch (err) {
+      console.error('Link error:', err);
+      toast.error(`Failed to link account: ${err.message}`);
     } finally {
       setLinking(false);
     }
   };
 
-  // Prepare chart data
   const chartData = progress.map(p => ({
     subject: SUBJECTS.find(s => s.name === p.subject)?.icon + ' ' + (p.subject?.substring(0, 8) || p.subject),
-    sessions: p.study_sessions || p.resources_accessed || 0,
+    sessions: p.study_sessions || 0,
   })).filter(d => d.sessions > 0);
 
-  // Calculate average quiz score
   const avgQuizScore = quizResults.length > 0
-    ? Math.round(quizResults.reduce((s, q) => s + (q.score ? (q.score / q.total_questions * 100) : 0), 0) / quizResults.length)
+    ? Math.round(quizResults.reduce((s, q) => s + (q.percentage || 0), 0) / quizResults.length)
     : null;
 
-  const totalStudySessions = progress.reduce((s, p) => s + (p.study_sessions || p.resources_accessed || 0), 0);
+  const totalStudySessions = progress.reduce((s, p) => s + (p.study_sessions || 0), 0);
 
-  // Helper to format date
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-ZA');
+  // Subject mastery: combine quiz scores + resource access into a 0-100 mastery score per subject
+  const masteryData = progress.map(p => {
+    const subjectQuizzes = quizResults.filter(q => q.subject === p.subject);
+    const avgScore = subjectQuizzes.length > 0
+      ? Math.round(subjectQuizzes.reduce((s, q) => s + (q.percentage || 0), 0) / subjectQuizzes.length)
+      : 0;
+    const accessScore = Math.min((p.study_sessions || 0) * 10, 50); // up to 50 pts from resources
+    const quizScore = Math.round(avgScore * 0.5); // up to 50 pts from quizzes
+    const mastery = Math.min(accessScore + quizScore, 100);
+    return {
+      subject: (SUBJECTS.find(s => s.name === p.subject)?.icon || '') + ' ' + (p.subject?.substring(0, 10) || p.subject),
+      mastery,
+      quizAvg: avgScore,
+      resources: p.study_sessions || 0,
+    };
+  }).filter(d => d.mastery > 0);
+
+  const downloadPDF = () => {
+    const doc = new jsPDF();
+    const now = new Date();
+    const monthYear = now.toLocaleString('en-ZA', { month: 'long', year: 'numeric' });
+    let y = 20;
+
+    // Header
+    doc.setFontSize(20); doc.setFont('helvetica', 'bold');
+    doc.text('SmartBridge FET — Monthly Progress Report', 14, y); y += 8;
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.setTextColor(100);
+    doc.text(`Student: ${linked}`, 14, y); y += 5;
+    doc.text(`Report Period: ${monthYear}`, 14, y); y += 5;
+    doc.text(`Generated: ${now.toLocaleDateString('en-ZA')}`, 14, y); y += 10;
+    doc.setDrawColor(200); doc.line(14, y, 196, y); y += 8;
+
+    // Summary stats
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+    doc.text('Summary', 14, y); y += 7;
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+    doc.text(`Total Study Sessions: ${totalStudySessions}`, 14, y); y += 5;
+    doc.text(`Active Subjects: ${progress.length}`, 14, y); y += 5;
+    doc.text(`Average Quiz Score: ${avgQuizScore !== null ? avgQuizScore + '%' : 'N/A'}`, 14, y); y += 5;
+    doc.text(`Tutor Sessions: ${bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length}`, 14, y); y += 10;
+    doc.setDrawColor(200); doc.line(14, y, 196, y); y += 8;
+
+    // Subject progress
+    doc.setFontSize(13); doc.setFont('helvetica', 'bold');
+    doc.text('Subject Progress', 14, y); y += 7;
+    doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+
+    progress.forEach(p => {
+      if (y > 260) { doc.addPage(); y = 20; }
+      const subjectQuizzes = quizResults.filter(q => q.subject === p.subject);
+      const avgScore = subjectQuizzes.length > 0
+        ? Math.round(subjectQuizzes.reduce((s, q) => s + (q.percentage || 0), 0) / subjectQuizzes.length)
+        : null;
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${p.subject} (${p.grade})`, 14, y); y += 5;
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(80);
+      doc.text(`  Study Sessions: ${p.study_sessions || 0}`, 14, y); y += 4;
+      if (avgScore !== null) { doc.text(`  Quiz Average: ${avgScore}%`, 14, y); y += 4; }
+      if (p.last_accessed) { doc.text(`  Last Studied: ${p.last_accessed}`, 14, y); y += 4; }
+      doc.setTextColor(0);
+      y += 3;
+    });
+
+    if (progress.length === 0) { doc.text('No subject progress recorded yet.', 14, y); y += 8; }
+
+    // Recent quiz results
+    if (quizResults.length > 0) {
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setDrawColor(200); doc.line(14, y, 196, y); y += 8;
+      doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(0);
+      doc.text('Recent Quiz Results', 14, y); y += 7;
+      doc.setFontSize(10); doc.setFont('helvetica', 'normal');
+      quizResults.slice(0, 10).forEach(q => {
+        if (y > 270) { doc.addPage(); y = 20; }
+        doc.text(`${q.quiz_title || q.subject}: ${q.score}/${q.total_questions} — ${Math.round(q.percentage || 0)}%`, 14, y); y += 5;
+      });
+    }
+
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(150);
+      doc.text(`SmartBridge FET • Tech & GUARD Pty Ltd • Page ${i} of ${pageCount}`, 14, 290);
+    }
+
+    doc.save(`SmartBridge-Progress-${linked}-${monthYear.replace(' ', '-')}.pdf`);
   };
 
-  // Helper to calculate percentage
-  const calculatePercentage = (score, total) => {
-    if (!total || total === 0) return 0;
-    return Math.round((score / total) * 100);
-  };
+  // Quiz score trend over time (last 10 results, sorted oldest first)
+  const quizTrend = [...quizResults]
+    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .slice(-10)
+    .map((q, i) => ({
+      attempt: `#${i + 1}`,
+      score: Math.round(q.percentage || 0),
+      subject: q.subject,
+    }));
 
   return (
     <div className="space-y-4">
@@ -125,7 +222,7 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
               <Link2 className="w-5 h-5 text-primary" />
               <p className="font-semibold">Link Your Child's Account</p>
             </div>
-            <p className="text-sm text-muted-foreground">Enter your child's EduConnect email to see their full progress.</p>
+            <p className="text-sm text-muted-foreground">Enter your child's SmartBridge FET email to see their full progress.</p>
             <div className="flex gap-2">
               <Input type="email" placeholder="child@example.com" value={childEmail} onChange={e => setChildEmail(e.target.value)} />
               <Button onClick={saveLink} disabled={linking} className="bg-primary gap-2 whitespace-nowrap">
@@ -140,9 +237,14 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
           <div className="flex items-center gap-2 text-sm">
             <Badge className="bg-green-100 text-green-700 gap-1"><Link2 className="w-3 h-3" /> Linked: {linked}</Badge>
           </div>
-          <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => loadChildData(linked)} disabled={loading}>
-            <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => loadChildData(linked)} disabled={loading}>
+              <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
+            </Button>
+            <Button size="sm" className="h-7 text-xs gap-1 bg-primary" onClick={downloadPDF} disabled={loading || progress.length === 0}>
+              <Download className="w-3 h-3" /> Download PDF
+            </Button>
+          </div>
         </div>
       )}
 
@@ -195,6 +297,65 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
             </Card>
           )}
 
+          {/* Subject Mastery Radar */}
+          {masteryData.length > 0 && (
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-playfair flex items-center gap-2">
+                  <Star className="w-4 h-4 text-amber-500" /> Subject Mastery
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Mastery score (0–100) based on quiz performance + study sessions per subject.</p>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={260}>
+                  <RadarChart data={masteryData}>
+                    <PolarGrid stroke="hsl(var(--border))" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} />
+                    <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+                    <Radar name="Mastery" dataKey="mastery" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} />
+                    <Tooltip formatter={(v) => [`${v}%`, 'Mastery']} />
+                  </RadarChart>
+                </ResponsiveContainer>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
+                  {masteryData.map(d => (
+                    <div key={d.subject} className="bg-muted/50 rounded-lg px-3 py-2">
+                      <p className="text-xs font-medium truncate">{d.subject}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                          <div className="h-full bg-primary rounded-full" style={{ width: `${d.mastery}%` }} />
+                        </div>
+                        <span className="text-xs font-bold text-primary">{d.mastery}%</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Quiz Score Trend */}
+          {quizTrend.length > 1 && (
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-playfair flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-primary" /> Quiz Score Trend
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">Last {quizTrend.length} quiz results over time.</p>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={180}>
+                  <LineChart data={quizTrend} margin={{ top: 4, right: 8, bottom: 0, left: -20 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="attempt" tick={{ fontSize: 10 }} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(v, n, p) => [`${v}%`, p.payload.subject || 'Score']} />
+                    <Line type="monotone" dataKey="score" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4, fill: 'hsl(var(--primary))' }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Recent quiz results */}
           {quizResults.length > 0 && (
             <Card className="border-border">
@@ -205,20 +366,17 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {quizResults.slice(0, 6).map(q => {
-                    const percentage = calculatePercentage(q.score, q.total_questions);
-                    return (
-                      <div key={q.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
-                        <span className="text-muted-foreground text-xs">{q.quiz_id || q.subject_id || 'Quiz'}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-muted-foreground">{q.score}/{q.total_questions}</span>
-                          <Badge className={`text-xs ${percentage >= 70 ? 'bg-green-100 text-green-700' : percentage >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                            {percentage}%
-                          </Badge>
-                        </div>
+                  {quizResults.slice(0, 6).map(q => (
+                    <div key={q.id} className="flex items-center justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+                      <span className="text-muted-foreground text-xs">{q.quiz_title || q.subject}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">{q.score}/{q.total_questions}</span>
+                        <Badge className={`text-xs ${(q.percentage || 0) >= 70 ? 'bg-green-100 text-green-700' : (q.percentage || 0) >= 50 ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                          {Math.round(q.percentage || 0)}%
+                        </Badge>
                       </div>
-                    );
-                  })}
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -237,8 +395,8 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
                   {bookings.slice(0, 5).map(b => (
                     <div key={b.id} className="flex items-center justify-between text-xs py-1.5 border-b border-border/50 last:border-0">
                       <div>
-                        <span className="font-medium">{b.tutor_email?.split('@')[0] || 'Tutor'}</span>
-                        <span className="text-muted-foreground"> · {b.booking_date} · {b.booking_time}</span>
+                        <span className="font-medium">{b.tutor_name}</span>
+                        <span className="text-muted-foreground"> · {b.subject} · {b.date}</span>
                       </div>
                       <Badge className={`text-xs ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : b.status === 'completed' ? 'bg-blue-100 text-blue-700' : b.status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
                         {b.status}
@@ -255,7 +413,7 @@ export default function ParentProgressDashboard({ user, userProfile, onUpdate })
               <CardContent className="text-center py-10 text-muted-foreground">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="font-medium">No activity yet</p>
-                <p className="text-sm">Your child's study data will appear here once they start using EduConnect.</p>
+                <p className="text-sm">Your child's study data will appear here once they start using SmartBridge FET.</p>
               </CardContent>
             </Card>
           )}
