@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bookmark, Trash2, BookOpen } from 'lucide-react';
+import { Bookmark, Trash2, BookOpen, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SUBJECTS } from '@/lib/subjects';
 import { toast } from 'sonner';
@@ -12,30 +12,30 @@ export default function ResourceBookmarks({ user }) {
   const [bookmarks, setBookmarks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const loadBookmarks = useCallback(async () => {
     if (!user?.email) return;
     
-    const fetchBookmarks = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('resource_bookmarks')
-          .select('*')
-          .eq('user_email', user.email)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        setBookmarks(data || []);
-      } catch (error) {
-        console.error('Error fetching bookmarks:', error);
-        toast.error('Failed to load bookmarks');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchBookmarks();
-  }, [user]);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('resource_bookmarks')
+        .select('*')
+        .eq('user_email', user.email)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setBookmarks(data || []);
+    } catch (err) {
+      console.error('Error loading bookmarks:', err);
+      toast.error('Failed to load bookmarks');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.email]);
+
+  useEffect(() => {
+    loadBookmarks();
+  }, [loadBookmarks]);
 
   const removeBookmark = async (id) => {
     try {
@@ -45,10 +45,11 @@ export default function ResourceBookmarks({ user }) {
         .eq('id', id);
       
       if (error) throw error;
+      
       setBookmarks(prev => prev.filter(b => b.id !== id));
       toast.success('Bookmark removed');
-    } catch (error) {
-      console.error('Error removing bookmark:', error);
+    } catch (err) {
+      console.error('Error removing bookmark:', err);
       toast.error('Failed to remove bookmark');
     }
   };
@@ -56,16 +57,8 @@ export default function ResourceBookmarks({ user }) {
   if (loading) {
     return (
       <Card className="border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-playfair flex items-center gap-2">
-            <Bookmark className="w-4 h-4 text-primary fill-primary" /> Saved Resources
-            <Badge variant="outline" className="text-xs ml-auto">0</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="py-4 flex justify-center">
-            <div className="w-5 h-5 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
+        <CardContent className="flex justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
