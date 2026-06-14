@@ -1,14 +1,17 @@
-import { Toaster } from "@/components/ui/toaster"
-import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-import PageNotFound from './lib/PageNotFound';
+import React from 'react';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClientInstance } from '@/lib/query-client';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+import UserNotRegisteredError from '@/components/UserNotRegisteredError';
+import PageNotFound from './lib/PageNotFound';
 
 // Page imports
 import Home from './pages/Home';
-import Login from './pages/Login';
 import Subjects from './pages/Subjects';
 import SubjectDetail from './pages/SubjectDetail';
 import StudentDashboard from './pages/StudentDashboard';
@@ -29,63 +32,90 @@ import PayoutLog from './pages/PayoutLog';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import TermsOfService from './pages/TermsOfService';
 import AboutTechAndGuard from './pages/AboutTechAndGuard';
+import StudentOpportunities from './pages/StudentOpportunities';
+import CommunityForum from './pages/CommunityForum';
+import CounselorDashboard from './pages/CounselorDashboard';
+import BursaryFinder from './pages/BursaryFinder';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authChecked, isAuthenticated } = useAuth();
+  const { isLoadingAuth, authError } = useAuth();
 
-  if (isLoadingAuth || !authChecked) {
+  // Loading state
+  if (isLoadingAuth) {
     return (
-      <div className="fixed inset-0 flex items-center justify-center">
+      <div className="fixed inset-0 flex flex-col items-center justify-center bg-background gap-2">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest animate-pulse">
+          Loading SmartBridge FET...
+        </span>
       </div>
     );
   }
 
-  // If not authenticated, ONLY show login page (no Home page access)
-  if (!isAuthenticated) {
-    return (
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
-        <Route path="*" element={<Login />} />
-      </Routes>
-    );
+  // Handle user not registered error
+  if (authError && authError.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
   }
 
-  // Authenticated routes with AppLayout
   return (
     <Routes>
       <Route element={<AppLayout />}>
+        
+        {/* ================================================================
+            1. PUBLIC ROUTES (No Authentication Required)
+           ================================================================ */}
         <Route path="/" element={<Home />} />
         <Route path="/subjects" element={<Subjects />} />
         <Route path="/subjects/:code" element={<SubjectDetail />} />
-        <Route path="/student-dashboard" element={<StudentDashboard />} />
-        <Route path="/parent-dashboard" element={<ParentDashboard />} />
-        <Route path="/tutor-dashboard" element={<TutorDashboard />} />
         <Route path="/tutors" element={<Tutors />} />
         <Route path="/premium" element={<Premium />} />
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/search" element={<ResourceSearch />} />
-        <Route path="/quiz" element={<PracticeQuiz />} />
-        <Route path="/bookings" element={<Bookings />} />
-        <Route path="/study-rooms" element={<GroupStudyRooms />} />
-        <Route path="/videos" element={<VideoLessons />} />
-        <Route path="/resources-library" element={<ResourcesLibrary />} />
-        <Route path="/caps-admin" element={<CAPSAdmin />} />
-        <Route path="/payout-log" element={<PayoutLog />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
+        
+        {/* ================================================================
+            2. PROTECTED ROUTES (Any authenticated user)
+           ================================================================ */}
+        <Route element={<ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']} />}>
+          <Route path="/student-dashboard" element={<StudentDashboard />} />
+          <Route path="/parent-dashboard" element={<ParentDashboard />} />
+          <Route path="/bookings" element={<Bookings />} />
+          <Route path="/search" element={<ResourceSearch />} />
+          <Route path="/quiz" element={<PracticeQuiz />} />
+          <Route path="/study-rooms" element={<GroupStudyRooms />} />
+          <Route path="/videos" element={<VideoLessons />} />
+          <Route path="/resources-library" element={<ResourcesLibrary />} />
+          <Route path="/forum" element={<CommunityForum />} />
+          <Route path="/bursaries" element={<BursaryFinder />} />
+          <Route path="/opportunities" element={<StudentOpportunities />} />
+          <Route path="/onboarding" element={<Onboarding />} />
+        </Route>
+        
+        {/* ================================================================
+            3. TUTOR-ONLY ROUTES
+           ================================================================ */}
+        <Route element={<ProtectedRoute allowedRoles={['Tutor', 'Admin']} redirectTo="/student-dashboard" />}>
+          <Route path="/tutor-dashboard" element={<TutorDashboard />} />
+        </Route>
+        
+        {/* ================================================================
+            4. ADMIN-ONLY ROUTES
+           ================================================================ */}
+        <Route element={<ProtectedRoute allowedRoles={['Admin']} redirectTo="/student-dashboard" />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/caps-admin" element={<CAPSAdmin />} />
+          <Route path="/payout-log" element={<PayoutLog />} />
+          <Route path="/counselor" element={<CounselorDashboard />} />
+        </Route>
+        
+        {/* 404 Fallback */}
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
   );
 };
 
-function App() {
+export default function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
@@ -93,9 +123,8 @@ function App() {
           <AuthenticatedApp />
         </Router>
         <Toaster />
+        <SonnerToaster position="top-right" richColors closeButton />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
-
-export default App
