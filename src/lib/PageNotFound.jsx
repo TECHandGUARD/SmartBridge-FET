@@ -1,92 +1,110 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { supabase } from '@/supabaseClient';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/lib/supabaseClient';
+import { Home, ShieldAlert, AlertCircle } from 'lucide-react';
+
+interface AuthProfilePayload {
+  isAuthenticated: boolean;
+  roleTier: string | null;
+}
 
 export default function PageNotFound() {
-    const location = useLocation();
-    const pageName = location.pathname.substring(1);
-    const [user, setUser] = useState(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
+  const currentBrowserLocation = useLocation();
+  const targetedUrlPathString = currentBrowserLocation.pathname.substring(1) || 'dashboard';
 
-    useEffect(() => {
-        const getUser = async () => {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    // Fetch user profile to get role
-                    const { data: profile } = await supabase
-                        .from('user_profiles')
-                        .select('role')
-                        .eq('email', session.user.email)
-                        .single();
-                    
-                    setUser({ ...session.user, role: profile?.role });
-                    setIsAuthenticated(true);
-                }
-            } catch (error) {
-                console.error('Error fetching user:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
+  // Secure asynchronous state resolver checking user parameters directly via Supabase
+  const { data: authData, isFetched } = useQuery<AuthProfilePayload>({
+    queryKey: ['routing-auth-state'],
+    queryFn: async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         
-        getUser();
-    }, []);
+        if (!session || !session.user) {
+          return { isAuthenticated: false, roleTier: null };
+        }
 
-    const isAdmin = user?.role === 'admin';
+        // Fetch custom role profile from user_profiles table
+        const { data: profile } = await supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('email', session.user.email)
+          .maybeSingle();
 
-    return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-            <div className="max-w-md w-full">
-                <div className="text-center space-y-6">
-                    {/* 404 Error Code */}
-                    <div className="space-y-2">
-                        <h1 className="text-7xl font-light text-slate-300">404</h1>
-                        <div className="h-0.5 w-16 bg-slate-200 mx-auto"></div>
-                    </div>
-                    
-                    {/* Main Message */}
-                    <div className="space-y-3">
-                        <h2 className="text-2xl font-medium text-slate-800">
-                            Page Not Found
-                        </h2>
-                        <p className="text-slate-600 leading-relaxed">
-                            The page <span className="font-medium text-slate-700">"{pageName}"</span> could not be found in this application.
-                        </p>
-                    </div>
-                    
-                    {/* Admin Note */}
-                    {!isLoading && isAdmin && (
-                        <div className="mt-8 p-4 bg-slate-100 rounded-lg border border-slate-200">
-                            <div className="flex items-start space-x-3">
-                                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-orange-100 flex items-center justify-center mt-0.5">
-                                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                                </div>
-                                <div className="text-left space-y-1">
-                                    <p className="text-sm font-medium text-slate-700">Admin Note</p>
-                                    <p className="text-sm text-slate-600 leading-relaxed">
-                                        This could mean that this page hasn't been implemented yet. Check your routes or create the page.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                    
-                    {/* Action Button */}
-                    <div className="pt-6">
-                        <button 
-                            onClick={() => window.location.href = '/'} 
-                            className="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500"
-                        >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                            </svg>
-                            Go Home
-                        </button>
-                    </div>
-                </div>
+        return { 
+          isAuthenticated: true, 
+          roleTier: profile?.role || null 
+        };
+      } catch (error) {
+        console.error('Auth check error:', error);
+        return { isAuthenticated: false, roleTier: null };
+      }
+    },
+    staleTime: 5000, // Cache for 5 seconds
+  });
+
+  const handleNavigateHome = () => {
+    window.location.href = '/';
+  };
+
+  const isAdmin = authData?.roleTier === 'admin';
+
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 font-sans">
+      <div className="max-w-md w-full animate-fadeIn">
+        <div className="text-center space-y-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-xl">
+          
+          {/* 404 Header */}
+          <div className="space-y-2">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mx-auto">
+              <AlertCircle className="w-8 h-8 text-slate-400" />
             </div>
+            <h1 className="text-6xl font-black text-slate-200 tracking-tight">404</h1>
+            <div className="h-1 w-12 bg-primary rounded-full mx-auto"></div>
+          </div>
+          
+          {/* Main Message */}
+          <div className="space-y-2.5">
+            <h2 className="text-xl font-extrabold text-slate-800">
+              Page Not Found
+            </h2>
+            <p className="text-sm text-slate-500 leading-relaxed max-w-xs mx-auto">
+              The page <span className="font-mono bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border text-xs">/{targetedUrlPathString}</span> could not be found in this application.
+            </p>
+          </div>
+          
+          {/* Admin Advisory (Professional) */}
+          {isFetched && authData?.isAuthenticated && isAdmin && (
+            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-left">
+              <div className="flex items-start space-x-2.5">
+                <ShieldAlert className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-slate-800">System Administrator Advisory</p>
+                  <p className="text-[11px] text-slate-500 leading-relaxed">
+                    This route is not registered in the application routing table. 
+                    Please verify your route configuration or contact support at{' '}
+                    <a href="mailto:aneleq@techandguard.co.za" className="text-primary hover:underline">
+                      aneleq@techandguard.co.za
+                    </a>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          {/* Action Button */}
+          <div className="pt-2 border-t border-slate-100">
+            <button 
+              type="button"
+              onClick={handleNavigateHome} 
+              className="inline-flex items-center justify-center px-5 py-2.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 hover:text-primary hover:border-primary/30 shadow-sm transition-all duration-200 gap-2"
+            >
+              <Home className="w-4 h-4" />
+              Return to Dashboard
+            </button>
+          </div>
         </div>
-    )
+      </div>
+    </div>
+  );
 }
