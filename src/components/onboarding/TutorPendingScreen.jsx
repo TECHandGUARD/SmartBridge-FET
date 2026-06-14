@@ -1,49 +1,119 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Clock, CheckCircle, RefreshCw, LogOut, BookOpen } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCw, LogOut, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function TutorPendingScreen({ user, userProfile, onRefresh }) {
+export default function TutorPendingScreen({ user, onRefresh }) {
   const [checking, setChecking] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
+  const [hasNoProfile, setHasNoProfile] = useState(false);
+
+  const checkVerification = useCallback(async () => {
+    if (checking) return;
+    
+    setChecking(true);
+    try {
+      // FIRST check if user role changed (admin approved)
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) throw authError;
+      
+      // Get user profile from user_profiles
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('*')
+        .eq('email', authUser?.email)
+        .single();
+      
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Profile fetch error:', profileError);
+      }
+      
+      const currentRole = profile?.role || 'user';
+      
+      if (currentRole !== 'tutor_pending' && currentRole !== 'user') {
+        console.log('User role changed to:', currentRole);
+        setIsVerified(true);
+        setTimeout(() => onRefresh(), 500);
+        return;
+      }
+      
+      // SECOND check profile verification status
+      const { data: profiles, error: tutorError } = await supabase
+        .from('tutor_profiles')
+        .select('*')
+        .eq('user_email', user?.email);
+      
+      if (tutorError) throw tutorError;
+      
+      if (profiles.length === 0) {
+        setHasNoProfile(true);
+      } else if (profiles[0].is_verified) {
+        console.log('Tutor profile verified!');
+        setIsVerified(true);
+        onRefresh();
+      } else {
+        setHasNoProfile(false);
+      }
+    } catch (err) {
+      console.error('Verification check failed:', err);
+      toast.error('Failed to check verification status');
+    } finally {
+      setChecking(false);
+    }
+  }, [checking, user?.email, onRefresh]);
 
   // Poll every 30s automatically
   useEffect(() => {
     const interval = setInterval(() => checkVerification(), 30000);
     checkVerification();
     return () => clearInterval(interval);
-  }, []);
+  }, [checkVerification]);
 
-  const checkVerification = async () => {
-    setChecking(true);
+  const handleResubmit = async () => {
     try {
-      const { data: profiles, error } = await supabase
+      // Delete existing profile
+      const { data: profiles } = await supabase
         .from('tutor_profiles')
-        .select('is_verified')
-        .eq('user_email', user.email)
-        .maybeSingle();
+        .select('*')
+        .eq('user_email', user?.email);
       
-      if (error) throw error;
-      
-      if (profiles && profiles.is_verified === true) {
-        setIsVerified(true);
-        // Trigger a full refresh after a short delay
-        setTimeout(() => {
-          if (onRefresh) onRefresh();
-          window.location.reload();
-        }, 500);
+      if (profiles && profiles.length > 0) {
+        const { error: deleteError } = await supabase
+          .from('tutor_profiles')
+          .delete()
+          .eq('id', profiles[0].id);
+        
+        if (deleteError) throw deleteError;
       }
-    } catch (error) {
-      console.error('Error checking verification status:', error);
-    } finally {
-      setChecking(false);
+      
+      // Reset user profile to start onboarding again
+      const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ 
+          onboarding_complete: false, 
+          role: 'user'
+        })
+        .eq('email', user?.email);
+      
+      if (updateError) throw updateError;
+      
+      onRefresh();
+    } catch (err) {
+      console.error('Resubmit failed:', err);
+      toast.error('Failed to reset profile. Please contact support.');
     }
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    window.location.href = '/';
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error('Logout error:', error);
+      toast.error('Failed to sign out');
+    } else {
+      window.location.href = '/';
+    }
   };
 
   if (isVerified) {
@@ -55,13 +125,63 @@ export default function TutorPendingScreen({ user, userProfile, onRefresh }) {
           </div>
           <h2 className="text-2xl font-bold text-foreground">You're Verified! 🎉</h2>
           <p className="text-muted-foreground">Redirecting to your dashboard…</p>
-          <div className="w-6 h-6 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto" />
+          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
         </div>
       </div>
     );
   }
 
-  const displayName = userProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'there';
+  // No profile submitted yet — guide them to complete registration
+  if (hasNoProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center space-y-6">
+          <div className="flex items-center justify-center gap-2 mb-2">
+            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+              <BookOpen className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <span className="font-playfair font-bold text-xl text-foreground">SmartBridge FET</span>
+          </div>
+
+          <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto">
+            <AlertTriangle className="w-10 h-10 text-red-500" />
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold text-foreground">Profile Incomplete</h1>
+            <p className="text-muted-foreground text-sm leading-relaxed">
+              Hi <strong>{user?.full_name || 'there'}</strong>! It looks like your tutor profile
+              was not fully submitted. You need to complete your registration before admin can review you.
+            </p>
+          </div>
+
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-left space-y-2">
+            <p className="text-xs font-semibold text-red-800">What you need to do:</p>
+            <ul className="text-xs text-red-700 space-y-1 list-disc list-inside">
+              <li>Click the button below to restart your profile setup</li>
+              <li>Re-select your tutor type (SACE or Student Tutor)</li>
+              <li>Enter your credentials and submit</li>
+              <li>Admin will then review and approve your profile</li>
+            </ul>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button onClick={handleResubmit} className="gap-2 bg-primary">
+              <CheckCircle className="w-4 h-4" /> Complete My Registration
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground gap-2"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4" /> Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -71,7 +191,7 @@ export default function TutorPendingScreen({ user, userProfile, onRefresh }) {
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="font-playfair font-bold text-xl text-foreground">EduConnect FET</span>
+          <span className="font-playfair font-bold text-xl text-foreground">SmartBridge FET</span>
         </div>
 
         {/* Pending icon */}
@@ -82,7 +202,7 @@ export default function TutorPendingScreen({ user, userProfile, onRefresh }) {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Verification Pending</h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            Hi <strong>{displayName}</strong>! Your tutor profile has been submitted
+            Hi <strong>{user?.full_name || 'there'}</strong>! Your tutor profile has been submitted
             and is currently under review by our admin team.
           </p>
         </div>
@@ -111,7 +231,7 @@ export default function TutorPendingScreen({ user, userProfile, onRefresh }) {
             variant="ghost"
             size="sm"
             className="text-muted-foreground gap-2"
-            onClick={handleSignOut}
+            onClick={handleLogout}
           >
             <LogOut className="w-4 h-4" /> Sign Out
           </Button>
