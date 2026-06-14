@@ -44,7 +44,7 @@ export default function RoleDashboardCards() {
             A Dashboard for Everyone
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            Whether you're a student, parent, or tutor — EduConnect FET has a tailored experience just for you.
+            Whether you're a student, parent, or tutor — SmartBridge FET Phase has a tailored experience just for you.
           </p>
         </div>
 
