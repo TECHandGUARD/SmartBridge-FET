@@ -1,30 +1,62 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
-import { CAPS_TOPICS } from '@/lib/capsTopics';
-import { SUBJECTS } from '@/lib/subjects';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import { CheckCircle2, Circle, ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const MASTERY_THRESHOLD = 70; // % to consider a topic mastered
+interface UserProps {
+  email: string;
+}
 
-function TopicBadge({ mastered, score, topic }) {
+interface DBQuizResult {
+  id: string;
+  subject: string;
+  percentage: number;
+  caps_topic_id: string;
+}
+
+interface CAPSTopicItem {
+  id: string;
+  topic_code: string;
+  title: string;
+}
+
+interface SubjectItem {
+  code: string;
+  name: string;
+  icon: string;
+}
+
+const SUBJECTS: SubjectItem[] = [
+  { code: 'Mathematics', name: 'Mathematics', icon: '📐' },
+  { code: 'Physical Sciences', name: 'Physical Sciences', icon: '⚗️' },
+  { code: 'Life Sciences', name: 'Life Sciences', icon: '🧬' },
+  { code: 'Accounting', name: 'Accounting', icon: '📊' },
+  { code: 'Economics', name: 'Economics', icon: '📈' },
+  { code: 'History', name: 'History', icon: '⏳' },
+  { code: 'Geography', name: 'Geography', icon: '🌍' },
+  { code: 'Business Studies', name: 'Business Studies', icon: '💼' },
+];
+
+const MASTERY_THRESHOLD = 70;
+
+function TopicBadge({ mastered, score, topicTitle }: { mastered: boolean; score: number | null; topicTitle: string }) {
   return (
-    <div className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${
+    <div className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
       mastered
-        ? 'bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800'
-        : 'bg-muted/40 border-border'
+        ? 'bg-emerald-50/60 border-emerald-100 text-emerald-900 shadow-sm'
+        : 'bg-slate-50 border-slate-100 text-slate-500'
     }`}>
-      {mastered
-        ? <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
-        : <Circle className="w-4 h-4 text-muted-foreground flex-shrink-0" />}
-      <span className={`text-xs font-medium flex-1 ${mastered ? 'text-green-800 dark:text-green-300' : 'text-muted-foreground'}`}>
-        {topic}
-      </span>
-      {score != null && (
-        <span className={`text-xs font-bold ${mastered ? 'text-green-700' : 'text-muted-foreground'}`}>
+      {mastered ? (
+        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+      ) : (
+        <Circle className="w-4 h-4 text-slate-300 shrink-0" />
+      )}
+      <span className="text-[11px] font-bold flex-1 truncate">{topicTitle}</span>
+      {score !== null && (
+        <span className={`text-xs font-black ${mastered ? 'text-emerald-700' : 'text-slate-400'}`}>
           {score}%
         </span>
       )}
@@ -32,74 +64,106 @@ function TopicBadge({ mastered, score, topic }) {
   );
 }
 
-function SubjectBlock({ subject, quizResults }) {
-  const [expanded, setExpanded] = useState(false);
-  const topics = CAPS_TOPICS[subject.name] || [];
+function SubjectBlock({ subject, quizResults }: { subject: SubjectItem; quizResults: DBQuizResult[] }) {
+  const [expanded, setExpanded] = useState<boolean>(false);
+  const [topics, setTopics] = useState<CAPSTopicItem[]>([]);
+  const [loadingTopics, setLoadingTopics] = useState<boolean>(false);
 
-  // Build a map: topic keyword → best quiz score
-  const topicScores = {};
+  useEffect(() => {
+    if (expanded && topics.length === 0) {
+      fetchSubjectSyllabus();
+    }
+  }, [expanded]);
+
+  const fetchSubjectSyllabus = async () => {
+    try {
+      setLoadingTopics(true);
+      const { data, error } = await supabase
+        .from('caps_syllabus_topics')
+        .select('id, topic_code, title')
+        .eq('subject', subject.name);
+
+      if (error) throw error;
+      setTopics(data || []);
+    } catch (err) {
+      console.error('Failed compiling subject metadata:', err);
+      toast.error('Failed to load syllabus topics');
+    } finally {
+      setLoadingTopics(false);
+    }
+  };
+
+  const topicScores: Record<string, number> = {};
   topics.forEach(topic => {
-    const keyword = topic.split(' ')[0].toLowerCase().replace(/[^a-z]/g, '');
-    const relevant = quizResults.filter(r =>
-      r.subject === subject.name &&
-      (r.quiz_title?.toLowerCase().includes(keyword) || r.quiz_title?.toLowerCase().includes(topic.toLowerCase().split(' ').slice(-1)[0]))
-    );
-    if (relevant.length > 0) {
-      const percentages = relevant.map(r => {
-        if (r.percentage) return r.percentage;
-        if (r.score && r.total_questions) return Math.round((r.score / r.total_questions) * 100);
-        return 0;
-      });
-      topicScores[topic] = Math.max(...percentages);
+    const relevantQuizScores = quizResults
+      .filter(r => r.caps_topic_id === topic.id)
+      .map(r => r.percentage);
+
+    if (relevantQuizScores.length > 0) {
+      topicScores[topic.id] = Math.max(...relevantQuizScores);
     }
   });
 
-  const masteredCount = topics.filter(t => (topicScores[t] ?? 0) >= MASTERY_THRESHOLD).length;
+  const masteredCount = topics.filter(t => (topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD).length;
   const masteryPercent = topics.length > 0 ? Math.round((masteredCount / topics.length) * 100) : 0;
-  const attempted = Object.keys(topicScores).length;
+  const attemptedCount = Object.keys(topicScores).length;
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-2 cursor-pointer" onClick={() => setExpanded(e => !e)}>
+    <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
+      <div className="p-4 cursor-pointer select-none" onClick={() => setExpanded(prev => !prev)}>
         <div className="flex items-center gap-3">
-          <span className="text-2xl">{subject.icon}</span>
+          <span className="text-2xl shrink-0 select-none">{subject.icon}</span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-sm font-semibold truncate">{subject.name}</CardTitle>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <Badge variant="outline" className="text-xs">
-                  {masteredCount}/{topics.length} mastered
+              <h4 className="text-xs font-black text-foreground uppercase tracking-wide truncate">{subject.name}</h4>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Badge variant="outline" className="text-[10px] font-bold px-2 h-5">
+                  {masteredCount}/{topics.length || '—'} Mastered
                 </Badge>
                 {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
               </div>
             </div>
-            <div className="flex items-center gap-2 mt-2">
+            
+            <div className="flex items-center gap-3 mt-2">
               <Progress value={masteryPercent} className="h-2 flex-1" />
-              <span className="text-xs font-bold text-primary w-8 text-right">{masteryPercent}%</span>
+              <span className="text-xs font-black text-primary w-8 text-right leading-none">{masteryPercent}%</span>
             </div>
-            {attempted === 0 && (
-              <p className="text-xs text-muted-foreground mt-1">No quizzes taken yet — complete quizzes to track mastery.</p>
-            )}
           </div>
         </div>
-      </CardHeader>
+      </div>
 
       {expanded && (
-        <CardContent className="pt-0">
-          <div className="grid sm:grid-cols-2 gap-1.5">
-            {topics.map(topic => (
-              <TopicBadge
-                key={topic}
-                topic={topic}
-                mastered={(topicScores[topic] ?? 0) >= MASTERY_THRESHOLD}
-                score={topicScores[topic] ?? null}
-              />
-            ))}
-          </div>
-          {attempted > 0 && (
-            <p className="text-xs text-muted-foreground mt-3 text-center">
-              Topics are marked as mastered when quiz score ≥ {MASTERY_THRESHOLD}%
-            </p>
+        <CardContent className="pt-2 border-t border-border bg-muted/20">
+          {loadingTopics ? (
+            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground font-bold text-xs">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span>Loading syllabus topics...</span>
+            </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                {topics.map(t => (
+                  <TopicBadge
+                    key={t.id}
+                    topicTitle={t.title}
+                    mastered={(topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD}
+                    score={topicScores[t.id] ?? null}
+                  />
+                ))}
+              </div>
+              
+              {topics.length === 0 && (
+                <p className="text-center py-4 text-[11px] font-medium text-muted-foreground italic">
+                  No syllabus topics configured for this subject yet.
+                </p>
+              )}
+              
+              {attemptedCount > 0 && (
+                <p className="text-[10px] text-muted-foreground mt-3 text-center font-medium">
+                  * Mastery threshold: {MASTERY_THRESHOLD}% or higher on topic quizzes
+                </p>
+              )}
+            </>
           )}
         </CardContent>
       )}
@@ -107,86 +171,99 @@ function SubjectBlock({ subject, quizResults }) {
   );
 }
 
-export default function SyllabusTopicTracker({ user }) {
-  const [quizResults, setQuizResults] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showAll, setShowAll] = useState(false);
+export default function SyllabusTopicTracker({ user }: { user: UserProps }) {
+  const [quizResults, setQuizResults] = useState<DBQuizResult[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState<boolean>(false);
 
   useEffect(() => {
     if (!user?.email) { 
       setLoading(false); 
       return; 
     }
-    
-    const fetchQuizResults = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('quiz_results')
-          .select('*')
-          .eq('user_email', user.email)
-          .order('created_at', { ascending: false });
-        
-        if (error) throw error;
-        setQuizResults(data || []);
-      } catch (error) {
-        console.error('Error fetching quiz results:', error);
-        toast.error('Failed to load quiz results');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchQuizResults();
+    fetchStudentQuizPerformance();
   }, [user]);
+
+  const fetchStudentQuizPerformance = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: dbError } = await supabase
+        .from('quiz_results')
+        .select('id, subject, percentage, caps_topic_id')
+        .eq('student_email', user.email);
+
+      if (dbError) throw dbError;
+      setQuizResults(data || []);
+    } catch (err: any) {
+      console.error('Mastery pipeline failure:', err);
+      setError(err.message || 'Failed to load mastery data');
+      toast.error('Failed to load mastery data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const displayedSubjects = showAll ? SUBJECTS : SUBJECTS.slice(0, 4);
 
   if (loading) {
     return (
-      <Card className="border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-playfair flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" /> CAPS Topic Mastery
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-          </div>
+      <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
+          <Loader2 className="w-6 h-6 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading mastery data...</span>
         </CardContent>
       </Card>
     );
   }
 
-  const displayedSubjects = showAll ? SUBJECTS : SUBJECTS.slice(0, 6);
-
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-playfair flex items-center gap-2">
-            <BookOpen className="w-5 h-5 text-primary" /> CAPS Topic Mastery
+    <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
+      <CardHeader className="pb-3 border-b bg-muted/30">
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-primary shrink-0" /> CAPS Syllabus Tracker
           </CardTitle>
-          <Badge variant="secondary" className="text-xs">
-            Based on quiz performance
+          <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30 px-2.5 h-6">
+            DBE Aligned
           </Badge>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Track which CAPS syllabus topics you've mastered across all subjects.
+        <p className="text-xs text-muted-foreground mt-1">
+          Track your mastery of CAPS curriculum topics based on quiz performance.
         </p>
       </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 gap-4">
+      
+      <CardContent className="pt-5">
+        {error && (
+          <div className="p-3 mb-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {displayedSubjects.map(subject => (
             <SubjectBlock key={subject.code} subject={subject} quizResults={quizResults} />
           ))}
         </div>
-        {SUBJECTS.length > 6 && (
+        
+        {SUBJECTS.length > 4 && (
           <button
-            onClick={() => setShowAll(s => !s)}
-            className="mt-4 text-sm text-primary hover:underline w-full text-center"
+            type="button"
+            onClick={() => setShowAll(prev => !prev)}
+            className="mt-4 text-xs font-bold text-primary hover:text-primary/80 hover:underline w-full text-center block transition-all"
           >
-            {showAll ? 'Show less' : `Show all ${SUBJECTS.length} subjects`}
+            {showAll ? 'Show Fewer Subjects' : `Show All ${SUBJECTS.length} Subjects`}
           </button>
+        )}
+        
+        {quizResults.length === 0 && !error && (
+          <div className="text-center py-8">
+            <p className="text-sm text-muted-foreground">No quiz results yet.</p>
+            <p className="text-xs text-muted-foreground mt-1">Complete some quizzes to start tracking your CAPS mastery!</p>
+          </div>
         )}
       </CardContent>
     </Card>
