@@ -1,178 +1,284 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
-import { SUBJECTS } from '@/lib/subjects';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Plus, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Bell, Plus, Trash2, Loader2, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
 import { toast } from 'sonner';
 
-const DAYS = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+interface UserProps {
+  email: string;
+}
 
-export default function StudyReminderManager({ user }) {
-  const [reminders, setReminders] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ subject: '', day_of_week: 'Monday', time: '16:00' });
+interface ReminderItem {
+  id: string;
+  subject: string;
+  day_of_week: string;
+  reminder_time: string;
+  is_active: boolean;
+}
 
-  // Fetch reminders from Supabase
+const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+const SUBJECT_OPTIONS = [
+  { name: 'Mathematics', icon: '📐' },
+  { name: 'Physical Sciences', icon: '⚗️' },
+  { name: 'Life Sciences', icon: '🧬' },
+  { name: 'Accounting', icon: '📊' },
+  { name: 'Economics', icon: '📈' },
+  { name: 'History', icon: '⏳' },
+];
+
+export default function StudyReminderManager({ user }: { user: UserProps }) {
+  const [reminders, setReminders] = useState<ReminderItem[]>([]);
+  const [showForm, setShowForm] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [form, setForm] = useState({ 
+    subject: 'Mathematics', 
+    day_of_week: 'Monday', 
+    reminder_time: '16:00' 
+  });
+
   useEffect(() => {
     if (!user?.email) return;
-    
-    const fetchReminders = async () => {
-      setLoading(true);
-      try {
-        const { data, error } = await supabase
-          .from('study_reminders')
-          .select('*')
-          .eq('user_email', user.email)
-          .order('created_at', { ascending: true });
-        
-        if (error) throw error;
-        setReminders(data || []);
-      } catch (error) {
-        console.error('Error fetching reminders:', error);
-        toast.error('Failed to load reminders');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     fetchReminders();
   }, [user]);
 
-  const add = async () => {
+  const fetchReminders = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: dbError } = await supabase
+        .from('study_reminders')
+        .select('id, subject, day_of_week, reminder_time, is_active')
+        .eq('student_email', user.email)
+        .order('created_at', { ascending: true });
+
+      if (dbError) throw dbError;
+      setReminders(data || []);
+    } catch (err: any) {
+      console.error('Error fetching reminders:', err);
+      setError(err.message || 'Failed to load reminders');
+      toast.error('Failed to load reminders');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddReminder = async () => {
     if (!form.subject) {
       toast.error('Please select a subject');
       return;
     }
     
     try {
-      const { data, error } = await supabase
+      setError(null);
+      const { data, error: insertError } = await supabase
         .from('study_reminders')
-        .insert({
-          user_email: user.email,
-          subject: form.subject,
-          day_of_week: form.day_of_week,
-          reminder_time: form.time,
-          is_active: true,
-        })
+        .insert([
+          {
+            student_email: user.email,
+            subject: form.subject,
+            day_of_week: form.day_of_week,
+            reminder_time: form.reminder_time,
+            is_active: true
+          }
+        ])
         .select()
         .single();
-      
-      if (error) throw error;
-      
-      setReminders(r => [...r, data]);
+
+      if (insertError) throw insertError;
+
+      if (data) {
+        setReminders(prev => [...prev, data]);
+        toast.success(`Reminder set for ${form.subject} on ${form.day_of_week}s at ${form.reminder_time}!`);
+      }
       setShowForm(false);
-      setForm({ subject: '', day_of_week: 'Monday', time: '16:00' });
-      toast.success('Reminder added!');
-    } catch (error) {
-      console.error('Error adding reminder:', error);
+      setForm({ subject: 'Mathematics', day_of_week: 'Monday', reminder_time: '16:00' });
+    } catch (err: any) {
+      console.error('Error adding reminder:', err);
+      setError(err.message || 'Failed to add reminder');
       toast.error('Failed to add reminder');
     }
   };
 
-  const remove = async (id) => {
+  const handleRemoveReminder = async (id: string) => {
     try {
-      const { error } = await supabase
+      setError(null);
+      const { error: deleteError } = await supabase
         .from('study_reminders')
         .delete()
         .eq('id', id);
-      
-      if (error) throw error;
-      setReminders(r => r.filter(x => x.id !== id));
+
+      if (deleteError) throw deleteError;
+      setReminders(prev => prev.filter(x => x.id !== id));
       toast.success('Reminder removed');
-    } catch (error) {
-      console.error('Error removing reminder:', error);
+    } catch (err: any) {
+      console.error('Error removing reminder:', err);
+      setError(err.message || 'Failed to remove reminder');
       toast.error('Failed to remove reminder');
     }
   };
 
-  const toggle = async (reminder) => {
+  const handleToggleActiveStatus = async (reminder: ReminderItem) => {
     try {
-      const newStatus = !reminder.is_active;
-      const { error } = await supabase
+      const nextState = !reminder.is_active;
+      const { error: updateError } = await supabase
         .from('study_reminders')
-        .update({ is_active: newStatus })
+        .update({ is_active: nextState })
         .eq('id', reminder.id);
-      
-      if (error) throw error;
-      setReminders(r => r.map(x => x.id === reminder.id ? { ...x, is_active: newStatus } : x));
-      toast.success(newStatus ? 'Reminder activated' : 'Reminder deactivated');
-    } catch (error) {
-      console.error('Error toggling reminder:', error);
+
+      if (updateError) throw updateError;
+
+      setReminders(prev => prev.map(x => x.id === reminder.id ? { ...x, is_active: nextState } : x));
+      toast.success(nextState ? 'Reminder enabled' : 'Reminder disabled');
+    } catch (err: any) {
+      console.error('Error toggling reminder:', err);
+      setError(err.message || 'Failed to update reminder status');
       toast.error('Failed to update reminder');
     }
   };
 
   if (loading) {
     return (
-      <Card className="border-border">
-        <CardContent className="pt-6 pb-6 flex justify-center">
-          <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+      <Card className="border-border shadow-md max-w-xl mx-auto bg-card">
+        <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <span className="text-xs text-muted-foreground">Loading reminders...</span>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-border">
-      <CardHeader className="pb-3">
+    <Card className="border-border shadow-md max-w-xl mx-auto bg-card">
+      <CardHeader className="pb-3 border-b bg-muted/30">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-playfair flex items-center gap-2">
-            <Bell className="w-5 h-5 text-primary" /> Study Reminders
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <Bell className="w-4 h-4 text-primary shrink-0" /> Study Reminders
           </CardTitle>
-          <Button size="sm" variant="outline" className="gap-1" onClick={() => setShowForm(!showForm)}>
-            <Plus className="w-3.5 h-3.5" /> Add
+          <Button 
+            type="button"
+            size="sm" 
+            variant="outline" 
+            className="gap-1 text-xs font-bold h-8 px-2.5" 
+            onClick={() => {
+              setShowForm(!showForm);
+              setError(null);
+            }}
+          >
+            <Plus className="w-3.5 h-3.5" /> {showForm ? 'Cancel' : 'Add'}
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        {showForm && (
-          <div className="bg-muted/50 rounded-xl p-4 mb-4 space-y-3">
-            <Select value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v }))}>
-              <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
-              <SelectContent>
-                {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.icon} {s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <div className="grid grid-cols-2 gap-2">
-              <Select value={form.day_of_week} onValueChange={v => setForm(f => ({ ...f, day_of_week: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {DAYS.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Input type="time" value={form.time} onChange={e => setForm(f => ({ ...f, time: e.target.value }))} />
-            </div>
-            <Button size="sm" className="w-full bg-primary" onClick={add}>Save Reminder</Button>
+      
+      <CardContent className="pt-4 space-y-3">
+        {error && (
+          <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[11px] font-medium flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {reminders.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">No reminders set. Add one to stay on track!</p>
+        {/* Add Form */}
+        {showForm && (
+          <div className="bg-muted/30 border border-border rounded-xl p-3.5 space-y-3">
+            <div>
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block mb-1">Subject</label>
+              <Select value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v }))}>
+                <SelectTrigger className="text-xs h-8">
+                  <SelectValue placeholder="Select subject" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SUBJECT_OPTIONS.map(s => (
+                    <SelectItem key={s.name} value={s.name} className="text-xs font-medium">
+                      {s.icon} {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block mb-1">Day</label>
+                <Select value={form.day_of_week} onValueChange={v => setForm(f => ({ ...f, day_of_week: v }))}>
+                  <SelectTrigger className="text-xs h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DAYS.map(d => (
+                      <SelectItem key={d} value={d} className="text-xs font-medium">{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div>
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block mb-1">Time</label>
+                <Input 
+                  type="time" 
+                  value={form.reminder_time} 
+                  onChange={e => setForm(f => ({ ...f, reminder_time: e.target.value }))} 
+                  className="text-xs h-8"
+                />
+              </div>
+            </div>
+            
+            <Button size="sm" type="button" className="w-full bg-primary hover:bg-primary/90 text-white font-bold text-xs h-8" onClick={handleAddReminder}>
+              Save Reminder
+            </Button>
+          </div>
+        )}
+
+        {/* Reminders List */}
+        {reminders.length === 0 && !loading ? (
+          <p className="text-xs font-medium text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl bg-muted/20">
+            No reminders set. Add one to stay on track!
+          </p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5">
             {reminders.map(r => {
-              const sub = SUBJECTS.find(s => s.name === r.subject);
+              const matchedIcon = SUBJECT_OPTIONS.find(s => s.name === r.subject)?.icon || '📚';
+              const cleanTimeLabel = r.reminder_time.slice(0, 5);
+              
               return (
-                <div key={r.id} className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/50">
-                  <span className="text-base">{sub?.icon || '📚'}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{r.subject}</p>
-                    <p className="text-xs text-muted-foreground">{r.day_of_week} at {r.reminder_time || r.time}</p>
+                <div key={r.id} className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-border bg-card hover:bg-muted/30 transition-all shadow-sm">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <span className="text-lg select-none shrink-0">{matchedIcon}</span>
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{r.subject}</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground mt-0.5">{r.day_of_week}s at {cleanTimeLabel}</p>
+                    </div>
                   </div>
-                  <Badge
-                    onClick={() => toggle(r)}
-                    className={`text-xs cursor-pointer ${r.is_active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}
-                  >
-                    {r.is_active ? 'On' : 'Off'}
-                  </Badge>
-                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => remove(r.id)}>
-                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
-                  </Button>
+                  
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Badge
+                      onClick={() => handleToggleActiveStatus(r)}
+                      className={`text-[10px] font-bold cursor-pointer px-2 py-0.5 ${
+                        r.is_active 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                      }`}
+                    >
+                      {r.is_active ? 'Active' : 'Off'}
+                    </Badge>
+                    
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                      onClick={() => handleRemoveReminder(r.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
                 </div>
               );
             })}
