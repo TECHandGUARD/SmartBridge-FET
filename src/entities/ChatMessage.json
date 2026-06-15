@@ -1,12 +1,142 @@
-{
-  "name": "ChatMessage",
-  "type": "object",
-  "properties": {
-    "room_id": { "type": "string" },
-    "sender_email": { "type": "string" },
-    "sender_name": { "type": "string" },
-    "recipient_email": { "type": "string" },
-    "content": { "type": "string" }
-  },
-  "required": ["room_id", "sender_email", "content"]
+/**
+ * ====================================================================
+ * REALTIME CHAT ENGINE SERVICE HANDLER
+ * CORE INFRASTRUCTURE: SUPABASE REALTIME WEBSOCKET SUBSCRIPTIONS
+ * COMPLIANCE PROTECTION: DEFENSIVE XSS STRING CONTAINMENT PIPELINES
+ * ====================================================================
+ */
+
+import { supabase } from '@/lib/supabaseClient';
+import { RealtimeChannel } from '@supabase/supabase-js';
+
+export interface ChatMessage {
+  id?: string;
+  room_id: string;
+  sender_email: string;
+  sender_name: string;
+  recipient_email?: string | null;
+  content: string;
+  created_at?: string;
 }
+
+export interface ChatRoom {
+  id: string;
+  room_name: string;
+  room_type: 'group_study' | 'tutor_direct';
+  subject_context?: string;
+  created_at?: string;
+}
+
+/**
+ * Publishes a message securely to the PostgreSQL chat table matrix.
+ * The underlying RLS policies guarantee the sender_email MUST match the active login token.
+ */
+export const sendChatMessage = async (message: ChatMessage): Promise<{ success: boolean; error: string | null }> => {
+  try {
+    // Validate message content
+    if (!message.content?.trim()) {
+      return { success: false, error: 'Message content cannot be blank.' };
+    }
+
+    // Defensive truncation
+    const sanitizedContent = message.content.trim().slice(0, 2000);
+    
+    // Escape potential HTML/script tags
+    const safeContent = sanitizedContent
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
+    const { error } = await supabase
+      .from('chat_messages')
+      .insert([
+        {
+          room_id: message.room_id,
+          sender_email: message.sender_email,
+          sender_name: message.sender_name,
+          recipient_email: message.recipient_email || null,
+          content: safeContent
+        }
+      ]);
+
+    if (error) throw error;
+    return { success: true, error: null };
+  } catch (err: any) {
+    console.error('Chat transaction pipeline error:', err);
+    return { success: false, error: err.message || 'Failed to transmit message securely.' };
+  }
+};
+
+/**
+ * Initializes a live WebSocket subscription to a specific study room channel.
+ * Triggers a callback function instantly whenever a new message is appended to the database.
+ */
+export const subscribeToRoomMessages = (
+  roomId: string,
+  onNewMessageReceived: (message: ChatMessage) => void
+): RealtimeChannel => {
+  return supabase
+    .channel(`room_stream:${roomId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'chat_messages',
+        filter: `room_id=eq.${roomId}`
+      },
+      (payload) => {
+        onNewMessageReceived(payload.new as ChatMessage);
+      }
+    )
+    .subscribe();
+};
+
+/**
+ * Historical Query Analyzer: Pulls past communications for a room on initial channel selection.
+ */
+export const fetchHistoricalRoomMessages = async (roomId: string, limitCount = 50): Promise<ChatMessage[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('room_id', roomId)
+      .order('created_at', { ascending: true })
+      .limit(limitCount);
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Failed retrieving channel message history archives.', err);
+    return [];
+  }
+};
+
+/**
+ * Fetch all available chat rooms
+ */
+export const fetchChatRooms = async (): Promise<ChatRoom[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('chat_rooms')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  } catch (err) {
+    console.error('Failed to fetch chat rooms:', err);
+    return [];
+  }
+};
+
+/**
+ * Unsubscribe from a room channel
+ */
+export const unsubscribeFromRoom = (channel: RealtimeChannel | null): void => {
+  if (channel) {
+    supabase.removeChannel(channel);
+  }
+};
