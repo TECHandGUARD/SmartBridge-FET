@@ -26,13 +26,13 @@ export default function AIStudyAssistant({ user }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [subject, setSubject] = useState('');
+  const [grade, setGrade] = useState('');
   const [resources, setResources] = useState([]);
   const [selectedResource, setSelectedResource] = useState('');
   const bottomRef = useRef(null);
 
   const loadConfig = useCallback(async () => {
     try {
-      // Load chatbot configuration
       const { data: configData, error: configError } = await supabase
         .functions.invoke('get-chatbot-configuration', { body: {} });
       
@@ -46,8 +46,9 @@ export default function AIStudyAssistant({ user }) {
 
   const loadResources = useCallback(async () => {
     try {
+      // Load from unified_resources table (includes both admin and tutor resources)
       const { data, error } = await supabase
-        .from('educational_resources')
+        .from('unified_resources')
         .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
@@ -80,6 +81,7 @@ export default function AIStudyAssistant({ user }) {
       ? `\n\n[Context: The student is referring to "${resource.title}" (${resource.subject}, ${resource.grade}).]`
       : '';
     const subjectNote = subject ? `\n\n[Student is studying: ${subject}]` : '';
+    const gradeNote = grade ? `\n\n[Student is in: ${grade}]` : '';
 
     setMessages(prev => [...prev, { role: 'user', content: userText }]);
     setLoading(true);
@@ -91,14 +93,16 @@ export default function AIStudyAssistant({ user }) {
 You help students understand difficult concepts, summarise notes, and prepare for exams.
 Always be encouraging, clear, and use grade-appropriate language.
 Structure your answers with bullet points and bold headings where helpful.
-Reference CAPS topics and exam tips when relevant.${subjectNote}${contextNote}`;
+Reference CAPS topics and exam tips when relevant.${subjectNote}${gradeNote}${contextNote}`;
 
     try {
-      // Call Supabase Edge Function for LLM
       const { data, error } = await supabase.functions.invoke('invoke-llm', {
         body: {
           prompt: `${systemContext}\n\nStudent question: ${userText}`,
-          model: 'claude_sonnet_4_6'
+          model: 'claude-3-sonnet-20241022',
+          user_email: user?.email,
+          subject: subject || null,
+          grade: grade || null
         }
       });
       
@@ -152,6 +156,19 @@ Reference CAPS topics and exam tips when relevant.${subjectNote}${contextNote}`;
               {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.icon} {s.name}</SelectItem>)}
             </SelectContent>
           </Select>
+          
+          <Select value={grade} onValueChange={setGrade}>
+            <SelectTrigger className="h-8 text-xs w-36">
+              <SelectValue placeholder="Filter by grade…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All grades</SelectItem>
+              <SelectItem value="Grade 10">Grade 10</SelectItem>
+              <SelectItem value="Grade 11">Grade 11</SelectItem>
+              <SelectItem value="Grade 12">Grade 12</SelectItem>
+            </SelectContent>
+          </Select>
+          
           {resources.length > 0 && (
             <Select value={selectedResource} onValueChange={setSelectedResource}>
               <SelectTrigger className="h-8 text-xs w-52">
@@ -160,7 +177,10 @@ Reference CAPS topics and exam tips when relevant.${subjectNote}${contextNote}`;
               <SelectContent>
                 <SelectItem value="">No resource selected</SelectItem>
                 {resources.slice(0, 15).map(r => (
-                  <SelectItem key={r.id} value={r.id}>{r.title.substring(0, 36)}{r.title.length > 36 ? '…' : ''}</SelectItem>
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.source_type === 'tutor' ? '👨‍🏫 ' : '📚 '}
+                    {r.title.substring(0, 34)}{r.title.length > 34 ? '…' : ''}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
