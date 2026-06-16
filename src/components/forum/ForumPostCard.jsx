@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Heart, MessageCircle, Flag, Pin, ChevronRight, Loader2 } from "lucide-react";
+import { ArrowLeft, Heart, Flag, Trash2, CheckCircle, Pin, Loader2, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 
@@ -13,26 +14,146 @@ const categoryColors = {
   "General": "bg-gray-100 text-gray-700"
 };
 
-export default function ForumPostCard({ post, user, onClick, onUpdated }) {
+export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
   const [liking, setLiking] = useState(false);
-  const [flagging, setFlagging] = useState(false);
-  const [removing, setRemoving] = useState(false);
-  
-  const isLiked = user && post.liked_by?.includes(user.email);
+  const [pinning, setPinning] = useState(false);
+  const [currentPost, setCurrentPost] = useState(post);
   const isAdmin = user?.role === 'admin';
 
-  const handleLike = async (e) => {
-    e.stopPropagation();
+  const loadComments = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error } = await supabase
+        .from('forum_comments')
+        .select('*')
+        .eq('post_id', post.id)
+        .eq('is_removed', false)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setComments(data || []);
+    } catch (err) {
+      console.error('Error loading comments:', err);
+      setError('Failed to load comments');
+      toast.error("Failed to load comments");
+    } finally {
+      setLoading(false);
+    }
+  }, [post.id]);
+
+  // Real-time subscription for new comments
+  useEffect(() => {
+    loadComments();
+    
+    const channel = supabase
+      .channel(`comments_${post.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'forum_comments',
+          filter: `post_id=eq.${post.id}`,
+        },
+        (payload) => {
+          if (!payload.new.is_removed) {
+            setComments(prev => [...prev, payload.new]);
+            // Update comment count on post
+            setCurrentPost(prev => ({ 
+              ...prev, 
+              comment_count: (prev.comment_count || 0) + 1 
+            }));
+            toast.info('New comment added!');
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'forum_comments',
+          filter: `post_id=eq.${post.id}`,
+        },
+        (payload) => {
+          setComments(prev => prev.map(c => c.id === payload.new.id ? payload.new : c));
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [post.id, loadComments]);
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    if (!newComment.trim() || !user) return;
+    
+    setSubmitting(true);
+    try {
+      const { data: comment, error: commentError } = await supabase
+        .from('forum_comments')
+        .insert({
+          post_id: post.id,
+          body: newComment.trim(),
+          author_email: user.email,
+          author_name: user.full_name || user.email,
+          author_role: user.role || 'student',
+          likes: 0,
+          liked_by: [],
+          is_flagged: false,
+          is_removed: false,
+          is_best_answer: false
+        })
+        .select()
+        .single();
+      
+      if (commentError) throw commentError;
+      
+      // Update comment count on post
+      const updatedCount = (currentPost.comment_count || 0) + 1;
+      const { error: updateError } = await supabase
+        .from('forum_posts')
+        .update({ 
+          comment_count: updatedCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', post.id);
+      
+      if (updateError) throw updateError;
+      
+      const updatedPost = { ...currentPost, comment_count: updatedCount };
+      setCurrentPost(updatedPost);
+      onPostUpdated(updatedPost);
+      setComments(prev => [...prev, comment]);
+      setNewComment("");
+      toast.success("Comment posted!");
+    } catch (err) {
+      console.error('Error posting comment:', err);
+      toast.error("Failed to post comment");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleLikePost = async () => {
     if (!user) {
       toast.error("Please sign in to like posts");
       return;
     }
     
     setLiking(true);
-    const alreadyLiked = post.liked_by?.includes(user.email);
+    const alreadyLiked = currentPost.liked_by?.includes(user.email);
     const newLikedBy = alreadyLiked
-      ? (post.liked_by || []).filter(e => e !== user.email)
-      : [...(post.liked_by || []), user.email];
+      ? (currentPost.liked_by || []).filter(e => e !== user.email)
+      : [...(currentPost.liked_by || []), user.email];
     
     try {
       const { error } = await supabase
@@ -46,50 +167,163 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
       
       if (error) throw error;
       
-      onUpdated({ ...post, liked_by: newLikedBy, likes: newLikedBy.length });
+      const updated = { ...currentPost, liked_by: newLikedBy, likes: newLikedBy.length };
+      setCurrentPost(updated);
+      onPostUpdated(updated);
     } catch (err) {
-      console.error('Error updating like:', err);
-      toast.error("Failed to update like");
+      console.error('Error liking post:', err);
+      toast.error("Failed to like post");
     } finally {
       setLiking(false);
     }
   };
 
-  const handleFlag = async (e) => {
-    e.stopPropagation();
+  const handleLikeComment = async (comment) => {
     if (!user) {
-      toast.error("Please sign in to flag posts");
+      toast.error("Please sign in to like comments");
       return;
     }
     
-    setFlagging(true);
+    const alreadyLiked = comment.liked_by?.includes(user.email);
+    const newLikedBy = alreadyLiked
+      ? (comment.liked_by || []).filter(e => e !== user.email)
+      : [...(comment.liked_by || []), user.email];
+    
     try {
-      const newFlagged = !post.is_flagged;
+      const { error } = await supabase
+        .from('forum_comments')
+        .update({
+          liked_by: newLikedBy,
+          likes: newLikedBy.length,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', comment.id);
+      
+      if (error) throw error;
+      
+      setComments(prev => prev.map(c => 
+        c.id === comment.id ? { ...c, liked_by: newLikedBy, likes: newLikedBy.length } : c
+      ));
+    } catch (err) {
+      console.error('Error liking comment:', err);
+      toast.error("Failed to like comment");
+    }
+  };
+
+  const handleFlagComment = async (comment) => {
+    try {
+      const newFlagged = !comment.is_flagged;
+      const { error } = await supabase
+        .from('forum_comments')
+        .update({ 
+          is_flagged: newFlagged,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', comment.id);
+      
+      if (error) throw error;
+      
+      setComments(prev => prev.map(c => 
+        c.id === comment.id ? { ...c, is_flagged: newFlagged } : c
+      ));
+      toast.success(newFlagged ? "Comment flagged" : "Flag removed");
+    } catch (err) {
+      console.error('Error flagging comment:', err);
+      toast.error("Failed to flag comment");
+    }
+  };
+
+  const handleRemoveComment = async (comment) => {
+    try {
+      const { error } = await supabase
+        .from('forum_comments')
+        .update({ 
+          is_removed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', comment.id);
+      
+      if (error) throw error;
+      
+      setComments(prev => prev.filter(c => c.id !== comment.id));
+      // Update comment count
+      setCurrentPost(prev => ({ 
+        ...prev, 
+        comment_count: Math.max(0, (prev.comment_count || 0) - 1)
+      }));
+      toast.success("Comment removed");
+    } catch (err) {
+      console.error('Error removing comment:', err);
+      toast.error("Failed to remove comment");
+    }
+  };
+
+  const handleMarkBestAnswer = async (comment) => {
+    try {
+      // Update all comments - unmark all, mark the selected one
+      for (const c of comments) {
+        const { error } = await supabase
+          .from('forum_comments')
+          .update({ 
+            is_best_answer: c.id === comment.id,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', c.id);
+        
+        if (error) throw error;
+      }
+      
+      setComments(prev => prev.map(c => ({ ...c, is_best_answer: c.id === comment.id })));
+      
+      // Mark post as answered
+      if (!currentPost.is_answered) {
+        const { error } = await supabase
+          .from('forum_posts')
+          .update({ 
+            is_answered: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', post.id);
+        
+        if (!error) {
+          setCurrentPost(prev => ({ ...prev, is_answered: true }));
+          onPostUpdated({ ...currentPost, is_answered: true });
+        }
+      }
+      
+      toast.success("Best answer marked");
+    } catch (err) {
+      console.error('Error marking best answer:', err);
+      toast.error("Failed to mark best answer");
+    }
+  };
+
+  const handlePinPost = async () => {
+    setPinning(true);
+    try {
+      const updated = { ...currentPost, is_pinned: !currentPost.is_pinned };
       const { error } = await supabase
         .from('forum_posts')
         .update({ 
-          is_flagged: newFlagged,
+          is_pinned: updated.is_pinned,
           updated_at: new Date().toISOString()
         })
         .eq('id', post.id);
       
       if (error) throw error;
       
-      onUpdated({ ...post, is_flagged: newFlagged });
-      toast.success(newFlagged ? "Post flagged for review" : "Flag removed");
+      setCurrentPost(updated);
+      onPostUpdated(updated);
+      toast.success(updated.is_pinned ? "Post pinned" : "Post unpinned");
     } catch (err) {
-      console.error('Error flagging post:', err);
-      toast.error("Failed to flag post");
+      console.error('Error pinning post:', err);
+      toast.error("Failed to update pin status");
     } finally {
-      setFlagging(false);
+      setPinning(false);
     }
   };
 
-  const handleRemove = async (e) => {
-    e.stopPropagation();
-    if (!isAdmin) return;
-    
-    setRemoving(true);
+  const handleRemovePost = async () => {
     try {
       const { error } = await supabase
         .from('forum_posts')
@@ -101,90 +335,155 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
       
       if (error) throw error;
       
-      onUpdated({ ...post, is_removed: true });
       toast.success("Post removed");
+      onBack();
     } catch (err) {
       console.error('Error removing post:', err);
       toast.error("Failed to remove post");
-    } finally {
-      setRemoving(false);
     }
   };
 
-  return (
-    <div
-      onClick={onClick}
-      className="bg-card border rounded-xl p-4 hover:shadow-md transition-all cursor-pointer group"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            {post.is_pinned && (
-              <Badge className="bg-primary/10 text-primary text-xs gap-1">
-                <Pin className="w-3 h-3" /> Pinned
-              </Badge>
-            )}
-            {post.is_flagged && isAdmin && (
-              <Badge className="bg-red-100 text-red-700 text-xs">Flagged</Badge>
-            )}
-            <Badge className={`text-xs ${categoryColors[post.category] || "bg-gray-100 text-gray-700"}`}>
-              {post.category}
-            </Badge>
-            {post.university_tag && (
-              <Badge variant="outline" className="text-xs">{post.university_tag}</Badge>
-            )}
-          </div>
-          <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-2 mb-1">
-            {post.title}
-          </h3>
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{post.body}</p>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span className="font-medium">{post.author_name}</span>
-            <span>{formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}</span>
-          </div>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground mt-1 shrink-0" />
-      </div>
+  const isPostLiked = user && currentPost.liked_by?.includes(user.email);
 
-      <div className="flex items-center gap-4 mt-3 pt-3 border-t">
-        <button
-          onClick={handleLike}
-          disabled={liking}
-          className={`flex items-center gap-1.5 text-sm transition-colors ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-400'} disabled:opacity-50`}
-        >
-          {liking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />}
-          <span>{post.likes || 0}</span>
+  if (loading && comments.length === 0) {
+    return (
+      <div className="min-h-screen bg-background flex justify-center py-12">
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-3xl mx-auto px-4 py-6">
+        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back to Forum
         </button>
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <MessageCircle className="w-4 h-4" />
-          <span>{post.comment_count || 0}</span>
-        </div>
-        {user && !isAdmin && (
-          <button
-            onClick={handleFlag}
-            disabled={flagging}
-            className={`flex items-center gap-1.5 text-xs ml-auto transition-colors disabled:opacity-50 ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}
-          >
-            {flagging ? <Loader2 className="w-3 h-3 animate-spin" /> : <Flag className="w-3 h-3" />}
-            {post.is_flagged ? 'Flagged' : 'Flag'}
-          </button>
+
+        {/* Error Alert */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+            <Button variant="outline" size="sm" onClick={loadComments}>Retry</Button>
+          </div>
         )}
-        {isAdmin && (
-          <div className="flex items-center gap-2 ml-auto">
-            <button 
-              onClick={handleFlag} 
-              disabled={flagging}
-              className={`text-xs transition-colors disabled:opacity-50 ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}
-            >
-              <Flag className="w-3 h-3" />
-            </button>
-            <button 
-              onClick={handleRemove} 
-              disabled={removing}
-              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
-            >
-              {removing ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Remove'}
-            </button>
+
+        {/* Post */}
+        <div className="bg-card border rounded-2xl p-6 mb-6">
+          <div className="flex flex-wrap gap-2 mb-3">
+            {currentPost.is_pinned && <Badge className="bg-primary/10 text-primary text-xs gap-1"><Pin className="w-3 h-3" /> Pinned</Badge>}
+            {currentPost.is_answered && <Badge className="bg-green-100 text-green-700 text-xs gap-1"><CheckCircle className="w-3 h-3" /> Answered</Badge>}
+            <Badge className={`text-xs ${categoryColors[currentPost.category] || ""}`}>{currentPost.category}</Badge>
+            {currentPost.university_tag && <Badge variant="outline" className="text-xs">{currentPost.university_tag}</Badge>}
+          </div>
+          <h1 className="text-2xl font-bold mb-3">{currentPost.title}</h1>
+          <p className="text-muted-foreground leading-relaxed mb-4 whitespace-pre-wrap">{currentPost.body}</p>
+          <div className="flex items-center justify-between flex-wrap gap-2 pt-4 border-t">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">{currentPost.author_name}</span>
+              <span>{formatDistanceToNow(new Date(currentPost.created_at), { addSuffix: true })}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={handleLikePost} 
+                disabled={liking}
+                className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 ${isPostLiked ? 'bg-red-50 text-red-500' : 'bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-400'}`}
+              >
+                {liking ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Heart className={`w-4 h-4 ${isPostLiked ? 'fill-current' : ''}`} />}
+                <span>{currentPost.likes || 0}</span>
+              </button>
+              {isAdmin && (
+                <>
+                  <button 
+                    onClick={handlePinPost} 
+                    disabled={pinning}
+                    className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${currentPost.is_pinned ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground hover:bg-primary/10 hover:text-primary'}`}
+                  >
+                    {pinning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Pin className="w-4 h-4" />}
+                  </button>
+                  <button onClick={handleRemovePost} className="p-1.5 rounded-lg bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-500 transition-colors">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Comments */}
+        <h2 className="text-lg font-semibold mb-4">
+          {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+        </h2>
+
+        <div className="space-y-3 mb-6">
+          {comments.map(comment => (
+            <div key={comment.id} className={`bg-card border rounded-xl p-4 ${comment.is_best_answer ? 'border-green-400 bg-green-50/50' : ''}`}>
+              {comment.is_best_answer && (
+                <div className="flex items-center gap-1.5 text-green-600 text-xs font-semibold mb-2">
+                  <CheckCircle className="w-4 h-4" /> Best Answer
+                </div>
+              )}
+              <p className="text-sm leading-relaxed mb-3 whitespace-pre-wrap">{comment.body}</p>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                  <span className="font-medium">{comment.author_name}</span>
+                  <span>{formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleLikeComment(comment)}
+                    className={`flex items-center gap-1 text-xs transition-colors ${comment.liked_by?.includes(user?.email) ? 'text-red-500' : 'text-muted-foreground hover:text-red-400'}`}
+                  >
+                    <Heart className={`w-3.5 h-3.5 ${comment.liked_by?.includes(user?.email) ? 'fill-current' : ''}`} />
+                    {comment.likes || 0}
+                  </button>
+                  {user && !isAdmin && (
+                    <button onClick={() => handleFlagComment(comment)} className={`text-xs transition-colors ${comment.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}>
+                      <Flag className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <button onClick={() => handleMarkBestAnswer(comment)} className={`text-xs transition-colors ${comment.is_best_answer ? 'text-green-500' : 'text-muted-foreground hover:text-green-500'}`}>
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleFlagComment(comment)} className={`text-xs transition-colors ${comment.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}>
+                        <Flag className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleRemoveComment(comment)} className="text-xs text-red-500 hover:text-red-700">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Add comment */}
+        {user ? (
+          <form onSubmit={handleSubmitComment} className="bg-card border rounded-xl p-4">
+            <p className="text-sm font-medium mb-2">Add your answer or comment</p>
+            <textarea
+              className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mb-3"
+              placeholder="Share your knowledge..."
+              value={newComment}
+              onChange={e => setNewComment(e.target.value)}
+            />
+            <div className="flex justify-end">
+              <Button type="submit" disabled={submitting || !newComment.trim()} size="sm">
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
+                {submitting ? "Posting..." : "Post Comment"}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="bg-muted rounded-xl p-4 text-center text-sm text-muted-foreground">
+            Please log in to add a comment.
           </div>
         )}
       </div>
