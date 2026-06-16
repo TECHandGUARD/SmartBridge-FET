@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Badge } from "@/components/ui/badge";
 import { Heart, MessageCircle, Flag, Pin, ChevronRight, Loader2 } from "lucide-react";
@@ -14,6 +14,10 @@ const categoryColors = {
 };
 
 export default function ForumPostCard({ post, user, onClick, onUpdated }) {
+  const [liking, setLiking] = useState(false);
+  const [flagging, setFlagging] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  
   const isLiked = user && post.liked_by?.includes(user.email);
   const isAdmin = user?.role === 'admin';
 
@@ -24,6 +28,7 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
       return;
     }
     
+    setLiking(true);
     const alreadyLiked = post.liked_by?.includes(user.email);
     const newLikedBy = alreadyLiked
       ? (post.liked_by || []).filter(e => e !== user.email)
@@ -34,7 +39,8 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
         .from('forum_posts')
         .update({
           liked_by: newLikedBy,
-          likes: newLikedBy.length
+          likes: newLikedBy.length,
+          updated_at: new Date().toISOString()
         })
         .eq('id', post.id);
       
@@ -44,6 +50,8 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
     } catch (err) {
       console.error('Error updating like:', err);
       toast.error("Failed to update like");
+    } finally {
+      setLiking(false);
     }
   };
 
@@ -54,19 +62,26 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
       return;
     }
     
+    setFlagging(true);
     try {
+      const newFlagged = !post.is_flagged;
       const { error } = await supabase
         .from('forum_posts')
-        .update({ is_flagged: !post.is_flagged })
+        .update({ 
+          is_flagged: newFlagged,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', post.id);
       
       if (error) throw error;
       
-      onUpdated({ ...post, is_flagged: !post.is_flagged });
-      toast.success(post.is_flagged ? "Flag removed" : "Post flagged for review");
+      onUpdated({ ...post, is_flagged: newFlagged });
+      toast.success(newFlagged ? "Post flagged for review" : "Flag removed");
     } catch (err) {
       console.error('Error flagging post:', err);
       toast.error("Failed to flag post");
+    } finally {
+      setFlagging(false);
     }
   };
 
@@ -74,10 +89,14 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
     e.stopPropagation();
     if (!isAdmin) return;
     
+    setRemoving(true);
     try {
       const { error } = await supabase
         .from('forum_posts')
-        .update({ is_removed: true })
+        .update({ 
+          is_removed: true,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', post.id);
       
       if (error) throw error;
@@ -87,6 +106,8 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
     } catch (err) {
       console.error('Error removing post:', err);
       toast.error("Failed to remove post");
+    } finally {
+      setRemoving(false);
     }
   };
 
@@ -128,9 +149,10 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
       <div className="flex items-center gap-4 mt-3 pt-3 border-t">
         <button
           onClick={handleLike}
-          className={`flex items-center gap-1.5 text-sm transition-colors ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-400'}`}
+          disabled={liking}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${isLiked ? 'text-red-500' : 'text-muted-foreground hover:text-red-400'} disabled:opacity-50`}
         >
-          <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />
+          {liking ? <Loader2 className="w-3 h-3 animate-spin" /> : <Heart className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} />}
           <span>{post.likes || 0}</span>
         </button>
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -140,18 +162,29 @@ export default function ForumPostCard({ post, user, onClick, onUpdated }) {
         {user && !isAdmin && (
           <button
             onClick={handleFlag}
-            className={`flex items-center gap-1.5 text-xs ml-auto transition-colors ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}
+            disabled={flagging}
+            className={`flex items-center gap-1.5 text-xs ml-auto transition-colors disabled:opacity-50 ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}
           >
-            <Flag className="w-3 h-3" />
+            {flagging ? <Loader2 className="w-3 h-3 animate-spin" /> : <Flag className="w-3 h-3" />}
             {post.is_flagged ? 'Flagged' : 'Flag'}
           </button>
         )}
         {isAdmin && (
           <div className="flex items-center gap-2 ml-auto">
-            <button onClick={handleFlag} className={`text-xs transition-colors ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}>
+            <button 
+              onClick={handleFlag} 
+              disabled={flagging}
+              className={`text-xs transition-colors disabled:opacity-50 ${post.is_flagged ? 'text-orange-500' : 'text-muted-foreground hover:text-orange-400'}`}
+            >
               <Flag className="w-3 h-3" />
             </button>
-            <button onClick={handleRemove} className="text-xs text-red-500 hover:text-red-700">Remove</button>
+            <button 
+              onClick={handleRemove} 
+              disabled={removing}
+              className="text-xs text-red-500 hover:text-red-700 disabled:opacity-50"
+            >
+              {removing ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Remove'}
+            </button>
           </div>
         )}
       </div>
