@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const CATEGORIES = ["University Questions", "NBT Prep", "Course Choices", "Bursaries", "General"];
@@ -14,6 +14,7 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
   const [category, setCategory] = useState("General");
   const [universityTag, setUniversityTag] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,6 +24,7 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
     }
     
     setLoading(true);
+    setError(null);
     try {
       const { data, error } = await supabase
         .from('forum_posts')
@@ -33,6 +35,7 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
           university_tag: universityTag || null,
           author_email: user.email,
           author_name: user.full_name || user.email,
+          author_role: user.role || 'student',
           likes: 0,
           liked_by: [],
           comment_count: 0,
@@ -50,6 +53,7 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
       onClose();
     } catch (err) {
       console.error("Error creating post:", err);
+      setError(err.message);
       toast.error(`Failed to post: ${err.message}`);
     } finally {
       setLoading(false);
@@ -65,9 +69,20 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
             <X className="w-5 h-5" />
           </button>
         </div>
+        
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
+          {/* Error Alert */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-700">{error}</p>
+            </div>
+          )}
+          
           <div>
-            <label className="text-sm font-medium mb-1 block">Title</label>
+            <label className="text-sm font-medium mb-1 block">
+              Title <span className="text-red-500">*</span>
+            </label>
             <Input
               placeholder="What's your question or topic?"
               value={title}
@@ -75,9 +90,15 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
               maxLength={120}
               required
             />
+            <p className="text-[10px] text-muted-foreground text-right mt-1">
+              {title.length}/120
+            </p>
           </div>
+          
           <div>
-            <label className="text-sm font-medium mb-1 block">Details</label>
+            <label className="text-sm font-medium mb-1 block">
+              Details <span className="text-red-500">*</span>
+            </label>
             <textarea
               className="w-full min-h-[120px] rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               placeholder="Provide more details about your question..."
@@ -86,6 +107,7 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
               required
             />
           </div>
+          
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium mb-1 block">Category</label>
@@ -98,7 +120,9 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">University Tag <span className="text-muted-foreground">(optional)</span></label>
+              <label className="text-sm font-medium mb-1 block">
+                University Tag <span className="text-muted-foreground">(optional)</span>
+              </label>
               <select
                 className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 value={universityTag}
@@ -109,8 +133,11 @@ export default function CreatePostModal({ user, onClose, onCreated }) {
               </select>
             </div>
           </div>
+          
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
             <Button type="submit" disabled={loading || !title.trim() || !body.trim()}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
               {loading ? "Posting..." : "Post Discussion"}
