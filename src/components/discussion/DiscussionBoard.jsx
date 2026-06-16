@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/supabaseClient';
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
 import { CAPS_TOPICS } from '@/lib/capsTopics';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { MessageSquare, Plus, ChevronDown, ChevronUp, CheckCircle2, ThumbsUp, Search, GraduationCap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'sonner';
@@ -17,21 +18,31 @@ const SUBJECT_NAMES = SUBJECTS.map(s => s.name);
 
 function PostCard({ post, user, onPostUpdate }) {
   const [expanded, setExpanded] = useState(false);
-  const [upvotes, setUpvotes] = useState(post.upvotes || 0);
+  const [upvoting, setUpvoting] = useState(false);
 
   const upvote = async (e) => {
     e.stopPropagation();
+    if (!user) {
+      toast.error('Please sign in to upvote');
+      return;
+    }
+    
+    setUpvoting(true);
     try {
+      const newUpvotes = (post.upvotes || 0) + 1;
       const { error } = await supabase
-        .from('discussion_posts')
-        .update({ upvotes: upvotes + 1 })
+        .from('forum_posts')
+        .update({ upvotes: newUpvotes, updated_at: new Date().toISOString() })
         .eq('id', post.id);
       
       if (error) throw error;
-      setUpvotes(prev => prev + 1);
-    } catch (error) {
-      console.error('Error upvoting:', error);
+      
+      onPostUpdate({ ...post, upvotes: newUpvotes });
+    } catch (err) {
+      console.error('Error upvoting:', err);
       toast.error('Failed to upvote');
+    } finally {
+      setUpvoting(false);
     }
   };
 
@@ -48,7 +59,7 @@ function PostCard({ post, user, onPostUpdate }) {
               </Badge>
             )}
           </div>
-          <p className="font-semibold text-sm leading-snug">{post.question}</p>
+          <p className="font-semibold text-sm leading-snug">{post.title}</p>
           <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               {post.author_role === 'tutor' ? <GraduationCap className="w-3 h-3" /> : null}
@@ -59,8 +70,12 @@ function PostCard({ post, user, onPostUpdate }) {
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <button onClick={upvote} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors">
-              <ThumbsUp className="w-3.5 h-3.5" /> {upvotes}
+            <button 
+              onClick={upvote} 
+              disabled={upvoting}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+            >
+              <ThumbsUp className="w-3.5 h-3.5" /> {post.upvotes || 0}
             </button>
             <button onClick={() => setExpanded(e => !e)} className="flex items-center gap-1 text-xs text-primary hover:underline">
               <MessageSquare className="w-3.5 h-3.5" /> {post.answer_count || 0}
@@ -74,76 +89,132 @@ function PostCard({ post, user, onPostUpdate }) {
         <AnswerThread 
           post={post} 
           user={user} 
-          onAnswerAdded={() => {
-            if (onPostUpdate) onPostUpdate();
-          }} 
+          onAnswerAdded={() => onPostUpdate({ ...post, answer_count: (post.answer_count || 0) + 1 })}
         />
       )}
     </div>
   );
 }
 
-export default function DiscussionBoard({ user, userProfile }) {
+export default function DiscussionBoard({ user }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [filterSubject, setFilterSubject] = useState('all');
   const [search, setSearch] = useState('');
-
-  const [form, setForm] = useState({ subject: '', topic: '', question: '' });
   const [submitting, setSubmitting] = useState(false);
+  const [form, setForm] = useState({ subject: '', topic: '', title: '', content: '' });
 
-  const load = async () => {
+  const loadPosts = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const { data, error } = await supabase
-        .from('discussion_posts')
+      let query = supabase
+        .from('forum_posts')
         .select('*')
-        .order('created_at', { ascending: false });
+        .eq('is_removed', false)
+        .order('created_at', { ascending: false })
+        .limit(50);
       
-      if (error) throw error;
+      const { data, error: postsError } = await query;
+      
+      if (postsError) throw postsError;
       setPosts(data || []);
-    } catch (error) {
-      console.error('Error fetching posts:', error);
+    } catch (err) {
+      console.error('Error loading posts:', err);
+      setError('Failed to load discussions');
       toast.error('Failed to load discussions');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  // Real-time subscription for new posts
+  useEffect(() => {
+    loadPosts();
+    
+    const channel = supabase
+      .channel('forum_posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'forum_posts',
+          filter: 'is_removed=eq.false',
+        },
+        (payload) => {
+          setPosts(prev => [payload.new, ...prev]);
+          toast.info('New discussion posted!');
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'forum_posts',
+          filter: 'is_removed=eq.false',
+        },
+        (payload) => {
+          setPosts(prev => prev.map(p => p.id === payload.new.id ? payload.new : p));
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [loadPosts]);
+
+  const updatePost = (updatedPost) => {
+    setPosts(prev => prev.map(p => p.id === updatedPost.id ? updatedPost : p));
+  };
 
   const topicsForSubject = CAPS_TOPICS[form.subject] || [];
 
   const submitPost = async () => {
-    if (!form.question.trim() || !form.subject) {
-      toast.error('Please enter a question and select a subject.');
+    if (!form.title?.trim() || !form.subject) {
+      toast.error('Please fill in title and subject');
       return;
     }
+    if (!user) {
+      toast.error('Please sign in to post');
+      return;
+    }
+    
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('discussion_posts')
+      const { data, error: postError } = await supabase
+        .from('forum_posts')
         .insert({
-          author_email: user.email,
-          author_name: user.user_metadata?.full_name || user.email,
-          author_role: userProfile?.role || 'student',
+          title: form.title.trim(),
+          content: form.content?.trim() || '',
           subject: form.subject,
-          topic: form.topic || '',
-          question: form.question.trim(),
+          topic: form.topic || null,
+          author_email: user.email,
+          author_name: user.full_name || user.email,
+          author_role: user.role || 'student',
           is_answered: false,
           answer_count: 0,
           upvotes: 0,
-        });
+          is_flagged: false,
+          is_removed: false,
+          is_pinned: false,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
       
-      if (error) throw error;
+      if (postError) throw postError;
       
-      setForm({ subject: '', topic: '', question: '' });
+      setPosts(prev => [data, ...prev]);
+      setForm({ subject: '', topic: '', title: '', content: '' });
       setShowForm(false);
       toast.success('Question posted!');
-      load();
-    } catch (error) {
-      console.error('Error posting question:', error);
+    } catch (err) {
+      console.error('Error posting:', err);
       toast.error('Failed to post question');
     } finally {
       setSubmitting(false);
@@ -152,13 +223,12 @@ export default function DiscussionBoard({ user, userProfile }) {
 
   const filtered = posts.filter(p => {
     const matchSubject = filterSubject === 'all' || p.subject === filterSubject;
-    const matchSearch = !search || p.question.toLowerCase().includes(search.toLowerCase()) || p.subject.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || 
+      p.title?.toLowerCase().includes(search.toLowerCase()) || 
+      p.content?.toLowerCase().includes(search.toLowerCase()) ||
+      p.subject?.toLowerCase().includes(search.toLowerCase());
     return matchSubject && matchSearch;
   });
-
-  const handlePostUpdate = () => {
-    load();
-  };
 
   return (
     <Card className="border-border">
@@ -173,16 +243,21 @@ export default function DiscussionBoard({ user, userProfile }) {
             </Button>
           )}
         </div>
-        <p className="text-sm text-muted-foreground">Ask questions about CAPS topics and get answers from peers and tutors.</p>
+        <p className="text-sm text-muted-foreground">
+          Ask questions about CAPS topics and get answers from peers and tutors.
+        </p>
       </CardHeader>
+      
       <CardContent className="space-y-4">
-
         {/* Ask form */}
         {showForm && user && (
           <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-3">
             <p className="text-sm font-semibold">New Question</p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Select value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v, topic: '' }))}>
+              <Select 
+                value={form.subject} 
+                onValueChange={v => setForm(f => ({ ...f, subject: v, topic: '' }))}
+              >
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Select subject *" />
                 </SelectTrigger>
@@ -190,7 +265,11 @@ export default function DiscussionBoard({ user, userProfile }) {
                   {SUBJECT_NAMES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                 </SelectContent>
               </Select>
-              <Select value={form.topic} onValueChange={v => setForm(f => ({ ...f, topic: v }))} disabled={!topicsForSubject.length}>
+              <Select 
+                value={form.topic} 
+                onValueChange={v => setForm(f => ({ ...f, topic: v }))} 
+                disabled={!topicsForSubject.length}
+              >
                 <SelectTrigger className="text-sm">
                   <SelectValue placeholder="Select topic (optional)" />
                 </SelectTrigger>
@@ -199,16 +278,26 @@ export default function DiscussionBoard({ user, userProfile }) {
                 </SelectContent>
               </Select>
             </div>
+            <Input
+              placeholder="Question title *"
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              className="text-sm"
+            />
             <Textarea
-              value={form.question}
-              onChange={e => setForm(f => ({ ...f, question: e.target.value }))}
+              value={form.content}
+              onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
               placeholder="Describe your question clearly..."
               className="text-sm min-h-[80px] resize-none"
             />
             <div className="flex gap-2 justify-end">
               <Button variant="outline" size="sm" onClick={() => setShowForm(false)}>Cancel</Button>
-              <Button size="sm" disabled={submitting || !form.question.trim() || !form.subject} onClick={submitPost}>
-                {submitting ? 'Posting…' : 'Post Question'}
+              <Button 
+                size="sm" 
+                disabled={submitting || !form.title?.trim() || !form.subject} 
+                onClick={submitPost}
+              >
+                {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Post Question'}
               </Button>
             </div>
           </div>
@@ -218,7 +307,12 @@ export default function DiscussionBoard({ user, userProfile }) {
         <div className="flex gap-2 flex-wrap">
           <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search questions…" className="pl-8 h-8 text-sm" />
+            <Input 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              placeholder="Search questions…" 
+              className="pl-8 h-8 text-sm" 
+            />
           </div>
           <Select value={filterSubject} onValueChange={setFilterSubject}>
             <SelectTrigger className="w-40 h-8 text-sm">
@@ -231,24 +325,40 @@ export default function DiscussionBoard({ user, userProfile }) {
           </Select>
         </div>
 
-        {/* Posts */}
-        {loading ? (
+        {/* Loading State */}
+        {loading && (
           <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        ) : filtered.length === 0 ? (
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div className="text-center py-8">
+            <AlertCircle className="w-8 h-8 text-red-500 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" className="mt-3" onClick={loadPosts}>
+              Retry
+            </Button>
+          </div>
+        )}
+
+        {/* Posts List */}
+        {!loading && !error && filtered.length === 0 && (
           <div className="text-center py-10 text-muted-foreground">
             <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm">No questions yet. Be the first to ask!</p>
           </div>
-        ) : (
+        )}
+
+        {!loading && !error && filtered.length > 0 && (
           <div className="space-y-3">
             {filtered.map(post => (
               <PostCard 
                 key={post.id} 
                 post={post} 
                 user={user} 
-                onPostUpdate={handlePostUpdate}
+                onPostUpdate={updatePost}
               />
             ))}
           </div>
