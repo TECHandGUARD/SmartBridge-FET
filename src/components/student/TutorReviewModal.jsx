@@ -1,36 +1,16 @@
 import React, { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient'; // Path to your initialized Supabase Client instance
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, Loader2, X, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface BookingType {
-  id: string;
-  status: string;
-  tutor_email: string;
-  tutor_name: string;
-  subject: string;
-}
-
-interface UserType {
-  email: string;
-  full_name?: string;
-}
-
-interface TutorReviewModalProps {
-  booking: BookingType;
-  user: UserType;
-  onClose: () => void;
-  onReviewed?: () => void;
-}
-
-export default function TutorReviewModal({ booking, user, onClose, onReviewed }: TutorReviewModalProps) {
-  const [rating, setRating] = useState<number>(0);
-  const [hovered, setHovered] = useState<number>(0);
-  const [comment, setComment] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+export default function TutorReviewModal({ booking, user, onClose, onReviewed }) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   // PRINCIPAL'S COMPLIANCE POLICY: Double-validation guard against fraud or uncompleted session inputs
   const handleValidateAndSubmit = async () => {
@@ -68,7 +48,7 @@ export default function TutorReviewModal({ booking, user, onClose, onReviewed }:
       
       // Validation checks passed -> Execute transaction pipelines
       await executeReviewSubmission();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Validation parameters breakdown:', error);
       setErrorMessage(error.message || 'Verification pipeline timeout.');
       setIsSubmitting(false);
@@ -107,9 +87,9 @@ export default function TutorReviewModal({ booking, user, onClose, onReviewed }:
         ]).catch((e) => console.warn('Activity logging fallback bypassed.', e));
       
       toast.success('Evaluation cataloged into marketplace matrices successfully!');
-      onReviewed?.();
+      if (onReviewed) onReviewed();
       onClose();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Review mutation submission error:', error);
       setErrorMessage(error.message || 'Database connection loss processing transactional metrics.');
     } finally {
