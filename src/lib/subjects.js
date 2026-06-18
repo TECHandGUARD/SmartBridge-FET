@@ -1,22 +1,4 @@
-/**
- * ====================================================================
- * CORE PLATFORM SUBJECT DIRECTORY CONFIGURATION
- * COMPLIANCE STANDARD: SOUTH AFRICAN NSC CAPS ARCHITECTURE
- * TYPE IMPLEMENTATION: PRODUCTION STRUCTURAL TYPE GUARDS
- * ====================================================================
- */
-
-export interface SubjectProfile {
-  name: string;
-  code: string;
-  category: 'Mathematics' | 'Sciences' | 'Commerce' | 'Humanities' | 'Languages' | 'Life Skills';
-  icon: string;
-  description: string;
-  grades: string[];
-  color: string;
-}
-
-export const SUBJECTS: SubjectProfile[] = [
+export const SUBJECTS = [
   {
     name: 'Mathematics',
     code: 'math',
@@ -154,32 +136,20 @@ export const SUBJECTS: SubjectProfile[] = [
   },
 ];
 
-/**
- * Get subject by code with case-insensitive matching
- */
-export const getSubjectByCode = (code: string): SubjectProfile | undefined => {
+export const getSubjectByCode = (code) => {
   if (!code) return undefined;
   return SUBJECTS.find((s) => s.code.toLowerCase() === code.toLowerCase().trim());
 };
 
-/**
- * Get subject by name with case-insensitive matching
- */
-export const getSubjectByName = (name: string): SubjectProfile | undefined => {
+export const getSubjectByName = (name) => {
   if (!name) return undefined;
   return SUBJECTS.find((s) => s.name.toLowerCase() === name.toLowerCase().trim());
 };
 
-/**
- * Get all subjects in a category
- */
-export const getSubjectsByCategory = (category: SubjectProfile['category']): SubjectProfile[] => {
+export const getSubjectsByCategory = (category) => {
   return SUBJECTS.filter((s) => s.category === category);
 };
 
-/**
- * Get all unique categories
- */
-export const getAllCategories = (): string[] => {
+export const getAllCategories = () => {
   return [...new Set(SUBJECTS.map((s) => s.category))];
 };
