@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';  // ✅ Fixed import path
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Bell, Shield, GraduationCap, X, CheckCheck } from 'lucide-react';
