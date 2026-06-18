@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,13 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Plus, Trash2, Loader2, Calendar, Clock, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { SUBJECTS } from '@/lib/subjects';
 import { toast } from 'sonner';
+
+// PropTypes for component props
+const propTypes = {
+  user: PropTypes.shape({
+    email: PropTypes.string.isRequired
+  }).isRequired
+};
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const GRADE_OPTIONS = ['Grade 10', 'Grade 11', 'Grade 12'];
@@ -264,7 +272,8 @@ Respond with a structured JSON study plan.`,
               </div>
             )}
 
-            if (exams.length === 0) ? (
+            {/* ✅ FIXED: Changed if statement to ternary operator */}
+            {exams.length === 0 ? (
               <p className="text-xs text-muted-foreground text-center py-3">No exams added yet. Add your upcoming exams to generate a study plan.</p>
             ) : (
               <div className="space-y-1.5">
@@ -347,3 +356,6 @@ Respond with a structured JSON study plan.`,
     </Card>
   );
 }
+
+// Add PropTypes to the component
+AIStudyPlanner.propTypes = propTypes;
