@@ -2,8 +2,9 @@
  * ====================================================================
  * REALTIME CHAT ENGINE SERVICE HANDLER
  * CORE INFRASTRUCTURE: SUPABASE REALTIME WEBSOCKET SUBSCRIPTIONS
- * COMPLIANCE PROTECTION: DEFENSIVE XSS STRING CONTAINMENT PIPELINES
+ * COMPLIANCE PROTECTION: POPIA & XSS STRING CONTAINMENT PIPELINES
  * ENHANCED: Typing indicators, Read receipts, File attachments
+ * SMARTBRIDGE FET PLATFORM
  * ====================================================================
  */
 
@@ -49,23 +50,15 @@ export interface FileUploadResult {
 // MESSAGE CRUD OPERATIONS
 // ============================================
 
-/**
- * Publishes a message securely to the PostgreSQL chat table matrix.
- * The underlying RLS policies guarantee the sender_email MUST match the active login token.
- */
 export const sendChatMessage = async (message: ChatMessage): Promise<{ success: boolean; error: string | null }> => {
   try {
-    // Validate message content (either text or attachment)
     if (!message.content?.trim() && !message.attachment_url) {
       return { success: false, error: 'Message content or attachment required.' };
     }
 
-    // Defensive truncation and sanitization
-    let safeContent = null;
+    let safeContent: string | null = null;
     if (message.content?.trim()) {
       const sanitizedContent = message.content.trim().slice(0, 2000);
-      
-      // Escape potential HTML/script tags to prevent XSS
       safeContent = sanitizedContent
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -97,10 +90,6 @@ export const sendChatMessage = async (message: ChatMessage): Promise<{ success: 
   }
 };
 
-/**
- * Initializes a live WebSocket subscription to a specific study room channel.
- * Triggers a callback function instantly whenever a new message is appended to the database.
- */
 export const subscribeToRoomMessages = (
   roomId: string,
   onNewMessageReceived: (message: ChatMessage) => void
@@ -122,9 +111,6 @@ export const subscribeToRoomMessages = (
     .subscribe();
 };
 
-/**
- * Subscribe to message updates (read receipts, edits, deletions)
- */
 export const subscribeToMessageUpdates = (
   roomId: string,
   onMessageUpdated: (message: ChatMessage) => void
@@ -146,9 +132,6 @@ export const subscribeToMessageUpdates = (
     .subscribe();
 };
 
-/**
- * Historical Query Analyzer: Pulls past communications for a room on initial channel selection.
- */
 export const fetchHistoricalRoomMessages = async (roomId: string, limitCount = 50): Promise<ChatMessage[]> => {
   try {
     const { data, error } = await supabase
@@ -166,9 +149,6 @@ export const fetchHistoricalRoomMessages = async (roomId: string, limitCount = 5
   }
 };
 
-/**
- * Fetch messages before a certain timestamp (for pagination)
- */
 export const fetchMessagesBeforeTimestamp = async (
   roomId: string, 
   beforeTimestamp: string, 
@@ -195,9 +175,6 @@ export const fetchMessagesBeforeTimestamp = async (
 // READ RECEIPTS
 // ============================================
 
-/**
- * Mark messages as read for a recipient in a room
- */
 export const markMessagesAsRead = async (roomId: string, recipientEmail: string): Promise<{ success: boolean; error: string | null }> => {
   try {
     const { error } = await supabase
@@ -218,9 +195,6 @@ export const markMessagesAsRead = async (roomId: string, recipientEmail: string)
   }
 };
 
-/**
- * Get unread message count for a user across all rooms
- */
 export const getUnreadCount = async (userEmail: string): Promise<number> => {
   try {
     const { count, error } = await supabase
@@ -241,9 +215,6 @@ export const getUnreadCount = async (userEmail: string): Promise<number> => {
 // TYPING INDICATORS
 // ============================================
 
-/**
- * Send typing indicator to a room
- */
 export const sendTypingIndicator = async (
   roomId: string, 
   userEmail: string, 
@@ -269,9 +240,6 @@ export const sendTypingIndicator = async (
   }
 };
 
-/**
- * Subscribe to typing indicators in a room
- */
 export const subscribeToTypingIndicators = (
   roomId: string,
   onTypingChange: (status: TypingStatus) => void
@@ -297,21 +265,16 @@ export const subscribeToTypingIndicators = (
 // FILE ATTACHMENTS
 // ============================================
 
-/**
- * Upload a file to storage and return public URL
- */
 export const uploadChatAttachment = async (
   roomId: string,
   file: File,
   senderEmail: string
 ): Promise<FileUploadResult> => {
   try {
-    // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return { success: false, error: 'File too large. Maximum size is 10MB.' };
     }
 
-    // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'application/pdf', 'text/plain'];
     if (!allowedTypes.includes(file.type) && !file.type.startsWith('video/')) {
       return { success: false, error: 'File type not supported.' };
@@ -341,9 +304,6 @@ export const uploadChatAttachment = async (
 // CHAT ROOM MANAGEMENT
 // ============================================
 
-/**
- * Fetch all available chat rooms
- */
 export const fetchChatRooms = async (userEmail?: string): Promise<ChatRoom[]> => {
   try {
     let query = supabase
@@ -351,7 +311,6 @@ export const fetchChatRooms = async (userEmail?: string): Promise<ChatRoom[]> =>
       .select('*')
       .order('created_at', { ascending: true });
 
-    // Filter rooms user has access to
     if (userEmail) {
       query = query.or(`created_by.eq.${userEmail},room_type.eq.public`);
     }
@@ -365,9 +324,6 @@ export const fetchChatRooms = async (userEmail?: string): Promise<ChatRoom[]> =>
   }
 };
 
-/**
- * Create a new chat room
- */
 export const createChatRoom = async (
   roomName: string,
   roomType: 'group_study' | 'tutor_direct',
@@ -394,9 +350,6 @@ export const createChatRoom = async (
   }
 };
 
-/**
- * Generate or get existing direct chat room between two users
- */
 export const getOrCreateDirectRoom = async (
   user1Email: string,
   user1Name: string,
@@ -406,7 +359,6 @@ export const getOrCreateDirectRoom = async (
   try {
     const roomId = [user1Email, user2Email].sort().join('__');
     
-    // Check if room exists
     const { data: existing } = await supabase
       .from('chat_rooms')
       .select('id')
@@ -417,7 +369,6 @@ export const getOrCreateDirectRoom = async (
       return { success: true, room_id: roomId };
     }
     
-    // Create new room
     const { error } = await supabase
       .from('chat_rooms')
       .insert({
@@ -439,18 +390,12 @@ export const getOrCreateDirectRoom = async (
 // UTILITIES
 // ============================================
 
-/**
- * Unsubscribe from a room channel
- */
 export const unsubscribeFromRoom = (channel: RealtimeChannel | null): void => {
   if (channel) {
     supabase.removeChannel(channel);
   }
 };
 
-/**
- * Delete a message (admin/tutor only)
- */
 export const deleteMessage = async (
   messageId: string, 
   userRole: string
