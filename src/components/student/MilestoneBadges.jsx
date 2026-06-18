@@ -5,31 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Award, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  id: string;
-  email: string;
-  full_name?: string;
-  badges?: string[];
-}
-
-interface BadgeContext {
-  prog: any[];
-  quizzes: any[];
-  bookings: any[];
-  streak: number;
-}
-
-interface BadgeItem {
-  id: string;
-  emoji: string;
-  label: string;
-  desc: string;
-  category: 'Study' | 'Quizzes' | 'Tutoring' | 'Streaks';
-  check: (ctx: BadgeContext) => boolean;
-}
-
 // ─── Badge definitions with fixed field names ────────────────────────────────
-const ALL_BADGES: BadgeItem[] = [
+const ALL_BADGES = [
   // Study sessions
   { id: 'first_session',  emoji: '🎯', label: 'First Step',       desc: 'Logged your first study session',    category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 1 },
   { id: 'five_sessions',  emoji: '📚', label: 'Bookworm',         desc: 'Completed 5 study sessions',         category: 'Study',   check: ({ prog }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 5 },
@@ -64,7 +41,7 @@ const CATEGORY_COLORS = {
   Streaks:  { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800' },
 };
 
-function BadgeCard({ badge, earned }: { badge: BadgeItem; earned: boolean }) {
+function BadgeCard({ badge, earned }) {
   const colors = CATEGORY_COLORS[badge.category];
   return (
     <div
@@ -84,11 +61,11 @@ function BadgeCard({ badge, earned }: { badge: BadgeItem; earned: boolean }) {
   );
 }
 
-export default function MilestoneBadges({ user }: { user: UserProps }) {
-  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>('All');
+export default function MilestoneBadges({ user }) {
+  const [earnedBadges, setEarnedBadges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('All');
 
   const fetchAndProcessMilestones = useCallback(async () => {
     if (!user?.email) return;
@@ -153,7 +130,7 @@ export default function MilestoneBadges({ user }: { user: UserProps }) {
         }
       }
 
-      const ctx: BadgeContext = { 
+      const ctx = { 
         prog: prog || [], 
         quizzes: quizzes || [], 
         bookings: bookings || [], 
@@ -188,7 +165,7 @@ export default function MilestoneBadges({ user }: { user: UserProps }) {
           }
         });
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error processing badges:', err);
       setError(err.message || 'Failed to load badges');
       toast.error('Failed to load badges');
@@ -225,9 +202,12 @@ export default function MilestoneBadges({ user }: { user: UserProps }) {
         <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
           <AlertCircle className="w-8 h-8 text-destructive" />
           <p className="text-sm text-muted-foreground">{error}</p>
-          <Button variant="outline" size="sm" onClick={fetchAndProcessMilestones}>
+          <button 
+            onClick={fetchAndProcessMilestones}
+            className="px-4 py-2 bg-primary text-white rounded-lg text-sm hover:bg-primary/90"
+          >
             Try Again
-          </Button>
+          </button>
         </CardContent>
       </Card>
     );
