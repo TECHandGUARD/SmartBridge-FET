@@ -1,271 +1,301 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { CheckCircle2, Circle, ChevronDown, ChevronUp, BookOpen, Loader2, AlertCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { CheckCircle2, Circle, Loader2, AlertCircle, BookOpen, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  email: string;
-}
+// PropTypes definitions instead of TypeScript interfaces
+const UserProps = {
+  email: PropTypes.string.isRequired
+};
 
-interface DBQuizResult {
-  id: string;
-  subject: string;
-  percentage: number;
-  caps_topic_id: string;
-}
+// PropTypes for component props
+const propTypes = {
+  user: PropTypes.shape(UserProps).isRequired
+};
 
-interface CAPSTopicItem {
-  id: string;
-  topic_code: string;
-  title: string;
-}
+// Syllabus topics by subject
+const SYLLABUS_TOPICS = {
+  'Mathematics': [
+    { id: 'math_algebra', label: 'Algebra' },
+    { id: 'math_calculus', label: 'Calculus' },
+    { id: 'math_geometry', label: 'Geometry' },
+    { id: 'math_trigonometry', label: 'Trigonometry' },
+    { id: 'math_statistics', label: 'Statistics' },
+  ],
+  'Physical Sciences': [
+    { id: 'phys_mechanics', label: 'Mechanics' },
+    { id: 'phys_thermodynamics', label: 'Thermodynamics' },
+    { id: 'phys_electricity', label: 'Electricity & Magnetism' },
+    { id: 'phys_optics', label: 'Optics' },
+    { id: 'phys_quantum', label: 'Quantum Physics' },
+  ],
+  'Life Sciences': [
+    { id: 'bio_cell', label: 'Cell Biology' },
+    { id: 'bio_genetics', label: 'Genetics' },
+    { id: 'bio_ecology', label: 'Ecology' },
+    { id: 'bio_evolution', label: 'Evolution' },
+    { id: 'bio_human', label: 'Human Biology' },
+  ],
+  'Accounting': [
+    { id: 'acc_financial', label: 'Financial Accounting' },
+    { id: 'acc_management', label: 'Management Accounting' },
+    { id: 'acc_taxation', label: 'Taxation' },
+    { id: 'acc_auditing', label: 'Auditing' },
+    { id: 'acc_costing', label: 'Costing' },
+  ],
+  'Economics': [
+    { id: 'econ_micro', label: 'Microeconomics' },
+    { id: 'econ_macro', label: 'Macroeconomics' },
+    { id: 'econ_development', label: 'Development Economics' },
+    { id: 'econ_international', label: 'International Economics' },
+    { id: 'econ_behavioral', label: 'Behavioral Economics' },
+  ],
+  'History': [
+    { id: 'hist_ancient', label: 'Ancient History' },
+    { id: 'hist_medieval', label: 'Medieval History' },
+    { id: 'hist_modern', label: 'Modern History' },
+    { id: 'hist_south_africa', label: 'South African History' },
+    { id: 'hist_world', label: 'World History' },
+  ],
+  'Geography': [
+    { id: 'geo_physical', label: 'Physical Geography' },
+    { id: 'geo_human', label: 'Human Geography' },
+    { id: 'geo_climate', label: 'Climate & Weather' },
+    { id: 'geo_population', label: 'Population Geography' },
+    { id: 'geo_urban', label: 'Urban Geography' },
+  ],
+  'Business Studies': [
+    { id: 'bus_management', label: 'Business Management' },
+    { id: 'bus_marketing', label: 'Marketing' },
+    { id: 'bus_finance', label: 'Business Finance' },
+    { id: 'bus_entrepreneurship', label: 'Entrepreneurship' },
+    { id: 'bus_operations', label: 'Operations Management' },
+  ],
+};
 
-interface SubjectItem {
-  code: string;
-  name: string;
-  icon: string;
-}
+const SUBJECT_LIST = Object.keys(SYLLABUS_TOPICS);
 
-const SUBJECTS: SubjectItem[] = [
-  { code: 'Mathematics', name: 'Mathematics', icon: '📐' },
-  { code: 'Physical Sciences', name: 'Physical Sciences', icon: '⚗️' },
-  { code: 'Life Sciences', name: 'Life Sciences', icon: '🧬' },
-  { code: 'Accounting', name: 'Accounting', icon: '📊' },
-  { code: 'Economics', name: 'Economics', icon: '📈' },
-  { code: 'History', name: 'History', icon: '⏳' },
-  { code: 'Geography', name: 'Geography', icon: '🌍' },
-  { code: 'Business Studies', name: 'Business Studies', icon: '💼' },
-];
-
-const MASTERY_THRESHOLD = 70;
-
-function TopicBadge({ mastered, score, topicTitle }: { mastered: boolean; score: number | null; topicTitle: string }) {
-  return (
-    <div className={`flex items-center gap-2.5 p-2 rounded-xl border transition-all ${
-      mastered
-        ? 'bg-emerald-50/60 border-emerald-100 text-emerald-900 shadow-sm'
-        : 'bg-slate-50 border-slate-100 text-slate-500'
-    }`}>
-      {mastered ? (
-        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-      ) : (
-        <Circle className="w-4 h-4 text-slate-300 shrink-0" />
-      )}
-      <span className="text-[11px] font-bold flex-1 truncate">{topicTitle}</span>
-      {score !== null && (
-        <span className={`text-xs font-black ${mastered ? 'text-emerald-700' : 'text-slate-400'}`}>
-          {score}%
-        </span>
-      )}
-    </div>
-  );
-}
-
-function SubjectBlock({ subject, quizResults }: { subject: SubjectItem; quizResults: DBQuizResult[] }) {
-  const [expanded, setExpanded] = useState<boolean>(false);
-  const [topics, setTopics] = useState<CAPSTopicItem[]>([]);
-  const [loadingTopics, setLoadingTopics] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (expanded && topics.length === 0) {
-      fetchSubjectSyllabus();
-    }
-  }, [expanded]);
-
-  const fetchSubjectSyllabus = async () => {
-    try {
-      setLoadingTopics(true);
-      const { data, error } = await supabase
-        .from('caps_syllabus_topics')
-        .select('id, topic_code, title')
-        .eq('subject', subject.name);
-
-      if (error) throw error;
-      setTopics(data || []);
-    } catch (err) {
-      console.error('Failed compiling subject metadata:', err);
-      toast.error('Failed to load syllabus topics');
-    } finally {
-      setLoadingTopics(false);
-    }
-  };
-
-  const topicScores: Record<string, number> = {};
-  topics.forEach(topic => {
-    const relevantQuizScores = quizResults
-      .filter(r => r.caps_topic_id === topic.id)
-      .map(r => r.percentage);
-
-    if (relevantQuizScores.length > 0) {
-      topicScores[topic.id] = Math.max(...relevantQuizScores);
-    }
-  });
-
-  const masteredCount = topics.filter(t => (topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD).length;
-  const masteryPercent = topics.length > 0 ? Math.round((masteredCount / topics.length) * 100) : 0;
-  const attemptedCount = Object.keys(topicScores).length;
-
-  return (
-    <Card className="border-border bg-card shadow-sm hover:shadow-md transition-shadow">
-      <div className="p-4 cursor-pointer select-none" onClick={() => setExpanded(prev => !prev)}>
-        <div className="flex items-center gap-3">
-          <span className="text-2xl shrink-0 select-none">{subject.icon}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <h4 className="text-xs font-black text-foreground uppercase tracking-wide truncate">{subject.name}</h4>
-              <div className="flex items-center gap-1.5 shrink-0">
-                <Badge variant="outline" className="text-[10px] font-bold px-2 h-5">
-                  {masteredCount}/{topics.length || '—'} Mastered
-                </Badge>
-                {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 mt-2">
-              <Progress value={masteryPercent} className="h-2 flex-1" />
-              <span className="text-xs font-black text-primary w-8 text-right leading-none">{masteryPercent}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {expanded && (
-        <CardContent className="pt-2 border-t border-border bg-muted/20">
-          {loadingTopics ? (
-            <div className="flex items-center justify-center py-6 gap-2 text-muted-foreground font-bold text-xs">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>Loading syllabus topics...</span>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                {topics.map(t => (
-                  <TopicBadge
-                    key={t.id}
-                    topicTitle={t.title}
-                    mastered={(topicScores[t.id] ?? 0) >= MASTERY_THRESHOLD}
-                    score={topicScores[t.id] ?? null}
-                  />
-                ))}
-              </div>
-              
-              {topics.length === 0 && (
-                <p className="text-center py-4 text-[11px] font-medium text-muted-foreground italic">
-                  No syllabus topics configured for this subject yet.
-                </p>
-              )}
-              
-              {attemptedCount > 0 && (
-                <p className="text-[10px] text-muted-foreground mt-3 text-center font-medium">
-                  * Mastery threshold: {MASTERY_THRESHOLD}% or higher on topic quizzes
-                </p>
-              )}
-            </>
-          )}
-        </CardContent>
-      )}
-    </Card>
-  );
-}
-
-export default function SyllabusTopicTracker({ user }: { user: UserProps }) {
-  const [quizResults, setQuizResults] = useState<DBQuizResult[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAll, setShowAll] = useState<boolean>(false);
+export default function SyllabusTopicTracker({ user }) {
+  const [selectedSubject, setSelectedSubject] = useState('Mathematics');
+  const [completedTopics, setCompletedTopics] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [expanded, setExpanded] = useState({});
 
   useEffect(() => {
-    if (!user?.email) { 
-      setLoading(false); 
-      return; 
-    }
-    fetchStudentQuizPerformance();
-  }, [user]);
+    if (!user?.email) return;
+    fetchCompletedTopics();
+  }, [user, selectedSubject]);
 
-  const fetchStudentQuizPerformance = async () => {
+  const fetchCompletedTopics = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const { data, error: dbError } = await supabase
-        .from('quiz_results')
-        .select('id, subject, percentage, caps_topic_id')
-        .eq('student_email', user.email);
+      const { data, error: fetchError } = await supabase
+        .from('syllabus_progress')
+        .select('topic_id')
+        .eq('student_email', user.email)
+        .eq('subject', selectedSubject)
+        .eq('completed', true);
 
-      if (dbError) throw dbError;
-      setQuizResults(data || []);
-    } catch (err: any) {
-      console.error('Mastery pipeline failure:', err);
-      setError(err.message || 'Failed to load mastery data');
-      toast.error('Failed to load mastery data');
+      if (fetchError) throw fetchError;
+
+      setCompletedTopics(data?.map(item => item.topic_id) || []);
+    } catch (err) {
+      console.error('Error fetching syllabus progress:', err);
+      setError(err.message || 'Failed to load syllabus progress');
+      toast.error('Failed to load syllabus progress');
     } finally {
       setLoading(false);
     }
   };
 
-  const displayedSubjects = showAll ? SUBJECTS : SUBJECTS.slice(0, 4);
+  const toggleTopic = async (topicId) => {
+    const isCompleted = completedTopics.includes(topicId);
+    
+    try {
+      if (isCompleted) {
+        // Remove completion
+        const { error: deleteError } = await supabase
+          .from('syllabus_progress')
+          .delete()
+          .eq('student_email', user.email)
+          .eq('subject', selectedSubject)
+          .eq('topic_id', topicId);
+
+        if (deleteError) throw deleteError;
+        
+        setCompletedTopics(prev => prev.filter(id => id !== topicId));
+        toast.success('Topic marked as incomplete');
+      } else {
+        // Add completion
+        const { error: insertError } = await supabase
+          .from('syllabus_progress')
+          .insert([
+            {
+              student_email: user.email,
+              subject: selectedSubject,
+              topic_id: topicId,
+              completed: true,
+              completed_at: new Date().toISOString()
+            }
+          ]);
+
+        if (insertError) throw insertError;
+        
+        setCompletedTopics(prev => [...prev, topicId]);
+        toast.success('Topic marked as complete! 🎉');
+      }
+    } catch (err) {
+      console.error('Error toggling topic:', err);
+      toast.error(err.message || 'Failed to update topic status');
+    }
+  };
+
+  const toggleExpand = (topicId) => {
+    setExpanded(prev => ({
+      ...prev,
+      [topicId]: !prev[topicId]
+    }));
+  };
+
+  const currentTopics = SYLLABUS_TOPICS[selectedSubject] || [];
+  const completionCount = completedTopics.length;
+  const totalTopics = currentTopics.length;
+  const progressPercentage = totalTopics > 0 ? Math.round((completionCount / totalTopics) * 100) : 0;
 
   if (loading) {
     return (
-      <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
+      <Card className="border-border shadow-md bg-card">
         <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          <span className="text-xs text-muted-foreground">Loading mastery data...</span>
+          <span className="text-xs text-muted-foreground">Loading syllabus topics...</span>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="border-border shadow-md max-w-4xl mx-auto bg-card">
-      <CardHeader className="pb-3 border-b bg-muted/30">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+    <Card className="border-border shadow-md bg-card">
+      <CardHeader className="border-b bg-muted/30">
+        <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary shrink-0" /> CAPS Syllabus Tracker
+            <BookOpen className="w-4 h-4 text-primary shrink-0" /> Syllabus Tracker
           </CardTitle>
-          <Badge variant="outline" className="text-[10px] font-bold text-primary border-primary/30 px-2.5 h-6">
-            DBE Aligned
+          <Badge variant="outline" className="text-xs font-bold">
+            {completionCount}/{totalTopics} Topics
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground mt-1">
-          Track your mastery of CAPS curriculum topics based on quiz performance.
-        </p>
       </CardHeader>
-      
-      <CardContent className="pt-5">
+
+      <CardContent className="space-y-4 pt-4">
         {error && (
-          <div className="p-3 mb-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-xs font-semibold flex items-center gap-2">
+          <div className="p-2.5 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-[11px] font-medium flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-destructive shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {displayedSubjects.map(subject => (
-            <SubjectBlock key={subject.code} subject={subject} quizResults={quizResults} />
+        {/* Subject Selector */}
+        <div className="flex flex-wrap gap-1.5">
+          {SUBJECT_LIST.map(subject => (
+            <Button
+              key={subject}
+              variant={selectedSubject === subject ? 'default' : 'outline'}
+              size="sm"
+              className="text-xs h-8"
+              onClick={() => setSelectedSubject(subject)}
+            >
+              {subject}
+            </Button>
           ))}
         </div>
-        
-        {SUBJECTS.length > 4 && (
-          <button
-            type="button"
-            onClick={() => setShowAll(prev => !prev)}
-            className="mt-4 text-xs font-bold text-primary hover:text-primary/80 hover:underline w-full text-center block transition-all"
-          >
-            {showAll ? 'Show Fewer Subjects' : `Show All ${SUBJECTS.length} Subjects`}
-          </button>
-        )}
-        
-        {quizResults.length === 0 && !error && (
-          <div className="text-center py-8">
-            <p className="text-sm text-muted-foreground">No quiz results yet.</p>
-            <p className="text-xs text-muted-foreground mt-1">Complete some quizzes to start tracking your CAPS mastery!</p>
+
+        {/* Progress Bar */}
+        <div className="bg-muted/30 rounded-lg p-3">
+          <div className="flex justify-between text-xs text-muted-foreground mb-1">
+            <span>Progress</span>
+            <span className="font-bold">{progressPercentage}%</span>
           </div>
-        )}
+          <Progress value={progressPercentage} className="h-2" />
+        </div>
+
+        {/* Topics List */}
+        <div className="space-y-2">
+          {currentTopics.map(topic => {
+            const isCompleted = completedTopics.includes(topic.id);
+            
+            return (
+              <div
+                key={topic.id}
+                className={`rounded-lg border p-3 transition-all cursor-pointer hover:shadow-sm ${
+                  isCompleted 
+                    ? 'bg-green-50 border-green-200 dark:bg-green-950/20' 
+                    : 'bg-card border-border hover:border-primary/30'
+                }`}
+                onClick={() => toggleTopic(topic.id)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isCompleted ? (
+                      <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                    ) : (
+                      <Circle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className={`text-sm ${isCompleted ? 'font-medium text-green-700 dark:text-green-400' : 'text-foreground'}`}>
+                      {topic.label}
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleExpand(topic.id);
+                    }}
+                  >
+                    {expanded[topic.id] ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    )}
+                  </Button>
+                </div>
+                
+                {expanded[topic.id] && (
+                  <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
+                    <p>Click to {isCompleted ? 'mark as incomplete' : 'mark as complete'}</p>
+                    <p className="text-[10px] mt-1">
+                      {isCompleted ? '✅ Completed' : '⏳ Not started'}
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Summary */}
+        <div className="bg-muted/30 rounded-lg p-3 text-center">
+          <p className="text-xs text-muted-foreground">
+            {progressPercentage === 100 ? (
+              <span className="text-green-600 font-bold">🎉 All topics completed! Great job!</span>
+            ) : (
+              `${completionCount} of ${totalTopics} topics completed (${progressPercentage}%)`
+            )}
+          </p>
+        </div>
       </CardContent>
     </Card>
   );
 }
+
+// Add PropTypes to the component
+SyllabusTopicTracker.propTypes = propTypes;
