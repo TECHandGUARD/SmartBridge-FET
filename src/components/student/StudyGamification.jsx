@@ -1,33 +1,22 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, Flame, Loader2, AlertCircle, Award, Target, Star } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  email: string;
-}
+// PropTypes definitions instead of TypeScript interfaces
+const UserProps = {
+  email: PropTypes.string.isRequired
+};
 
-interface DBQuizResult {
-  percentage: number;
-  score: number;
-}
+// PropTypes for component props
+const propTypes = {
+  user: PropTypes.shape(UserProps).isRequired
+};
 
-interface DBProgressItem {
-  study_sessions: number;
-  last_access: string | null;
-}
-
-interface BadgeItem {
-  id: string;
-  label: string;
-  icon: string;
-  desc: string;
-  colorClass: string;
-}
-
-const BADGES: BadgeItem[] = [
+const BADGES = [
   { id: 'first_quiz', label: 'First Quiz', icon: '🎯', desc: 'Completed your first quiz', colorClass: 'bg-blue-50 text-blue-700 border-blue-200' },
   { id: 'streak_3', label: '3-Day Streak', icon: '🔥', desc: 'Studied 3 days in a row', colorClass: 'bg-orange-50 text-orange-700 border-orange-200' },
   { id: 'streak_7', label: 'Week Warrior', icon: '⚡', desc: 'Studied 7 days in a row', colorClass: 'bg-purple-50 text-purple-700 border-purple-200' },
@@ -36,11 +25,11 @@ const BADGES: BadgeItem[] = [
   { id: 'bookworm', label: 'Bookworm', icon: '📚', desc: 'Accessed 10+ resources', colorClass: 'bg-green-50 text-green-700 border-green-200' },
 ];
 
-export default function StudyGamification({ user }: { user: UserProps }) {
-  const [quizResults, setQuizResults] = useState<DBQuizResult[]>([]);
-  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function StudyGamification({ user }) {
+  const [quizResults, setQuizResults] = useState([]);
+  const [earnedBadges, setEarnedBadges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -60,13 +49,13 @@ export default function StudyGamification({ user }: { user: UserProps }) {
       if (quizQuery.error) throw quizQuery.error;
       if (progressQuery.error) throw progressQuery.error;
 
-      const qr: DBQuizResult[] = quizQuery.data || [];
-      const prog: DBProgressItem[] = progressQuery.data || [];
+      const qr = quizQuery.data || [];
+      const prog = progressQuery.data || [];
 
       setQuizResults(qr);
 
       // Calculate earned badges
-      const badges: string[] = [];
+      const badges = [];
       if (qr.length >= 1) badges.push('first_quiz');
       if (qr.some(q => q.percentage >= 100)) badges.push('top_scorer');
       if (qr.filter(q => q.percentage >= 80).length >= 5) badges.push('quiz_master');
@@ -77,7 +66,7 @@ export default function StudyGamification({ user }: { user: UserProps }) {
       // Streak calculation
       const rawDates = prog
         .filter(p => p.last_access)
-        .map(p => p.last_access!.split('T')[0]);
+        .map(p => p.last_access.split('T')[0]);
       
       const uniqueSortedDates = [...new Set(rawDates)].sort(
         (a, b) => new Date(b).getTime() - new Date(a).getTime()
@@ -108,7 +97,7 @@ export default function StudyGamification({ user }: { user: UserProps }) {
       if (streak >= 7) badges.push('streak_7');
 
       setEarnedBadges(badges);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Gamification tracking failure:', err);
       setError(err.message || 'Failed to pull player reward data.');
       toast.error('Failed to load achievements');
@@ -215,3 +204,6 @@ export default function StudyGamification({ user }: { user: UserProps }) {
     </Card>
   );
 }
+
+// Add PropTypes to the component
+StudyGamification.propTypes = propTypes;
