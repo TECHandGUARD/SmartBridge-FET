@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import SimulationCard, { SimulationType } from './SimulationCard';
+import SimulationCard from './SimulationCard';
 import SimulationPlayer from './SimulationPlayer';
 import QuizSync from './QuizSync';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,21 +9,17 @@ import { Button } from '@/components/ui/button';
 import { FlaskConical, Loader2, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface SimulationLabProps {
-  isTutor?: boolean;
-}
-
 const SUBJECT_OPTIONS = ['All', 'Physics', 'Chemistry', 'Biology', 'Mathematics', 'Physical Sciences'];
 const GRADE_OPTIONS = ['All Grades', 'Grade 10', 'Grade 11', 'Grade 12'];
 
-export default function SimulationLab({ isTutor = false }: SimulationLabProps) {
-  const [simulations, setSimulations] = useState<SimulationType[]>([]);
-  const [filteredSims, setFilteredSims] = useState<SimulationType[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [selectedSubject, setSelectedSubject] = useState<string>('All');
-  const [selectedGrade, setSelectedGrade] = useState<string>('All Grades');
-  const [activeSim, setActiveSim] = useState<SimulationType | null>(null);
+export default function SimulationLab({ isTutor = false }) {
+  const [simulations, setSimulations] = useState([]);
+  const [filteredSims, setFilteredSims] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedSubject, setSelectedSubject] = useState('All');
+  const [selectedGrade, setSelectedGrade] = useState('All Grades');
+  const [activeSim, setActiveSim] = useState(null);
 
   const fetchSimulations = useCallback(async () => {
     try {
@@ -38,7 +34,7 @@ export default function SimulationLab({ isTutor = false }: SimulationLabProps) {
       if (dbError) throw dbError;
       
       setSimulations(data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching simulations:', err);
       setError(err.message || 'Failed to load simulations');
       toast.error('Failed to load simulations');
@@ -66,7 +62,7 @@ export default function SimulationLab({ isTutor = false }: SimulationLabProps) {
     setFilteredSims(result);
   }, [selectedSubject, selectedGrade, simulations]);
 
-  const handlePlay = (sim: SimulationType) => {
+  const handlePlay = (sim) => {
     setActiveSim(sim);
   };
 
