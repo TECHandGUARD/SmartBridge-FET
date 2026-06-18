@@ -5,20 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Bell, Plus, Trash2, Loader2, AlertCircle, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Bell, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-interface UserProps {
-  email: string;
-}
-
-interface ReminderItem {
-  id: string;
-  subject: string;
-  day_of_week: string;
-  reminder_time: string;
-  is_active: boolean;
-}
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -31,11 +19,11 @@ const SUBJECT_OPTIONS = [
   { name: 'History', icon: '⏳' },
 ];
 
-export default function StudyReminderManager({ user }: { user: UserProps }) {
-  const [reminders, setReminders] = useState<ReminderItem[]>([]);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function StudyReminderManager({ user }) {
+  const [reminders, setReminders] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   const [form, setForm] = useState({ 
     subject: 'Mathematics', 
@@ -61,7 +49,7 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
 
       if (dbError) throw dbError;
       setReminders(data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching reminders:', err);
       setError(err.message || 'Failed to load reminders');
       toast.error('Failed to load reminders');
@@ -100,14 +88,14 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
       }
       setShowForm(false);
       setForm({ subject: 'Mathematics', day_of_week: 'Monday', reminder_time: '16:00' });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error adding reminder:', err);
       setError(err.message || 'Failed to add reminder');
       toast.error('Failed to add reminder');
     }
   };
 
-  const handleRemoveReminder = async (id: string) => {
+  const handleRemoveReminder = async (id) => {
     try {
       setError(null);
       const { error: deleteError } = await supabase
@@ -118,14 +106,14 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
       if (deleteError) throw deleteError;
       setReminders(prev => prev.filter(x => x.id !== id));
       toast.success('Reminder removed');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error removing reminder:', err);
       setError(err.message || 'Failed to remove reminder');
       toast.error('Failed to remove reminder');
     }
   };
 
-  const handleToggleActiveStatus = async (reminder: ReminderItem) => {
+  const handleToggleActiveStatus = async (reminder) => {
     try {
       const nextState = !reminder.is_active;
       const { error: updateError } = await supabase
@@ -137,7 +125,7 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
 
       setReminders(prev => prev.map(x => x.id === reminder.id ? { ...x, is_active: nextState } : x));
       toast.success(nextState ? 'Reminder enabled' : 'Reminder disabled');
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error toggling reminder:', err);
       setError(err.message || 'Failed to update reminder status');
       toast.error('Failed to update reminder');
@@ -237,11 +225,15 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
         )}
 
         {/* Reminders List */}
-        {reminders.length === 0 && !loading ? (
-          <p className="text-xs font-medium text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl bg-muted/20">
-            No reminders set. Add one to stay on track!
-          </p>
-        ) : (
+        if (reminders.length === 0 && !loading) {
+          return (
+            <p className="text-xs font-medium text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl bg-muted/20">
+              No reminders set. Add one to stay on track!
+            </p>
+          );
+        }
+
+        return (
           <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5">
             {reminders.map(r => {
               const matchedIcon = SUBJECT_OPTIONS.find(s => s.name === r.subject)?.icon || '📚';
@@ -283,8 +275,8 @@ export default function StudyReminderManager({ user }: { user: UserProps }) {
               );
             })}
           </div>
-        )}
-      </CardContent>
+        );
+      }
     </Card>
   );
 }
