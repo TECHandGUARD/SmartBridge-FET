@@ -6,35 +6,16 @@ import { BarChart2, Loader2, AlertCircle, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 import StudyStreakTracker from './StudyStreakTracker';
 
-interface UserProps {
-  email: string;
-  full_name?: string;
-}
-
-interface DBProgressItem {
-  id?: string;
-  subject: string;
-  study_sessions: number;
-  last_access: string | null;
-  grade?: string;
-}
-
-interface ChartDataItem {
-  name: string;
-  sessions: number;
-  fill: string;
-}
-
 const COLORS = [
   '#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', 
   '#db2777', '#059669', '#4f46e5', '#0891b2', '#e11d48'
 ];
 
-export default function ProgressCharts({ user }: { user: UserProps }) {
-  const [chartData, setChartData] = useState<ChartDataItem[]>([]);
-  const [streak, setStreak] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function ProgressCharts({ user }) {
+  const [chartData, setChartData] = useState([]);
+  const [streak, setStreak] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchAnalyticsTelemetry = useCallback(async () => {
     if (!user?.email) return;
@@ -51,7 +32,7 @@ export default function ProgressCharts({ user }: { user: UserProps }) {
 
       if (dbError) throw dbError;
 
-      const progressData: DBProgressItem[] = (data || []).map(item => ({
+      const progressData = (data || []).map(item => ({
         ...item,
         study_sessions: item.study_sessions || 0
       }));
@@ -62,7 +43,7 @@ export default function ProgressCharts({ user }: { user: UserProps }) {
       // ============================================
       const rawDates = progressData
         .filter(p => p.last_access)
-        .map(p => p.last_access!.split('T')[0]);
+        .map(p => p.last_access.split('T')[0]);
       
       // Deduplicate dates (multiple sessions on same day count as 1)
       const uniqueSortedDates = [...new Set(rawDates)].sort(
@@ -98,7 +79,7 @@ export default function ProgressCharts({ user }: { user: UserProps }) {
       // ============================================
       // TRANSFORM FOR RECHARTS
       // ============================================
-      const formattedChartData: ChartDataItem[] = progressData
+      const formattedChartData = progressData
         .filter(p => (p.study_sessions || 0) > 0)
         .map((p, i) => {
           const shortSubjectName = p.subject.length > 10 
@@ -115,7 +96,7 @@ export default function ProgressCharts({ user }: { user: UserProps }) {
 
       setChartData(formattedChartData);
       
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching progress:', err);
       setError(err.message || 'Failed to load progress data');
       toast.error('Failed to load progress data');
@@ -207,7 +188,7 @@ export default function ProgressCharts({ user }: { user: UserProps }) {
                     tickLine={false}
                   />
                   <Tooltip
-                    formatter={(value: any) => [`${value} sessions`, 'Study Time']}
+                    formatter={(value) => [`${value} sessions`, 'Study Time']}
                     contentStyle={{ 
                       fontSize: 11, 
                       borderRadius: 8, 
