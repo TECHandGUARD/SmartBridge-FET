@@ -8,7 +8,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CalendarDays, Clock, CheckCircle, XCircle, User, BookOpen, ExternalLink, Search, Loader2, AlertCircle, DollarSign, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
-import { utcToZonedTime } from 'date-fns-tz';
 
 const STATUS_STYLES = {
   pending: 'bg-amber-100 text-amber-700',
@@ -24,13 +23,15 @@ const ATTENDANCE_STATUS = {
   late: { label: 'Late', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
 };
 
-// Helper function to format datetime with SA timezone
+// Helper function to format datetime (without date-fns-tz)
 const formatDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return 'Date TBD';
-  const saTimezone = 'Africa/Johannesburg';
-  const dateTimeStr = `${dateStr}T${timeStr}:00`;
-  const zonedDate = utcToZonedTime(new Date(dateTimeStr), saTimezone);
-  return format(zonedDate, 'EEEE, MMM d, yyyy · h:mm a');
+  try {
+    const date = new Date(`${dateStr}T${timeStr}:00`);
+    return format(date, 'EEEE, MMM d, yyyy · h:mm a');
+  } catch (e) {
+    return `${dateStr} at ${timeStr}`;
+  }
 };
 
 // Calculate net earnings after platform fee
@@ -358,6 +359,15 @@ export default function BookingRequests({ user, onBookingUpdate }) {
 
   const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || null;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
+
+  // Placeholder functions for reschedule actions (to be implemented)
+  const acceptReschedule = (booking, request) => {
+    toast.info('Reschedule accepted (functionality to be implemented)');
+  };
+
+  const declineReschedule = (booking, request) => {
+    toast.info('Reschedule declined (functionality to be implemented)');
+  };
 
   if (loading) {
     return (
