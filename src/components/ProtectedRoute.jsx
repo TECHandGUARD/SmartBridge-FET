@@ -1,50 +1,34 @@
-// lib/AuthContext.jsx - Remove hardcoded admin email checks
-// Instead, rely on database queries for admin status
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
+import { Loader2 } from 'lucide-react';
 
-// ... inside your checkUserAuth function:
+export default function ProtectedRoute({ children, requireAdmin = false, requireTutor = false }) {
+  const { user, loading, role, isAdmin, isTutor, isStudent } = useAuth();
 
-const checkUserAuth = useCallback(async () => {
-  setIsLoadingAuth(true);
-  try {
-    const { data: { user: authUser }, error } = await supabase.auth.getUser();
-    
-    if (error) throw error;
-    
-    if (authUser) {
-      // Get user profile from user_profiles table
-      const { data: profile, error: profileError } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('email', authUser.email)
-        .single();
-      
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Profile fetch error:', profileError);
-      }
-      
-      const userData = {
-        ...authUser,
-        ...profile,
-        email: authUser.email,
-        full_name: profile?.full_name || authUser.user_metadata?.full_name,
-        role: profile?.role || 'user',
-        is_super_admin: profile?.is_super_admin || false,
-      };
-      
-      setUser(userData);
-      setIsAuthenticated(true);
-      setAuthError(null);
-    } else {
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-  } catch (err) {
-    console.error('Auth check error:', err);
-    setAuthError({ type: 'auth_required', message: err.message });
-    setUser(null);
-    setIsAuthenticated(false);
-  } finally {
-    setIsLoadingAuth(false);
-    setAuthChecked(true);
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
   }
-}, []);
+
+  // Redirect to login if not authenticated
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Check for admin access
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Check for tutor access
+  if (requireTutor && !isTutor) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If all checks pass, render the children
+  return children;
+}
