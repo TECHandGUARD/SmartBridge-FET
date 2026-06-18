@@ -1,17 +1,10 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { Calculator, Info, ChevronDown, ChevronUp, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface SubjectConfig {
-  id: string;
-  name: string;
-  required: boolean;
-  isLO: boolean;
-  conflictsWith?: string;
-  subMinCheck?: string;
-}
-
-const SUBJECTS: SubjectConfig[] = [
+// Subject configuration
+const SUBJECTS = [
   { id: "hl", name: "Home Language (HL)", required: true, isLO: false, subMinCheck: "hl" },
   { id: "fal", name: "First Additional Language (FAL)", required: true, isLO: false },
   { id: "math", name: "Mathematics", required: false, isLO: false, conflictsWith: "mathlit", subMinCheck: "math" },
@@ -29,7 +22,7 @@ const SUBJECTS: SubjectConfig[] = [
   { id: "elective3", name: "Elective 5 (Optional 8th Subject)", required: false, isLO: false },
 ];
 
-function percentToAPS(pct: number): number {
+function percentToAPS(pct) {
   if (pct >= 80) return 7;
   if (pct >= 70) return 6;
   if (pct >= 60) return 5;
@@ -78,11 +71,14 @@ const APS_BENCHMARKS = [
   },
 ];
 
+// PropTypes for component props
+const propTypes = {};
+
 export default function APSCalculator() {
-  const [marks, setMarks] = useState<Record<string, number>>({});
+  const [marks, setMarks] = useState({});
   const [showBenchmarks, setShowBenchmarks] = useState(false);
 
-  const handleMark = (id: string, val: string) => {
+  const handleMark = (id, val) => {
     const num = val === '' ? 0 : Math.max(0, Math.min(100, parseInt(val) || 0));
     setMarks(prev => {
       const updated = { ...prev, [id]: num };
@@ -229,3 +225,32 @@ export default function APSCalculator() {
           {showBenchmarks ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           Check University Faculty Sub-Minimum Rules
         </button>
+
+        {/* Benchmarks Section */}
+        {showBenchmarks && (
+          <div className="space-y-2 pt-2 border-t border-slate-100">
+            <h4 className="text-xs font-bold text-slate-700">University Faculty Sub-Minimum Rules</h4>
+            {APS_BENCHMARKS.map((benchmark, index) => (
+              <div key={index} className={`p-2.5 rounded-lg border text-[11px] ${benchmark.color}`}>
+                <div className="font-bold">{benchmark.label}</div>
+                <div className="text-[10px] opacity-90">
+                  Minimum APS: {benchmark.min} • LO included: {benchmark.useLO ? 'Yes' : 'No'}
+                  {Object.keys(benchmark.reqs).length > 0 && (
+                    <div className="mt-1">
+                      Subject minimums: {Object.entries(benchmark.reqs).map(([subject, min]) => 
+                        `${subject.charAt(0).toUpperCase() + subject.slice(1)}: ${min}%`
+                      ).join(' • ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Add PropTypes to the component
+APSCalculator.propTypes = propTypes;
