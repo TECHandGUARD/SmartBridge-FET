@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 const DEFAULT_CONFIGS = [
   { key: 'ai_guardrails', label: 'AI Guardrails', description: 'Rules that constrain AI assistant responses', value: '{\n  "guardrails": [\n    "Do not provide exam answers directly",\n    "Encourage critical thinking",\n    "Do not discuss inappropriate topics"\n  ]\n}', is_active: true },
   { key: 'ai_welcome_message', label: 'AI Welcome Message', description: 'Intro message for the AI Study Assistant', value: '{\n  "message": "Hi! 👋 I am your AI Study Assistant. I can help you explain concepts, summarise notes, and generate practice questions. What would you like help with today?"\n}', is_active: true },
-  { key: 'ai_suggestions', label: 'AI Suggestions', description: 'Suggested questions for AI chat', value: '{\n  "suggestions": [\n    "Explain Newton\\'s Second Law",\n    "Help me with calculus derivatives",\n    "Give me study tips for exams"\n  ]\n}', is_active: true },
+  { key: 'ai_suggestions', label: 'AI Suggestions', description: 'Suggested questions for AI chat', value: '{\n  "suggestions": [\n    "Explain Newtons Second Law",\n    "Help me with calculus derivatives",\n    "Give me study tips for exams"\n  ]\n}', is_active: true },
   { key: 'exam_term_dates', label: 'Exam Term Dates', description: 'Current academic term dates used for study planning', value: '{\n  "term_start": "2026-01-15",\n  "mid_term_break": "2026-03-20",\n  "term_end": "2026-06-10",\n  "exams_start": "2026-05-20",\n  "exams_end": "2026-06-05"\n}', is_active: true },
 ];
 
