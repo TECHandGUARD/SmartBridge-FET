@@ -182,7 +182,7 @@ export default function Footer() {
             © 2026 Tech & GUARD Pty Ltd (Registration Number: 2026/15509/09). All rights reserved.
           </p>
           <p className="mt-2">
-            Tech & GUARD Pty Ltd is an e-commerce company owned by a black student.
+            SmartBridge FET is an EdTech digital product owned by a black student.
           </p>
           <p className="mt-2">
             Developed for South African learners 🇿🇦
