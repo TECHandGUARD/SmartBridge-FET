@@ -1,15 +1,28 @@
 import React, { useState } from 'react';
+import PropTypes from 'prop-types';
 import { X, Monitor, Download, ExternalLink, ShieldAlert, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { SimulationType } from './SimulationCard';
 
-interface SimulationPlayerProps {
-  simulation: SimulationType;
-  isTutor: boolean;
-  onClose: () => void;
-}
+// PropTypes for component props
+const propTypes = {
+  simulation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    subject: PropTypes.string,
+    grade_level: PropTypes.oneOf([10, 11, 12]),
+    caps_topic: PropTypes.string,
+    thumbnail_url: PropTypes.string,
+    worksheet_url: PropTypes.string,
+    simulation_url: PropTypes.string.isRequired,
+    duration: PropTypes.number,
+    is_new: PropTypes.bool
+  }).isRequired,
+  isTutor: PropTypes.bool,
+  onClose: PropTypes.func.isRequired
+};
 
 // ============================================
 // SCHOOL SAFETY POLICY: Domain Whitelist
@@ -26,7 +39,7 @@ const APPROVED_DOMAINS = [
   'drive.google.com',        // Google Drive hosted worksheets
 ];
 
-function validateEducationalDomain(url: string): { valid: boolean; message?: string } {
+function validateEducationalDomain(url) {
   if (!url || url.trim() === '') {
     return { valid: false, message: 'No URL provided' };
   }
@@ -51,7 +64,7 @@ function validateEducationalDomain(url: string): { valid: boolean; message?: str
   }
 }
 
-function extractUrlFromIframe(input: string): string {
+function extractUrlFromIframe(input) {
   const iframeMatch = input.match(/src=["']([^"']+)["']/i);
   if (iframeMatch) {
     return iframeMatch[1];
@@ -59,12 +72,12 @@ function extractUrlFromIframe(input: string): string {
   return input.trim();
 }
 
-export default function SimulationPlayer({ simulation, isTutor, onClose }: SimulationPlayerProps) {
-  const [lessonMode, setLessonMode] = useState<boolean>(false);
-  const [customEmbed, setCustomEmbed] = useState<string>('');
-  const [showEmbedInput, setShowEmbedInput] = useState<boolean>(false);
-  const [embedSrc, setEmbedSrc] = useState<string>(simulation.simulation_url);
-  const [securityWarning, setSecurityWarning] = useState<string | null>(null);
+export default function SimulationPlayer({ simulation, isTutor = false, onClose }) {
+  const [lessonMode, setLessonMode] = useState(false);
+  const [customEmbed, setCustomEmbed] = useState('');
+  const [showEmbedInput, setShowEmbedInput] = useState(false);
+  const [embedSrc, setEmbedSrc] = useState(simulation.simulation_url);
+  const [securityWarning, setSecurityWarning] = useState(null);
 
   const launchLessonMode = () => {
     const win = window.open(embedSrc, '_blank', 'fullscreen=yes,toolbar=no,menubar=no,scrollbars=no,resizable=yes');
@@ -248,3 +261,6 @@ export default function SimulationPlayer({ simulation, isTutor, onClose }: Simul
     </div>
   );
 }
+
+// Add PropTypes to the component
+SimulationPlayer.propTypes = propTypes;
