@@ -5,6 +5,7 @@ import path from 'path'
 export default defineConfig({
   plugins: [react()],
   base: '/',
+  publicDir: 'public',  // ← ADD THIS LINE
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -13,7 +14,7 @@ export default defineConfig({
   server: {
     port: 5173,
     open: true,
-    historyApiFallback: true,  // ← ADD THIS
+    historyApiFallback: true,
   },
   build: {
     outDir: 'dist',
@@ -23,6 +24,6 @@ export default defineConfig({
   },
   preview: {
     port: 5173,
-    historyApiFallback: true,  // ← ADD THIS
+    historyApiFallback: true,
   },
 })
