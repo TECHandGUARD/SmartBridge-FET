@@ -3,18 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Flame, Award } from 'lucide-react';
 
-interface StudyStreakTrackerProps {
-  streak: number;
-}
-
-interface MilestoneItem {
-  days: number;
-  label: string;
-  emoji: string;
-  colorClass: string;
-}
-
-const MILESTONES: MilestoneItem[] = [
+const MILESTONES = [
   { days: 3,  label: 'Getting Started',  emoji: '🌱', colorClass: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
   { days: 7,  label: 'One Week Strong',  emoji: '⚡', colorClass: 'text-blue-600 bg-blue-50 border-blue-100' },
   { days: 14, label: 'Two Week Warrior', emoji: '🏆', colorClass: 'text-amber-700 bg-amber-50 border-amber-100' },
@@ -22,7 +11,7 @@ const MILESTONES: MilestoneItem[] = [
   { days: 60, label: 'Champion Scholar', emoji: '👑', colorClass: 'text-rose-600 bg-rose-50 border-rose-100' },
 ];
 
-function FlameIcon({ streak }: { streak: number }) {
+function FlameIcon({ streak }) {
   if (streak === 0) return <Flame className="w-8 h-8 text-slate-300" />;
   if (streak >= 30) return <Flame className="w-8 h-8 text-purple-500 drop-shadow-[0_0_12px_rgba(168,85,247,0.7)] animate-pulse" />;
   if (streak >= 14) return <Flame className="w-8 h-8 text-purple-500 drop-shadow-[0_0_8px_rgba(168,85,247,0.6)]" />;
@@ -30,7 +19,7 @@ function FlameIcon({ streak }: { streak: number }) {
   return <Flame className="w-8 h-8 text-orange-500 drop-shadow-[0_0_6px_rgba(249,115,22,0.5)]" />;
 }
 
-function WeekCalendarGrid({ streak }: { streak: number }) {
+function WeekCalendarGrid({ streak }) {
   // South African school week: Monday to Sunday
   const SA_WEEK_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   
@@ -76,7 +65,7 @@ function WeekCalendarGrid({ streak }: { streak: number }) {
   );
 }
 
-export default function StudyStreakTracker({ streak }: StudyStreakTrackerProps) {
+export default function StudyStreakTracker({ streak }) {
   const nextMilestone = MILESTONES.find(m => m.days > streak);
   const daysToNext = nextMilestone ? nextMilestone.days - streak : null;
   const reachedMilestones = MILESTONES.filter(m => streak >= m.days);
