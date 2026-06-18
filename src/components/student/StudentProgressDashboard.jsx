@@ -12,30 +12,8 @@ import {
 import { TrendingUp, BookOpen, Flame, Target, BarChart2, Activity, Download, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  full_name?: string;
-  email: string;
-}
-
-interface DBProgressItem {
-  id?: string;
-  subject: string;
-  grade_level: number;
-  study_sessions: number;
-  last_access: string | null;
-  notes?: string;
-}
-
-interface StatCardProps {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-  sub?: string | null;
-  color: string;
-}
-
 // Production CSV Exporter Engine
-function exportCSV(progress: DBProgressItem[], user: UserProps) {
+function exportCSV(progress, user) {
   const headers = ['Subject', 'Grade Level', 'Study Sessions', 'Last Access', 'Notes'];
   const rows = progress.map(p => [
     p.subject || '',
@@ -59,9 +37,9 @@ function exportCSV(progress: DBProgressItem[], user: UserProps) {
 
 const COLORS = ['#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', '#db2777', '#059669', '#4f46e5', '#0891b2', '#84cc16'];
 
-const SHORT = (s: string) => s?.length > 10 ? s.slice(0, 10) + '…' : s;
+const SHORT = (s) => s?.length > 10 ? s.slice(0, 10) + '…' : s;
 
-function StatCard({ icon: Icon, label, value, sub, color }: StatCardProps) {
+function StatCard({ icon: Icon, label, value, sub, color }) {
   return (
     <Card className="border-border bg-card shadow-sm">
       <CardContent className="pt-5 pb-4">
@@ -76,10 +54,10 @@ function StatCard({ icon: Icon, label, value, sub, color }: StatCardProps) {
   );
 }
 
-export default function StudentProgressDashboard({ user }: { user: UserProps }) {
-  const [progress, setProgress] = useState<DBProgressItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function StudentProgressDashboard({ user }) {
+  const [progress, setProgress] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const fetchDashboardTelemetry = useCallback(async () => {
     if (!user?.email) return;
@@ -95,7 +73,7 @@ export default function StudentProgressDashboard({ user }: { user: UserProps }) 
 
       if (dbError) throw dbError;
       setProgress(data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Dashboard pipeline failure:', err);
       setError(err.message || 'Failed to sync analytics data.');
       toast.error('Failed to load progress data');
@@ -148,7 +126,7 @@ export default function StudentProgressDashboard({ user }: { user: UserProps }) 
   // Streak Calculation
   const rawDates = progress
     .filter(p => p.last_access)
-    .map(p => p.last_access!.split('T')[0]);
+    .map(p => p.last_access.split('T')[0]);
   const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   
   let streak = 0;
@@ -185,7 +163,7 @@ export default function StudentProgressDashboard({ user }: { user: UserProps }) 
   }));
 
   // Pie Chart Data by Grade
-  const gradeMap: Record<number, number> = {};
+  const gradeMap = {};
   progress.forEach(p => {
     gradeMap[p.grade_level] = (gradeMap[p.grade_level] || 0) + (p.study_sessions || 0);
   });
@@ -201,7 +179,7 @@ export default function StudentProgressDashboard({ user }: { user: UserProps }) 
     d.setDate(d.getDate() - (13 - i));
     return d.toISOString().split('T')[0];
   });
-  const dailyCounts: Record<string, number> = {};
+  const dailyCounts = {};
   progress.forEach(p => {
     if (p.last_access) {
       const dateKey = p.last_access.split('T')[0];
@@ -266,7 +244,7 @@ export default function StudentProgressDashboard({ user }: { user: UserProps }) 
                 <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={{ stroke: 'hsl(var(--border))' }} />
                 <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} allowDecimals={false} tickLine={false} axisLine={{ stroke: 'hsl(var(--border))' }} />
                 <Tooltip
-                  formatter={(val: any, _, props) => [val, props?.payload?.fullName || 'Sessions']}
+                  formatter={(val, _, props) => [val, props?.payload?.fullName || 'Sessions']}
                   contentStyle={{ fontSize: 11, borderRadius: 8, backgroundColor: 'hsl(var(--card))', borderColor: 'hsl(var(--border))' }}
                 />
                 <Bar dataKey="sessions" radius={[4, 4, 0, 0]}>
