@@ -179,10 +179,10 @@ export default function Footer() {
         {/* Copyright Section */}
         <div className="border-t border-border pt-6 text-center text-xs text-muted-foreground">
           <p>
-            © 2026 Tech & GUARD Pty Ltd (Registration Number: 2026/155090/09). All rights reserved.
+            © 2026 Tech & GUARD Pty Ltd (Registration Number: 2026/15509/09). All rights reserved.
           </p>
           <p className="mt-2">
-            SmartBridge FET Phase is an e-commerce company owned by a black student.
+            Tech & GUARD Pty Ltd is an e-commerce company owned by a black student.
           </p>
           <p className="mt-2">
             Developed for South African learners 🇿🇦
