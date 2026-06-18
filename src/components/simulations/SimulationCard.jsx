@@ -1,30 +1,30 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 import { Download, Play, BookOpen, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
-export interface SimulationType {
-  id: string;
-  title: string;
-  description: string;
-  subject: "Physics" | "Chemistry" | "Biology" | "Mathematics" | "Physical Sciences";
-  grade_level: 10 | 11 | 12;
-  caps_topic: string;
-  thumbnail_url?: string;
-  worksheet_url?: string;
-  simulation_url: string;
-  duration?: number;
-  is_new?: boolean;
-}
+// PropTypes for component props
+const propTypes = {
+  simulation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string.isRequired,
+    subject: PropTypes.oneOf(['Physics', 'Chemistry', 'Biology', 'Mathematics', 'Physical Sciences']).isRequired,
+    grade_level: PropTypes.oneOf([10, 11, 12]).isRequired,
+    caps_topic: PropTypes.string.isRequired,
+    thumbnail_url: PropTypes.string,
+    worksheet_url: PropTypes.string,
+    simulation_url: PropTypes.string.isRequired,
+    duration: PropTypes.number,
+    is_new: PropTypes.bool
+  }).isRequired,
+  onPlay: PropTypes.func.isRequired,
+  isLoading: PropTypes.bool
+};
 
-interface SimulationCardProps {
-  simulation: SimulationType;
-  onPlay: (sim: SimulationType) => void;
-  isLoading?: boolean;
-}
-
-const SUBJECT_COLORS: Record<SimulationType['subject'], string> = {
+const SUBJECT_COLORS = {
   Physics: 'bg-blue-50 text-blue-700 border-blue-200',
   Chemistry: 'bg-purple-50 text-purple-700 border-purple-200',
   Biology: 'bg-green-50 text-green-700 border-green-200',
@@ -34,7 +34,7 @@ const SUBJECT_COLORS: Record<SimulationType['subject'], string> = {
 
 const FALLBACK_THUMBNAIL = 'https://placehold.co/400x200/e2e8f0/64748b?text=No+Thumbnail';
 
-export default function SimulationCard({ simulation, onPlay, isLoading = false }: SimulationCardProps) {
+export default function SimulationCard({ simulation, onPlay, isLoading = false }) {
   const handleLaunch = () => {
     if (!isLoading && onPlay) {
       onPlay(simulation);
@@ -52,7 +52,7 @@ export default function SimulationCard({ simulation, onPlay, isLoading = false }
           loading="lazy"
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
-            (e.currentTarget as HTMLImageElement).src = FALLBACK_THUMBNAIL;
+            e.currentTarget.src = FALLBACK_THUMBNAIL;
           }}
         />
         
@@ -161,3 +161,6 @@ export default function SimulationCard({ simulation, onPlay, isLoading = false }
     </Card>
   );
 }
+
+// Add PropTypes to the component
+SimulationCard.propTypes = propTypes;
