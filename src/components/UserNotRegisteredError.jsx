@@ -4,12 +4,7 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
-interface UserNotRegisteredErrorProps {
-  onRetry?: () => void;
-  contactEmail?: string;
-}
-
-const UserNotRegisteredError: React.FC<UserNotRegisteredErrorProps> = ({ 
+const UserNotRegisteredError = ({ 
   onRetry, 
   contactEmail = 'aneleq@techandguard.co.za' 
 }) => {
