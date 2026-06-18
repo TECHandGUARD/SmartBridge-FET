@@ -8,7 +8,6 @@ export default function PageNotFound() {
   const currentBrowserLocation = useLocation();
   const targetedUrlPathString = currentBrowserLocation.pathname.substring(1) || 'dashboard';
 
-  // Secure asynchronous state resolver checking user parameters directly via Supabase
   const { data: authData, isFetched } = useQuery({
     queryKey: ['routing-auth-state'],
     queryFn: async () => {
@@ -19,7 +18,6 @@ export default function PageNotFound() {
           return { isAuthenticated: false, roleTier: null };
         }
 
-        // Fetch custom role profile from user_profiles table
         const { data: profile } = await supabase
           .from('user_profiles')
           .select('role')
@@ -35,7 +33,7 @@ export default function PageNotFound() {
         return { isAuthenticated: false, roleTier: null };
       }
     },
-    staleTime: 5000, // Cache for 5 seconds
+    staleTime: 5000,
   });
 
   const handleNavigateHome = () => {
@@ -49,7 +47,6 @@ export default function PageNotFound() {
       <div className="max-w-md w-full animate-fadeIn">
         <div className="text-center space-y-6 bg-white p-8 rounded-2xl border border-slate-200 shadow-xl">
           
-          {/* 404 Header */}
           <div className="space-y-2">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mx-auto">
               <AlertCircle className="w-8 h-8 text-slate-400" />
@@ -58,7 +55,6 @@ export default function PageNotFound() {
             <div className="h-1 w-12 bg-primary rounded-full mx-auto"></div>
           </div>
           
-          {/* Main Message */}
           <div className="space-y-2.5">
             <h2 className="text-xl font-extrabold text-slate-800">
               Page Not Found
@@ -68,7 +64,6 @@ export default function PageNotFound() {
             </p>
           </div>
           
-          {/* Admin Advisory (Professional) */}
           {isFetched && authData?.isAuthenticated && isAdmin && (
             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-left">
               <div className="flex items-start space-x-2.5">
@@ -87,7 +82,6 @@ export default function PageNotFound() {
             </div>
           )}
           
-          {/* Action Button */}
           <div className="pt-2 border-t border-slate-100">
             <button 
               type="button"
