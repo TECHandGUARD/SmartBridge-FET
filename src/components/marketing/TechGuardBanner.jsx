@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 export default function TechGuardBanner() {
   const handleBannerClick = async () => {
