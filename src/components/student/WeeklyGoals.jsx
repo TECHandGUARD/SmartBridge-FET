@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,33 +10,15 @@ import { Progress } from '@/components/ui/progress';
 import { Target, Plus, Trash2, ChevronDown, ChevronUp, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  email: string;
-}
+// PropTypes definitions instead of TypeScript interfaces
+const UserProps = {
+  email: PropTypes.string.isRequired
+};
 
-interface DBGoalItem {
-  id: string;
-  goal_type: string;
-  subject: string;
-  target_value: number;
-  week_start_date: string;
-  custom_label: string;
-}
-
-interface DBQuizResult {
-  completed_at: string;
-  subject: string;
-}
-
-interface DBProgressItem {
-  last_accessed: string;
-  subject: string;
-}
-
-interface DBBookingItem {
-  status: string;
-  session_date: string;
-}
+// PropTypes for component props
+const propTypes = {
+  user: PropTypes.shape(UserProps).isRequired
+};
 
 const GOAL_TYPES = [
   { value: 'quizzes_completed',  label: 'Quizzes Completed',   unit: 'quizzes',  icon: '🧩' },
@@ -55,7 +38,7 @@ function getWeekStartDateString(): string {
   return targetMonday.toISOString().split('T')[0];
 }
 
-function computeProgressValue(goal: DBGoalItem, quizzes: DBQuizResult[], progress: DBProgressItem[], bookings: DBBookingItem[]): number {
+function computeProgressValue(goal, quizzes, progress, bookings) {
   const startTime = new Date(goal.week_start_date + 'T00:00:00Z').getTime();
   const endTime = startTime + (7 * 24 * 60 * 60 * 1000);
 
@@ -90,17 +73,17 @@ function computeProgressValue(goal: DBGoalItem, quizzes: DBQuizResult[], progres
   }
 }
 
-export default function WeeklyGoals({ user }: { user: UserProps }) {
-  const [goals, setGoals] = useState<DBGoalItem[]>([]);
-  const [quizzes, setQuizzes] = useState<DBQuizResult[]>([]);
-  const [progress, setProgress] = useState<DBProgressItem[]>([]);
-  const [bookings, setBookings] = useState<DBBookingItem[]>([]);
+export default function WeeklyGoals({ user }) {
+  const [goals, setGoals] = useState([]);
+  const [quizzes, setQuizzes] = useState([]);
+  const [progress, setProgress] = useState([]);
+  const [bookings, setBookings] = useState([]);
   
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showForm, setShowForm] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [expanded, setExpanded] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const [form, setForm] = useState({
     goal_type: 'quizzes_completed',
@@ -137,7 +120,7 @@ export default function WeeklyGoals({ user }: { user: UserProps }) {
       setQuizzes(quizzesQuery.data || []);
       setProgress(progressQuery.data || []);
       setBookings(bookingsQuery.data || []);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Goals dashboard pipeline crash:', err);
       setError(err.message || 'Failed to load weekly goals');
       toast.error('Failed to load goals');
@@ -146,7 +129,7 @@ export default function WeeklyGoals({ user }: { user: UserProps }) {
     }
   };
 
-  const handleAddGoalSubmit = async (e: React.FormEvent) => {
+  const handleAddGoalSubmit = async (e) => {
     e.preventDefault();
     const targetNum = parseInt(form.target_value) || 0;
     if (targetNum < 1) {
@@ -183,14 +166,14 @@ export default function WeeklyGoals({ user }: { user: UserProps }) {
         setShowForm(false);
         toast.success('Goal added successfully!');
       }
-    } catch (err: any) {
+    } catch (err) {
       toast.error(err.message || 'Failed to add goal');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDeleteGoal = async (id: string) => {
+  const handleDeleteGoal = async (id) => {
     try {
       const { error: deleteError } = await supabase
         .from('weekly_goals')
@@ -200,7 +183,7 @@ export default function WeeklyGoals({ user }: { user: UserProps }) {
       if (deleteError) throw deleteError;
       setGoals(prev => prev.filter(g => g.id !== id));
       toast.success('Goal removed');
-    } catch (err: any) {
+    } catch (err) {
       toast.error(err.message || 'Failed to delete goal');
     }
   };
@@ -369,3 +352,6 @@ export default function WeeklyGoals({ user }: { user: UserProps }) {
     </Card>
   );
 }
+
+// Add PropTypes to the component
+WeeklyGoals.propTypes = propTypes;
