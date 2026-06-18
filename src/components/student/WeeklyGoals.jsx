@@ -29,8 +29,8 @@ const GOAL_TYPES = [
 
 const SUBJECT_OPTIONS = ['Mathematics', 'Physical Sciences', 'Life Sciences', 'Accounting', 'Economics', 'History', 'Geography', 'Business Studies'];
 
-// FIXED: Exact ISO week-start Monday date mapping
-function getWeekStartDateString(): string {
+// FIXED: Removed TypeScript return type annotation
+function getWeekStartDateString() {
   const d = new Date();
   const day = d.getDay();
   const diff = day === 0 ? -6 : 1 - day;
