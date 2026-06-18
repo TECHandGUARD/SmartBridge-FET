@@ -225,15 +225,11 @@ export default function StudyReminderManager({ user }) {
         )}
 
         {/* Reminders List */}
-        if (reminders.length === 0 && !loading) {
-          return (
-            <p className="text-xs font-medium text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl bg-muted/20">
-              No reminders set. Add one to stay on track!
-            </p>
-          );
-        }
-
-        return (
+        {reminders.length === 0 && !loading ? (
+          <p className="text-xs font-medium text-muted-foreground text-center py-6 border border-dashed border-border rounded-xl bg-muted/20">
+            No reminders set. Add one to stay on track!
+          </p>
+        ) : (
           <div className="space-y-1.5 max-h-[300px] overflow-y-auto pr-0.5">
             {reminders.map(r => {
               const matchedIcon = SUBJECT_OPTIONS.find(s => s.name === r.subject)?.icon || '📚';
@@ -275,8 +271,8 @@ export default function StudyReminderManager({ user }) {
               );
             })}
           </div>
-        );
-      }
+        )}
+      </CardContent>
     </Card>
   );
 }
