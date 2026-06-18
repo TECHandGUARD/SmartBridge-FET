@@ -12,12 +12,24 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    open: true
+    open: true,
+    historyApiFallback: true,  // ✅ ADD THIS - Fixes 404 on refresh
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild',
-    chunkSizeWarningLimit: 1000
-  }
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+        },
+      },
+    },
+  },
+  preview: {
+    port: 5173,
+    historyApiFallback: true,  // ✅ ALSO ADD THIS - For preview mode
+  },
 })
