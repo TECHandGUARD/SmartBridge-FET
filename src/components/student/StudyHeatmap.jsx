@@ -4,22 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, Loader2, AlertCircle, Info } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface UserProps {
-  email: string;
-}
-
-interface DBStudySession {
-  session_date: string;
-  session_hour: number;
-}
-
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const HOURS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
 
-export default function StudyHeatmap({ user }: { user: UserProps }) {
-  const [heatmap, setHeatmap] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+export default function StudyHeatmap({ user }) {
+  const [heatmap, setHeatmap] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -38,8 +29,8 @@ export default function StudyHeatmap({ user }: { user: UserProps }) {
 
       if (dbError) throw dbError;
 
-      const sessions: DBStudySession[] = data || [];
-      const calculatedHeatmap: Record<string, number> = {};
+      const sessions = data || [];
+      const calculatedHeatmap = {};
 
       sessions.forEach(s => {
         if (!s.session_date || s.session_hour === undefined) return;
@@ -53,7 +44,7 @@ export default function StudyHeatmap({ user }: { user: UserProps }) {
       });
 
       setHeatmap(calculatedHeatmap);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Heatmap mapping failure:', err);
       setError(err.message || 'Failed to load study heatmap data');
       toast.error('Failed to load heatmap');
@@ -64,7 +55,7 @@ export default function StudyHeatmap({ user }: { user: UserProps }) {
 
   const maxCountValue = Math.max(1, ...Object.values(heatmap));
 
-  const getCellColorClass = (count: number) => {
+  const getCellColorClass = (count) => {
     if (!count) return 'bg-muted/30 border-border';
     const intensity = count / maxCountValue;
     if (intensity > 0.75) return 'bg-primary border-primary shadow-sm';
@@ -107,7 +98,7 @@ export default function StudyHeatmap({ user }: { user: UserProps }) {
             <div className="flex gap-1 mb-1.5 ml-9">
               {HOURS.map(h => (
                 <div key={h} className="flex-1 text-center text-[10px] font-bold text-muted-foreground">
-                  {h.toString().padStart(2, '0')}
+                  {h.toString().padStart(2, '00')}
                 </div>
               ))}
             </div>
