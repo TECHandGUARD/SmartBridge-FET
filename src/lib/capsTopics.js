@@ -6,13 +6,14 @@
  * ====================================================================
  */
 
-export interface SubjectSyllabusProfile {
-  name: string;
-  code: string;
-  topics: string[];
-}
+/**
+ * @typedef {Object} SubjectSyllabusProfile
+ * @property {string} name - The name of the subject
+ * @property {string} code - The subject code
+ * @property {string[]} topics - List of topics for the subject
+ */
 
-export const CAPS_TOPICS: Record<string, string[]> = {
+export const CAPS_TOPICS = {
   'Mathematics': [
     'Algebra & Expressions',
     'Equations & Inequalities',
@@ -160,8 +161,11 @@ export const CAPS_TOPICS: Record<string, string[]> = {
 /**
  * Pedagogical Helper Method: Safely resolves curriculum topic list queries with type-safe fallbacks
  * prevents runtime page breaks if frontend fields mismatch backend database names.
+ * 
+ * @param {string} subjectName - The name of the subject to get topics for
+ * @returns {string[]} Array of topic strings for the subject
  */
-export function getTopicsForSubject(subjectName: string): string[] {
+export function getTopicsForSubject(subjectName) {
   if (!subjectName) return [];
   
   if (CAPS_TOPICS.hasOwnProperty(subjectName)) {
@@ -178,15 +182,20 @@ export function getTopicsForSubject(subjectName: string): string[] {
 
 /**
  * Helper to get all subject names
+ * 
+ * @returns {string[]} Array of all subject names
  */
-export function getAllSubjectNames(): string[] {
+export function getAllSubjectNames() {
   return Object.keys(CAPS_TOPICS);
 }
 
 /**
  * Helper to check if a subject exists
+ * 
+ * @param {string} subjectName - The name of the subject to check
+ * @returns {boolean} True if the subject exists
  */
-export function isValidSubject(subjectName: string): boolean {
+export function isValidSubject(subjectName) {
   return CAPS_TOPICS.hasOwnProperty(subjectName) || 
     Object.keys(CAPS_TOPICS).some(k => k.toLowerCase() === subjectName.toLowerCase().trim());
 }
