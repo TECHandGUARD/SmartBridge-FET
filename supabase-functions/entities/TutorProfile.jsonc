@@ -1,0 +1,108 @@
+{
+  "name": "TutorProfile",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short bio / about me"
+    },
+    "avatar_url": {
+      "type": "string"
+    },
+    "subjects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "grades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "sace_number": {
+      "type": "string"
+    },
+    "qualifications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Academic qualifications e.g. 'BSc Mathematics \u2013 UCT (3rd year)'"
+    },
+    "specializations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Areas of expertise e.g. 'Calculus', 'Organic Chemistry'"
+    },
+    "teaching_languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Languages the tutor teaches in e.g. English, isiZulu, isiXhosa"
+    },
+    "institution": {
+      "type": "string",
+      "description": "University or school currently / previously attended"
+    },
+    "study_field": {
+      "type": "string",
+      "description": "Current field of study (for student tutors)"
+    },
+    "study_year": {
+      "type": "string",
+      "enum": [
+        "1st Year",
+        "2nd Year",
+        "3rd Year",
+        "4th Year",
+        "Honours",
+        "Masters",
+        "PhD",
+        "Graduated",
+        "N/A"
+      ],
+      "description": "Year of study (for student tutors)"
+    },
+    "session_price_per_hour": {
+      "type": "number",
+      "description": "Price in ZAR per hour for a session"
+    },
+    "group_session_price": {
+      "type": "number",
+      "description": "Price in ZAR per hour for group sessions"
+    },
+    "hourly_rate": {
+      "type": "number"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "total_reviews": {
+      "type": "number",
+      "default": 0
+    },
+    "is_verified": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_premium": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "user_email",
+    "full_name"
+  ]
+}

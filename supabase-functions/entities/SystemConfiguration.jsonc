@@ -1,0 +1,30 @@
+{
+  "name": "SystemConfiguration",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Unique config key e.g. 'ai_guardrail', 'chat_suggestions', 'academic_term_dates'"
+    },
+    "label": {
+      "type": "string",
+      "description": "Human-readable label for admin display"
+    },
+    "value": {
+      "type": "object",
+      "description": "JSON value \u2014 can be a string, array, or nested object"
+    },
+    "description": {
+      "type": "string",
+      "description": "What this config controls"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ]
+}

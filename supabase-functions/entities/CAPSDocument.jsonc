@@ -1,0 +1,70 @@
+{
+  "name": "CAPSDocument",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "document_type": {
+      "type": "string",
+      "enum": [
+        "CAPS",
+        "ATP",
+        "Revised ATP",
+        "DBE Workbook",
+        "LTSM Catalogue",
+        "Study Guide",
+        "Guidelines"
+      ]
+    },
+    "subject": {
+      "type": "string",
+      "enum": [
+        "Mathematics",
+        "Mathematical Literacy",
+        "Physical Sciences",
+        "Life Sciences",
+        "Geography",
+        "History",
+        "Accounting",
+        "Business Studies",
+        "Economics",
+        "English Home Language",
+        "Life Orientation",
+        "All Subjects"
+      ]
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 10",
+        "Grade 11",
+        "Grade 12",
+        "All Grades"
+      ]
+    },
+    "year": {
+      "type": "number"
+    },
+    "official_doc_number": {
+      "type": "string"
+    },
+    "download_count": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "file_url",
+    "document_type",
+    "subject",
+    "grade"
+  ]
+}

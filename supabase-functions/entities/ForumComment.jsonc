@@ -1,0 +1,50 @@
+{
+  "name": "ForumComment",
+  "type": "object",
+  "properties": {
+    "post_id": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "likes": {
+      "type": "number",
+      "default": 0
+    },
+    "liked_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of user emails who liked this comment"
+    },
+    "is_flagged": {
+      "type": "boolean",
+      "default": false
+    },
+    "flag_reason": {
+      "type": "string"
+    },
+    "is_removed": {
+      "type": "boolean",
+      "default": false
+    },
+    "is_best_answer": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "post_id",
+    "body",
+    "author_email",
+    "author_name"
+  ]
+}

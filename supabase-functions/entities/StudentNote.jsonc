@@ -1,0 +1,54 @@
+{
+  "name": "StudentNote",
+  "type": "object",
+  "properties": {
+    "tutor_email": {
+      "type": "string"
+    },
+    "student_email": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "note": {
+      "type": "string",
+      "description": "Session note or progress observation"
+    },
+    "session_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "strengths": {
+      "type": "string",
+      "description": "What the student did well"
+    },
+    "areas_to_improve": {
+      "type": "string",
+      "description": "Topics needing more work"
+    },
+    "next_steps": {
+      "type": "string",
+      "description": "Planned follow-up or homework"
+    },
+    "mood": {
+      "type": "string",
+      "enum": [
+        "Engaged",
+        "Struggling",
+        "Distracted",
+        "Confident",
+        "Neutral"
+      ],
+      "default": "Neutral"
+    }
+  },
+  "required": [
+    "tutor_email",
+    "student_email",
+    "note"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "name": "PlatformAnnouncement",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "success",
+        "urgent"
+      ],
+      "default": "info"
+    },
+    "audience": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Roles to show this to: student, tutor, parent, all"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date",
+      "description": "Optional expiry date"
+    }
+  },
+  "required": [
+    "title",
+    "message",
+    "audience"
+  ]
+}

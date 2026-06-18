@@ -1,0 +1,36 @@
+{
+  "name": "ApplicationDeadline",
+  "type": "object",
+  "properties": {
+    "event_name": {
+      "type": "string"
+    },
+    "university": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "University Application",
+        "NBT",
+        "Bursary",
+        "Other"
+      ]
+    }
+  },
+  "required": [
+    "event_name",
+    "date",
+    "category"
+  ]
+}

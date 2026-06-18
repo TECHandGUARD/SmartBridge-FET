@@ -1,0 +1,62 @@
+{
+  "name": "StudyRoomPost",
+  "type": "object",
+  "properties": {
+    "room_id": {
+      "type": "string",
+      "description": "e.g. group__math"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "Note",
+        "Question"
+      ],
+      "default": "Note"
+    },
+    "title": {
+      "type": "string"
+    },
+    "body": {
+      "type": "string"
+    },
+    "replies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "author_email": {
+            "type": "string"
+          },
+          "author_name": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    }
+  },
+  "required": [
+    "room_id",
+    "subject",
+    "author_email",
+    "author_name",
+    "type",
+    "body"
+  ]
+}

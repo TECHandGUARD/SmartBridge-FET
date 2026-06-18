@@ -1,0 +1,29 @@
+{
+  "name": "UniversityProspectus",
+  "type": "object",
+  "properties": {
+    "university_name": {
+      "type": "string"
+    },
+    "year": {
+      "type": "number"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "logo_url": {
+      "type": "string"
+    },
+    "application_link": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "university_name",
+    "year",
+    "file_url"
+  ]
+}

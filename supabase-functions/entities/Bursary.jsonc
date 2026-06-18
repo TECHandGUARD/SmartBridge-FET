@@ -1,0 +1,58 @@
+{
+  "name": "Bursary",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string"
+    },
+    "provider": {
+      "type": "string",
+      "description": "Organisation offering the bursary"
+    },
+    "description": {
+      "type": "string"
+    },
+    "apply_link": {
+      "type": "string"
+    },
+    "fields_of_study": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Eligible fields e.g. Engineering, Medicine, Commerce"
+    },
+    "max_household_income": {
+      "type": "number",
+      "description": "Maximum annual household income in ZAR (0 = no limit)"
+    },
+    "min_average": {
+      "type": "number",
+      "description": "Minimum academic average percentage required"
+    },
+    "covers": {
+      "type": "string",
+      "description": "What the bursary covers e.g. tuition, accommodation, books"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "provinces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Eligible provinces (empty = all)"
+    }
+  },
+  "required": [
+    "name",
+    "provider",
+    "apply_link"
+  ]
+}

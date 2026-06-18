@@ -1,0 +1,43 @@
+{
+  "name": "PendingUniversityProspectus",
+  "type": "object",
+  "properties": {
+    "university_name": {
+      "type": "string"
+    },
+    "year": {
+      "type": "number"
+    },
+    "external_link": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "application_link": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "university_name",
+    "year"
+  ]
+}

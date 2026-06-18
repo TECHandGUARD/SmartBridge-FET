@@ -1,0 +1,29 @@
+{
+  "name": "StudySession",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "hour": {
+      "type": "number"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "default": 30
+    }
+  },
+  "required": [
+    "student_email",
+    "subject",
+    "date",
+    "hour"
+  ]
+}

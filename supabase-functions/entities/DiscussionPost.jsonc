@@ -1,0 +1,43 @@
+{
+  "name": "DiscussionPost",
+  "type": "object",
+  "properties": {
+    "author_email": {
+      "type": "string"
+    },
+    "author_name": {
+      "type": "string"
+    },
+    "author_role": {
+      "type": "string",
+      "description": "student or tutor"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "topic": {
+      "type": "string"
+    },
+    "question": {
+      "type": "string"
+    },
+    "is_answered": {
+      "type": "boolean",
+      "default": false
+    },
+    "answer_count": {
+      "type": "number",
+      "default": 0
+    },
+    "upvotes": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "author_email",
+    "author_name",
+    "subject",
+    "question"
+  ]
+}

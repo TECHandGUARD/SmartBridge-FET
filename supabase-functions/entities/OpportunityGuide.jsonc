@@ -1,0 +1,33 @@
+{
+  "name": "OpportunityGuide",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "NBT Prep",
+        "University Requirements",
+        "Bursaries",
+        "Career Guidance",
+        "General"
+      ]
+    },
+    "icon": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title",
+    "file_url",
+    "category"
+  ]
+}

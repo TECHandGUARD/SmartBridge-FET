@@ -1,0 +1,46 @@
+{
+  "name": "UniversityApplication",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "university_name": {
+      "type": "string"
+    },
+    "application_link": {
+      "type": "string"
+    },
+    "faculty": {
+      "type": "string"
+    },
+    "course": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string",
+      "enum": [
+        "Saved",
+        "Started",
+        "Submitted",
+        "Pending NBT",
+        "Accepted",
+        "Rejected",
+        "Waitlisted"
+      ],
+      "default": "Saved"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "deadline": {
+      "type": "string",
+      "format": "date"
+    }
+  },
+  "required": [
+    "student_email",
+    "university_name",
+    "stage"
+  ]
+}

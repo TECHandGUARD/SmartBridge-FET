@@ -1,0 +1,40 @@
+{
+  "name": "TutorAvailability",
+  "type": "object",
+  "properties": {
+    "tutor_email": {
+      "type": "string"
+    },
+    "day_of_week": {
+      "type": "string",
+      "enum": [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday"
+      ]
+    },
+    "start_time": {
+      "type": "string"
+    },
+    "end_time": {
+      "type": "string"
+    },
+    "is_available": {
+      "type": "boolean",
+      "default": true
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tutor_email",
+    "day_of_week",
+    "start_time",
+    "end_time"
+  ]
+}

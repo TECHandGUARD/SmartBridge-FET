@@ -1,0 +1,62 @@
+{
+  "name": "EducationalResource",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Title of the resource document"
+    },
+    "resource_url": {
+      "type": "string",
+      "description": "URL to the uploaded document or external link"
+    },
+    "subject": {
+      "type": "string",
+      "enum": [
+        "Mathematics",
+        "Mathematical Literacy",
+        "Physical Sciences",
+        "Life Sciences",
+        "Geography",
+        "History",
+        "Accounting",
+        "Business Studies",
+        "Economics",
+        "English Home Language",
+        "Life Orientation",
+        "All Subjects"
+      ]
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 10",
+        "Grade 11",
+        "Grade 12",
+        "All Grades"
+      ]
+    },
+    "caps_alignment_tag": {
+      "type": "string",
+      "description": "CAPS topic or unit this resource is aligned to e.g. 'Calculus \u2013 Differentiation', 'Organic Chemistry'"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short summary of the resource content"
+    },
+    "uploaded_by": {
+      "type": "string",
+      "description": "Email of the tutor or admin who uploaded this resource"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "title",
+    "resource_url",
+    "subject",
+    "grade"
+  ]
+}

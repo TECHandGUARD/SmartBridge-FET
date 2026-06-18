@@ -1,0 +1,46 @@
+{
+  "name": "FeatureToggle",
+  "type": "object",
+  "properties": {
+    "feature_key": {
+      "type": "string",
+      "description": "Unique identifier for the feature e.g. 'quiz', 'study_rooms'"
+    },
+    "label": {
+      "type": "string",
+      "description": "Human-readable name shown in admin panel"
+    },
+    "description": {
+      "type": "string",
+      "description": "Short explanation of what this feature does"
+    },
+    "is_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Global on/off switch for all users"
+    },
+    "locked_message": {
+      "type": "string",
+      "description": "Message shown to users when feature is disabled"
+    },
+    "disabled_for_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific user emails who cannot access this feature even when globally enabled"
+    },
+    "enabled_for_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Specific user emails who CAN access this feature even when globally disabled"
+    }
+  },
+  "required": [
+    "feature_key",
+    "label",
+    "is_enabled"
+  ]
+}

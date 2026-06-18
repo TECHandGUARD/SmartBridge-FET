@@ -1,0 +1,49 @@
+{
+  "name": "NBTTestDate",
+  "type": "object",
+  "properties": {
+    "test_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "test_time": {
+      "type": "string",
+      "description": "e.g. 08:00"
+    },
+    "venue": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "province": {
+      "type": "string"
+    },
+    "tests_available": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. AQL, MAT, QL"
+    },
+    "registration_deadline": {
+      "type": "string",
+      "format": "date"
+    },
+    "available_slots": {
+      "type": "number"
+    },
+    "registration_link": {
+      "type": "string"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    }
+  },
+  "required": [
+    "test_date",
+    "venue",
+    "city"
+  ]
+}

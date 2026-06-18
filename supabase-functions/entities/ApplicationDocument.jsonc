@@ -1,0 +1,55 @@
+{
+  "name": "ApplicationDocument",
+  "type": "object",
+  "properties": {
+    "application_id": {
+      "type": "string",
+      "description": "ID of the UniversityApplication"
+    },
+    "student_email": {
+      "type": "string"
+    },
+    "university_name": {
+      "type": "string"
+    },
+    "doc_type": {
+      "type": "string",
+      "enum": [
+        "ID Copy",
+        "Matric Certificate",
+        "Proof of Payment",
+        "NBT Results",
+        "Academic Transcript",
+        "Motivation Letter",
+        "Reference Letter",
+        "Other"
+      ],
+      "description": "Type of document"
+    },
+    "file_url": {
+      "type": "string"
+    },
+    "file_name": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "uploaded",
+        "submitted",
+        "verified",
+        "rejected"
+      ],
+      "default": "uploaded"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "application_id",
+    "student_email",
+    "doc_type",
+    "file_url"
+  ]
+}

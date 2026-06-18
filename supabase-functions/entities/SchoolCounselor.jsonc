@@ -1,0 +1,42 @@
+{
+  "name": "SchoolCounselor",
+  "type": "object",
+  "properties": {
+    "counselor_email": {
+      "type": "string"
+    },
+    "school_name": {
+      "type": "string",
+      "description": "Primary/default school name (legacy)"
+    },
+    "student_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Students for the primary school (legacy)"
+    },
+    "schools": {
+      "type": "array",
+      "description": "List of schools this counselor manages",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "student_emails": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "counselor_email",
+    "school_name"
+  ]
+}

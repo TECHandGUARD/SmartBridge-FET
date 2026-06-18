@@ -1,0 +1,81 @@
+{
+  "name": "NBTRegistration",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "student_name": {
+      "type": "string"
+    },
+    "nbt_test_date_id": {
+      "type": "string",
+      "description": "ID of the NBTTestDate record"
+    },
+    "test_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "venue": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "tests_registered": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "e.g. AQL, MAT, QL"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "registered",
+        "confirmed",
+        "completed",
+        "cancelled"
+      ],
+      "default": "registered"
+    },
+    "aql_score": {
+      "type": "number",
+      "description": "Score out of 100"
+    },
+    "mat_score": {
+      "type": "number",
+      "description": "Score out of 100"
+    },
+    "ql_score": {
+      "type": "number",
+      "description": "Score out of 100"
+    },
+    "overall_band": {
+      "type": "string",
+      "enum": [
+        "Proficient",
+        "Intermediate",
+        "Basic",
+        ""
+      ],
+      "description": "Overall NBT performance band"
+    },
+    "results_uploaded": {
+      "type": "boolean",
+      "default": false
+    },
+    "results_file_url": {
+      "type": "string"
+    },
+    "reminder_sent": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "student_email",
+    "nbt_test_date_id",
+    "test_date"
+  ]
+}

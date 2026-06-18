@@ -1,0 +1,83 @@
+{
+  "name": "LessonPlan",
+  "type": "object",
+  "properties": {
+    "tutor_email": {
+      "type": "string",
+      "description": "Email of the tutor who created the lesson plan"
+    },
+    "student_email": {
+      "type": "string",
+      "description": "Email of the student this lesson plan is for"
+    },
+    "student_name": {
+      "type": "string",
+      "description": "Display name of the student"
+    },
+    "session_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the session"
+    },
+    "session_title": {
+      "type": "string",
+      "description": "Title or topic of the session"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject of the lesson plan"
+    },
+    "grade": {
+      "type": "string",
+      "enum": [
+        "Grade 10",
+        "Grade 11",
+        "Grade 12"
+      ],
+      "description": "Grade level"
+    },
+    "objectives": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Learning objectives for the session"
+    },
+    "resources_used": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Resource titles or URLs used in the session"
+    },
+    "homework_assigned": {
+      "type": "string",
+      "description": "Details of homework assigned to the student"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Tutor private session notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "planned",
+        "completed"
+      ],
+      "default": "draft"
+    },
+    "student_progress_id": {
+      "type": "string",
+      "description": "Linked StudentProgress record ID"
+    }
+  },
+  "required": [
+    "tutor_email",
+    "student_email",
+    "session_date",
+    "session_title",
+    "subject",
+    "grade"
+  ]
+}

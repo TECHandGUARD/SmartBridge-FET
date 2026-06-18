@@ -1,0 +1,51 @@
+{
+  "name": "PendingApplicationDeadline",
+  "type": "object",
+  "properties": {
+    "event_name": {
+      "type": "string"
+    },
+    "university": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "description": {
+      "type": "string"
+    },
+    "link": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "University Application",
+        "NBT",
+        "Bursary",
+        "Other"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected"
+      ],
+      "default": "pending"
+    },
+    "admin_notes": {
+      "type": "string"
+    },
+    "source": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_name",
+    "date",
+    "category"
+  ]
+}
