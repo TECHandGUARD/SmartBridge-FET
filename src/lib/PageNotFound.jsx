@@ -4,17 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 import { Home, ShieldAlert, AlertCircle } from 'lucide-react';
 
-interface AuthProfilePayload {
-  isAuthenticated: boolean;
-  roleTier: string | null;
-}
-
 export default function PageNotFound() {
   const currentBrowserLocation = useLocation();
   const targetedUrlPathString = currentBrowserLocation.pathname.substring(1) || 'dashboard';
 
   // Secure asynchronous state resolver checking user parameters directly via Supabase
-  const { data: authData, isFetched } = useQuery<AuthProfilePayload>({
+  const { data: authData, isFetched } = useQuery({
     queryKey: ['routing-auth-state'],
     queryFn: async () => {
       try {
