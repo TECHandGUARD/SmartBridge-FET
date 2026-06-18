@@ -7,22 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BookMarked, RotateCcw, CheckCircle, XCircle, Loader2, Info, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface FlashcardItem {
-  id: string;
-  subject: string;
-  front: string;
-  back: string;
-  is_active: boolean;
-  created_at?: string;
-}
-
-interface WeakConceptLog {
-  student_email: string;
-  flashcard_id: string;
-  subject_tag: string;
-  attempted_at: string;
-}
-
 const SUBJECT_OPTIONS = [
   { code: 'Mathematics', name: 'Mathematics' },
   { code: 'Physical Sciences', name: 'Physical Sciences' },
@@ -34,16 +18,16 @@ const SUBJECT_OPTIONS = [
   { code: 'Business Studies', name: 'Business Studies' },
 ];
 
-export default function InteractiveFlashcards({ studentEmail }: { studentEmail?: string }) {
-  const [subject, setSubject] = useState<string>('Mathematics');
-  const [cards, setCards] = useState<FlashcardItem[]>([]);
-  const [index, setIndex] = useState<number>(0);
-  const [flipped, setFlipped] = useState<boolean>(false);
-  const [knownIds, setKnownIds] = useState<string[]>([]);
-  const [reviewIds, setReviewIds] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
-  const [sessionComplete, setSessionComplete] = useState<boolean>(false);
+export default function InteractiveFlashcards({ studentEmail }) {
+  const [subject, setSubject] = useState('Mathematics');
+  const [cards, setCards] = useState([]);
+  const [index, setIndex] = useState(0);
+  const [flipped, setFlipped] = useState(false);
+  const [knownIds, setKnownIds] = useState([]);
+  const [reviewIds, setReviewIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [sessionComplete, setSessionComplete] = useState(false);
 
   const loadFlashcards = useCallback(async () => {
     try {
@@ -62,7 +46,7 @@ export default function InteractiveFlashcards({ studentEmail }: { studentEmail?:
       setKnownIds([]);
       setReviewIds([]);
       setFlipped(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error loading flashcards:', err);
       toast.error('Failed to sync active flashcard modules.');
     } finally {
@@ -74,7 +58,7 @@ export default function InteractiveFlashcards({ studentEmail }: { studentEmail?:
     loadFlashcards();
   }, [loadFlashcards]);
 
-  const logWeakConcept = useCallback(async (flashcardId: string) => {
+  const logWeakConcept = useCallback(async (flashcardId) => {
     if (!studentEmail) return;
     
     try {
@@ -93,7 +77,7 @@ export default function InteractiveFlashcards({ studentEmail }: { studentEmail?:
     }
   }, [studentEmail, subject]);
 
-  const syncSetCompletion = useCallback(async (finalKnownCount: number) => {
+  const syncSetCompletion = useCallback(async (finalKnownCount) => {
     if (!studentEmail) return;
     
     try {
@@ -136,7 +120,7 @@ export default function InteractiveFlashcards({ studentEmail }: { studentEmail?:
     }
   }, [studentEmail, subject, cards.length]);
 
-  const handleNextCard = useCallback(async (knewCard: boolean) => {
+  const handleNextCard = useCallback(async (knewCard) => {
     const currentCard = cards[index];
     if (!currentCard) return;
 
