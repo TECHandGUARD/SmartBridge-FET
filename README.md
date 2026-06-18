@@ -44,7 +44,6 @@ Before you begin, ensure you have:
 
 - **Node.js** (v18 or higher)
 - **npm** (v9 or higher)
-- **Git** (for cloning the repository)
 - **Supabase account** (for backend services)
 - **AWS Amplify account** (for hosting)
 
