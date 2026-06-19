@@ -86,61 +86,19 @@ export default function Onboarding({ user, onComplete }) {
   const [showConsent, setShowConsent] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [policyConsent, setPolicyConsent] = useState(false);
-  
-  // --- 1. ADMIN DETECTION & REDIRECT (Runs FIRST and IMMEDIATELY) ---
+
+  // ✅ IMMEDIATE ADMIN REDIRECT - Runs BEFORE rendering the form
   const isAdmin = ADMIN_EMAILS.includes(user?.email);
 
-  // This effect runs the moment the component loads and redirects admins instantly
+  // If admin, redirect to home IMMEDIATELY
   useEffect(() => {
-    const handleAdminRedirect = async () => {
-      // If user is not admin, do nothing and show the normal form
-      if (!isAdmin || !user?.email) {
-        return;
-      }
+    if (isAdmin) {
+      console.log('Admin detected - redirecting to dashboard');
+      navigate('/', { replace: true });
+    }
+  }, [isAdmin, navigate]);
 
-      try {
-        // 1. Update the database to mark admin as fully onboarded
-        const { error: updateError } = await supabase
-          .from('user_profiles')
-          .update({
-            role: 'admin',
-            onboarding_complete: true,
-            is_super_admin: true,
-            updated_at: new Date().toISOString()
-          })
-          .eq('email', user.email);
-
-        if (updateError) {
-          console.error('Admin update failed:', updateError);
-          toast.error('Failed to setup admin account. Please contact support.');
-          return;
-        }
-
-        // 2. Update the local user object so the app knows they are an admin
-        if (user) {
-          user.role = 'admin';
-          user.onboarding_complete = true;
-          user.is_super_admin = true;
-        }
-
-        // 3. Success message and redirect IMMEDIATELY
-        toast.success('✅ Admin access granted! Redirecting...');
-        
-        // 4. Call onComplete if provided, then navigate
-        if (onComplete) onComplete();
-        navigate('/', { replace: true });
-
-      } catch (error) {
-        console.error('Admin auto-onboarding error:', error);
-        toast.error('Failed to setup admin account');
-      }
-    };
-
-    handleAdminRedirect();
-  }, [isAdmin, user, navigate, onComplete]);
-
-  // --- 2. RENDER LOGIC ---
-  // If the user is an admin, we DO NOT render the form. We only show a loading spinner.
+  // If admin, show NOTHING - just a loading spinner while redirecting
   if (isAdmin) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
@@ -150,7 +108,6 @@ export default function Onboarding({ user, onComplete }) {
     );
   }
 
-  // --- 3. NORMAL ONBOARDING FORM (For Students, Parents, and Tutors) ---
   const isTutorRole = selectedRole === 'sace_tutor' || selectedRole === 'student_tutor';
 
   const canSubmit = () => {
@@ -194,7 +151,6 @@ export default function Onboarding({ user, onComplete }) {
 
       if (updateError) throw updateError;
 
-      // (Tutor profile creation logic remains the same - I've kept it for completeness)
       if (isTutor) {
         const tutorType = resolvedRole === 'sace_tutor' ? 'SACE Tutor' : 'Student Tutor';
         const qualifications = resolvedRole === 'student_tutor'
@@ -257,7 +213,7 @@ export default function Onboarding({ user, onComplete }) {
           : '🎉 Welcome to SmartBridge FET!'
       );
       setSaving(false);
-      onComplete?.();
+      if (onComplete) onComplete();
     } catch (err) {
       console.error('Onboarding error:', err);
       toast.error('Something went wrong. Please try again.');
@@ -265,7 +221,7 @@ export default function Onboarding({ user, onComplete }) {
     }
   };
 
-  // (The rest of the UI render is unchanged and works for all non-admin users)
+  // Normal onboarding form for non-admin users
   return (
     <div className="min-h-screen bg-background flex items-center justify-center py-10 px-4">
       <div className="w-full max-w-2xl">
