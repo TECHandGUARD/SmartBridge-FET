@@ -38,7 +38,8 @@ import CounselorDashboard from './pages/CounselorDashboard';
 import BursaryFinder from './pages/BursaryFinder';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError } = useAuth();
+  // Extracting 'user' or 'session' from your AuthContext to track login state
+  const { isLoadingAuth, authError, user } = useAuth();
 
   // Loading state
   if (isLoadingAuth) {
@@ -57,12 +58,25 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
+  // 1. GUEST/UNAUTHENTICATED ROUTING FLOW
+  // If no user exists, direct all sub-links smoothly back to the root entry page
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/" element={<Home />} />
+        {/* If a logged-out user tries to access /login, /dashboard, etc., route to / */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  // 2. SIGNED-IN ROUTING FLOW
   return (
     <Routes>
       <Route element={<AppLayout />}>
         
         {/* ================================================================
-            1. PUBLIC ROUTES (No Authentication Required)
+            PUBLIC LAYOUT PATHS (Accessible while signed in)
            ================================================================ */}
         <Route path="/" element={<Home />} />
         <Route path="/subjects" element={<Subjects />} />
@@ -74,7 +88,7 @@ const AuthenticatedApp = () => {
         <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
         
         {/* ================================================================
-            2. PROTECTED ROUTES (Any authenticated user)
+            PROTECTED DASHBOARD PATHS
            ================================================================ */}
         <Route element={<ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']} />}>
           <Route path="/student-dashboard" element={<StudentDashboard />} />
@@ -92,14 +106,14 @@ const AuthenticatedApp = () => {
         </Route>
         
         {/* ================================================================
-            3. TUTOR-ONLY ROUTES
+            TUTOR PATHS
            ================================================================ */}
         <Route element={<ProtectedRoute allowedRoles={['Tutor', 'Admin']} redirectTo="/student-dashboard" />}>
           <Route path="/tutor-dashboard" element={<TutorDashboard />} />
         </Route>
         
         {/* ================================================================
-            4. ADMIN-ONLY ROUTES
+            ADMIN PATHS
            ================================================================ */}
         <Route element={<ProtectedRoute allowedRoles={['Admin']} redirectTo="/student-dashboard" />}>
           <Route path="/admin" element={<AdminDashboard />} />
@@ -108,7 +122,7 @@ const AuthenticatedApp = () => {
           <Route path="/counselor" element={<CounselorDashboard />} />
         </Route>
         
-        {/* 404 Fallback */}
+        {/* 404 Fallback within layout context */}
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
