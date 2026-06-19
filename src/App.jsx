@@ -41,10 +41,13 @@ import CounselorDashboard from './pages/CounselorDashboard';
 import BursaryFinder from './pages/BursaryFinder';
 
 // ============================================================
-// 🔐 COMPONENT: Require Login + Onboarding
+// 🔐 COMPONENT: Require Login + Onboarding (with Admin Bypass)
 // ============================================================
 const RequireAuthAndOnboarding = ({ children }) => {
   const { user, isLoadingAuth } = useAuth();
+  
+  // ✅ Admin emails that should bypass onboarding
+  const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
   
   if (isLoadingAuth) {
     return (
@@ -59,34 +62,22 @@ const RequireAuthAndOnboarding = ({ children }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // If logged in but onboarding not complete, redirect to onboarding
+  // ✅ ADMIN BYPASS: Check if user is admin
+  const isAdmin = ADMIN_EMAILS.includes(user.email) || 
+                  user.role === 'admin' || 
+                  user.is_super_admin === true;
+  
+  // If admin, skip onboarding check - they have full access
+  if (isAdmin) {
+    return children;
+  }
+  
+  // For non-admins: check if onboarding is complete
   if (user && !user.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
   
-  // User is logged in AND has completed onboarding
-  return children;
-};
-
-// ============================================================
-// 🔐 COMPONENT: Require Onboarding Only (for users already logged in)
-// ============================================================
-const RequireOnboarding = ({ children }) => {
-  const { user, isLoadingAuth } = useAuth();
-  
-  if (isLoadingAuth) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-background">
-        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-  
-  // If onboarding not complete, redirect to onboarding
-  if (user && !user.onboarding_complete) {
-    return <Navigate to="/onboarding" replace />;
-  }
-  
+  // User is logged in, not admin, and has completed onboarding
   return children;
 };
 
@@ -126,7 +117,7 @@ const AuthenticatedApp = () => {
       <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
 
       {/* ================================================================
-          🔐 ONBOARDING (Login Required, No Dashboard Access Yet)
+          🔐 ONBOARDING (Login Required, Admin bypass handled inside)
           ================================================================ */}
       <Route 
         path="/onboarding" 
@@ -138,11 +129,11 @@ const AuthenticatedApp = () => {
       />
 
       {/* ================================================================
-          🔐 PROTECTED ROUTES (Login + Onboarding Required)
+          🔐 PROTECTED ROUTES (Login + Onboarding Required, Admin Bypass)
           ================================================================ */}
       <Route element={<AppLayout />}>
         
-        {/* Home - Requires login + onboarding */}
+        {/* Home - Requires login + onboarding (admin bypass) */}
         <Route 
           path="/" 
           element={
@@ -152,7 +143,7 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Subjects - Requires login + onboarding */}
+        {/* Subjects */}
         <Route 
           path="/subjects" 
           element={
@@ -171,7 +162,7 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Tutors - Requires login + onboarding */}
+        {/* Tutors */}
         <Route 
           path="/tutors" 
           element={
@@ -181,7 +172,7 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Premium - Requires login + onboarding */}
+        {/* Premium */}
         <Route 
           path="/premium" 
           element={
@@ -206,13 +197,13 @@ const AuthenticatedApp = () => {
         />
 
         {/* ================================================================
-            👨‍👩‍👧 PARENT DASHBOARD
+            👨‍👩‍👧 PARENT DASHBOARD (Admin can access)
            ================================================================ */}
         <Route 
           path="/parent-dashboard" 
           element={
             <RequireAuthAndOnboarding>
-              <ProtectedRoute allowedRoles={['Parent']}>
+              <ProtectedRoute allowedRoles={['Parent', 'Admin']}>
                 <ParentDashboard />
               </ProtectedRoute>
             </RequireAuthAndOnboarding>
@@ -234,7 +225,7 @@ const AuthenticatedApp = () => {
         />
 
         {/* ================================================================
-            🔧 ADMIN DASHBOARD
+            🔧 ADMIN DASHBOARD (Admin only)
            ================================================================ */}
         <Route 
           path="/admin" 
