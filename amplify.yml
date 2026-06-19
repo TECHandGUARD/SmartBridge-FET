@@ -14,3 +14,46 @@ frontend:
   cache:
     paths:
       - node_modules/**/*
+
+# ============================================================
+# ✅ CRITICAL: SPA Routing for React Router
+# Prevents 404 errors on page refresh
+# ============================================================
+rewrites:
+  - source: '/<*>'
+    target: '/index.html'
+    status: '200'
+  - source: '/'
+    target: '/index.html'
+    status: '200'
+
+# ============================================================
+# ✅ Caching Headers for Performance
+# ============================================================
+customHeaders:
+  - pattern: '**/*.js'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=31536000, immutable'
+  - pattern: '**/*.css'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=31536000, immutable'
+  - pattern: '**/*.svg'
+    headers:
+      - key: 'Cache-Control'
+        value: 'public, max-age=31536000, immutable'
+  - pattern: '/index.html'
+    headers:
+      - key: 'Cache-Control'
+        value: 'no-cache, no-store, must-revalidate'
+  - pattern: '/manifest.json'
+    headers:
+      - key: 'Cache-Control'
+        value: 'no-cache'
+
+# ============================================================
+# ✅ Environment Variables (Set in Amplify Console)
+# ============================================================
+# VITE_SUPABASE_URL
+# VITE_SUPABASE_ANON_KEY
