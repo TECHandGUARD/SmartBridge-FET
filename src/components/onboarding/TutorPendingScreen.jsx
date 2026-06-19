@@ -1,13 +1,75 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { Clock, CheckCircle, RefreshCw, LogOut, BookOpen, AlertTriangle, Loader2 } from 'lucide-react';
+import { Clock, CheckCircle, RefreshCw, LogOut, BookOpen, AlertTriangle, Loader2, Shield } from 'lucide-react';
 import { toast } from 'sonner';
+
+// ✅ Admin emails that should bypass this screen
+const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
 
 export default function TutorPendingScreen({ user, onRefresh }) {
   const [checking, setChecking] = useState(false);
   const [isVerified, setIsVerified] = useState(false);
   const [hasNoProfile, setHasNoProfile] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // ✅ NEW: Check if user is admin and bypass immediately
+  useEffect(() => {
+    const checkAdmin = async () => {
+      if (!user?.email) return;
+      
+      // Check if email is in admin list
+      if (ADMIN_EMAILS.includes(user.email)) {
+        console.log('✅ Admin user detected - bypassing pending screen');
+        setIsAdmin(true);
+        setIsVerified(true);
+        
+        // Make sure admin has correct role in database
+        const { error } = await supabase
+          .from('user_profiles')
+          .update({
+            role: 'admin',
+            onboarding_complete: true,
+            is_super_admin: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', user.email);
+        
+        if (error) {
+          console.error('Failed to update admin role:', error);
+        }
+        
+        // Redirect to admin dashboard
+        setTimeout(() => {
+          if (onRefresh) onRefresh();
+          window.location.href = '/admin';
+        }, 500);
+        return;
+      }
+      
+      // Check if user has admin role in database
+      const { data: profile, error: profileError } = await supabase
+        .from('user_profiles')
+        .select('role, is_super_admin')
+        .eq('email', user.email)
+        .maybeSingle();
+      
+      if (!profileError && profile) {
+        if (profile.role === 'admin' || profile.is_super_admin === true) {
+          console.log('✅ Admin role detected - bypassing pending screen');
+          setIsAdmin(true);
+          setIsVerified(true);
+          setTimeout(() => {
+            if (onRefresh) onRefresh();
+            window.location.href = '/admin';
+          }, 500);
+          return;
+        }
+      }
+    };
+    
+    checkAdmin();
+  }, [user, onRefresh]);
 
   const checkVerification = useCallback(async () => {
     if (checking) return;
@@ -31,6 +93,17 @@ export default function TutorPendingScreen({ user, onRefresh }) {
       }
       
       const currentRole = profile?.role || 'user';
+      
+      // ✅ Check if admin first
+      if (ADMIN_EMAILS.includes(authUser?.email) || currentRole === 'admin' || profile?.is_super_admin === true) {
+        console.log('Admin user - bypassing');
+        setIsVerified(true);
+        setTimeout(() => {
+          if (onRefresh) onRefresh();
+          window.location.href = '/admin';
+        }, 500);
+        return;
+      }
       
       if (currentRole !== 'tutor_pending' && currentRole !== 'user') {
         console.log('User role changed to:', currentRole);
@@ -64,12 +137,16 @@ export default function TutorPendingScreen({ user, onRefresh }) {
     }
   }, [checking, user?.email, onRefresh]);
 
-  // Poll every 30s automatically
+  // Poll every 30s automatically (but skip if admin)
   useEffect(() => {
-    const interval = setInterval(() => checkVerification(), 30000);
+    const interval = setInterval(() => {
+      if (!isAdmin) {
+        checkVerification();
+      }
+    }, 30000);
     checkVerification();
     return () => clearInterval(interval);
-  }, [checkVerification]);
+  }, [checkVerification, isAdmin]);
 
   const handleResubmit = async () => {
     try {
@@ -115,6 +192,20 @@ export default function TutorPendingScreen({ user, onRefresh }) {
       window.location.href = '/';
     }
   };
+
+  // ✅ If admin, show loading while redirecting (should never actually render)
+  if (isAdmin) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="text-center space-y-4 p-8">
+          <Shield className="w-16 h-16 text-primary mx-auto" />
+          <h2 className="text-2xl font-bold text-foreground">Admin Access</h2>
+          <p className="text-muted-foreground">Redirecting to admin dashboard…</p>
+          <Loader2 className="w-6 h-6 animate-spin text-primary mx-auto" />
+        </div>
+      </div>
+    );
+  }
 
   if (isVerified) {
     return (
@@ -183,10 +274,10 @@ export default function TutorPendingScreen({ user, onRefresh }) {
     );
   }
 
+  // Normal pending screen for regular tutors
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="max-w-md w-full text-center space-y-6">
-        {/* Logo */}
         <div className="flex items-center justify-center gap-2 mb-2">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <BookOpen className="w-5 h-5 text-primary-foreground" />
@@ -194,7 +285,6 @@ export default function TutorPendingScreen({ user, onRefresh }) {
           <span className="font-playfair font-bold text-xl text-foreground">SmartBridge FET</span>
         </div>
 
-        {/* Pending icon */}
         <div className="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
           <Clock className="w-10 h-10 text-amber-600" />
         </div>
