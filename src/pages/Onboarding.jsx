@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
@@ -85,6 +85,89 @@ export default function Onboarding({ user, onComplete }) {
   const [showConsent, setShowConsent] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [policyConsent, setPolicyConsent] = useState(false);
+  
+  // ✅ NEW: State for admin auto-onboarding
+  const [isAdminAutoOnboarding, setIsAdminAutoOnboarding] = useState(false);
+
+  // ✅ NEW: Check if user is admin
+  const isAdmin = ADMIN_EMAILS.includes(user?.email);
+
+  // ✅ NEW: Auto-complete onboarding for admin users
+  useEffect(() => {
+    if (isAdmin && user) {
+      const autoCompleteAdmin = async () => {
+        try {
+          setIsAdminAutoOnboarding(true);
+          
+          // Check if admin already has onboarding_complete = true
+          const { data: existingProfile, error: fetchError } = await supabase
+            .from('user_profiles')
+            .select('onboarding_complete, role')
+            .eq('email', user.email)
+            .maybeSingle();
+
+          if (fetchError) throw fetchError;
+
+          // If already completed, just call onComplete
+          if (existingProfile?.onboarding_complete === true) {
+            setIsAdminAutoOnboarding(false);
+            onComplete?.();
+            return;
+          }
+
+          // Auto-set admin role and complete onboarding
+          const { error: updateError } = await supabase
+            .from('user_profiles')
+            .update({
+              role: 'admin',
+              onboarding_complete: true,
+              is_super_admin: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', user.email);
+
+          if (updateError) throw updateError;
+
+          // Update the user object with new role
+          user.role = 'admin';
+          user.onboarding_complete = true;
+          user.is_super_admin = true;
+
+          toast.success('✅ Admin access granted!');
+          setIsAdminAutoOnboarding(false);
+          onComplete?.();
+        } catch (err) {
+          console.error('Admin auto-onboarding error:', err);
+          toast.error('Failed to setup admin account. Please contact support.');
+          setIsAdminAutoOnboarding(false);
+        }
+      };
+
+      autoCompleteAdmin();
+    }
+  }, [isAdmin, user, onComplete]);
+
+  // ✅ NEW: Show loading while admin auto-onboarding
+  if (isAdmin && isAdminAutoOnboarding) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground">Setting up admin account...</p>
+      </div>
+    );
+  }
+
+  // ✅ NEW: If admin and onboarding is complete, redirect to home
+  if (isAdmin && user?.onboarding_complete) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   const isTutorRole = selectedRole === 'sace_tutor' || selectedRole === 'student_tutor';
 
@@ -221,8 +304,6 @@ export default function Onboarding({ user, onComplete }) {
 
         if (logError) console.error('Error logging activity:', logError);
 
-        // Note: Email sending would need to be handled by an Edge Function
-        // For now, we'll just toast success
         toast.info(`Admin will be notified of your registration for verification.`);
       }
 
