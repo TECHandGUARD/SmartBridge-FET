@@ -12,6 +12,9 @@ import PageNotFound from './lib/PageNotFound';
 
 // Page imports
 import Home from './pages/Home';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import AuthCallback from './pages/AuthCallback';
 import Subjects from './pages/Subjects';
 import SubjectDetail from './pages/SubjectDetail';
 import StudentDashboard from './pages/StudentDashboard';
@@ -37,8 +40,60 @@ import CommunityForum from './pages/CommunityForum';
 import CounselorDashboard from './pages/CounselorDashboard';
 import BursaryFinder from './pages/BursaryFinder';
 
+// ============================================================
+// 🔐 COMPONENT: Require Login + Onboarding
+// ============================================================
+const RequireAuthAndOnboarding = ({ children }) => {
+  const { user, isLoadingAuth } = useAuth();
+  
+  if (isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  // If not logged in, redirect to login
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  // If logged in but onboarding not complete, redirect to onboarding
+  if (user && !user.onboarding_complete) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
+  // User is logged in AND has completed onboarding
+  return children;
+};
+
+// ============================================================
+// 🔐 COMPONENT: Require Onboarding Only (for users already logged in)
+// ============================================================
+const RequireOnboarding = ({ children }) => {
+  const { user, isLoadingAuth } = useAuth();
+  
+  if (isLoadingAuth) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+  
+  // If onboarding not complete, redirect to onboarding
+  if (user && !user.onboarding_complete) {
+    return <Navigate to="/onboarding" replace />;
+  }
+  
+  return children;
+};
+
+// ============================================================
+// 🏠 MAIN APP
+// ============================================================
 const AuthenticatedApp = () => {
-  // Extracting 'user' or 'session' from your AuthContext to track login state
   const { isLoadingAuth, authError, user } = useAuth();
 
   // Loading state
@@ -58,71 +113,277 @@ const AuthenticatedApp = () => {
     return <UserNotRegisteredError />;
   }
 
-  // 1. GUEST/UNAUTHENTICATED ROUTING FLOW
-  // If no user exists, direct all sub-links smoothly back to the root entry page
-  if (!user) {
-    return (
-      <Routes>
-        <Route path="/" element={<Home />} />
-        {/* If a logged-out user tries to access /login, /dashboard, etc., route to / */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    );
-  }
-
-  // 2. SIGNED-IN ROUTING FLOW
   return (
     <Routes>
+      {/* ================================================================
+          🚪 PUBLIC ROUTES (No Login Required)
+          ================================================================ */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/privacy" element={<PrivacyPolicy />} />
+      <Route path="/terms" element={<TermsOfService />} />
+      <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
+
+      {/* ================================================================
+          🔐 ONBOARDING (Login Required, No Dashboard Access Yet)
+          ================================================================ */}
+      <Route 
+        path="/onboarding" 
+        element={
+          <ProtectedRoute allowedRoles={['user', 'Student', 'Parent', 'Tutor', 'Admin']}>
+            <Onboarding />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* ================================================================
+          🔐 PROTECTED ROUTES (Login + Onboarding Required)
+          ================================================================ */}
       <Route element={<AppLayout />}>
         
-        {/* ================================================================
-            PUBLIC LAYOUT PATHS (Accessible while signed in)
-           ================================================================ */}
-        <Route path="/" element={<Home />} />
-        <Route path="/subjects" element={<Subjects />} />
-        <Route path="/subjects/:code" element={<SubjectDetail />} />
-        <Route path="/tutors" element={<Tutors />} />
-        <Route path="/premium" element={<Premium />} />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsOfService />} />
-        <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
+        {/* Home - Requires login + onboarding */}
+        <Route 
+          path="/" 
+          element={
+            <RequireAuthAndOnboarding>
+              <Home />
+            </RequireAuthAndOnboarding>
+          } 
+        />
         
-        {/* ================================================================
-            PROTECTED DASHBOARD PATHS
-           ================================================================ */}
-        <Route element={<ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']} />}>
-          <Route path="/student-dashboard" element={<StudentDashboard />} />
-          <Route path="/parent-dashboard" element={<ParentDashboard />} />
-          <Route path="/bookings" element={<Bookings />} />
-          <Route path="/search" element={<ResourceSearch />} />
-          <Route path="/quiz" element={<PracticeQuiz />} />
-          <Route path="/study-rooms" element={<GroupStudyRooms />} />
-          <Route path="/videos" element={<VideoLessons />} />
-          <Route path="/resources-library" element={<ResourcesLibrary />} />
-          <Route path="/forum" element={<CommunityForum />} />
-          <Route path="/bursaries" element={<BursaryFinder />} />
-          <Route path="/opportunities" element={<StudentOpportunities />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-        </Route>
+        {/* Subjects - Requires login + onboarding */}
+        <Route 
+          path="/subjects" 
+          element={
+            <RequireAuthAndOnboarding>
+              <Subjects />
+            </RequireAuthAndOnboarding>
+          } 
+        />
         
-        {/* ================================================================
-            TUTOR PATHS
-           ================================================================ */}
-        <Route element={<ProtectedRoute allowedRoles={['Tutor', 'Admin']} redirectTo="/student-dashboard" />}>
-          <Route path="/tutor-dashboard" element={<TutorDashboard />} />
-        </Route>
+        <Route 
+          path="/subjects/:code" 
+          element={
+            <RequireAuthAndOnboarding>
+              <SubjectDetail />
+            </RequireAuthAndOnboarding>
+          } 
+        />
         
-        {/* ================================================================
-            ADMIN PATHS
-           ================================================================ */}
-        <Route element={<ProtectedRoute allowedRoles={['Admin']} redirectTo="/student-dashboard" />}>
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/caps-admin" element={<CAPSAdmin />} />
-          <Route path="/payout-log" element={<PayoutLog />} />
-          <Route path="/counselor" element={<CounselorDashboard />} />
-        </Route>
+        {/* Tutors - Requires login + onboarding */}
+        <Route 
+          path="/tutors" 
+          element={
+            <RequireAuthAndOnboarding>
+              <Tutors />
+            </RequireAuthAndOnboarding>
+          } 
+        />
         
-        {/* 404 Fallback within layout context */}
+        {/* Premium - Requires login + onboarding */}
+        <Route 
+          path="/premium" 
+          element={
+            <RequireAuthAndOnboarding>
+              <Premium />
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* ================================================================
+            📊 STUDENT DASHBOARD
+           ================================================================ */}
+        <Route 
+          path="/student-dashboard" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <StudentDashboard />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* ================================================================
+            👨‍👩‍👧 PARENT DASHBOARD
+           ================================================================ */}
+        <Route 
+          path="/parent-dashboard" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Parent']}>
+                <ParentDashboard />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* ================================================================
+            🎓 TUTOR DASHBOARD
+           ================================================================ */}
+        <Route 
+          path="/tutor-dashboard" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Tutor', 'Admin']}>
+                <TutorDashboard />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* ================================================================
+            🔧 ADMIN DASHBOARD
+           ================================================================ */}
+        <Route 
+          path="/admin" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* ================================================================
+            📚 OTHER PROTECTED ROUTES
+           ================================================================ */}
+        <Route 
+          path="/bookings" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <Bookings />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/search" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <ResourceSearch />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/quiz" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <PracticeQuiz />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/study-rooms" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <GroupStudyRooms />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/videos" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <VideoLessons />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/resources-library" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <ResourcesLibrary />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/forum" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <CommunityForum />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/bursaries" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <BursaryFinder />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/opportunities" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Student', 'Parent', 'Tutor', 'Admin']}>
+                <StudentOpportunities />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* Admin only routes */}
+        <Route 
+          path="/caps-admin" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <CAPSAdmin />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/payout-log" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <PayoutLog />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        <Route 
+          path="/counselor" 
+          element={
+            <RequireAuthAndOnboarding>
+              <ProtectedRoute allowedRoles={['Admin']}>
+                <CounselorDashboard />
+              </ProtectedRoute>
+            </RequireAuthAndOnboarding>
+          } 
+        />
+
+        {/* 404 Fallback */}
         <Route path="*" element={<PageNotFound />} />
       </Route>
     </Routes>
