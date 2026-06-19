@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,6 +75,7 @@ const ROLES = [
 ];
 
 export default function Onboarding({ user, onComplete }) {
+  const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState('');
   const [saceNumber, setSaceNumber] = useState('');
   const [university, setUniversity] = useState('');
@@ -85,70 +86,88 @@ export default function Onboarding({ user, onComplete }) {
   const [showConsent, setShowConsent] = useState(false);
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [policyConsent, setPolicyConsent] = useState(false);
-  
-  // ✅ NEW: State for admin auto-onboarding
-  const [isAdminAutoOnboarding, setIsAdminAutoOnboarding] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
-  // ✅ NEW: Check if user is admin
+  // ✅ Check if user is admin
   const isAdmin = ADMIN_EMAILS.includes(user?.email);
 
-  // ✅ NEW: Auto-complete onboarding for admin users
+  // ✅ AUTO-COMPLETE ONBOARDING FOR ADMIN USERS
   useEffect(() => {
-    if (isAdmin && user) {
-      const autoCompleteAdmin = async () => {
-        try {
-          setIsAdminAutoOnboarding(true);
-          
-          // Check if admin already has onboarding_complete = true
-          const { data: existingProfile, error: fetchError } = await supabase
-            .from('user_profiles')
-            .select('onboarding_complete, role')
-            .eq('email', user.email)
-            .maybeSingle();
+    const autoCompleteAdmin = async () => {
+      // Only run for admin users
+      if (!isAdmin || !user?.email) return;
+      
+      // Prevent multiple runs
+      if (isProcessing) return;
+      
+      try {
+        setIsProcessing(true);
+        
+        // Check current profile
+        const { data: profile, error: fetchError } = await supabase
+          .from('user_profiles')
+          .select('onboarding_complete, role')
+          .eq('email', user.email)
+          .maybeSingle();
 
-          if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error('Fetch error:', fetchError);
+          return;
+        }
 
-          // If already completed, just call onComplete
-          if (existingProfile?.onboarding_complete === true) {
-            setIsAdminAutoOnboarding(false);
-            onComplete?.();
-            return;
-          }
+        // If already completed, redirect
+        if (profile?.onboarding_complete === true) {
+          navigate('/', { replace: true });
+          return;
+        }
 
-          // Auto-set admin role and complete onboarding
-          const { error: updateError } = await supabase
-            .from('user_profiles')
-            .update({
-              role: 'admin',
-              onboarding_complete: true,
-              is_super_admin: true,
-              updated_at: new Date().toISOString()
-            })
-            .eq('email', user.email);
+        // Update to admin role and complete onboarding
+        const { error: updateError } = await supabase
+          .from('user_profiles')
+          .update({
+            role: 'admin',
+            onboarding_complete: true,
+            is_super_admin: true,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', user.email);
 
-          if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Update error:', updateError);
+          toast.error('Failed to setup admin account');
+          return;
+        }
 
-          // Update the user object with new role
+        // Update local user object
+        if (user) {
           user.role = 'admin';
           user.onboarding_complete = true;
           user.is_super_admin = true;
-
-          toast.success('✅ Admin access granted!');
-          setIsAdminAutoOnboarding(false);
-          onComplete?.();
-        } catch (err) {
-          console.error('Admin auto-onboarding error:', err);
-          toast.error('Failed to setup admin account. Please contact support.');
-          setIsAdminAutoOnboarding(false);
         }
-      };
 
-      autoCompleteAdmin();
-    }
-  }, [isAdmin, user, onComplete]);
+        toast.success('✅ Admin access granted!');
+        
+        // Redirect to home
+        navigate('/', { replace: true });
+        
+        // Call onComplete if provided
+        if (onComplete) {
+          onComplete();
+        }
+        
+      } catch (error) {
+        console.error('Admin auto-onboarding error:', error);
+        toast.error('Failed to setup admin account');
+      } finally {
+        setIsProcessing(false);
+      }
+    };
 
-  // ✅ NEW: Show loading while admin auto-onboarding
-  if (isAdmin && isAdminAutoOnboarding) {
+    autoCompleteAdmin();
+  }, [isAdmin, user, navigate, onComplete, isProcessing]);
+
+  // ✅ Show loading while processing admin
+  if (isAdmin && isProcessing) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
@@ -157,16 +176,10 @@ export default function Onboarding({ user, onComplete }) {
     );
   }
 
-  // ✅ NEW: If admin and onboarding is complete, redirect to home
+  // ✅ If admin and onboarding is already complete, redirect
   if (isAdmin && user?.onboarding_complete) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-sm text-muted-foreground">Redirecting to dashboard...</p>
-        </div>
-      </div>
-    );
+    navigate('/', { replace: true });
+    return null;
   }
 
   const isTutorRole = selectedRole === 'sace_tutor' || selectedRole === 'student_tutor';
@@ -193,14 +206,12 @@ export default function Onboarding({ user, onComplete }) {
     const isTutor = resolvedRole === 'sace_tutor' || resolvedRole === 'student_tutor';
     setSaving(true);
     try {
-      // Get current session user to update
       const { data: { user: authUser } } = await supabase.auth.getUser();
       
       if (!authUser) throw new Error('No authenticated user');
 
       const assignedRole = isTutor ? 'tutor_pending' : resolvedRole;
 
-      // Update user profile in user_profiles table
       const { error: updateError } = await supabase
         .from('user_profiles')
         .update({
@@ -217,16 +228,12 @@ export default function Onboarding({ user, onComplete }) {
 
       if (isTutor) {
         const tutorType = resolvedRole === 'sace_tutor' ? 'SACE Tutor' : 'Student Tutor';
-        const credentials = resolvedRole === 'sace_tutor'
-          ? `SACE Number: ${saceNumber}`
-          : `University: ${university} | Student No: ${studentNumber}`;
         const qualifications = resolvedRole === 'student_tutor'
           ? `${university} — Student No. ${studentNumber}`
           : `SACE Registered: ${saceNumber}`;
 
         let profileId = null;
 
-        // Check if tutor profile already exists
         const { data: existingProfiles, error: findError } = await supabase
           .from('tutor_profiles')
           .select('*')
@@ -235,7 +242,6 @@ export default function Onboarding({ user, onComplete }) {
         if (findError) console.error('Error finding tutor profile:', findError);
 
         if (!existingProfiles || existingProfiles.length === 0) {
-          // Create new tutor profile
           const { data: created, error: createError } = await supabase
             .from('tutor_profiles')
             .insert({
@@ -256,7 +262,6 @@ export default function Onboarding({ user, onComplete }) {
           if (createError) throw createError;
           profileId = created.id;
         } else {
-          // Update existing tutor profile
           const { error: updateTutorError } = await supabase
             .from('tutor_profiles')
             .update({
@@ -273,7 +278,6 @@ export default function Onboarding({ user, onComplete }) {
           profileId = existingProfiles[0].id;
         }
 
-        // Create subscription record for the tutor
         const now = new Date();
         const endDate = new Date(now);
         endDate.setMonth(endDate.getMonth() + 1);
@@ -293,7 +297,6 @@ export default function Onboarding({ user, onComplete }) {
 
         if (subError) console.error('Error creating subscription:', subError);
 
-        // Log activity
         const { error: logError } = await supabase
           .from('activity_logs')
           .insert({
@@ -320,6 +323,16 @@ export default function Onboarding({ user, onComplete }) {
       setSaving(false);
     }
   };
+
+  // ✅ If admin, don't show the onboarding form (should redirect before this)
+  if (isAdmin) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-2 text-sm text-muted-foreground">Redirecting to dashboard...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center py-10 px-4">
@@ -447,7 +460,6 @@ export default function Onboarding({ user, onComplete }) {
             </p>
             
             <div className="grid sm:grid-cols-2 gap-3">
-              {/* Standard Plan */}
               <button
                 type="button"
                 onClick={() => setSelectedPlan('standard')}
@@ -469,7 +481,6 @@ export default function Onboarding({ user, onComplete }) {
                 </ul>
               </button>
               
-              {/* Pro Plan */}
               <button
                 type="button"
                 onClick={() => setSelectedPlan('pro')}
