@@ -15,7 +15,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AuthCallback from './pages/AuthCallback';
-import ForgotPassword from './pages/ForgotPassword';  // ✅ ADD THIS
+import ForgotPassword from './pages/ForgotPassword';
 import Subjects from './pages/Subjects';
 import SubjectDetail from './pages/SubjectDetail';
 import StudentDashboard from './pages/StudentDashboard';
@@ -83,10 +83,10 @@ const RequireAuthAndOnboarding = ({ children }) => {
 };
 
 // ============================================================
-// 🏠 MAIN APP
+// 🏠 AUTHENTICATED ROUTES
 // ============================================================
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, authError, user } = useAuth();
+  const { isLoadingAuth, authError } = useAuth();
 
   // Loading state
   if (isLoadingAuth) {
@@ -113,7 +113,7 @@ const AuthenticatedApp = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/forgot-password" element={<ForgotPassword />} />  {/* ✅ ADDED */}
+      <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
@@ -135,7 +135,7 @@ const AuthenticatedApp = () => {
           ================================================================ */}
       <Route element={<AppLayout />}>
         
-        {/* Home - Requires login + onboarding (admin bypass) */}
+        {/* Home */}
         <Route 
           path="/" 
           element={
@@ -145,7 +145,6 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Subjects */}
         <Route 
           path="/subjects" 
           element={
@@ -164,7 +163,6 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Tutors */}
         <Route 
           path="/tutors" 
           element={
@@ -174,7 +172,6 @@ const AuthenticatedApp = () => {
           } 
         />
         
-        {/* Premium */}
         <Route 
           path="/premium" 
           element={
@@ -184,9 +181,7 @@ const AuthenticatedApp = () => {
           } 
         />
 
-        {/* ================================================================
-            📊 STUDENT DASHBOARD
-           ================================================================ */}
+        {/* 📊 STUDENT DASHBOARD */}
         <Route 
           path="/student-dashboard" 
           element={
@@ -198,9 +193,7 @@ const AuthenticatedApp = () => {
           } 
         />
 
-        {/* ================================================================
-            👨‍👩‍👧 PARENT DASHBOARD (Admin can access)
-           ================================================================ */}
+        {/* 👨‍👩‍👧 PARENT DASHBOARD */}
         <Route 
           path="/parent-dashboard" 
           element={
@@ -212,9 +205,7 @@ const AuthenticatedApp = () => {
           } 
         />
 
-        {/* ================================================================
-            🎓 TUTOR DASHBOARD
-           ================================================================ */}
+        {/* 🎓 TUTOR DASHBOARD */}
         <Route 
           path="/tutor-dashboard" 
           element={
@@ -226,9 +217,7 @@ const AuthenticatedApp = () => {
           } 
         />
 
-        {/* ================================================================
-            🔧 ADMIN DASHBOARD (Admin only)
-           ================================================================ */}
+        {/* 🔧 ADMIN DASHBOARD */}
         <Route 
           path="/admin" 
           element={
@@ -240,9 +229,7 @@ const AuthenticatedApp = () => {
           } 
         />
 
-        {/* ================================================================
-            📚 OTHER PROTECTED ROUTES
-           ================================================================ */}
+        {/* 📚 OTHER PROTECTED ROUTES */}
         <Route 
           path="/bookings" 
           element={
@@ -383,16 +370,19 @@ const AuthenticatedApp = () => {
   );
 };
 
+// ============================================================
+// 🌐 ROOT APP EXPORT WITH PROVIDERS
+// ============================================================
 export default function App() {
   return (
-    <AuthProvider>
-      <QueryClientProvider client={queryClientInstance}>
+    <QueryClientProvider client={queryClientInstance}>
+      <AuthProvider>
         <Router>
           <AuthenticatedApp />
+          <Toaster />
+          <SonnerToaster position="top-right" richColors closeButton />
         </Router>
-        <Toaster />
-        <SonnerToaster position="top-right" richColors closeButton />
-      </QueryClientProvider>
-    </AuthProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
