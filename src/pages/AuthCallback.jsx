@@ -12,43 +12,43 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Get the session after OAuth redirect
+        // ✅ FIX: Check if we're in an OAuth flow
         const { data, error } = await supabase.auth.getSession();
         
         if (error) throw error;
         
-        if (data.session) {
-          setStatus('success');
-          
-          // Check if user has completed onboarding
-          const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('onboarding_complete')
-            .eq('email', data.session.user.email)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Profile fetch error:', profileError);
-          }
-
-          toast.success('Successfully signed in!');
-          
-          // Redirect based on onboarding status
-          setTimeout(() => {
-            if (profile?.onboarding_complete) {
-              navigate('/', { replace: true });
-            } else {
-              navigate('/onboarding', { replace: true });
-            }
-          }, 1000);
-        } else {
-          setStatus('error');
-          setError('No session found');
-          toast.error('Authentication failed');
-          setTimeout(() => {
-            navigate('/login', { replace: true });
-          }, 2000);
+        // ✅ If no session, redirect to login (not an error)
+        if (!data.session) {
+          toast.info('Please sign in to continue');
+          navigate('/login', { replace: true });
+          return;
         }
+        
+        // ✅ Session exists - complete the OAuth flow
+        setStatus('success');
+        
+        // Check if user has completed onboarding
+        const { data: profile, error: profileError } = await supabase
+          .from('user_profiles')
+          .select('onboarding_complete')
+          .eq('email', data.session.user.email)
+          .maybeSingle();
+
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        }
+
+        toast.success('Successfully signed in!');
+        
+        // Redirect based on onboarding status
+        setTimeout(() => {
+          if (profile?.onboarding_complete) {
+            navigate('/', { replace: true });
+          } else {
+            navigate('/onboarding', { replace: true });
+          }
+        }, 1000);
+        
       } catch (error) {
         console.error('Auth callback error:', error);
         setStatus('error');
