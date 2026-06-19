@@ -15,6 +15,7 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import AuthCallback from './pages/AuthCallback';
+import ForgotPassword from './pages/ForgotPassword';  // ✅ ADD THIS
 import Subjects from './pages/Subjects';
 import SubjectDetail from './pages/SubjectDetail';
 import StudentDashboard from './pages/StudentDashboard';
@@ -112,6 +113,7 @@ const AuthenticatedApp = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />  {/* ✅ ADDED */}
       <Route path="/privacy" element={<PrivacyPolicy />} />
       <Route path="/terms" element={<TermsOfService />} />
       <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
