@@ -33,6 +33,9 @@ import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 export default function AdminDashboard() {
   const { user } = useAuth();
   
+  // Admin emails that should have access
+  const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
+  
   // Asynchronous Database Metric Counters States
   const [metrics, setMetrics] = useState({
     totalUsers: 0,
@@ -48,7 +51,7 @@ export default function AdminDashboard() {
   const [emailLogs, setEmailLogs] = useState([]);
 
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.email) return;
     verifyAdminCredentials();
   }, [user]);
 
@@ -56,15 +59,24 @@ export default function AdminDashboard() {
   const verifyAdminCredentials = async () => {
     try {
       setLoading(true);
+      
+      // ✅ FIX 1: Use user_profiles table instead of profiles
+      // ✅ FIX 2: Use email instead of id
+      // ✅ FIX 3: Use 'role' column instead of 'role_tier'
       const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role_tier, is_super_admin')
-        .eq('id', user.id)
+        .from('user_profiles')
+        .select('role, is_super_admin')
+        .eq('email', user.email)
         .maybeSingle();
 
       if (error) throw error;
 
-      if (profile && (profile.role_tier === 'Admin' || profile.is_super_admin)) {
+      // ✅ FIX 4: Check if user is in admin emails list OR has admin role
+      const isAdminEmail = ADMIN_EMAILS.includes(user.email);
+      const isAdminRole = profile?.role === 'admin' || profile?.role === 'Admin';
+      const isSuperAdmin = profile?.is_super_admin === true;
+
+      if (isAdminEmail || isAdminRole || isSuperAdmin) {
         setIsAdminAuthorized(true);
         await compileSystemTelemetryMetrics();
       } else {
@@ -80,10 +92,10 @@ export default function AdminDashboard() {
 
   const compileSystemTelemetryMetrics = async () => {
     try {
-      // Execute optimized record counting operations straight from PostgreSQL index trees
+      // ✅ FIX 5: Use user_profiles table for user counts
       const [usersCount, tutorsCount, bookingsQuery, subsQuery] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role_tier', 'Tutor'),
+        supabase.from('user_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('user_profiles').select('id', { count: 'exact', head: true }).eq('role', 'tutor'),
         supabase.from('tutor_bookings').select('amount, status'),
         supabase.from('subscriptions').select('plan_tier, status')
       ]);
