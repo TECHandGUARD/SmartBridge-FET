@@ -7,9 +7,13 @@ import Footer from './Footer';
 import MobileHeader from './MobileHeader';
 import MobileBottomTabs from './MobileBottomTabs';
 import Onboarding from '@/pages/Onboarding';
-import TutorPendingScreen from '@/components/onboarding/TutorPendingScreen';
+// ✅ FIXED: Correct import path
+import TutorPendingScreen from '@/components/tutor/TutorPendingScreen';
 
 const TUTOR_ROLES = ['sace_tutor', 'student_tutor', 'tutor_pending'];
+
+// ✅ Hardcoded admin emails for bypass
+const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
 
 function getDashboardPath(role) {
   if (role === 'admin') return '/admin';
@@ -46,7 +50,6 @@ export default function AppLayout() {
   const fetchUser = useCallback(async () => {
     setLoading(true);
     try {
-      // Get current user from Supabase Auth
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
       
       if (authError || !authUser) {
@@ -55,7 +58,6 @@ export default function AppLayout() {
         return;
       }
 
-      // Get user profile from user_profiles table
       const { data: profile, error: profileError } = await supabase
         .from('user_profiles')
         .select('*')
@@ -66,19 +68,21 @@ export default function AppLayout() {
         console.error('Profile fetch error:', profileError);
       }
 
+      // ✅ Check if user is in hardcoded admin list
+      const isHardcodedAdmin = ADMIN_EMAILS.includes(authUser.email);
       const userData = {
         ...authUser,
         ...profile,
         email: authUser.email,
         full_name: profile?.full_name || authUser.user_metadata?.full_name,
-        role: profile?.role || 'user',
-        onboarding_complete: profile?.onboarding_complete || false,
+        // If hardcoded admin, force role to 'admin'
+        role: isHardcodedAdmin ? 'admin' : (profile?.role || 'user'),
+        onboarding_complete: isHardcodedAdmin ? true : (profile?.onboarding_complete || false),
       };
       
       setUser(userData);
 
       if (userData && TUTOR_ROLES.includes(userData.role)) {
-        // Check tutor profile verification
         const { data: profiles, error: tutorError } = await supabase
           .from('tutor_profiles')
           .select('*')
@@ -179,7 +183,9 @@ export default function AppLayout() {
     );
   }
 
-  if (user.role === 'admin') {
+  // ✅ Admin bypass – skip onboarding and pending screens
+  const isAdmin = user.role === 'admin' || ADMIN_EMAILS.includes(user.email);
+  if (isAdmin) {
     return isMobile ? (
       <div className="min-h-screen bg-background flex flex-col">
         <MobileHeader />
@@ -207,17 +213,20 @@ export default function AppLayout() {
     );
   }
 
+  // Onboarding for new users
   const shouldOnboard = user.role === 'user';
   if (shouldOnboard) {
     return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
   }
 
+  // Tutor pending screen (only for non-admin tutor roles)
   const isTutorRole = TUTOR_ROLES.includes(user.role);
   const isTutorPending = isTutorRole && tutorVerified === false;
   if (isTutorPending) {
     return <TutorPendingScreen user={user} onRefresh={fetchUser} />;
   }
 
+  // Normal layout for authenticated, onboarded users
   return isMobile ? (
     <div className="min-h-screen bg-background flex flex-col">
       <MobileHeader />
