@@ -48,9 +48,10 @@ const BursaryFinder = lazy(() => import('./pages/BursaryFinder'));
 // ============================================================
 const RequireAuthAndOnboarding = ({ children }) => {
   const { user, isLoadingAuth } = useAuth();
-  
+
+  // ✅ ADMIN EMAILS – Hardcoded bypass (will work even if onboarding is incomplete)
   const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
-  
+
   if (isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -58,23 +59,30 @@ const RequireAuthAndOnboarding = ({ children }) => {
       </div>
     );
   }
-  
+
   if (!user) {
     return <Navigate to="/login" replace />;
   }
-  
-  const isAdmin = ADMIN_EMAILS.includes(user.email) || 
-                  user.role === 'admin' || 
-                  user.is_super_admin === true;
-  
-  if (isAdmin) {
+
+  // ✅ FORCE ADMIN BYPASS – Skip all checks
+  if (ADMIN_EMAILS.includes(user.email)) {
+    console.log('✅ Admin detected – bypassing onboarding');
     return children;
   }
-  
+
+  // For other users, check role from database
+  const isAdmin = user.role === 'admin' || user.is_super_admin === true;
+
+  if (isAdmin) {
+    console.log('✅ Admin role detected – bypassing onboarding');
+    return children;
+  }
+
+  // For non-admins: check onboarding status
   if (user && !user.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
-  
+
   return children;
 };
 
