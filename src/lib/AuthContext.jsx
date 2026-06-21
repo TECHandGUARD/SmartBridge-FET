@@ -52,6 +52,7 @@ export const AuthProvider = ({ children }) => {
       full_name: profile?.full_name || authUser.user_metadata?.full_name,
       role: profile?.role || 'user',
       is_super_admin: profile?.is_super_admin || false,
+      onboarding_complete: profile?.onboarding_complete ?? false, // ✅ FIXED
     });
     setIsAuthenticated(true);
   }, [fetchUserProfile]);
