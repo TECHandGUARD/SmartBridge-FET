@@ -4,6 +4,9 @@ import { supabase } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ✅ Admin emails that bypass onboarding
+const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
+
 export default function AuthCallback() {
   const navigate = useNavigate();
   const [status, setStatus] = useState('loading');
@@ -12,43 +15,48 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // ✅ FIX: Check if we're in an OAuth flow
         const { data, error } = await supabase.auth.getSession();
         
         if (error) throw error;
         
-        // ✅ If no session, redirect to login (not an error)
-        if (!data.session) {
-          toast.info('Please sign in to continue');
-          navigate('/login', { replace: true });
-          return;
-        }
-        
-        // ✅ Session exists - complete the OAuth flow
-        setStatus('success');
-        
-        // Check if user has completed onboarding
-        const { data: profile, error: profileError } = await supabase
-          .from('user_profiles')
-          .select('onboarding_complete')
-          .eq('email', data.session.user.email)
-          .maybeSingle();
+        if (data.session) {
+          setStatus('success');
+          
+          // Check user profile
+          const { data: profile, error: profileError } = await supabase
+            .from('user_profiles')
+            .select('onboarding_complete, role, is_super_admin')
+            .eq('email', data.session.user.email)
+            .maybeSingle();
 
-        if (profileError) {
-          console.error('Profile fetch error:', profileError);
-        }
-
-        toast.success('Successfully signed in!');
-        
-        // Redirect based on onboarding status
-        setTimeout(() => {
-          if (profile?.onboarding_complete) {
-            navigate('/', { replace: true });
-          } else {
-            navigate('/onboarding', { replace: true });
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
           }
-        }, 1000);
-        
+
+          toast.success('Successfully signed in!');
+          
+          // ✅ ADMIN BYPASS: Check if user is admin
+          const isAdmin = ADMIN_EMAILS.includes(data.session.user.email) ||
+                          profile?.role === 'admin' ||
+                          profile?.is_super_admin === true;
+
+          setTimeout(() => {
+            if (isAdmin) {
+              navigate('/', { replace: true }); // Admin → home
+            } else if (profile?.onboarding_complete) {
+              navigate('/', { replace: true }); // Onboarding complete → home
+            } else {
+              navigate('/onboarding', { replace: true }); // Need onboarding
+            }
+          }, 1000);
+        } else {
+          setStatus('error');
+          setError('No session found');
+          toast.error('Authentication failed');
+          setTimeout(() => {
+            navigate('/login', { replace: true });
+          }, 2000);
+        }
       } catch (error) {
         console.error('Auth callback error:', error);
         setStatus('error');
