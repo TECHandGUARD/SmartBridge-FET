@@ -4,30 +4,36 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2, Mail, Lock } from 'lucide-react';
+import { GraduationCap, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+
+// ✅ Admin emails that bypass onboarding
+const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
 
 export default function Login() {
   const { signIn, signInWithGoogle, user, isLoadingAuth } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // ✅ FIX: Only redirect if user is logged in
+  // If already logged in, redirect to appropriate page
   useEffect(() => {
-    // Wait for auth to finish loading
-    if (isLoadingAuth) return;
-    
-    // If user is logged in, redirect to appropriate page
-    if (user) {
+    if (user && !isLoadingAuth) {
+      // ✅ ADMIN BYPASS: If user is admin, go straight to home
+      if (ADMIN_EMAILS.includes(user.email) || user.role === 'admin' || user.is_super_admin === true) {
+        navigate('/', { replace: true });
+        return;
+      }
+
+      // For other users, check onboarding status
       if (user.onboarding_complete) {
         navigate('/', { replace: true });
       } else {
         navigate('/onboarding', { replace: true });
       }
     }
-    // If user is NOT logged in, do nothing - show the login form
   }, [user, isLoadingAuth, navigate]);
 
   const handleSubmit = async (e) => {
@@ -98,14 +104,21 @@ export default function Login() {
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="pl-10 h-12"
+                  className="pl-10 pr-10 h-12"
                   disabled={loading}
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
               <div className="text-right">
                 <Link to="/forgot-password" className="text-xs text-primary hover:underline">
