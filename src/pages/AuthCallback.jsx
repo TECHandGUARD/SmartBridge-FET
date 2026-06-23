@@ -1,3 +1,4 @@
+// src/pages/AuthCallback.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
@@ -16,12 +17,12 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        
+
         if (error) throw error;
-        
+
         if (data.session) {
           setStatus('success');
-          
+
           // Check user profile
           const { data: profile, error: profileError } = await supabase
             .from('user_profiles')
@@ -34,7 +35,7 @@ export default function AuthCallback() {
           }
 
           toast.success('Successfully signed in!');
-          
+
           // ✅ ADMIN BYPASS: Check if user is admin
           const isAdmin = ADMIN_EMAILS.includes(data.session.user.email) ||
                           profile?.role === 'admin' ||
@@ -42,11 +43,11 @@ export default function AuthCallback() {
 
           setTimeout(() => {
             if (isAdmin) {
-              navigate('/', { replace: true }); // Admin → home
+              navigate('/admin', { replace: true }); // ✅ Changed to /admin
             } else if (profile?.onboarding_complete) {
-              navigate('/', { replace: true }); // Onboarding complete → home
+              navigate('/', { replace: true });
             } else {
-              navigate('/onboarding', { replace: true }); // Need onboarding
+              navigate('/onboarding', { replace: true });
             }
           }, 1000);
         } else {
