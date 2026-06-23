@@ -1,3 +1,4 @@
+// src/lib/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
@@ -13,21 +14,26 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
 
+  // ✅ Computed properties
+  const role = user?.role || 'user';
+  const isAdmin = user?.role === 'admin' || user?.is_super_admin === true;
+  const isTutor = ['sace_tutor', 'student_tutor'].includes(role);
+  const isStudent = role === 'student';
+  const isParent = role === 'parent';
+
   // Fetch user profile from user_profiles table
   const fetchUserProfile = useCallback(async (email) => {
     if (!email) return null;
-    
     try {
       const { data, error } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('email', email)
         .maybeSingle();
-      
+
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user profile:', error);
       }
-      
       return data;
     } catch (error) {
       console.error('Failed to fetch user profile:', error);
@@ -42,18 +48,20 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
       return;
     }
-    
+
     const profile = await fetchUserProfile(authUser.email);
-    
-    setUser({
+
+    const mergedUser = {
       ...authUser,
       ...profile,
       email: authUser.email,
       full_name: profile?.full_name || authUser.user_metadata?.full_name,
       role: profile?.role || 'user',
       is_super_admin: profile?.is_super_admin || false,
-      onboarding_complete: profile?.onboarding_complete ?? false, // ✅ FIXED
-    });
+      onboarding_complete: profile?.onboarding_complete ?? false,
+    };
+
+    setUser(mergedUser);
     setIsAuthenticated(true);
   }, [fetchUserProfile]);
 
@@ -61,12 +69,12 @@ export const AuthProvider = ({ children }) => {
   const checkUser = useCallback(async () => {
     setIsLoadingAuth(true);
     setAuthError(null);
-    
+
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      
+
       if (error) throw error;
-      
+
       if (session?.user) {
         await setUserWithProfile(session.user);
       } else {
@@ -87,7 +95,7 @@ export const AuthProvider = ({ children }) => {
   // Listen for auth state changes
   useEffect(() => {
     checkUser();
-    
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         await setUserWithProfile(session.user);
@@ -106,15 +114,15 @@ export const AuthProvider = ({ children }) => {
   const signIn = async (email, password) => {
     setIsLoadingAuth(true);
     setAuthError(null);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
-      
+
       if (error) throw error;
-      
+
       await setUserWithProfile(data.user);
       toast.success('Signed in successfully!');
       return { success: true, data };
@@ -132,7 +140,7 @@ export const AuthProvider = ({ children }) => {
   const signInWithGoogle = async () => {
     setIsLoadingAuth(true);
     setAuthError(null);
-    
+
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -140,9 +148,9 @@ export const AuthProvider = ({ children }) => {
           redirectTo: `${window.location.origin}/auth/callback`
         }
       });
-      
+
       if (error) throw error;
-      
+
       return { success: true, data };
     } catch (error) {
       console.error('Google sign in error:', error);
@@ -158,7 +166,7 @@ export const AuthProvider = ({ children }) => {
   const signUp = async (email, password, metadata = {}) => {
     setIsLoadingAuth(true);
     setAuthError(null);
-    
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -167,9 +175,9 @@ export const AuthProvider = ({ children }) => {
           data: metadata
         }
       });
-      
+
       if (error) throw error;
-      
+
       // Create user profile in user_profiles table
       if (data.user) {
         const { error: profileError } = await supabase
@@ -180,12 +188,12 @@ export const AuthProvider = ({ children }) => {
             role: metadata.role || 'user',
             onboarding_complete: false,
           }]);
-        
+
         if (profileError) {
           console.error('Profile creation error:', profileError);
         }
       }
-      
+
       toast.success('Account created! Please check your email to verify.');
       return { success: true, data };
     } catch (error) {
@@ -220,7 +228,7 @@ export const AuthProvider = ({ children }) => {
   // Update user profile
   const updateUserProfile = async (updates) => {
     if (!user?.email) return { success: false, error: 'No user logged in' };
-    
+
     try {
       const { error } = await supabase
         .from('user_profiles')
@@ -229,15 +237,15 @@ export const AuthProvider = ({ children }) => {
           updated_at: new Date().toISOString()
         })
         .eq('email', user.email);
-      
+
       if (error) throw error;
-      
+
       // Update local user state
       setUser(prev => ({
         ...prev,
         ...updates
       }));
-      
+
       toast.success('Profile updated successfully');
       return { success: true };
     } catch (error) {
@@ -251,7 +259,6 @@ export const AuthProvider = ({ children }) => {
   const checkAppState = useCallback(async () => {
     setIsLoadingPublicSettings(true);
     try {
-      // Check if app is enabled (you can add your own logic here)
       setAppPublicSettings({ enabled: true });
     } catch (error) {
       console.error('App state check failed:', error);
@@ -260,29 +267,37 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Initial app state check
   useEffect(() => {
     checkAppState();
   }, [checkAppState]);
 
+  // ✅ The context value includes computed properties
+  const value = {
+    user,
+    isAuthenticated,
+    isLoadingAuth,
+    isLoadingPublicSettings,
+    authError,
+    appPublicSettings,
+    authChecked,
+    role,
+    isAdmin,
+    isTutor,
+    isStudent,
+    isParent,
+    loading: isLoadingAuth, // Alias for ProtectedRoute
+    signUp,
+    signIn,
+    signInWithGoogle,
+    signOut,
+    navigateToLogin,
+    updateUserProfile,
+    checkUser,
+    checkAppState,
+  };
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      isAuthenticated, 
-      isLoadingAuth,
-      isLoadingPublicSettings,
-      authError,
-      appPublicSettings,
-      authChecked,
-      signUp,
-      signIn,
-      signInWithGoogle,
-      signOut,
-      navigateToLogin,
-      updateUserProfile,
-      checkUser,
-      checkAppState
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
