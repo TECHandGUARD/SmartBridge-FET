@@ -11,7 +11,8 @@ export default function TermsOfService() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const isTutor = ['tutor', 'sace_tutor', 'student_tutor'].includes(user?.role);
+  // ✅ Check if user is a tutor
+  const isTutor = ['sace_tutor', 'student_tutor'].includes(user?.role);
 
   useEffect(() => {
     async function fetchTerms() {
@@ -19,21 +20,31 @@ export default function TermsOfService() {
         setLoading(true);
         setError(false);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        const response = await fetch('/api/legal/terms', {
-          headers: {
-            'Authorization': session ? `Bearer ${session.access_token}` : '',
-            'Content-Type': 'application/json'
-          }
-        });
+        // ✅ Fetch student terms
+        const { data: studentDoc, error: studentError } = await supabase
+          .from('legal_documents')
+          .select('content')
+          .eq('doc_key', 'terms_student')
+          .single();
 
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
+        if (studentError) throw studentError;
+
+        let content = studentDoc?.content || '';
+
+        // ✅ If tutor, also fetch tutor addendum
+        if (isTutor) {
+          const { data: tutorDoc, error: tutorError } = await supabase
+            .from('legal_documents')
+            .select('content')
+            .eq('doc_key', 'terms_tutor')
+            .single();
+
+          if (!tutorError && tutorDoc) {
+            content += `\n\n---\n\n${tutorDoc.content}`;
+          }
         }
 
-        const data = await response.json();
-        setMarkdown(data.content || 'Terms temporarily unavailable.');
+        setMarkdown(content || 'Terms temporarily unavailable.');
       } catch (err) {
         console.error('Fetch error:', err);
         setError(true);
@@ -44,7 +55,7 @@ export default function TermsOfService() {
     }
 
     fetchTerms();
-  }, [user]);
+  }, [isTutor]);
 
   if (loading) {
     return (
@@ -60,7 +71,7 @@ export default function TermsOfService() {
       <div className="bg-card border-b border-border py-10">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl font-bold tracking-tight">Terms of Service</h1>
-          <p className="text-xs text-muted-foreground mt-1">Effective: 21 February 2026 · SmartBridge FET</p>
+          <p className="text-xs text-muted-foreground mt-1">Effective: 23 May 2026 · SmartBridge FET</p>
           {isTutor && (
             <Badge className="mt-3 bg-emerald-500/10 text-emerald-600 border-none font-bold gap-1">
               <ShieldCheck className="w-3 h-3" /> Tutor Version (Includes Contract)
@@ -69,15 +80,7 @@ export default function TermsOfService() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-10 space-y-6">
-        {/* ECT Act Disclosure */}
-        <div className="bg-muted/40 border border-border rounded-xl p-5 text-xs text-muted-foreground space-y-1.5">
-          <p className="font-bold text-foreground text-sm uppercase tracking-wider mb-1">ECT Act Statutory Disclosures</p>
-          <p><span className="font-semibold">Corporate Body:</span> Tech & GUARD Pty Ltd (Registration No: 2026/155090/09)</p>
-          <p><span className="font-semibold">Registered Office:</span> 6 Marais Road, Stellenbosch, 7600, South Africa</p>
-          <p><span className="font-semibold">Compliance Channel:</span> aneleq@techandguard.co.za</p>
-        </div>
-
+      <div className="max-w-4xl mx-auto px-4 py-10">
         {error ? (
           <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-6 text-center">
             <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-2" />
