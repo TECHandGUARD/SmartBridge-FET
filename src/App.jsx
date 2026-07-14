@@ -2,15 +2,16 @@
 import { Toaster } from "@/components/ui/toaster";
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClientInstance } from '@/lib/query-client';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useEffect, lazy, Suspense } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { Button } from '@/components/ui/button';
 
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
@@ -33,52 +34,34 @@ const CONFIG = {
 };
 
 // ============================================================
-// Lazy Loading (Performance Optimization)
+// Import all page components directly (for simplicity)
 // ============================================================
 
-const LazyLoad = (Component) => {
-  return function WrappedComponent(props) {
-    return (
-      <Suspense
-        fallback={
-          <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-background">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-xs text-muted-foreground animate-pulse">{CONFIG.MESSAGES.LOADING}</p>
-          </div>
-        }
-      >
-        <Component {...props} />
-      </Suspense>
-    );
-  };
-};
-
-// Lazy-loaded pages (if enabled)
-const LazyHome = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Home')) : null;
-const LazySubjects = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Subjects')) : null;
-const LazySubjectDetail = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/SubjectDetail')) : null;
-const LazyPremium = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Premium')) : null;
-const LazyPrivacyPolicy = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/PrivacyPolicy')) : null;
-const LazyTermsOfService = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/TermsOfService')) : null;
-const LazyAboutTechAndGuard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/AboutTechAndGuard')) : null;
-const LazyStudentDashboard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/StudentDashboard')) : null;
-const LazyParentDashboard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/ParentDashboard')) : null;
-const LazyTutorDashboard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/TutorDashboard')) : null;
-const LazyAdminDashboard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/AdminDashboard')) : null;
-const LazyCounselorDashboard = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/CounselorDashboard')) : null;
-const LazyTutors = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Tutors')) : null;
-const LazyResourceSearch = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/ResourceSearch')) : null;
-const LazyPracticeQuiz = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/PracticeQuiz')) : null;
-const LazyBookings = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Bookings')) : null;
-const LazyGroupStudyRooms = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/GroupStudyRooms')) : null;
-const LazyVideoLessons = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/VideoLessons')) : null;
-const LazyResourcesLibrary = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/ResourcesLibrary')) : null;
-const LazyCommunityForum = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/CommunityForum')) : null;
-const LazyBursaryFinder = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/BursaryFinder')) : null;
-const LazyStudentOpportunities = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/StudentOpportunities')) : null;
-const LazyCAPSAdmin = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/CAPSAdmin')) : null;
-const LazyPayoutLog = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/PayoutLog')) : null;
-const LazyOnboarding = CONFIG.ENABLE_LAZY_LOADING ? lazy(() => import('./pages/Onboarding')) : null;
+import Home from './pages/Home';
+import Subjects from './pages/Subjects';
+import SubjectDetail from './pages/SubjectDetail';
+import Premium from './pages/Premium';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfService from './pages/TermsOfService';
+import AboutTechAndGuard from './pages/AboutTechAndGuard';
+import StudentDashboard from './pages/StudentDashboard';
+import ParentDashboard from './pages/ParentDashboard';
+import TutorDashboard from './pages/TutorDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import CounselorDashboard from './pages/CounselorDashboard';
+import Tutors from './pages/Tutors';
+import ResourceSearch from './pages/ResourceSearch';
+import PracticeQuiz from './pages/PracticeQuiz';
+import Bookings from './pages/Bookings';
+import GroupStudyRooms from './pages/GroupStudyRooms';
+import VideoLessons from './pages/Videos';
+import ResourcesLibrary from './pages/ResourcesLibrary';
+import CommunityForum from './pages/CommunityForum';
+import BursaryFinder from './pages/BursaryFinder';
+import StudentOpportunities from './pages/StudentOpportunities';
+import CAPSAdmin from './pages/CAPSAdmin';
+import PayoutLog from './pages/PayoutLog';
+import Onboarding from './pages/Onboarding';
 
 // ============================================================
 // Fallback Component for Error Boundary
@@ -111,13 +94,13 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 }
 
 // ============================================================
-// Page Component (with optional lazy loading)
+// Page Component (supports lazy loading if enabled)
 // ============================================================
 
 function Page({ component: Component, ...props }) {
-  if (CONFIG.ENABLE_LAZY_LOADING) {
-    return <Component {...props} />;
-  }
+  // If lazy loading is enabled, we could wrap with Suspense.
+  // For simplicity we just render directly since we imported all components.
+  // If you want to use lazy loading, you need to pass lazy components.
   return <Component {...props} />;
 }
 
