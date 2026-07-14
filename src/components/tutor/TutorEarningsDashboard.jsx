@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { 
   Wallet, TrendingUp, Calendar, Download, Info, Loader2, AlertCircle, 
   Banknote, FileText, Shield, Sparkles, Target, Zap, Crown,
-  TrendingDown, Minus, Eye, Share2, Bell, RefreshCw, CheckCircle
+  TrendingDown, Minus, Eye, Share2, Bell, RefreshCw, CheckCircle, Clock, Users, Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -792,7 +792,7 @@ export default function TutorEarningsDashboard({ user, onRequestPayout }) {
                 <div key={p.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 text-sm dark:bg-muted/20">
                   <Badge className={`text-xs ${
                     p.status === 'paid' ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300' :
-                    p.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300' :
+                    p.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-green-300' :
                     'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300'
                   }`}>
                     {p.status}
@@ -802,4 +802,14 @@ export default function TutorEarningsDashboard({ user, onRequestPayout }) {
                   {p.payout_date && (
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(p.payout_date).toLocaleDateString('en-ZA')}
-                    </
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
