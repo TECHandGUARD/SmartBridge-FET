@@ -766,4 +766,90 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="opportunities">
-            <Opportunities
+            <OpportunitiesContentReview />
+          </TabsContent>
+
+          <TabsContent value="user-viewer">
+            <AdminUserViewer />
+          </TabsContent>
+
+          <TabsContent value="knowledge">
+            <KnowledgeBaseManager />
+          </TabsContent>
+
+          <TabsContent value="announcements">
+            <AnnouncementManager />
+          </TabsContent>
+
+          <TabsContent value="moderation">
+            <ContentModerationPanel />
+          </TabsContent>
+
+          <TabsContent value="feature-flags">
+            <FeatureFlagPanel />
+          </TabsContent>
+
+          <TabsContent value="ai-config">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-playfair flex items-center gap-2">
+                  <Cpu className="w-5 h-5 text-primary" />
+                  AI Model Configurations
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">Configure global AI endpoints and context windows.</p>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="system">
+            <div className="space-y-6">
+              <SystemConfigPanel />
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle className="font-playfair">Email Gateway Integration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="test@example.com" 
+                      value={testEmailTarget} 
+                      onChange={(e) => setTestEmailTarget(e.target.value)}
+                      className="max-w-xs"
+                    />
+                    <Button onClick={sendTestEmail} disabled={testEmailSending} className="gap-1.5">
+                      {testEmailSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                      Send Test
+                    </Button>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={sendBothAdminTestEmails} disabled={testEmailSending} className="gap-1.5">
+                      Send to Super Admins
+                    </Button>
+                  </div>
+
+                  <div className="rounded-xl border border-border p-4 bg-muted/30">
+                    <h4 className="text-xs font-semibold uppercase tracking-wider mb-2 text-muted-foreground">Test Logs</h4>
+                    <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                      {emailLogs.map((log, i) => (
+                        <div key={i} className="text-xs flex justify-between items-center border-b border-border/40 pb-1">
+                          <span className="font-mono text-muted-foreground">To: {log.to}</span>
+                          <span className="text-[10px] text-muted-foreground">{log.time}</span>
+                          <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">{log.status}</Badge>
+                        </div>
+                      ))}
+                      {emailLogs.length === 0 && <p className="text-xs text-muted-foreground italic">No logs yet.</p>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
