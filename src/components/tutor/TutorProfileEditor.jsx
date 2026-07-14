@@ -92,7 +92,6 @@ const useProfileConfig = () => {
     loadConfig();
   }, []);
 
-  // ✅ FIXED: Return 'loading' not 'configLoading'
   return { config, loading };
 };
 
@@ -152,7 +151,7 @@ export default function TutorProfileEditor({ profile, user, onProfileUpdate }) {
   const [error, setError] = useState(null);
 
   // ============================================================
-  // ✅ FIXED: Sync autoSaveEnabled with config
+  // Sync autoSaveEnabled with config
   // ============================================================
 
   useEffect(() => {
@@ -887,4 +886,321 @@ export default function TutorProfileEditor({ profile, user, onProfileUpdate }) {
                 onChange={e => handleFormChange(prev => ({ ...prev, institution: e.target.value }))} 
               />
             </div>
-            <
+            <div className="space-y-1.5">
+              <Label className="text-xs">Field of Study</Label>
+              <Input 
+                placeholder="e.g. BSc Computer Science" 
+                value={form.study_field} 
+                onChange={e => handleFormChange(prev => ({ ...prev, study_field: e.target.value }))} 
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Year of Study</Label>
+              <Select 
+                value={form.study_year} 
+                onValueChange={v => handleFormChange(prev => ({ ...prev, study_year: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select current year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STUDY_YEARS.map(y => (
+                    <SelectItem key={y} value={y}>{y}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Hourly Rates */}
+        <div className="space-y-3">
+          <p className="text-sm font-semibold flex items-center gap-1.5">
+            <DollarSign className="w-4 h-4 text-primary" /> Pricing & Session Rates
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs">One-on-One Rate (ZAR / Hour)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-semibold">R</span>
+                <Input
+                  type="number"
+                  placeholder="e.g. 150"
+                  value={form.session_price_per_hour}
+                  onChange={e => handleFormChange(prev => ({ ...prev, session_price_per_hour: e.target.value }))}
+                  className={`pl-7 ${validationErrors.session_price_per_hour ? 'border-red-500' : ''}`}
+                />
+              </div>
+              {validationErrors.session_price_per_hour ? (
+                <p className="text-[11px] text-red-500">{validationErrors.session_price_per_hour}</p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">
+                  Recommended: R120 - R250 per hour.
+                </p>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Group Session Rate (ZAR / Hour / Student - Optional)</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-semibold">R</span>
+                <Input
+                  type="number"
+                  placeholder="e.g. 80"
+                  value={form.group_session_price}
+                  onChange={e => handleFormChange(prev => ({ ...prev, group_session_price: e.target.value }))}
+                  className="pl-7"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Subjects & Grades */}
+        <div className="grid sm:grid-cols-2 gap-6">
+          {/* Subjects */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-primary" /> Subjects You Teach
+            </Label>
+            <div className="flex flex-wrap gap-1.5 p-3 border rounded-xl min-h-[80px] bg-muted/10">
+              {SUBJECTS.map(subject => {
+                const selected = form.subjects.includes(subject);
+                return (
+                  <Badge
+                    key={subject}
+                    variant={selected ? 'default' : 'outline'}
+                    className="cursor-pointer transition-all active:scale-95"
+                    onClick={() => toggleItem('subjects', subject)}
+                  >
+                    {subject}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Grades */}
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold flex items-center gap-1.5">
+              <GraduationCap className="w-3.5 h-3.5 text-primary" /> Grades You Target
+            </Label>
+            <div className="flex flex-wrap gap-1.5 p-3 border rounded-xl min-h-[80px] bg-muted/10">
+              {GRADES.map(grade => {
+                const selected = form.grades.includes(grade);
+                return (
+                  <Badge
+                    key={grade}
+                    variant={selected ? 'default' : 'outline'}
+                    className="cursor-pointer transition-all active:scale-95"
+                    onClick={() => toggleItem('grades', grade)}
+                  >
+                    {grade}
+                  </Badge>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Languages */}
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold flex items-center gap-1.5">
+            <Globe className="w-3.5 h-3.5 text-primary" /> Languages You Teach In
+          </Label>
+          <div className="flex flex-wrap gap-1.5 p-3 border rounded-xl bg-muted/10">
+            {TEACHING_LANGUAGES.map(lang => {
+              const selected = form.teaching_languages.includes(lang);
+              return (
+                <Badge
+                  key={lang}
+                  variant={selected ? 'default' : 'outline'}
+                  className="cursor-pointer transition-all active:scale-95"
+                  onClick={() => toggleLanguage(lang)}
+                >
+                  {lang}
+                </Badge>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Qualifications (Editable Tag Input) */}
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold flex items-center gap-1.5">
+            <GraduationCap className="w-3.5 h-3.5 text-primary" /> Qualifications & Credentials
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g. 95% in Grade 12 Mathematics, TEFL Certified"
+              value={newQual}
+              onChange={e => setNewQual(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag('qualifications', newQual, setNewQual))}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={() => addTag('qualifications', newQual, setNewQual)}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {form.qualifications.map(qual => (
+              <Badge key={qual} variant="secondary" className="gap-1 py-1 pr-1.5">
+                {qual}
+                <button type="button" onClick={() => removeTag('qualifications', qual)} className="hover:bg-muted p-0.5 rounded-full">
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* Specializations (Editable Tag Input) */}
+        <div className="space-y-2">
+          <Label className="text-xs font-semibold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-primary" /> Special Topics / Specializations
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              placeholder="e.g. Calculus, Exam Prep, Special Needs"
+              value={newSpec}
+              onChange={e => setNewSpec(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addTag('specializations', newSpec, setNewSpec))}
+              className="text-xs"
+            />
+            <Button type="button" size="sm" onClick={() => addTag('specializations', newSpec, setNewSpec)}>
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          <div className="flex flex-wrap gap-1.5 mt-1.5">
+            {form.specializations.map(spec => (
+              <Badge key={spec} variant="secondary" className="gap-1 py-1 pr-1.5">
+                {spec}
+                <button type="button" onClick={() => removeTag('specializations', spec)} className="hover:bg-muted p-0.5 rounded-full">
+                  <X className="w-3 h-3 text-muted-foreground" />
+                </button>
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="pt-6 border-t border-border mt-8">
+          <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/5 space-y-4">
+            <div>
+              <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" /> Danger Zone
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Once you delete your account, all your tutor profiles, lessons, and chats will be permanently removed.
+              </p>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-fit" disabled={deleting}>
+                  {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1.5" /> : null}
+                  Delete Tutor Account
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action is permanent and complies with POPIA deletion rights. All personal profiles, chat transcripts, and schedules will be deleted forever.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction className="bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={handleDeleteAccount}>
+                    Delete Account
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+
+        {/* Save Bar */}
+        <div className="flex justify-end gap-2 pt-4 border-t border-border">
+          <Button type="button" variant="ghost" onClick={clearDraft} disabled={!isDirty}>
+            Discard Changes
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={saving} className="gap-1.5">
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+            Save Changes
+          </Button>
+        </div>
+      </CardContent>
+
+      {/* PREVIEW MODE DIALOG */}
+      <Dialog open={previewMode} onOpenChange={setPreviewMode}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-playfair">Public Profile Preview</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 pt-4">
+            <div className="flex gap-4 items-center">
+              <div className="w-16 h-16 rounded-full bg-primary/10 overflow-hidden border">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Preview Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  <UserIcon className="w-7 h-7 m-auto text-muted-foreground" />
+                )}
+              </div>
+              <div>
+                <p className="text-lg font-bold flex items-center gap-1.5">
+                  {user?.full_name || 'Your Name'}
+                  {form.sace_number ? (
+                    <Badge className="bg-green-100 text-green-700 pointer-events-none text-[10px] py-0.5">SACE</Badge>
+                  ) : (
+                    <Badge className="bg-blue-100 text-blue-700 pointer-events-none text-[10px] py-0.5">Verified</Badge>
+                  )}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {form.study_field} at {form.institution}
+                </p>
+                <div className="flex gap-2.5 mt-2 text-muted-foreground">
+                  {socialLinks.linkedin && <Linkedin className="w-4 h-4" />}
+                  {socialLinks.twitter && <Twitter className="w-4 h-4" />}
+                  {socialLinks.website && <GlobeIcon className="w-4 h-4" />}
+                </div>
+              </div>
+            </div>
+
+            {form.bio ? (
+              <p className="text-sm text-card-foreground bg-muted/20 p-3 rounded-lg border italic">
+                "{form.bio}"
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No bio description set yet.</p>
+            )}
+
+            <div className="grid sm:grid-cols-2 gap-4 text-xs border-t pt-4">
+              <div>
+                <p className="font-semibold mb-1">Subjects & Grades</p>
+                <div className="flex flex-wrap gap-1">
+                  {form.subjects.map(s => <Badge key={s} variant="secondary">{s}</Badge>)}
+                  {form.grades.map(g => <Badge key={g} variant="outline">{g}</Badge>)}
+                </div>
+              </div>
+              <div>
+                <p className="font-semibold mb-1">Teaching Languages</p>
+                <div className="flex flex-wrap gap-1">
+                  {form.teaching_languages.map(l => <Badge key={l} variant="outline">{l}</Badge>)}
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t pt-4 flex justify-between items-center">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Rate per Hour</p>
+                <p className="text-xl font-bold text-primary">R {form.session_price_per_hour || '0'}/hr</p>
+              </div>
+              <Button size="sm" onClick={() => setPreviewMode(false)}>
+                Back to Editing
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
