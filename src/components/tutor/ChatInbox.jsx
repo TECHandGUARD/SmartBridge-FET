@@ -647,7 +647,9 @@ export default function ChatInbox({ user }) {
             <Shield className="w-3 h-3 text-green-500" /> Private
           </Badge>
         </div>
-        
+      </CardHeader>
+
+      <CardContent className="p-4 pt-0">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-2">
           <TabsList className="w-full">
             <TabsTrigger value="chats" className="flex-1 gap-1.5">
@@ -895,4 +897,68 @@ export default function ChatInbox({ user }) {
                           <Badge className="text-xs">{student.subject}</Badge>
                           <Badge variant="outline" className="text-xs">{student.grade}</Badge>
                         </div>
-                     
+                        <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+                          {student.description}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        onClick={() => initiateConversation(student)}
+                        disabled={dailyLimit.remaining <= 0}
+                        className="gap-1.5 text-xs h-8"
+                      >
+                        <Send className="w-3.5 h-3.5" /> Apply
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* MY APPLICATIONS TAB */}
+          <TabsContent value="applications" className="mt-4">
+            {applications.length === 0 ? (
+              <div className="text-center py-10 text-muted-foreground">
+                <FileText className="w-10 h-10 mx-auto mb-2 opacity-30" />
+                <p className="text-sm">No applications submitted yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                {applications.map(app => (
+                  <div key={app.id} className="border rounded-xl p-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          {app.student_requests?.subject} • {app.student_requests?.grade}
+                        </span>
+                        <p className="text-sm font-semibold">
+                          {app.student_requests?.users?.full_name || 'Student'}
+                        </p>
+                      </div>
+                      <Badge className={
+                        app.status === 'accepted' ? 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300' :
+                        app.status === 'pending' ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300' :
+                        'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300'
+                      }>
+                        {app.status}
+                      </Badge>
+                    </div>
+                    {app.message && (
+                      <p className="text-xs text-muted-foreground bg-muted/30 p-2 rounded-lg italic">
+                        "{app.message}"
+                      </p>
+                    )}
+                    <span className="text-[10px] text-muted-foreground self-end">
+                      Applied on {new Date(app.created_at).toLocaleDateString('en-ZA')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
