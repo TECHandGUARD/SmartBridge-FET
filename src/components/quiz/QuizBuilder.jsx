@@ -577,4 +577,23 @@ export default function QuizBuilder({ user }) {
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-sm">{quiz.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      {quiz.subject} · {quiz.grade} · {qCount
+                      {quiz.subject} · {quiz.grade} · {qCount} Questions
+                    </p>
+                  </div>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => { setActiveQuiz(quiz); setMode('take'); }}
+                    className="opacity-90 group-hover:opacity-100 group-hover:border-primary group-hover:text-primary transition-all text-xs gap-1"
+                  >
+                    <Play className="w-3 h-3 fill-current" /> Start
+                  </Button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
