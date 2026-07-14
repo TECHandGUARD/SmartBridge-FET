@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, invokeFunction } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { SUBJECTS } from '@/lib/subjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,48 +91,51 @@ export default function AutoParentReports() {
     const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
     const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
-    const { data, error } = await invokeFunction('send-email', {
-      to: recipientEmail,
-      subject: `${appName} — Weekly Progress Report for ${studentEmail}`,
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #0F766E, #0d9488); padding: 20px; border-radius: 10px 10px 0 0; color: white;">
-            <h2 style="margin: 0;">📊 Weekly Progress Report</h2>
-            <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${studentEmail}</p>
+    // Use native supabase.functions.invoke syntax with body payload
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: recipientEmail,
+        subject: `${appName} — Weekly Progress Report for ${studentEmail}`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #0F766E, #0d9488); padding: 20px; border-radius: 10px 10px 0 0; color: white;">
+              <h2 style="margin: 0;">📊 Weekly Progress Report</h2>
+              <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">${studentEmail}</p>
+            </div>
+            
+            <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
+              <p>Here is the ${appName} weekly progress report for <strong>${studentEmail}</strong> — generated on ${new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.</p>
+              
+              <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0F766E;">
+                <h3 style="margin-top: 0; color: #166534;">📈 SUMMARY</h3>
+                <p style="margin: 5px 0;">• Subjects active: <strong>${studentData.subjects.length}</strong></p>
+                <p style="margin: 5px 0;">• Total study sessions: <strong>${totalSessions}</strong></p>
+                <p style="margin: 5px 0;">• Active reminders: <strong>${reminders?.length || 0}</strong></p>
+              </div>
+              
+              <h3 style="color: #0F766E;">📚 SUBJECT ACTIVITY</h3>
+              <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #e5e7eb;">
+                ${subjectLines || '<p style="color: #999; font-style: italic;">No subjects tracked yet.</p>'}
+              </div>
+              
+              <h3 style="color: #0F766E;">🔔 STUDY REMINDERS</h3>
+              <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #e5e7eb;">
+                ${reminderLines || '<p style="color: #999; font-style: italic;">No reminders set.</p>'}
+              </div>
+              
+              <p style="margin-top: 20px; font-size: 14px;">Keep encouraging consistent study habits — small daily sessions lead to big exam results! 🎓</p>
+              
+              <hr style="margin: 20px 0; border-color: #e5e7eb;">
+              
+              <p style="font-size: 11px; color: #999; text-align: center;">
+                Warm regards,<br>
+                <strong>${appName} Admin Team</strong><br>
+                <a href="${appUrl}" style="color: #0F766E;">${appUrl}</a>
+              </p>
+            </div>
           </div>
-          
-          <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
-            <p>Here is the ${appName} weekly progress report for <strong>${studentEmail}</strong> — generated on ${new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.</p>
-            
-            <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0F766E;">
-              <h3 style="margin-top: 0; color: #166534;">📈 SUMMARY</h3>
-              <p style="margin: 5px 0;">• Subjects active: <strong>${studentData.subjects.length}</strong></p>
-              <p style="margin: 5px 0;">• Total study sessions: <strong>${totalSessions}</strong></p>
-              <p style="margin: 5px 0;">• Active reminders: <strong>${reminders?.length || 0}</strong></p>
-            </div>
-            
-            <h3 style="color: #0F766E;">📚 SUBJECT ACTIVITY</h3>
-            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #e5e7eb;">
-              ${subjectLines || '<p style="color: #999; font-style: italic;">No subjects tracked yet.</p>'}
-            </div>
-            
-            <h3 style="color: #0F766E;">🔔 STUDY REMINDERS</h3>
-            <div style="background-color: #ffffff; padding: 15px; border-radius: 10px; margin: 15px 0; border: 1px solid #e5e7eb;">
-              ${reminderLines || '<p style="color: #999; font-style: italic;">No reminders set.</p>'}
-            </div>
-            
-            <p style="margin-top: 20px; font-size: 14px;">Keep encouraging consistent study habits — small daily sessions lead to big exam results! 🎓</p>
-            
-            <hr style="margin: 20px 0; border-color: #e5e7eb;">
-            
-            <p style="font-size: 11px; color: #999; text-align: center;">
-              Warm regards,<br>
-              <strong>${appName} Admin Team</strong><br>
-              <a href="${appUrl}" style="color: #0F766E;">${appUrl}</a>
-            </p>
-          </div>
-        </div>
-      `,
+        `,
+      }
     });
 
     if (error) throw error;
