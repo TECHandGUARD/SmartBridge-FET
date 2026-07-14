@@ -1,0 +1,63 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user",
+        "student",
+        "parent",
+        "sace_tutor",
+        "student_tutor",
+        "tutor_pending",
+        "tutor"
+      ],
+      "default": "user"
+    },
+    "onboarding_complete": {
+      "type": "boolean",
+      "default": false
+    },
+    "tutor_type": {
+      "type": "string"
+    },
+    "sace_number": {
+      "type": "string"
+    },
+    "university": {
+      "type": "string"
+    },
+    "student_number": {
+      "type": "string"
+    },
+    "linked_student_email": {
+      "type": "string"
+    },
+    "zoom_link": {
+      "type": "string"
+    },
+    "teams_link": {
+      "type": "string"
+    },
+    "in_session": {
+      "type": "boolean",
+      "default": false
+    },
+    "session_platform": {
+      "type": "string"
+    },
+    "badges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "trial_started_at": {
+      "type": "string",
+      "description": "ISO timestamp when the user's 3-day free trial was started (set during onboarding)"
+    }
+  },
+  "required": []
+}
