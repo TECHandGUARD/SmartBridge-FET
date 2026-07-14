@@ -54,7 +54,7 @@ import ResourceSearch from './pages/ResourceSearch';
 import PracticeQuiz from './pages/PracticeQuiz';
 import Bookings from './pages/Bookings';
 import GroupStudyRooms from './pages/GroupStudyRooms';
-import VideoLessons from './pages/Videos';
+import VideoLessons from './pages/VideoLessons';  // ✅ FIXED: was './pages/Videos'
 import ResourcesLibrary from './pages/ResourcesLibrary';
 import CommunityForum from './pages/CommunityForum';
 import BursaryFinder from './pages/BursaryFinder';
@@ -98,9 +98,6 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 // ============================================================
 
 function Page({ component: Component, ...props }) {
-  // If lazy loading is enabled, we could wrap with Suspense.
-  // For simplicity we just render directly since we imported all components.
-  // If you want to use lazy loading, you need to pass lazy components.
   return <Component {...props} />;
 }
 
@@ -130,7 +127,6 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Wrap content with ErrorBoundary if enabled
   const content = (
     <Routes>
       <Route element={<AppLayout />}>
@@ -245,7 +241,6 @@ const AuthenticatedApp = () => {
 // ============================================================
 
 function App() {
-  // Set document title
   useEffect(() => {
     document.title = CONFIG.APP_NAME;
   }, []);
