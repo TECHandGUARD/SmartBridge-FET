@@ -842,4 +842,14 @@ ${appName}
         
         {/* Tips section */}
         {plans.length > 0 && filtered.length > 0 && (
-          <div
+          <div className="mt-4 p-3 bg-muted/30 border border-border rounded-lg text-xs text-muted-foreground flex gap-2 dark:bg-muted/10">
+            <Lightbulb className="w-4 h-4 text-amber-500 shrink-0" />
+            <div>
+              <span className="font-semibold text-foreground">Pro-Tip:</span> Link your lesson plans to upcoming tutoring bookings to track homework deadlines and automatically feed completed tasks into the students' progress logs!
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
