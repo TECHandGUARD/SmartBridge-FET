@@ -1,0 +1,73 @@
+{
+  "name": "StudentProgress",
+  "type": "object",
+  "properties": {
+    "student_email": {
+      "type": "string"
+    },
+    "subject": {
+      "type": "string"
+    },
+    "grade": {
+      "type": "string"
+    },
+    "resources_accessed": {
+      "type": "number",
+      "default": 0
+    },
+    "last_accessed": {
+      "type": "string",
+      "format": "date"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "student_email",
+    "subject",
+    "grade"
+  ],
+  "rls": {
+    "create": {
+      "data.student_email": "{{user.email}}"
+    },
+    "read": {
+      "$or": [
+        {
+          "data.student_email": "{{user.email}}"
+        },
+        {
+          "data.student_email": "{{user.data.linked_student_email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "counselor"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.student_email": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
