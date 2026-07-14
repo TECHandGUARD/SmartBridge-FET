@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "name": "Quiz",
+  "type": "object",
+  "description": "CAPS-aligned quiz for Grade 10-12 students",
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Primary key - auto-generated UUID"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "Quiz title"
+    },
+    "subject": {
+      "type": "string",
+      "maxLength": 100,
+      "description": "Subject of the quiz"
+    },
+    "grade": {
+      "type": "string",
+      "enum": ["Grade 10", "Grade 11", "Grade 12"],
+      "description": "Grade level"
+    },
+    "questions": {
+      "type": "array",
+      "description": "Array of question objects",
+      "minItems": 1,
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["question", "options", "correct_index"],
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "description": "The question text"
+          },
+          "options": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Four answer options (A, B, C, D)"
+          },
+          "correct_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Index of the correct answer (0-based)"
+          },
+          "explanation": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Optional explanation for the correct answer"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "created_by_email": {
+      "type": "string",
+      "format": "email",
+      "maxLength": 255,
+      "description": "Email of quiz creator"
+    },
+    "created_by_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "User ID of quiz creator"
+    },
+    "is_published": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the quiz is published to students"
+    },
+    "source": {
+      "type": "string",
+      "enum": ["manual", "ai_generated"],
+      "default": "manual",
+      "description": "Source of the quiz"
+    },
+    "topic": {
+      "type": "string",
+      "maxLength": 255,
+      "description": "Topic covered by the quiz"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when quiz was created"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when quiz was last updated"
+    }
+  },
+  "required": ["title", "subject", "grade", "questions"],
+  "additionalProperties": false
+}
