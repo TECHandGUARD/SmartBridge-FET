@@ -1,3 +1,4 @@
+// src/pages/ForgotPassword.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
@@ -7,32 +8,62 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GraduationCap, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 
+// ============================================================
+// 🔧 SOFT-CODED CONFIGURATION (Admin control via environment)
+// ============================================================
+
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  LOGIN_ROUTE: import.meta.env.VITE_LOGIN_ROUTE || '/login',
+  RESET_PASSWORD_ROUTE: import.meta.env.VITE_RESET_PASSWORD_ROUTE || '/reset-password',
+  REDIRECT_AFTER_RESET: import.meta.env.VITE_REDIRECT_AFTER_RESET || '/login',
+  // The base URL for the reset link – defaults to window origin
+  RESET_REDIRECT_URL: import.meta.env.VITE_RESET_REDIRECT_URL || window.location.origin,
+};
+
+// ============================================================
+// ForgotPassword Component
+// ============================================================
+
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!email.trim()) {
+    setErrorMsg('');
+
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail) {
       toast.error('Please enter your email address');
       return;
     }
-    
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trimmedEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
     setLoading(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const redirectTo = `${CONFIG.RESET_REDIRECT_URL}${CONFIG.RESET_PASSWORD_ROUTE}`;
+      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
+        redirectTo,
       });
-      
+
       if (error) throw error;
-      
+
       setSent(true);
       toast.success('Password reset email sent!');
     } catch (error) {
       console.error('Reset password error:', error);
-      toast.error(error.message || 'Failed to send reset email');
+      const message = error.message || 'Failed to send reset email. Please try again.';
+      setErrorMsg(message);
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -47,7 +78,9 @@ export default function ForgotPassword() {
               <GraduationCap className="w-8 h-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="font-playfair text-3xl font-bold">Reset Password</CardTitle>
+          <CardTitle className="font-playfair text-3xl font-bold">
+            {CONFIG.APP_NAME} – Reset Password
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
             Enter your email and we'll send you a reset link
           </p>
@@ -58,12 +91,17 @@ export default function ForgotPassword() {
               <p className="text-sm text-green-600">
                 ✅ Password reset email sent! Please check your inbox.
               </p>
-              <Link to="/login">
+              <Link to={CONFIG.LOGIN_ROUTE}>
                 <Button className="w-full">Return to Login</Button>
               </Link>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
+              {errorMsg && (
+                <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-lg text-sm text-destructive">
+                  {errorMsg}
+                </div>
+              )}
               <div className="space-y-2">
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -79,8 +117,8 @@ export default function ForgotPassword() {
                 </div>
               </div>
 
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full h-12 gap-2 bg-primary hover:bg-primary/90 text-base font-semibold"
                 disabled={loading}
               >
@@ -98,7 +136,7 @@ export default function ForgotPassword() {
 
           <p className="text-center text-sm text-muted-foreground">
             Remember your password?{' '}
-            <Link to="/login" className="text-primary font-semibold hover:underline">
+            <Link to={CONFIG.LOGIN_ROUTE} className="text-primary font-semibold hover:underline">
               Sign in
             </Link>
           </p>
