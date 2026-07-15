@@ -1,11 +1,14 @@
+// src/components/layout/MobileBottomTabs.jsx
 import { Link, useLocation } from 'react-router-dom';
 import { Home, BookOpen, Users, LayoutDashboard } from 'lucide-react';
 
 // ============================================================
-// Configuration (Soft-coded for future flexibility)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
+const CONFIG = {
+  TUTOR_ROLES: ['sace_tutor', 'student_tutor', 'tutor_pending'],
+};
 
 // ============================================================
 // Helper Functions
@@ -14,7 +17,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 function getDashboardPath(user) {
   if (!user) return '/student-dashboard';
   if (user.role === 'admin') return '/admin';
-  if (user.role === 'sace_tutor' || user.role === 'student_tutor') return '/tutor-dashboard';
+  if (CONFIG.TUTOR_ROLES.includes(user.role)) return '/tutor-dashboard';
   if (user.role === 'parent') return '/parent-dashboard';
   return '/student-dashboard';
 }
@@ -41,16 +44,16 @@ export default function MobileBottomTabs({ user }) {
     >
       <div className="grid grid-cols-4 h-16">
         {tabs.map(({ label, path, icon: Icon }) => {
-          const active = location.pathname === path || (path === dashPath && location.pathname === path);
+          const isActive = location.pathname === path;
           return (
             <Link
               key={path}
               to={path}
               className={`flex flex-col items-center justify-center gap-1 select-none transition-colors ${
-                active ? 'text-primary' : 'text-muted-foreground'
+                isActive ? 'text-primary' : 'text-muted-foreground'
               }`}
             >
-              <Icon className={`w-5 h-5 select-none ${active ? 'text-primary' : ''}`} />
+              <Icon className={`w-5 h-5 select-none ${isActive ? 'text-primary' : ''}`} />
               <span className="text-[10px] font-medium">{label}</span>
             </Link>
           );
