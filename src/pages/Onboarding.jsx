@@ -254,9 +254,9 @@ export default function Onboarding({ user, onComplete }) {
         profileUpdates.linked_student_email = linkedEmail;
       }
 
-      // 2. Update user_profiles
+      // 2. Update users table (not user_profiles) – this is the correct table
       const { error: updateError } = await supabase
-        .from('user_profiles')
+        .from('users')
         .update(profileUpdates)
         .eq('email', user.email);
 
