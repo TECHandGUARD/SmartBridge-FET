@@ -1,15 +1,19 @@
+// src/components/layout/Footer.jsx
 import { Link } from 'react-router-dom';
 import { BookOpen } from 'lucide-react';
 
 // ============================================================
-// Configuration (Soft-coded for future flexibility)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const appYear = new Date().getFullYear();
-const registrationNumber = import.meta.env.VITE_REGISTRATION_NUMBER || '2026/15509/07';
-const companyName = import.meta.env.VITE_COMPANY_NAME || 'Tech & GUARD Pty Ltd';
-const ownerDescription = import.meta.env.VITE_OWNER_DESCRIPTION || 'fully owned by Tech & GUARD Pty Ltd';
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || 'Tech & GUARD Pty Ltd',
+  REGISTRATION_NUMBER: import.meta.env.VITE_REGISTRATION_NUMBER || '2026/15509/07',
+  OWNER_DESCRIPTION: import.meta.env.VITE_OWNER_DESCRIPTION || 'fully owned by Tech & GUARD Pty Ltd',
+  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || 'aneleq@techandguard.co.za',
+  CURRENT_YEAR: new Date().getFullYear(),
+};
 
 // ============================================================
 // Main Component
@@ -27,7 +31,7 @@ export default function Footer() {
                 <BookOpen className="w-4 h-4 text-primary-foreground" />
               </div>
               <div>
-                <span className="font-playfair font-bold text-foreground">{appName}</span>
+                <span className="font-playfair font-bold text-foreground">{CONFIG.APP_NAME}</span>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-4">
@@ -35,7 +39,9 @@ export default function Footer() {
             </p>
             <div className="border-t border-border pt-4">
               <p className="text-xs font-semibold text-foreground mb-1">Powered by</p>
-              <p className="text-xs text-muted-foreground">{companyName} — Premium tech protection solutions for South Africa.</p>
+              <p className="text-xs text-muted-foreground">
+                {CONFIG.COMPANY_NAME} — Premium tech protection solutions for South Africa.
+              </p>
             </div>
           </div>
 
@@ -82,11 +88,14 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/about-tech-guard" className="text-muted-foreground hover:text-foreground transition-colors">
-                  About {companyName}
+                  About {CONFIG.COMPANY_NAME}
                 </Link>
               </li>
               <li>
-                <a href="mailto:aneleq@techandguard.co.za" className="text-muted-foreground hover:text-foreground transition-colors">
+                <a
+                  href={`mailto:${CONFIG.SUPPORT_EMAIL}`}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
                   Contact
                 </a>
               </li>
@@ -96,10 +105,10 @@ export default function Footer() {
 
         <div className="border-t border-border pt-6 text-center text-xs text-muted-foreground">
           <p>
-            © {appYear} {companyName} (Registration Number: {registrationNumber}). All rights reserved.
+            © {CONFIG.CURRENT_YEAR} {CONFIG.COMPANY_NAME} (Registration Number: {CONFIG.REGISTRATION_NUMBER}). All rights reserved.
           </p>
           <p className="mt-2">
-            {appName} is an EdTech digital product {ownerDescription}.
+            {CONFIG.APP_NAME} is an EdTech digital product {CONFIG.OWNER_DESCRIPTION}.
           </p>
         </div>
       </div>
