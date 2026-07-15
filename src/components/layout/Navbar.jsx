@@ -1,6 +1,7 @@
+// src/components/layout/Navbar.jsx
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Menu, X, Star, LogOut, User, Loader2 } from 'lucide-react';
@@ -15,10 +16,97 @@ import {
 import { toast } from 'sonner';
 
 // ============================================================
-// Configuration (Soft-coded for future flexibility)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  TUTOR_ROLES: ['sace_tutor', 'student_tutor', 'tutor_pending'],
+};
+
+// ============================================================
+// Helper Functions
+// ============================================================
+
+function getDashboardPath(user) {
+  if (!user) return '/student-dashboard';
+  if (user.role === 'admin') return '/admin';
+  if (CONFIG.TUTOR_ROLES.includes(user.role)) return '/tutor-dashboard';
+  if (user.role === 'parent') return '/parent-dashboard';
+  return '/student-dashboard';
+}
+
+function getNavLinks(user) {
+  const isTutor = user && CONFIG.TUTOR_ROLES.includes(user.role);
+  const isParent = user?.role === 'parent';
+  const isAdmin = user?.role === 'admin';
+  const isStudent = user && !isTutor && !isParent && !isAdmin;
+
+  if (isAdmin) {
+    return [
+      { label: 'Admin', path: '/admin' },
+      { label: 'CAPS Admin', path: '/caps-admin' },
+      { label: 'Subjects', path: '/subjects' },
+      { label: 'Resources', path: '/search' },
+      { label: 'Tutors', path: '/tutors' },
+      { label: 'Videos', path: '/videos' },
+      { label: 'Quiz', path: '/quiz' },
+      { label: 'Study Rooms', path: '/study-rooms' },
+      { label: 'Forum', path: '/forum' },
+      { label: 'Bookings', path: '/bookings' },
+      { label: 'Bursaries', path: '/bursaries' },
+      { label: 'Opportunities', path: '/opportunities' },
+      { label: 'Payout Log', path: '/payout-log' },
+      { label: 'Counselor', path: '/counselor' },
+      { label: 'Premium', path: '/premium' },
+    ];
+  }
+
+  if (isTutor) {
+    return [
+      { label: 'Subjects', path: '/subjects' },
+      { label: 'Resources', path: '/search' },
+      { label: 'CAPS Docs', path: '/resources-library' },
+      { label: 'Videos', path: '/videos' },
+      { label: 'Bookings', path: '/bookings' },
+      { label: 'Study Rooms', path: '/study-rooms' },
+      { label: 'Forum', path: '/forum' },
+      { label: 'Premium', path: '/premium' },
+    ];
+  }
+
+  if (isParent) {
+    return [
+      { label: 'Tutors', path: '/tutors' },
+      { label: 'Bursaries', path: '/bursaries' },
+      { label: 'Opportunities', path: '/opportunities' },
+      { label: 'Forum', path: '/forum' },
+      { label: 'Premium', path: '/premium' },
+    ];
+  }
+
+  if (isStudent) {
+    return [
+      { label: 'Subjects', path: '/subjects' },
+      { label: 'Tutors', path: '/tutors' },
+      { label: 'Resources', path: '/search' },
+      { label: 'Videos', path: '/videos' },
+      { label: 'Practice', path: '/quiz' },
+      { label: 'Study Rooms', path: '/study-rooms' },
+      { label: 'Forum', path: '/forum' },
+      { label: 'Bursaries', path: '/bursaries' },
+      { label: 'Opportunities', path: '/opportunities' },
+      { label: 'Premium', path: '/premium' },
+    ];
+  }
+
+  // Unauthenticated / public
+  return [
+    { label: 'Subjects', path: '/subjects' },
+    { label: 'Tutors', path: '/tutors' },
+    { label: 'Premium', path: '/premium' },
+  ];
+}
 
 // ============================================================
 // Main Component
@@ -29,10 +117,8 @@ export default function Navbar({ user }) {
   const [loggingOut, setLoggingOut] = useState(false);
   const location = useLocation();
 
-  const isTutor = user?.role === 'sace_tutor' || user?.role === 'student_tutor';
-  const isParent = user?.role === 'parent';
-  const isAdmin = user?.role === 'admin';
-  const isStudent = !isTutor && !isParent && !isAdmin;
+  const dashboardPath = getDashboardPath(user);
+  const navLinks = getNavLinks(user);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -58,62 +144,6 @@ export default function Navbar({ user }) {
     });
   };
 
-  // Role-specific nav — each role only sees what's relevant to them
-  const navLinks = isAdmin ? [
-    { label: 'Admin', path: '/admin' },
-    { label: 'CAPS Admin', path: '/caps-admin' },
-    { label: 'Subjects', path: '/subjects' },
-    { label: 'Resources', path: '/search' },
-    { label: 'Tutors', path: '/tutors' },
-    { label: 'Videos', path: '/videos' },
-    { label: 'Quiz', path: '/quiz' },
-    { label: 'Study Rooms', path: '/study-rooms' },
-    { label: 'Forum', path: '/forum' },
-    { label: 'Bookings', path: '/bookings' },
-    { label: 'Bursaries', path: '/bursaries' },
-    { label: 'Opportunities', path: '/opportunities' },
-    { label: 'Payout Log', path: '/payout-log' },
-    { label: 'Counselor', path: '/counselor' },
-    { label: 'Premium', path: '/premium' },
-  ] : isTutor ? [
-    { label: 'Subjects', path: '/subjects' },
-    { label: 'Resources', path: '/search' },
-    { label: 'CAPS Docs', path: '/resources-library' },
-    { label: 'Videos', path: '/videos' },
-    { label: 'Bookings', path: '/bookings' },
-    { label: 'Study Rooms', path: '/study-rooms' },
-    { label: 'Forum', path: '/forum' },
-    { label: 'Premium', path: '/premium' },
-  ] : isParent ? [
-    { label: 'Tutors', path: '/tutors' },
-    { label: 'Bursaries', path: '/bursaries' },
-    { label: 'Opportunities', path: '/opportunities' },
-    { label: 'Forum', path: '/forum' },
-    { label: 'Premium', path: '/premium' },
-  ] : isStudent ? [
-    { label: 'Subjects', path: '/subjects' },
-    { label: 'Tutors', path: '/tutors' },
-    { label: 'Resources', path: '/search' },
-    { label: 'Videos', path: '/videos' },
-    { label: 'Practice', path: '/quiz' },
-    { label: 'Study Rooms', path: '/study-rooms' },
-    { label: 'Forum', path: '/forum' },
-    { label: 'Bursaries', path: '/bursaries' },
-    { label: 'Opportunities', path: '/opportunities' },
-    { label: 'Premium', path: '/premium' },
-  ] : [
-    // Unauthenticated / public
-    { label: 'Subjects', path: '/subjects' },
-    { label: 'Tutors', path: '/tutors' },
-    { label: 'Premium', path: '/premium' },
-  ];
-
-  const dashboardPath =
-    user?.role === 'admin' ? '/admin' :
-    (user?.role === 'sace_tutor' || user?.role === 'student_tutor') ? '/tutor-dashboard' :
-    user?.role === 'parent' ? '/parent-dashboard' :
-    '/student-dashboard';
-
   return (
     <nav className="sticky top-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -124,7 +154,7 @@ export default function Navbar({ user }) {
               <BookOpen className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <span className="font-playfair font-bold text-lg text-foreground">SmartBridge</span>
+              <span className="font-playfair font-bold text-lg text-foreground">{CONFIG.APP_NAME}</span>
               <span className="text-xs text-muted-foreground block leading-none -mt-0.5">FET Phase</span>
             </div>
           </Link>
