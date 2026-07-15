@@ -1,14 +1,16 @@
 // src/lib/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
 // ============================================================
-// Configuration (Soft-coded for admin control)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const APP_URL = import.meta.env.VITE_APP_URL || window.location.origin;
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  APP_URL: import.meta.env.VITE_APP_URL || window.location.origin,
+};
 
 // ============================================================
 // AuthContext
@@ -211,10 +213,9 @@ export const AuthProvider = ({ children }) => {
         return;
       }
 
-      // ✅ FIXED: TOKEN_REFRESHED - simplified, let setUserWithProfile handle it
+      // TOKEN_REFRESHED - simplified, let setUserWithProfile handle it
       if (event === 'TOKEN_REFRESHED' && session?.user && isMountedRef.current) {
         const eventVersion = sessionVersionRef.current;
-        // ✅ Allow setUserWithProfile to handle all validation
         await setUserWithProfile(session.user, eventVersion);
         if (isMountedRef.current) {
           setIsLoadingAuth(false);
@@ -285,7 +286,7 @@ export const AuthProvider = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${APP_URL}/auth/callback`
+          redirectTo: `${CONFIG.APP_URL}/auth/callback`
         }
       });
 
@@ -403,7 +404,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ============================================================
-  // ✅ FIXED: Update User Profile with null safety
+  // Update User Profile
   // ============================================================
 
   const updateUserProfile = async (updates) => {
@@ -420,7 +421,6 @@ export const AuthProvider = ({ children }) => {
 
       if (error) throw error;
 
-      // ✅ FIXED: Null check before spreading
       setUser(prev => prev ? { ...prev, ...updates } : null);
 
       toast.success('Profile updated successfully');
