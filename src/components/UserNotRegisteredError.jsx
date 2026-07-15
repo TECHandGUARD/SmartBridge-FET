@@ -1,15 +1,18 @@
+// src/components/UserNotRegisteredError.jsx
 import PropTypes from 'prop-types';
 import { AlertCircle, Mail, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
 // ============================================================
-// Configuration (Soft-coded for admin control)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const DEFAULT_CONTACT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'aneleq@techandguard.co.za';
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || 'aneleq@techandguard.co.za',
+};
 
 // ============================================================
 // PropTypes
@@ -26,9 +29,9 @@ const propTypes = {
 // Main Component
 // ============================================================
 
-const UserNotRegisteredError = ({ 
-  onRetry, 
-  contactEmail = DEFAULT_CONTACT_EMAIL 
+const UserNotRegisteredError = ({
+  onRetry,
+  contactEmail = CONFIG.SUPPORT_EMAIL,
 }) => {
   // ============================================================
   // Handlers
@@ -38,7 +41,6 @@ const UserNotRegisteredError = ({
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
       window.location.href = '/';
     } catch (error) {
       console.error('Logout error:', error);
@@ -47,9 +49,9 @@ const UserNotRegisteredError = ({
   };
 
   const handleContactSupport = () => {
-    const subject = encodeURIComponent(`${appName} Access Request`);
+    const subject = encodeURIComponent(`${CONFIG.APP_NAME} Access Request`);
     const body = encodeURIComponent(
-      `I'm trying to access ${appName} but I'm receiving an "Access Restricted" message.\n\n` +
+      `I'm trying to access ${CONFIG.APP_NAME} but I'm receiving an "Access Restricted" message.\n\n` +
       `My email: \n` +
       `Role requested: \n\n` +
       `Please assist with access.`
@@ -69,15 +71,15 @@ const UserNotRegisteredError = ({
           <div className="inline-flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-orange-100 dark:bg-orange-950/30">
             <AlertCircle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
           </div>
-          
+
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3">
             Access Restricted
           </h1>
-          
+
           <p className="text-slate-600 dark:text-slate-400 mb-6">
-            You are not registered to use {appName}. Please contact the administrator to request access.
+            You are not registered to use {CONFIG.APP_NAME}. Please contact the administrator to request access.
           </p>
-          
+
           {/* Help Section */}
           <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-md text-sm text-slate-600 dark:text-slate-400 mb-6">
             <p className="font-medium mb-2 text-slate-700 dark:text-slate-300">What you can do:</p>
@@ -87,34 +89,34 @@ const UserNotRegisteredError = ({
               <li>Try logging out and back in again</li>
             </ul>
           </div>
-          
+
           {/* Action Buttons */}
           <div className="flex flex-col gap-3">
-            <Button 
-              type="button"  // ✅ FIXED: Explicit button type
-              variant="outline" 
-              className="w-full gap-2 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"  // ✅ FIXED: Focus ring
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               onClick={handleContactSupport}
             >
               <Mail className="w-4 h-4" />
               Contact Administrator
             </Button>
-            
-            <Button 
-              type="button"  // ✅ FIXED: Explicit button type
-              variant="ghost" 
-              className="w-full gap-2 text-slate-600 dark:text-slate-400 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"  // ✅ FIXED: Focus ring
+
+            <Button
+              type="button"
+              variant="ghost"
+              className="w-full gap-2 text-slate-600 dark:text-slate-400 dark:hover:bg-slate-800 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               onClick={handleLogout}
             >
               <LogOut className="w-4 h-4" />
               Sign Out
             </Button>
-            
+
             {onRetry && (
-              <Button 
-                type="button"  // ✅ FIXED: Explicit button type
-                variant="default" 
-                className="w-full gap-2 bg-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"  // ✅ FIXED: Focus ring
+              <Button
+                type="button"
+                variant="default"
+                className="w-full gap-2 bg-primary focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 onClick={onRetry}
               >
                 Try Again
@@ -126,7 +128,7 @@ const UserNotRegisteredError = ({
           <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
             <p className="text-[10px] text-muted-foreground dark:text-slate-500 flex items-center justify-center gap-1">
               <Shield className="w-3 h-3 text-green-500" />
-              Secure · {appName}
+              Secure · {CONFIG.APP_NAME}
             </p>
           </div>
         </div>
