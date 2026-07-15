@@ -1,12 +1,38 @@
 // src/pages/AuthCallback.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, getCurrentUserProfile } from '@/lib/supabaseClient';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-// ✅ Admin emails that bypass onboarding
-const ADMIN_EMAILS = ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
+// ============================================================
+// 🔧 SOFT-CODED CONFIGURATION (Admin control via environment)
+// ============================================================
+
+const CONFIG = {
+  // Admin emails – comma-separated list in environment
+  ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map(email => email.trim())
+    .filter(Boolean),
+  
+  // Redirect destinations
+  DASHBOARD_ROUTE: import.meta.env.VITE_DASHBOARD_ROUTE || '/',
+  ADMIN_ROUTE: import.meta.env.VITE_ADMIN_ROUTE || '/admin',
+  ONBOARDING_ROUTE: import.meta.env.VITE_ONBOARDING_ROUTE || '/onboarding',
+  LOGIN_ROUTE: import.meta.env.VITE_LOGIN_ROUTE || '/login',
+
+  // Timeouts (ms)
+  REDIRECT_DELAY_SUCCESS: Number(import.meta.env.VITE_REDIRECT_DELAY_SUCCESS) || 1000,
+  REDIRECT_DELAY_ERROR: Number(import.meta.env.VITE_REDIRECT_DELAY_ERROR) || 2000,
+
+  // Feature flags
+  ENABLE_ADMIN_BYPASS: import.meta.env.VITE_ENABLE_ADMIN_BYPASS !== 'false',
+};
+
+// ============================================================
+// Auth Callback Component
+// ============================================================
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -17,60 +43,59 @@ export default function AuthCallback() {
     const handleCallback = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-
         if (error) throw error;
 
-        if (data.session) {
-          setStatus('success');
-
-          // Check user profile
-          const { data: profile, error: profileError } = await supabase
-            .from('user_profiles')
-            .select('onboarding_complete, role, is_super_admin')
-            .eq('email', data.session.user.email)
-            .maybeSingle();
-
-          if (profileError) {
-            console.error('Profile fetch error:', profileError);
-          }
-
-          toast.success('Successfully signed in!');
-
-          // ✅ ADMIN BYPASS: Check if user is admin
-          const isAdmin = ADMIN_EMAILS.includes(data.session.user.email) ||
-                          profile?.role === 'admin' ||
-                          profile?.is_super_admin === true;
-
-          setTimeout(() => {
-            if (isAdmin) {
-              navigate('/admin', { replace: true }); // ✅ Changed to /admin
-            } else if (profile?.onboarding_complete) {
-              navigate('/', { replace: true });
-            } else {
-              navigate('/onboarding', { replace: true });
-            }
-          }, 1000);
-        } else {
+        if (!data.session) {
           setStatus('error');
           setError('No session found');
           toast.error('Authentication failed');
-          setTimeout(() => {
-            navigate('/login', { replace: true });
-          }, 2000);
+          setTimeout(() => navigate(CONFIG.LOGIN_ROUTE, { replace: true }), CONFIG.REDIRECT_DELAY_ERROR);
+          return;
         }
+
+        setStatus('success');
+        toast.success('Successfully signed in!');
+
+        // Fetch user profile using the helper
+        const { profile, error: profileError } = await getCurrentUserProfile();
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+        }
+
+        // Determine admin status using soft-coded list and profile flags
+        const userEmail = data.session.user.email;
+        const isAdmin = CONFIG.ENABLE_ADMIN_BYPASS && (
+          CONFIG.ADMIN_EMAILS.includes(userEmail) ||
+          profile?.role === 'admin' ||
+          profile?.is_super_admin === true
+        );
+
+        // Redirect based on role and onboarding status
+        setTimeout(() => {
+          if (isAdmin) {
+            navigate(CONFIG.ADMIN_ROUTE, { replace: true });
+          } else if (profile?.onboarding_complete) {
+            navigate(CONFIG.DASHBOARD_ROUTE, { replace: true });
+          } else {
+            navigate(CONFIG.ONBOARDING_ROUTE, { replace: true });
+          }
+        }, CONFIG.REDIRECT_DELAY_SUCCESS);
+
       } catch (error) {
         console.error('Auth callback error:', error);
         setStatus('error');
         setError(error.message);
         toast.error(error.message || 'Authentication failed');
-        setTimeout(() => {
-          navigate('/login', { replace: true });
-        }, 2000);
+        setTimeout(() => navigate(CONFIG.LOGIN_ROUTE, { replace: true }), CONFIG.REDIRECT_DELAY_ERROR);
       }
     };
 
     handleCallback();
   }, [navigate]);
+
+  // ============================================================
+  // Render UI
+  // ============================================================
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
