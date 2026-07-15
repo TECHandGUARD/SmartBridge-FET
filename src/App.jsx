@@ -48,7 +48,7 @@ import ResourceSearch from './pages/ResourceSearch';
 import PracticeQuiz from './pages/PracticeQuiz';
 import Bookings from './pages/Bookings';
 import GroupStudyRooms from './pages/GroupStudyRooms';
-import VideoLessons from './pages/VideoLessons';  // ✅ FIXED: was './pages/Videos'
+import VideoLessons from './pages/VideoLessons';
 import ResourcesLibrary from './pages/ResourcesLibrary';
 import CommunityForum from './pages/CommunityForum';
 import BursaryFinder from './pages/BursaryFinder';
@@ -57,11 +57,12 @@ import CAPSAdmin from './pages/CAPSAdmin';
 import PayoutLog from './pages/PayoutLog';
 import Onboarding from './pages/Onboarding';
 
-// ✅ NEW: Auth pages (you need to add these files later)
+// Auth pages
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import AuthCallback from './pages/AuthCallback';
+import ResetPassword from './pages/ResetPassword';   // ✅ Added
 
 // ============================================================
 // Fallback Component for Error Boundary
@@ -134,8 +135,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      {/* TODO: Add ResetPassword component if needed */}
-      {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
+      <Route path="/reset-password" element={<ResetPassword />} />  {/* ✅ Uncommented */}
 
       {/* ============================================================
           MAIN APP LAYOUT (header + footer)
