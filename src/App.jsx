@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useEffect, lazy, Suspense } from 'react';
+import { useEffect } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
@@ -20,21 +20,15 @@ import { Button } from '@/components/ui/button';
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   APP_ENV: import.meta.env.VITE_APP_ENV || 'development',
-  
-  // Feature flags
-  ENABLE_LAZY_LOADING: import.meta.env.VITE_ENABLE_LAZY_LOADING !== 'false',
   ENABLE_ERROR_BOUNDARY: import.meta.env.VITE_ENABLE_ERROR_BOUNDARY !== 'false',
-  
-  // Messages
   MESSAGES: {
-    LOADING: import.meta.env.VITE_APP_LOADING_MSG || 'Loading...',
     ERROR_TITLE: import.meta.env.VITE_APP_ERROR_TITLE || 'Something went wrong',
     ERROR_DESC: import.meta.env.VITE_APP_ERROR_DESC || 'Please try refreshing the page.',
   },
 };
 
 // ============================================================
-// Import all page components directly (for simplicity)
+// Import all page components
 // ============================================================
 
 import Home from './pages/Home';
@@ -62,6 +56,12 @@ import StudentOpportunities from './pages/StudentOpportunities';
 import CAPSAdmin from './pages/CAPSAdmin';
 import PayoutLog from './pages/PayoutLog';
 import Onboarding from './pages/Onboarding';
+
+// ✅ NEW: Auth pages (you need to add these files later)
+import Login from './pages/Login';
+import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
+import AuthCallback from './pages/AuthCallback';
 
 // ============================================================
 // Fallback Component for Error Boundary
@@ -94,7 +94,7 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 }
 
 // ============================================================
-// Page Component (supports lazy loading if enabled)
+// Page Component
 // ============================================================
 
 function Page({ component: Component, ...props }) {
@@ -108,7 +108,6 @@ function Page({ component: Component, ...props }) {
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
 
-  // Handle auth loading
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -117,7 +116,6 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle auth errors
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
@@ -129,11 +127,21 @@ const AuthenticatedApp = () => {
 
   const content = (
     <Routes>
+      {/* ============================================================
+          AUTH ROUTES - Full page (no header/footer)
+          ============================================================ */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
+      {/* TODO: Add ResetPassword component if needed */}
+      {/* <Route path="/reset-password" element={<ResetPassword />} /> */}
+
+      {/* ============================================================
+          MAIN APP LAYOUT (header + footer)
+          ============================================================ */}
       <Route element={<AppLayout />}>
-        
-        {/* ============================================================
-            PUBLIC ROUTES - No authentication required
-            ============================================================ */}
+        {/* Public */}
         <Route path="/" element={<Page component={Home} />} />
         <Route path="/subjects" element={<Page component={Subjects} />} />
         <Route path="/subjects/:code" element={<Page component={SubjectDetail} />} />
@@ -142,10 +150,8 @@ const AuthenticatedApp = () => {
         <Route path="/privacy" element={<Page component={PrivacyPolicy} />} />
         <Route path="/terms" element={<Page component={TermsOfService} />} />
         <Route path="/about-tech-guard" element={<Page component={AboutTechAndGuard} />} />
-        
-        {/* ============================================================
-            AUTHENTICATED ROUTES - Any logged-in user
-            ============================================================ */}
+
+        {/* Authenticated */}
         <Route element={<ProtectedRoute />}>
           <Route path="/student-dashboard" element={<Page component={StudentDashboard} />} />
           <Route path="/parent-dashboard" element={<Page component={ParentDashboard} />} />
@@ -159,29 +165,25 @@ const AuthenticatedApp = () => {
           <Route path="/bursaries" element={<Page component={BursaryFinder} />} />
           <Route path="/opportunities" element={<Page component={StudentOpportunities} />} />
         </Route>
-        
-        {/* ============================================================
-            TUTOR-ONLY ROUTES
-            ============================================================ */}
-        <Route 
+
+        {/* Tutor-only */}
+        <Route
           element={
-            <ProtectedRoute 
-              allowedRoles={['sace_tutor', 'student_tutor', 'admin']} 
-              redirectTo="/" 
+            <ProtectedRoute
+              allowedRoles={['sace_tutor', 'student_tutor', 'admin']}
+              redirectTo="/"
             />
           }
         >
           <Route path="/tutor-dashboard" element={<Page component={TutorDashboard} />} />
         </Route>
-        
-        {/* ============================================================
-            ADMIN-ONLY ROUTES
-            ============================================================ */}
-        <Route 
+
+        {/* Admin-only */}
+        <Route
           element={
-            <ProtectedRoute 
-              allowedRoles={['admin']} 
-              redirectTo="/" 
+            <ProtectedRoute
+              allowedRoles={['admin']}
+              redirectTo="/"
             />
           }
         >
@@ -189,33 +191,26 @@ const AuthenticatedApp = () => {
           <Route path="/caps-admin" element={<Page component={CAPSAdmin} />} />
           <Route path="/payout-log" element={<Page component={PayoutLog} />} />
         </Route>
-        
-        {/* ============================================================
-            COUNSELOR-ONLY ROUTES
-            ============================================================ */}
-        <Route 
+
+        {/* Counselor-only */}
+        <Route
           element={
-            <ProtectedRoute 
-              allowedRoles={['school_counselor', 'admin']} 
-              redirectTo="/" 
+            <ProtectedRoute
+              allowedRoles={['school_counselor', 'admin']}
+              redirectTo="/"
             />
           }
         >
           <Route path="/counselor" element={<Page component={CounselorDashboard} />} />
         </Route>
-        
-        {/* ============================================================
-            ONBOARDING ROUTE - Users with role 'user'
-            ============================================================ */}
+
+        {/* Onboarding */}
         <Route element={<ProtectedRoute />}>
           <Route path="/onboarding" element={<Page component={Onboarding} />} />
         </Route>
-        
-        {/* ============================================================
-            404 - Page Not Found
-            ============================================================ */}
+
+        {/* 404 */}
         <Route path="*" element={<PageNotFound />} />
-        
       </Route>
     </Routes>
   );
@@ -224,9 +219,7 @@ const AuthenticatedApp = () => {
     return (
       <ErrorBoundary
         FallbackComponent={ErrorFallback}
-        onReset={() => {
-          window.location.href = '/';
-        }}
+        onReset={() => window.location.href = '/'}
       >
         {content}
       </ErrorBoundary>
