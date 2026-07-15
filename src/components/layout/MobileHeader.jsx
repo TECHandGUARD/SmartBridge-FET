@@ -1,12 +1,17 @@
+// src/components/layout/MobileHeader.jsx
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BookOpen, ChevronLeft } from 'lucide-react';
 
 // ============================================================
-// Configuration (Soft-coded for future flexibility)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const HOME_PATHS = ['/', '/student-dashboard', '/tutor-dashboard', '/parent-dashboard', '/admin'];
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  HOME_PATHS: (import.meta.env.VITE_HOME_PATHS || '/,/student-dashboard,/tutor-dashboard,/parent-dashboard,/admin')
+    .split(',')
+    .map(path => path.trim()),
+};
 
 // ============================================================
 // Main Component
@@ -15,7 +20,7 @@ const HOME_PATHS = ['/', '/student-dashboard', '/tutor-dashboard', '/parent-dash
 export default function MobileHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-  const isHome = HOME_PATHS.includes(location.pathname);
+  const isHome = CONFIG.HOME_PATHS.includes(location.pathname);
 
   return (
     <header
@@ -25,7 +30,7 @@ export default function MobileHeader() {
       {!isHome ? (
         <button
           onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center select-none"
+          className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center select-none hover:bg-muted/80 transition-colors"
           aria-label="Go back"
         >
           <ChevronLeft className="w-5 h-5 select-none" />
@@ -38,7 +43,7 @@ export default function MobileHeader() {
         <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
           <BookOpen className="w-4 h-4 text-primary-foreground select-none" />
         </div>
-        <span className="font-playfair font-bold text-base text-foreground">{appName}</span>
+        <span className="font-playfair font-bold text-base text-foreground">{CONFIG.APP_NAME}</span>
       </Link>
 
       {/* Spacer to keep logo centred */}
