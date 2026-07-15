@@ -1,27 +1,29 @@
+// src/components/layout/AppLayout.jsx
 import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import MobileHeader from './MobileHeader';
 import MobileBottomTabs from './MobileBottomTabs';
 import Onboarding from '@/pages/Onboarding';
-import TutorPendingScreen from '@/components/tutor/TutorPendingScreen';
+import TutorPendingScreen from '@/pages/TutorPendingScreen';
 import { toast } from 'sonner';
 
 // ============================================================
-// Configuration (Soft-coded for future flexibility)
+// 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const TUTOR_ROLES = ['sace_tutor', 'student_tutor', 'tutor_pending'];
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || 'aneleqamata95@gmail.com,aneleq@techandguard.co.za')
+    .split(',')
+    .map(email => email.trim())
+    .filter(Boolean),
 
-// Admin emails from environment or hardcoded fallback
-const ADMIN_EMAILS = import.meta.env.VITE_ADMIN_EMAILS 
-  ? import.meta.env.VITE_ADMIN_EMAILS.split(',').map(e => e.trim())
-  : ['aneleqamata95@gmail.com', 'aneleq@techandguard.co.za'];
-
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
+  TUTOR_ROLES: ['sace_tutor', 'student_tutor', 'tutor_pending'],
+};
 
 // ============================================================
 // Helper Functions
@@ -29,7 +31,7 @@ const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 
 function getDashboardPath(role) {
   if (role === 'admin') return '/admin';
-  if (TUTOR_ROLES.includes(role)) return '/tutor-dashboard';
+  if (CONFIG.TUTOR_ROLES.includes(role)) return '/tutor-dashboard';
   if (role === 'parent') return '/parent-dashboard';
   return '/student-dashboard';
 }
@@ -89,7 +91,7 @@ export default function AppLayout() {
       }
 
       // Check if user is in admin list
-      const isHardcodedAdmin = ADMIN_EMAILS.includes(authUser.email);
+      const isHardcodedAdmin = CONFIG.ADMIN_EMAILS.includes(authUser.email);
       const userData = {
         ...authUser,
         ...profile,
@@ -101,7 +103,7 @@ export default function AppLayout() {
       
       setUser(userData);
 
-      if (userData && TUTOR_ROLES.includes(userData.role)) {
+      if (userData && CONFIG.TUTOR_ROLES.includes(userData.role)) {
         const { data: profiles, error: tutorError } = await supabase
           .from('tutor_profiles')
           .select('*')
@@ -154,7 +156,7 @@ export default function AppLayout() {
     setUser(updatedUser);
     const role = updatedUser?.role;
 
-    if (TUTOR_ROLES.includes(role)) {
+    if (CONFIG.TUTOR_ROLES.includes(role)) {
       const { data: profiles } = await supabase
         .from('tutor_profiles')
         .select('*')
@@ -203,7 +205,7 @@ export default function AppLayout() {
   }
 
   // Admin bypass – skip onboarding and pending screens
-  const isAdmin = user.role === 'admin' || ADMIN_EMAILS.includes(user.email);
+  const isAdmin = user.role === 'admin' || CONFIG.ADMIN_EMAILS.includes(user.email);
   if (isAdmin) {
     return isMobile ? (
       <div className="min-h-screen bg-background flex flex-col">
@@ -239,7 +241,7 @@ export default function AppLayout() {
   }
 
   // Tutor pending screen (only for non-admin tutor roles)
-  const isTutorRole = TUTOR_ROLES.includes(user.role);
+  const isTutorRole = CONFIG.TUTOR_ROLES.includes(user.role);
   const isTutorPending = isTutorRole && tutorVerified === false;
   if (isTutorPending) {
     return <TutorPendingScreen user={user} onRefresh={fetchUser} />;
