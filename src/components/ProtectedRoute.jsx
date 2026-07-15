@@ -4,7 +4,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Loader2 } from 'lucide-react';
 import PropTypes from 'prop-types';
 import { useEffect, useMemo, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 
 // ============================================================
 // Configuration (Soft-coded for admin control)
