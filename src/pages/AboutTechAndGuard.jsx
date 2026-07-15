@@ -22,8 +22,8 @@ export default function AboutTechAndGuard() {
   // Configuration (Soft-coded for admin control)
   // ============================================================
   
-  const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Tech & GUARD Pty Ltd';
-  const REGISTRATION_NUMBER = import.meta.env.VITE_CIPC_REGISTRATION || '2026/155090/09';
+  const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Tech and GUARD Pty Ltd';
+  const REGISTRATION_NUMBER = import.meta.env.VITE_CIPC_REGISTRATION || '2026/15509/07';
   const REGISTRATION_DATE = import.meta.env.VITE_REGISTRATION_DATE || '21 February 2026';
   const SUPPORT_EMAIL = import.meta.env.VITE_SUPPORT_EMAIL || 'aneleq@techandguard.co.za';
   const CORPORATE_WEBSITE = import.meta.env.VITE_CORPORATE_WEBSITE || 'https://www.techandguard.co.za';
