@@ -1,3 +1,4 @@
+// src/pages/Register.jsx
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
@@ -6,6 +7,30 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { GraduationCap, Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
+
+// ============================================================
+// 🔧 SOFT-CODED CONFIGURATION (Admin control via environment)
+// ============================================================
+
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  LOGIN_ROUTE: import.meta.env.VITE_LOGIN_ROUTE || '/login',
+  TERMS_ROUTE: import.meta.env.VITE_TERMS_ROUTE || '/terms',
+  PRIVACY_ROUTE: import.meta.env.VITE_PRIVACY_ROUTE || '/privacy',
+
+  // Default role assigned to new users
+  DEFAULT_ROLE: import.meta.env.VITE_DEFAULT_REGISTER_ROLE || 'user',
+
+  // Password constraints
+  MIN_PASSWORD_LENGTH: Number(import.meta.env.VITE_MIN_PASSWORD_LENGTH) || 6,
+
+  // Feature flags
+  REQUIRE_TERMS_ACCEPTANCE: import.meta.env.VITE_REQUIRE_TERMS_ACCEPTANCE !== 'false',
+};
+
+// ============================================================
+// Register Component
+// ============================================================
 
 export default function Register() {
   const { signUp, user, isLoadingAuth } = useAuth();
@@ -19,59 +44,63 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  // If already logged in, redirect to home
+  // If already logged in, redirect to home (or dashboard)
   useEffect(() => {
     if (user && !isLoadingAuth) {
-      navigate('/', { replace: true });
+      // Redirect to appropriate dashboard based on role
+      const redirectTo = user.role === 'admin' ? CONFIG.ADMIN_ROUTE || '/admin' : '/';
+      navigate(redirectTo, { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validation
-    if (!fullName.trim()) {
+    const trimmedFullName = fullName.trim();
+    const trimmedEmail = email.trim();
+
+    if (!trimmedFullName) {
       toast.error('Please enter your full name');
       return;
     }
-    
-    if (!email.trim()) {
+
+    if (!trimmedEmail) {
       toast.error('Please enter your email address');
       return;
     }
-    
-    // Simple email validation
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(trimmedEmail)) {
       toast.error('Please enter a valid email address');
       return;
     }
-    
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters');
+
+    if (password.length < CONFIG.MIN_PASSWORD_LENGTH) {
+      toast.error(`Password must be at least ${CONFIG.MIN_PASSWORD_LENGTH} characters`);
       return;
     }
-    
+
     if (password !== confirmPassword) {
       toast.error('Passwords do not match');
       return;
     }
-    
-    if (!acceptedTerms) {
+
+    if (CONFIG.REQUIRE_TERMS_ACCEPTANCE && !acceptedTerms) {
       toast.error('Please accept the Terms of Service and Privacy Policy');
       return;
     }
 
     setLoading(true);
     try {
-      const result = await signUp(email, password, { 
-        full_name: fullName.trim(),
-        role: 'user'
+      const result = await signUp(trimmedEmail, password, {
+        full_name: trimmedFullName,
+        role: CONFIG.DEFAULT_ROLE,
       });
-      
+
       if (result.success) {
         toast.success('Account created! Please check your email to verify.');
-        navigate('/login');
+        navigate(CONFIG.LOGIN_ROUTE);
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -90,7 +119,9 @@ export default function Register() {
               <GraduationCap className="w-8 h-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="font-playfair text-3xl font-bold">Create Account</CardTitle>
+          <CardTitle className="font-playfair text-3xl font-bold">
+            {CONFIG.APP_NAME} – Create Account
+          </CardTitle>
           <p className="text-sm text-muted-foreground">
             Start your learning journey today
           </p>
@@ -128,18 +159,18 @@ export default function Register() {
                 />
               </div>
             </div>
-            
+
             {/* Password */}
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Password (min 6 characters)"
+                  placeholder={`Password (min ${CONFIG.MIN_PASSWORD_LENGTH} characters)`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={CONFIG.MIN_PASSWORD_LENGTH}
                   className="pl-10 pr-10 h-12"
                   disabled={loading}
                 />
@@ -188,18 +219,18 @@ export default function Register() {
               />
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
                 I agree to the{' '}
-                <Link to="/terms" className="text-primary hover:underline">
+                <Link to={CONFIG.TERMS_ROUTE} className="text-primary hover:underline">
                   Terms of Service
                 </Link>
                 {' '}and{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
+                <Link to={CONFIG.PRIVACY_ROUTE} className="text-primary hover:underline">
                   Privacy Policy
                 </Link>
               </label>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full h-12 gap-2 bg-primary hover:bg-primary/90 text-base font-semibold"
               disabled={loading}
             >
@@ -216,7 +247,7 @@ export default function Register() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to="/login" className="text-primary font-semibold hover:underline">
+            <Link to={CONFIG.LOGIN_ROUTE} className="text-primary font-semibold hover:underline">
               Sign in
             </Link>
           </p>
