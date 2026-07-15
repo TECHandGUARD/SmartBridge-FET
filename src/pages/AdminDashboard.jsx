@@ -37,10 +37,9 @@ import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 // Configuration (Soft-coded for admin control)
 // ============================================================
 
-const SUPER_ADMIN_EMAILS = [
-  import.meta.env.VITE_ADMIN_EMAIL_1 || 'aneleqamata95@gmail.com',
-  import.meta.env.VITE_ADMIN_EMAIL_2 || 'aneleq@techandguard.co.za'
-];
+const SUPER_ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'aneleqamata95@gmail.com,aneleq@techandguard.co.za')
+  .split(',')
+  .map(email => email.trim());
 
 // ============================================================
 // Main Component
