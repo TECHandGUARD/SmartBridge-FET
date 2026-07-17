@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard.jsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,7 @@ import {
   Users, FileText, DollarSign, Activity, Shield, TrendingUp,
   BookOpen, Mail, Send, Loader2, RefreshCw, Star, Megaphone, Database, Cpu,
   BarChart2, Trophy, UserCheck, GraduationCap, ToggleLeft, ShieldCheck,
-  Settings, CheckCircle, XCircle, ExternalLink, Clock, AlertTriangle
+  Settings, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,17 +33,10 @@ import AnnouncementManager from '@/components/admin/AnnouncementManager';
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager';
 import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
+// Configuration
 const SUPER_ADMIN_EMAILS = (import.meta.env.VITE_ADMIN_EMAILS || 'aneleqamata95@gmail.com,aneleq@techandguard.co.za')
   .split(',')
   .map(email => email.trim());
-
-// ============================================================
-// Main Component
-// ============================================================
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -64,127 +57,146 @@ export default function AdminDashboard() {
   const [testEmailSending, setTestEmailSending] = useState(false);
   const [emailLogs, setEmailLogs] = useState([]);
 
+  // ---------- Architectural Guard Rails ----------
+  const isFetchingRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
   // ---------- Load Dashboard Data ----------
-  const loadDashboardData = useCallback(async () => {
+  const loadDashboardData = useCallback(async (isManualRefresh = false) => {
     if (!user?.email) return;
-    setRefreshing(true);
     
+    // Prevent duplicate concurrent executions (Infinite Loop Guard)
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+    
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
+
+    // Cancel any ongoing network requests before spinning up new ones
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
-      // ✅ FIXED: users table (not user_profiles)
+      // 1. Fetch Users
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
-      
       if (usersError) throw usersError;
-      setUsers(usersData || []);
 
-      // Fetch tutors from tutor_profiles
+      // 2. Fetch Tutors
       const { data: tutorsData, error: tutorsError } = await supabase
         .from('tutor_profiles')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
-      
       if (tutorsError) throw tutorsError;
-      setTutors(tutorsData || []);
 
-      // Fetch resources
+      // 3. Fetch Resources
       const { data: resourcesData, error: resourcesError } = await supabase
         .from('resources')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
-      
       if (resourcesError) throw resourcesError;
-      setResources(resourcesData || []);
 
-      // Fetch subscriptions
+      // 4. Fetch Active Subscriptions
       const { data: subsData, error: subsError } = await supabase
         .from('subscriptions')
         .select('*')
         .eq('status', 'active')
         .limit(200);
-      
       if (subsError) throw subsError;
-      setSubscriptions(subsData || []);
 
-      // Fetch bookings
+      // 5. Fetch Bookings
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('tutor_bookings')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(200);
-      
       if (bookingsError) throw bookingsError;
-      setBookings(bookingsData || []);
 
-      // ✅ FIXED: activity_log (not activity_logs)
+      // 6. Fetch Logs
       const { data: logsData, error: logsError } = await supabase
         .from('activity_log')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
-      
       if (logsError) throw logsError;
-      setLogs(logsData || []);
 
-      // ✅ FIXED: banner_clicks with click_timestamp
+      // 7. Fetch Banner Clicks
       const { data: bannerData, error: bannerError } = await supabase
         .from('banner_clicks')
         .select('*')
         .order('click_timestamp', { ascending: false })
         .limit(1000);
-      
       if (bannerError) throw bannerError;
+
+      // Batch state updates together
+      setUsers(usersData || []);
+      setTutors(tutorsData || []);
+      setResources(resourcesData || []);
+      setSubscriptions(subsData || []);
+      setBookings(bookingsData || []);
+      setLogs(logsData || []);
       setBannerClicks(bannerData || []);
 
     } catch (err) {
-      console.error('Error loading admin data:', err);
-      toast.error('Failed to load admin data: ' + err.message);
+      if (err.name !== 'AbortError') {
+        console.error('Error loading admin data:', err);
+        toast.error('Failed to update dashboard: ' + err.message);
+      }
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
       setRefreshing(false);
     }
   }, [user?.email]);
 
-  // ---------- Real-time Subscriptions ----------
+  // ---------- Real-time Subscriptions (Decoupled Sync Layer) ----------
   useEffect(() => {
-    loadDashboardData();
+    if (!user?.email) return;
 
-    // Subscribe to real-time changes
+    // Initial load on mount
+    loadDashboardData(false);
+
+    // Controlled Realtime handler to avoid running hot under heavy mutations
+    const handleRealtimeUpdate = () => {
+      loadDashboardData(false);
+    };
+
     const channels = [
       supabase
         .channel('admin-resources')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'resources' },
-          () => loadDashboardData()
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, handleRealtimeUpdate)
         .subscribe(),
       
       supabase
         .channel('admin-bookings')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'tutor_bookings' },
-          () => loadDashboardData()
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_bookings' }, handleRealtimeUpdate)
         .subscribe(),
       
-      // ✅ FIXED: users (not user_profiles)
       supabase
         .channel('admin-users')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'users' },
-          () => loadDashboardData()
-        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, handleRealtimeUpdate)
         .subscribe()
     ];
 
+    // Safe Polling fallback (runs every 5 minutes for stale data prevention)
+    const fallbackInterval = setInterval(() => {
+      loadDashboardData(false);
+    }, 1000 * 60 * 5);
+
     return () => {
-      channels.forEach(channel => channel.unsubscribe());
+      clearInterval(fallbackInterval);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      channels.forEach(channel => supabase.removeChannel(channel));
     };
-  }, [loadDashboardData]);
+  }, [user?.email, loadDashboardData]);
 
   // ---------- Resource Approval/Rejection ----------
   const handleApproveResource = async (resource) => {
@@ -201,7 +213,6 @@ export default function AdminDashboard() {
 
       if (error) throw error;
 
-      // ✅ FIXED: activity_log (not activity_logs)
       await supabase
         .from('activity_log')
         .insert({
@@ -222,6 +233,9 @@ export default function AdminDashboard() {
   };
 
   const handleRejectResource = async (resource) => {
+    const reason = prompt('Please provide a reason for rejection:');
+    if (reason === null) return; // Action cancelled by admin
+
     try {
       const { error } = await supabase
         .from('resources')
@@ -230,13 +244,12 @@ export default function AdminDashboard() {
           is_rejected: true,
           rejected_at: new Date().toISOString(),
           rejected_by: user?.email,
-          rejection_reason: prompt('Please provide a reason for rejection:') || 'Not specified'
+          rejection_reason: reason || 'Not specified'
         })
         .eq('id', resource.id);
 
       if (error) throw error;
 
-      // ✅ FIXED: activity_log (not activity_logs)
       await supabase
         .from('activity_log')
         .insert({
@@ -358,7 +371,7 @@ export default function AdminDashboard() {
     toast.success(`Exported ${confirmed.length} bookings`);
   };
 
-  // ---------- Calculations ----------
+  // ---------- Metrics Calculations ----------
   const premiumRevenue = subscriptions
     .filter(s => s.plan === 'premium' || s.plan_type === 'premium')
     .reduce((sum, s) => sum + (s.amount_paid || 20), 0);
@@ -375,7 +388,7 @@ export default function AdminDashboard() {
     bookingCount: bookings.filter(b => b.tutor_email === t.user_email).length,
   })).sort((a, b) => (b.uploads + b.bookingCount) - (a.uploads + a.bookingCount));
 
-  // ---------- Loading & Access Control ----------
+  // ---------- Access Control Check ----------
   const isSuperAdmin = SUPER_ADMIN_EMAILS.includes(user?.email) || user?.is_super_admin === true;
   
   if (loading) {
@@ -399,7 +412,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // ---------- Render ----------
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -416,7 +428,7 @@ export default function AdminDashboard() {
             size="sm" 
             variant="outline" 
             className="ml-auto gap-1.5"
-            onClick={loadDashboardData}
+            onClick={() => loadDashboardData(true)}
             disabled={refreshing}
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> 
@@ -445,7 +457,7 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Tabs */}
+        {/* Tabs Grid Navigation */}
         <Tabs defaultValue="registrations">
           <TabsList className="mb-6 flex-wrap h-auto gap-1">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
@@ -472,7 +484,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="system" className="gap-1.5"><Settings className="w-3.5 h-3.5" /> System Test</TabsTrigger>
           </TabsList>
 
-          {/* ---- Tabs Content ---- */}
+          {/* Tab Subcomponents */}
           <TabsContent value="registrations">
             <UserRegistrationsPanel />
           </TabsContent>
@@ -751,7 +763,6 @@ export default function AdminDashboard() {
             </Card>
           </TabsContent>
 
-          {/* Remaining tabs */}
           <TabsContent value="ratings">
             <ResourceRatingsPanel />
           </TabsContent>
