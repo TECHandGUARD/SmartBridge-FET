@@ -1,5 +1,5 @@
 // src/pages/CounselorDashboard.jsx
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -308,6 +308,9 @@ export default function CounselorDashboard() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [remindingEmail, setRemindingEmail] = useState(null);
 
+  // Guard against concurrent and overlapping in-flight fetch loops
+  const fetchTrackerRef = useRef({ inFlight: false, lastFetchTime: 0 });
+
   // ============================================================
   // Data Loading
   // ============================================================
@@ -318,6 +321,20 @@ export default function CounselorDashboard() {
       return;
     }
     
+    // Prevent overlapping API requests
+    if (fetchTrackerRef.current.inFlight) {
+      return;
+    }
+
+    // Rate-limit automated silent refreshes to 1 per 2 seconds max
+    const now = Date.now();
+    if (silent && (now - fetchTrackerRef.current.lastFetchTime < 2000)) {
+      return;
+    }
+
+    fetchTrackerRef.current.inFlight = true;
+    fetchTrackerRef.current.lastFetchTime = now;
+    
     if (!silent) {
       setLoading(true);
     } else {
@@ -326,7 +343,6 @@ export default function CounselorDashboard() {
     setError(null);
     
     try {
-      // ✅ FIXED: users table (not user_profiles)
       const [studentsRes, appsRes, docsRes] = await Promise.all([
         supabase.from('users').select('*').eq('role', 'student'),
         supabase.from('university_applications').select('*'),
@@ -353,6 +369,7 @@ export default function CounselorDashboard() {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      fetchTrackerRef.current.inFlight = false;
     }
   }, [user?.email]);
 
@@ -361,30 +378,43 @@ export default function CounselorDashboard() {
   // ============================================================
 
   useEffect(() => {
-    loadDashboardData();
+    let active = true;
+
+    // Load initial data safely
+    if (active) {
+      loadDashboardData(false);
+    }
 
     if (!CONFIG.ENABLE_REALTIME) return;
 
-    const channels = [
-      supabase
-        .channel('counselor-applications')
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'university_applications' },
-          () => loadDashboardData(true)
-        )
-        .subscribe(),
+    // Use unique channels per mount session to avoid conflicts
+    const channelIdSuffix = Math.random().toString(36).substring(2, 8);
+
+    const appChannel = supabase
+      .channel(`counselor-apps-${channelIdSuffix}`)
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'university_applications' },
+        () => {
+          if (active) loadDashboardData(true);
+        }
+      )
+      .subscribe();
       
-      supabase
-        .channel('counselor-documents')
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'application_documents' },
-          () => loadDashboardData(true)
-        )
-        .subscribe()
-    ];
+    const docChannel = supabase
+      .channel(`counselor-docs-${channelIdSuffix}`)
+      .on('postgres_changes',
+        { event: '*', schema: 'public', table: 'application_documents' },
+        () => {
+          if (active) loadDashboardData(true);
+        }
+      )
+      .subscribe();
 
     return () => {
-      channels.forEach(channel => supabase.removeChannel(channel));
+      active = false;
+      // Clean up async channels immediately
+      supabase.removeChannel(appChannel);
+      supabase.removeChannel(docChannel);
     };
   }, [loadDashboardData]);
 
