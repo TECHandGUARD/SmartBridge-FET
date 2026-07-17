@@ -9,28 +9,31 @@ import { GraduationCap, Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-re
 import { toast } from 'sonner';
 
 // ============================================================
-// 🔧 SOFT-CODED CONFIGURATION (Admin control via environment)
+// 🔧 FULLY SOFT-CODED CONFIGURATION
 // ============================================================
-
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   LOGIN_ROUTE: import.meta.env.VITE_LOGIN_ROUTE || '/login',
   TERMS_ROUTE: import.meta.env.VITE_TERMS_ROUTE || '/terms',
   PRIVACY_ROUTE: import.meta.env.VITE_PRIVACY_ROUTE || '/privacy',
-
-  // Default role assigned to new users
+  ADMIN_ROUTE: import.meta.env.VITE_ADMIN_ROUTE || '/admin',
+  
   DEFAULT_ROLE: import.meta.env.VITE_DEFAULT_REGISTER_ROLE || 'user',
-
-  // Password constraints
   MIN_PASSWORD_LENGTH: Number(import.meta.env.VITE_MIN_PASSWORD_LENGTH) || 6,
-
-  // Feature flags
   REQUIRE_TERMS_ACCEPTANCE: import.meta.env.VITE_REQUIRE_TERMS_ACCEPTANCE !== 'false',
-};
 
-// ============================================================
-// Register Component
-// ============================================================
+  // Soft-coded alerts & validation messages
+  MESSAGES: {
+    SUBTITLE: import.meta.env.VITE_REGISTER_SUBTITLE || 'Start your learning journey today',
+    EMPTY_NAME: import.meta.env.VITE_REGISTER_EMPTY_NAME_MSG || 'Please enter your full name',
+    EMPTY_EMAIL: import.meta.env.VITE_REGISTER_EMPTY_EMAIL_MSG || 'Please enter your email address',
+    INVALID_EMAIL: import.meta.env.VITE_REGISTER_INVALID_EMAIL_MSG || 'Please enter a valid email address',
+    PASSWORD_MISMATCH: import.meta.env.VITE_REGISTER_PASSWORD_MISMATCH_MSG || 'Passwords do not match',
+    TERMS_REJECTED: import.meta.env.VITE_REGISTER_TERMS_REJECTED_MSG || 'Please accept the Terms of Service and Privacy Policy',
+    SUCCESS: import.meta.env.VITE_REGISTER_SUCCESS_MSG || 'Account created! Please check your email to verify.',
+    FAILED: import.meta.env.VITE_REGISTER_FAILED_MSG || 'Failed to create account. Please try again.',
+  }
+};
 
 export default function Register() {
   const { signUp, user, isLoadingAuth } = useAuth();
@@ -44,11 +47,9 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  // If already logged in, redirect to home (or dashboard)
   useEffect(() => {
     if (user && !isLoadingAuth) {
-      // Redirect to appropriate dashboard based on role
-      const redirectTo = user.role === 'admin' ? CONFIG.ADMIN_ROUTE || '/admin' : '/';
+      const redirectTo = user.role === 'admin' ? CONFIG.ADMIN_ROUTE : '/';
       navigate(redirectTo, { replace: true });
     }
   }, [user, isLoadingAuth, navigate]);
@@ -56,23 +57,22 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
     const trimmedFullName = fullName.trim();
     const trimmedEmail = email.trim();
 
     if (!trimmedFullName) {
-      toast.error('Please enter your full name');
+      toast.error(CONFIG.MESSAGES.EMPTY_NAME);
       return;
     }
 
     if (!trimmedEmail) {
-      toast.error('Please enter your email address');
+      toast.error(CONFIG.MESSAGES.EMPTY_EMAIL);
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(trimmedEmail)) {
-      toast.error('Please enter a valid email address');
+      toast.error(CONFIG.MESSAGES.INVALID_EMAIL);
       return;
     }
 
@@ -82,12 +82,12 @@ export default function Register() {
     }
 
     if (password !== confirmPassword) {
-      toast.error('Passwords do not match');
+      toast.error(CONFIG.MESSAGES.PASSWORD_MISMATCH);
       return;
     }
 
     if (CONFIG.REQUIRE_TERMS_ACCEPTANCE && !acceptedTerms) {
-      toast.error('Please accept the Terms of Service and Privacy Policy');
+      toast.error(CONFIG.MESSAGES.TERMS_REJECTED);
       return;
     }
 
@@ -98,13 +98,13 @@ export default function Register() {
         role: CONFIG.DEFAULT_ROLE,
       });
 
-      if (result.success) {
-        toast.success('Account created! Please check your email to verify.');
+      if (result?.success) {
+        toast.success(CONFIG.MESSAGES.SUCCESS);
         navigate(CONFIG.LOGIN_ROUTE);
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Failed to create account. Please try again.');
+      toast.error(error.message || CONFIG.MESSAGES.FAILED);
     } finally {
       setLoading(false);
     }
@@ -119,48 +119,25 @@ export default function Register() {
               <GraduationCap className="w-8 h-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="font-playfair text-3xl font-bold">
-            {CONFIG.APP_NAME} – Create Account
-          </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Start your learning journey today
-          </p>
+          <CardTitle className="font-playfair text-3xl font-bold">{CONFIG.APP_NAME} – Create Account</CardTitle>
+          <p className="text-sm text-muted-foreground">{CONFIG.MESSAGES.SUBTITLE}</p>
         </CardHeader>
         <CardContent className="space-y-6 pb-8">
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Full Name */}
             <div className="space-y-2">
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Full Name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  required
-                  className="pl-10 h-12"
-                  disabled={loading}
-                />
+                <Input type="text" placeholder="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} required className="pl-10 h-12" disabled={loading} />
               </div>
             </div>
 
-            {/* Email */}
             <div className="space-y-2">
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="pl-10 h-12"
-                  disabled={loading}
-                />
+                <Input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} required className="pl-10 h-12" disabled={loading} />
               </div>
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -170,21 +147,15 @@ export default function Register() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={CONFIG.MIN_PASSWORD_LENGTH}
                   className="pl-10 pr-10 h-12"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setShowPassword(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Confirm Password */}
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -197,43 +168,20 @@ export default function Register() {
                   className="pl-10 pr-10 h-12"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <button type="button" onClick={() => setShowConfirmPassword(p => !p)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                   {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
-            {/* Terms Checkbox */}
             <div className="flex items-start gap-2 pt-2">
-              <input
-                type="checkbox"
-                id="terms"
-                checked={acceptedTerms}
-                onChange={(e) => setAcceptedTerms(e.target.checked)}
-                className="mt-1 rounded border-border w-4 h-4 accent-primary"
-                disabled={loading}
-              />
+              <input type="checkbox" id="terms" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} className="mt-1 rounded border-border w-4 h-4 accent-primary" disabled={loading} />
               <label htmlFor="terms" className="text-xs text-muted-foreground leading-relaxed">
-                I agree to the{' '}
-                <Link to={CONFIG.TERMS_ROUTE} className="text-primary hover:underline">
-                  Terms of Service
-                </Link>
-                {' '}and{' '}
-                <Link to={CONFIG.PRIVACY_ROUTE} className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
+                I agree to the <Link to={CONFIG.TERMS_ROUTE} className="text-primary hover:underline">Terms of Service</Link> and <Link to={CONFIG.PRIVACY_ROUTE} className="text-primary hover:underline">Privacy Policy</Link>
               </label>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 gap-2 bg-primary hover:bg-primary/90 text-base font-semibold"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full h-12 gap-2 text-base font-semibold" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -247,9 +195,7 @@ export default function Register() {
 
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
-            <Link to={CONFIG.LOGIN_ROUTE} className="text-primary font-semibold hover:underline">
-              Sign in
-            </Link>
+            <Link to={CONFIG.LOGIN_ROUTE} className="text-primary font-semibold hover:underline">Sign in</Link>
           </p>
         </CardContent>
       </Card>
