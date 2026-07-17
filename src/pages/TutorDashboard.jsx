@@ -1,5 +1,5 @@
 // src/pages/TutorDashboard.jsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
@@ -10,7 +10,7 @@ import {
   BookOpen, CheckCircle, FileText, Star, Trash2, Upload, ShieldCheck, Loader2,
   Users, TrendingUp, DollarSign, Calendar, Clock, MessageCircle,
   Award, Sparkles, Zap, Crown, Bell, Settings, HelpCircle,
-  BarChart3, Briefcase, GraduationCap, Target, Rocket, Gift
+  BarChart3, Briefcase, GraduationCap, Target, Rocket, Gift, AlertTriangle
 } from 'lucide-react';
 import usePremiumAccess from '@/hooks/usePremiumAccess';
 import DashboardPremiumGate from '@/components/ui/DashboardPremiumGate';
@@ -39,30 +39,16 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
-
 const CONFIG = {
-  // App name
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-
-  // Premium pricing
   TUTOR_PRO_PRICE: Number(import.meta.env.VITE_TUTOR_PRO_PRICE) || 150,
   PREMIUM_CURRENCY: import.meta.env.VITE_PREMIUM_CURRENCY || 'R',
-
-  // Commission
   COMMISSION_PERCENTAGE: Number(import.meta.env.VITE_TUTOR_COMMISSION_PERCENTAGE) || 10,
   COMMISSION_FLAT_FEE: Number(import.meta.env.VITE_TUTOR_COMMISSION_FLAT_FEE) || 20,
-
-  // Yoco link
   YOCO_TUTOR_PRO_LINK: import.meta.env.VITE_YOCO_TUTOR_PRO_LINK || 'https://pay.yoco.com/r/78MMPk',
-
-  // Payout
   PAYOUT_DAY: import.meta.env.VITE_PAYOUT_DAY || 'Thursday',
-
-  // Feature flags
   ENABLE_REAL_TIME: import.meta.env.VITE_ENABLE_TUTOR_REAL_TIME !== 'false',
   ENABLE_ANNOUNCEMENTS: import.meta.env.VITE_ENABLE_TUTOR_ANNOUNCEMENTS !== 'false',
-
-  // Messages
   MESSAGES: {
     WELCOME: import.meta.env.VITE_TUTOR_WELCOME_MSG || 'Your professional tutoring workspace — everything in one place.',
     NO_RESOURCES: import.meta.env.VITE_TUTOR_NO_RESOURCES_MSG || 'No resources uploaded yet. Start sharing your knowledge!',
@@ -80,7 +66,6 @@ const CONFIG = {
 // ============================================================
 // Sub-Components
 // ============================================================
-
 function StatCard({ label, value, icon: Icon, color, subtitle }) {
   return (
     <Card className="border-border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
@@ -158,7 +143,7 @@ function ResourcesList({ resources, onDelete }) {
   );
 }
 
-function UpgradeCard({ price, currency, commission, link, payoutDay }) {
+function UpgradeCard({ price, currency, commission, link }) {
   const formattedPrice = `${currency}${price}`;
 
   return (
@@ -173,7 +158,7 @@ function UpgradeCard({ price, currency, commission, link, payoutDay }) {
             {CONFIG.MESSAGES.UPGRADE_TITLE.replace('{price}', formattedPrice)}
           </p>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {CONFIG.MESSAGES.UPGRADE_DESC.replace('{commission}', CONFIG.COMMISSION_PERCENTAGE)}
+            {CONFIG.MESSAGES.UPGRADE_DESC.replace('{commission}', commission)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
             {CONFIG.MESSAGES.UPGRADE_NOTE}
@@ -192,10 +177,10 @@ function UpgradeCard({ price, currency, commission, link, payoutDay }) {
 // ============================================================
 // Main Component
 // ============================================================
-
 export default function TutorDashboard() {
   const { user } = useOutletContext() || {};
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
+  
   const [profile, setProfile] = useState(null);
   const [resources, setResources] = useState([]);
   const [activeSection, setActiveSection] = useState(null);
@@ -203,21 +188,22 @@ export default function TutorDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // 🛡️ Lock reference tracking execution windows to defeat infinite loops
+  const isInitialMountRef = useRef(false);
+
   // ============================================================
   // Load Data
   // ============================================================
+  const loadData = useCallback(async (targetEmail) => {
+    if (!targetEmail || isInitialMountRef.current) return;
 
-  const loadData = useCallback(async () => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
+    isInitialMountRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      // Load announcements
+      // 1. Load announcements
+      let fetchedAnnouncements = [];
       if (CONFIG.ENABLE_ANNOUNCEMENTS) {
         const { data: announcementData, error: announcementError } = await supabase
           .from('platform_announcements')
@@ -226,34 +212,36 @@ export default function TutorDashboard() {
           .order('created_at', { ascending: false })
           .limit(10);
 
-        if (!announcementError) {
-          const filtered = (announcementData || []).filter(a => {
+        if (!announcementError && announcementData) {
+          fetchedAnnouncements = announcementData.filter(a => {
             const aud = a.audience || [];
             return aud.includes('all') || aud.includes('tutor');
           });
-          setAnnouncements(filtered);
         }
       }
 
-      // Load tutor profile
-      const { data: profileData, error: profileError } = await supabase
+      // 2. Load tutor profile
+      const profileQuery = supabase
         .from('tutor_profiles')
         .select('*')
-        .eq('user_email', user.email)
+        .eq('user_email', targetEmail)
         .maybeSingle();
 
-      if (profileError) throw profileError;
-      setProfile(profileData);
-
-      // Load resources
-      const { data: resourceData, error: resourceError } = await supabase
+      // 3. Load resources
+      const resourcesQuery = supabase
         .from('resources')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_email', targetEmail)
         .order('created_at', { ascending: false });
 
-      if (resourceError) throw resourceError;
-      setResources(resourceData || []);
+      const [profileRes, resourcesRes] = await Promise.all([profileQuery, resourcesQuery]);
+
+      if (profileRes.error) throw profileRes.error;
+      if (resourcesRes.error) throw resourcesRes.error;
+
+      setAnnouncements(fetchedAnnouncements);
+      setProfile(profileRes.data);
+      setResources(resourcesRes.data || []);
 
     } catch (err) {
       console.error('Error loading tutor dashboard:', err);
@@ -261,50 +249,51 @@ export default function TutorDashboard() {
       toast.error(CONFIG.MESSAGES.LOAD_FAILED);
     } finally {
       setLoading(false);
+      isInitialMountRef.current = false; // Release execution lock
     }
-  }, [user?.email]);
+  }, []);
 
   // ============================================================
-  // Real-time Subscriptions
+  // Effects & Real-time Subscriptions
   // ============================================================
-
   useEffect(() => {
-    loadData();
+    if (user?.email) {
+      loadData(user.email);
 
-    if (!CONFIG.ENABLE_REAL_TIME || !user?.email) return;
+      if (!CONFIG.ENABLE_REAL_TIME) return;
 
-    const channel = supabase
-      .channel('tutor_resources')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'resources',
-          filter: `tutor_email=eq.${user.email}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setResources(prev => [payload.new, ...prev]);
-            toast.info('📄 New resource uploaded successfully!');
-          } else if (payload.eventType === 'UPDATE') {
-            setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
-          } else if (payload.eventType === 'DELETE') {
-            setResources(prev => prev.filter(r => r.id !== payload.old.id));
+      const channel = supabase
+        .channel(`tutor_resources_${user.email}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'resources',
+            filter: `tutor_email=eq.${user.email}`,
+          },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              setResources(prev => [payload.new, ...prev]);
+              toast.info('📄 New resource uploaded successfully!');
+            } else if (payload.eventType === 'UPDATE') {
+              setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+            } else if (payload.eventType === 'DELETE') {
+              setResources(prev => prev.filter(r => r.id !== payload.old.id));
+            }
           }
-        }
-      )
-      .subscribe();
+        )
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
   }, [user?.email, loadData]);
 
   // ============================================================
   // Handlers
   // ============================================================
-
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
 
@@ -324,15 +313,14 @@ export default function TutorDashboard() {
     }
   };
 
-  const toggleSection = (key) => {
+  const toggleSection = useCallback((key) => {
     setActiveSection(prev => prev === key ? null : key);
-  };
+  }, []);
 
   // ============================================================
-  // Access Control
+  // Access Control & Layout States
   // ============================================================
-
-  const authorizedRoles = ['tutor', 'sace_tutor', 'student_tutor', 'admin'];
+  const authorizedRoles = useMemo(() => ['tutor', 'sace_tutor', 'student_tutor', 'admin'], []);
 
   if (!user) {
     return (
@@ -377,11 +365,7 @@ export default function TutorDashboard() {
     );
   }
 
-  // ============================================================
-  // Loading State
-  // ============================================================
-
-  if (loading) {
+  if (loading && resources.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -390,10 +374,6 @@ export default function TutorDashboard() {
     );
   }
 
-  // ============================================================
-  // Error State
-  // ============================================================
-
   if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
@@ -401,7 +381,7 @@ export default function TutorDashboard() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
             <p className="text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={loadData} variant="outline">Retry</Button>
+            <Button onClick={() => loadData(user.email)} variant="outline">Retry</Button>
           </CardContent>
         </Card>
       </div>
@@ -411,17 +391,12 @@ export default function TutorDashboard() {
   // ============================================================
   // Computed Values
   // ============================================================
-
   const totalDownloads = resources.reduce((sum, r) => sum + (Number(r.download_count) || 0), 0);
   const premiumResources = resources.filter(r => r.is_premium).length;
   const freeResources = resources.filter(r => !r.is_premium).length;
   const isVerified = profile?.is_verified || false;
   const hasSace = profile?.sace_number || false;
   const formattedPrice = `${CONFIG.PREMIUM_CURRENCY}${CONFIG.TUTOR_PRO_PRICE}`;
-
-  // ============================================================
-  // Render
-  // ============================================================
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -439,7 +414,6 @@ export default function TutorDashboard() {
             <p className="text-muted-foreground mt-1">{CONFIG.MESSAGES.WELCOME}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            {/* Verification Badge */}
             {isVerified && (
               hasSace ? (
                 <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 gap-1.5">
@@ -477,11 +451,10 @@ export default function TutorDashboard() {
           <TutorQuickActions onAction={toggleSection} activeSection={activeSection} />
         </div>
 
-        {/* ===== SECTIONS ===== */}
-
+        {/* ===== SECTIONS CONTENT ===== */}
         {activeSection === 'upload' && (
           <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-            <ResourceTemplateUploader user={user} onUploaded={loadData} />
+            <ResourceTemplateUploader user={user} onUploaded={() => loadData(user.email)} />
             <ResourcesList resources={resources} onDelete={handleDelete} />
           </div>
         )}
@@ -550,50 +523,17 @@ export default function TutorDashboard() {
         {/* ===== DEFAULT OVERVIEW ===== */}
         {!activeSection && (
           <div className="space-y-6">
-            {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard
-                label="Total Uploads"
-                value={resources.length}
-                icon={Upload}
-                color="bg-primary/10 text-primary"
-                subtitle={resources.length > 0 ? 'Resources shared' : 'Start uploading'}
-              />
-              <StatCard
-                label="Premium Resources"
-                value={premiumResources}
-                icon={Star}
-                color="bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                subtitle={`${premiumResources} of ${resources.length}`}
-              />
-              <StatCard
-                label="Free Resources"
-                value={freeResources}
-                icon={BookOpen}
-                color="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
-                subtitle={`${freeResources} available`}
-              />
-              <StatCard
-                label="Total Downloads"
-                value={totalDownloads}
-                icon={TrendingUp}
-                color="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400"
-                subtitle={`${totalDownloads} total`}
-              />
+              <StatCard label="Total Uploads" value={resources.length} icon={Upload} color="bg-primary/10 text-primary" subtitle={resources.length > 0 ? 'Resources shared' : 'Start uploading'} />
+              <StatCard label="Premium Resources" value={premiumResources} icon={Star} color="bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400" subtitle={`${premiumResources} of ${resources.length}`} />
+              <StatCard label="Free Resources" value={freeResources} icon={BookOpen} color="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400" subtitle={`${freeResources} available`} />
+              <StatCard label="Total Downloads" value={totalDownloads} icon={TrendingUp} color="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400" subtitle={`${totalDownloads} total`} />
             </div>
 
-            {/* Upcoming Sessions */}
             <UpcomingSessionsWidget user={user} />
 
-            {/* Upgrade Card */}
             {profile && !profile.is_premium && (
-              <UpgradeCard
-                price={CONFIG.TUTOR_PRO_PRICE}
-                currency={CONFIG.PREMIUM_CURRENCY}
-                commission={CONFIG.COMMISSION_PERCENTAGE}
-                link={CONFIG.YOCO_TUTOR_PRO_LINK}
-                payoutDay={CONFIG.PAYOUT_DAY}
-              />
+              <UpgradeCard price={CONFIG.TUTOR_PRO_PRICE} currency={CONFIG.PREMIUM_CURRENCY} commission={CONFIG.COMMISSION_PERCENTAGE} link={CONFIG.YOCO_TUTOR_PRO_LINK} />
             )}
           </div>
         )}
