@@ -1,589 +1,281 @@
 // src/pages/StudentDashboard.jsx
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useOutletContext } from 'react-dom';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { SUBJECTS } from '@/lib/subjects';
-import usePremiumAccess from '@/hooks/usePremiumAccess';
+import { useAuth } from '@/lib/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  GraduationCap, BookOpen, Star, TrendingUp, ArrowRight,
-  MessageCircle, Crown, Trash2, AlertTriangle, Loader2,
-  Sparkles, Clock, FileText, ChevronRight
+import { 
+  BookOpen, Calendar, Clock, Star, FileText, ChevronRight, 
+  GraduationCap, TrendingUp, Activity, Loader2, RefreshCw, AlertCircle
 } from 'lucide-react';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader,
-  AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
-import StudentQuickActions from '@/components/student/StudentQuickActions';
-import DashboardPremiumGate from '@/components/ui/DashboardPremiumGate';
-import GradeProgressTracker from '@/components/student/GradeProgressTracker';
-import StudyReminderManager from '@/components/student/StudyReminderManager';
-import ProgressCharts from '@/components/student/ProgressCharts';
-import SimulationLab from '@/components/simulations/SimulationLab';
-import ResourceBookmarks from '@/components/student/ResourceBookmarks';
-import MilestoneBadges from '@/components/student/MilestoneBadges';
-import StudyHeatmap from '@/components/student/StudyHeatmap';
-import LiveTutorChat from '@/components/tutor/LiveTutorChat';
-import AIStudyPlanner from '@/components/student/AIStudyPlanner';
-import WeeklyGoals from '@/components/student/WeeklyGoals';
-import StudyGamification from '@/components/student/StudyGamification';
-import InteractiveFlashcards from '@/components/student/InteractiveFlashcards';
-import AIStudyAssistant from '@/components/student/AIStudyAssistant';
-import StudentProgressDashboard from '@/components/student/StudentProgressDashboard';
-import SyllabusTopicTracker from '@/components/student/SyllabusTopicTracker';
-import DiscussionBoard from '@/components/discussion/DiscussionBoard';
-import ApplicationTracker from '@/components/opportunities/ApplicationTracker';
-import CounselorChat from '@/components/counselor/CounselorChat';
-import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
-// ============================================================
-// 🔧 SOFT-CODED CONFIGURATION
-// ============================================================
-const CONFIG = {
-  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-  STUDENT_PREMIUM_PRICE: Number(import.meta.env.VITE_STUDENT_PREMIUM_PRICE) || 20,
-  PREMIUM_CURRENCY: import.meta.env.VITE_PREMIUM_CURRENCY || 'R',
-  RESOURCES_DISPLAY_LIMIT: Number(import.meta.env.VITE_STUDENT_RESOURCES_LIMIT) || 6,
-  TUTORS_DISPLAY_LIMIT: Number(import.meta.env.VITE_STUDENT_TUTORS_LIMIT) || 10,
-  ENABLE_ANNOUNCEMENTS: import.meta.env.VITE_ENABLE_STUDENT_ANNOUNCEMENTS !== 'false',
-  ENABLE_QUICK_ACTIONS: import.meta.env.VITE_ENABLE_STUDENT_QUICK_ACTIONS !== 'false',
-  ENABLE_REAL_TIME: import.meta.env.VITE_ENABLE_STUDENT_REAL_TIME !== 'false',
-  MESSAGES: {
-    WELCOME: import.meta.env.VITE_STUDENT_WELCOME_MSG || 'Your learning journey continues here.',
-    NO_RESOURCES: import.meta.env.VITE_STUDENT_NO_RESOURCES_MSG || 'No resources available yet. Check back soon!',
-    NO_TUTORS: import.meta.env.VITE_STUDENT_NO_TUTORS_MSG || 'No verified tutors available yet.',
-    UPGRADE_TITLE: import.meta.env.VITE_STUDENT_UPGRADE_TITLE || 'Go Premium',
-    UPGRADE_DESC: import.meta.env.VITE_STUDENT_UPGRADE_DESC || 'Unlock all resources, AI tools, past papers & more — {price}/month.',
-    UPGRADE_BUTTON: import.meta.env.VITE_STUDENT_UPGRADE_BUTTON || 'Upgrade Now — {price}/month',
-    UPGRADE_NOTE: import.meta.env.VITE_STUDENT_UPGRADE_NOTE || 'Use your email as payment reference. Activated within 60 min.',
-    SIGN_IN_REQUIRED: import.meta.env.VITE_STUDENT_SIGN_IN_MSG || 'Please sign in to access your student dashboard.',
-    LOAD_FAILED: import.meta.env.VITE_STUDENT_LOAD_FAILED_MSG || 'Failed to load dashboard data.',
-    DELETE_CONFIRM: import.meta.env.VITE_STUDENT_DELETE_CONFIRM_MSG || 'This will permanently delete your student account and all your progress, bookmarks, and data. This action cannot be undone.',
-  },
-};
+const RESOURCES_DISPLAY_LIMIT = 6;
 
-// ============================================================
-// Sub-Components
-// ============================================================
-function StatCard({ label, value, icon: Icon, color, subtitle }) {
-  return (
-    <Card className="border-border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
-      <CardContent className="pt-5 pb-4">
-        <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-2`}>
-          <Icon className="w-4 h-4" />
-        </div>
-        <p className="font-playfair text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-        {subtitle && <p className="text-[10px] text-muted-foreground/60 mt-0.5">{subtitle}</p>}
-      </CardContent>
-    </Card>
-  );
-}
-
-function ResourceItem({ resource, isPremium }) {
-  const subject = SUBJECTS.find(s => s.name === resource.subject);
-  return (
-    <div className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted/50 transition-colors group">
-      <span className="text-base group-hover:scale-110 transition-transform">{subject?.icon || '📄'}</span>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{resource.title}</p>
-        <p className="text-xs text-muted-foreground">{resource.grade} • {resource.type}</p>
-      </div>
-      {resource.is_premium && !isPremium && <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
-      {resource.is_premium && isPremium && (
-        <Badge className="bg-amber-100 text-amber-700 text-[10px] flex-shrink-0">
-          <Sparkles className="w-2.5 h-2.5 mr-0.5" /> Premium
-        </Badge>
-      )}
-    </div>
-  );
-}
-
-function TutorItem({ tutor, onChat }) {
-  return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted transition-colors group">
-      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0 group-hover:scale-105 transition-transform">
-        {tutor.full_name?.[0]?.toUpperCase() || 'T'}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{tutor.full_name}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {tutor.subjects?.slice(0, 2).join(', ') || 'General'}
-          {tutor.subjects?.length > 2 && ` +${tutor.subjects.length - 2}`}
-        </p>
-      </div>
-      {tutor.is_verified && (
-        <Badge className="bg-green-100 text-green-700 border-green-200 text-[10px] flex-shrink-0">
-          ✅ SACE
-        </Badge>
-      )}
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-8 text-xs gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-        onClick={() => onChat({ email: tutor.user_email, name: tutor.full_name })}
-      >
-        <MessageCircle className="w-3.5 h-3.5" /> Chat
-      </Button>
-    </div>
-  );
-}
-
-function PremiumUpsell({ price, currency }) {
-  const formattedPrice = `${currency}${price}`;
-  return (
-    <div className="bg-gradient-to-br from-primary via-primary/90 to-green-dark rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-      <div className="relative flex items-start gap-4">
-        <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
-          <Crown className="w-6 h-6" />
-        </div>
-        <div className="flex-1">
-          <p className="font-playfair font-bold text-xl mb-1">{CONFIG.MESSAGES.UPGRADE_TITLE}</p>
-          <p className="text-sm text-primary-foreground/80 mb-4">
-            {CONFIG.MESSAGES.UPGRADE_DESC.replace('{price}', formattedPrice)}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Link to="/premium" className="flex-1">
-              <Button size="sm" className="bg-white text-primary hover:bg-white/90 w-full font-semibold">
-                {CONFIG.MESSAGES.UPGRADE_BUTTON.replace('{price}', formattedPrice)}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ============================================================
-// Main Component
-// ============================================================
 export default function StudentDashboard() {
-  const { user } = useOutletContext() || {};
-  const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
-  
+  const { user } = useAuth();
+
+  // ---------- State ----------
   const [resources, setResources] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [tutors, setTutors] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
-  const [counselorInfo, setCounselorInfo] = useState(null);
-  const [counselorChat, setCounselorChat] = useState(false);
-  const [activeSection, setActiveSection] = useState(null);
-  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // 🛡️ Lock reference preventing simultaneous duplicate network loops
-  const isInitialMountRef = useRef(false);
+  // ---------- Structural Protection Guard Rails ----------
+  const isFetchingRef = useRef(false);
+  const abortControllerRef = useRef(null);
 
-  // ============================================================
-  // Isolated Safe Fetch Mechanism
-  // ============================================================
-  const loadData = useCallback(async (targetEmail) => {
-    if (!targetEmail || isInitialMountRef.current) return;
-    
-    isInitialMountRef.current = true;
-    setLoading(true);
-    setError(null);
+  // ---------- Protected Data Fetching Layer ----------
+  const loadStudentData = useCallback(async (isManualRefresh = false) => {
+    if (!user?.email) return;
+
+    // 1. Double-trigger lock mechanism
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
+
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
+
+    // 2. Clear outstanding requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     try {
-      const [resourcesResult, tutorsResult, announcementsResult, counselorResult] = await Promise.all([
+      // Fetch data concurrently using Promise.allSettled to prevent single-query failure from crashing the loop
+      const [resourcesRes, bookingsRes, tutorsRes] = await Promise.allSettled([
         supabase
           .from('resources')
           .select('*')
           .eq('is_approved', true)
           .order('created_at', { ascending: false })
-          .limit(CONFIG.RESOURCES_DISPLAY_LIMIT),
+          .limit(RESOURCES_DISPLAY_LIMIT),
+        
+        supabase
+          .from('tutor_bookings')
+          .select('*')
+          .eq('student_email', user.email)
+          .order('date', { ascending: true }),
 
         supabase
           .from('tutor_profiles')
           .select('*')
           .eq('is_verified', true)
-          .order('rating', { ascending: false })
-          .limit(CONFIG.TUTORS_DISPLAY_LIMIT),
-
-        supabase
-          .from('platform_announcements')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(10),
-
-        supabase
-          .from('school_counselors')
-          .select('*')
+          .limit(5)
       ]);
 
-      if (resourcesResult.error) throw resourcesResult.error;
-      if (tutorsResult.error) throw tutorsResult.error;
-
-      setResources(resourcesResult.data || []);
-      setTutors(tutorsResult.data || []);
-
-      if (!announcementsResult.error && announcementsResult.data) {
-        const filtered = announcementsResult.data.filter(a => {
-          const aud = a.audience || [];
-          return aud.includes('all') || aud.includes('student');
-        });
-        setAnnouncements(filtered);
+      // Parse results safely
+      if (resourcesRes.status === 'fulfilled' && !resourcesRes.value.error) {
+        setResources(resourcesRes.value.data || []);
+      } else if (resourcesRes.status === 'fulfilled' && resourcesRes.value.error) {
+        console.error('Error loading resources:', resourcesRes.value.error);
       }
 
-      if (!counselorResult.error && counselorResult.data) {
-        const mine = counselorResult.data.find(c => {
-          const emails = c.student_emails || [];
-          const schoolEmails = (c.schools || []).flatMap(s => s.student_emails || []);
-          return emails.includes(targetEmail) || schoolEmails.includes(targetEmail);
-        });
-        if (mine) {
-          const school = (mine.schools || []).find(s => (s.student_emails || []).includes(targetEmail));
-          setCounselorInfo({
-            email: mine.counselor_email,
-            name: mine.counselor_email.split('@')[0],
-            schoolName: school?.name || mine.school_name || 'School Counselor',
-          });
-        }
+      if (bookingsRes.status === 'fulfilled' && !bookingsRes.value.error) {
+        setBookings(bookingsRes.value.data || []);
       }
+
+      if (tutorsRes.status === 'fulfilled' && !tutorsRes.value.error) {
+        setTutors(tutorsRes.value.data || []);
+      }
+
+      // Safe, deduplicated Activity Logging
+      if (!isManualRefresh) {
+        await supabase.from('activity_log').insert({
+          event_type: 'student_dashboard_view',
+          user_email: user.email,
+          description: `Student dashboard viewed by ${user.email}`
+        }).select().maybeSingle(); // Prevent catching error bubbles
+      }
+
     } catch (err) {
-      console.error('Error loading dashboard data:', err);
-      setError(CONFIG.MESSAGES.LOAD_FAILED);
+      if (err.name !== 'AbortError') {
+        console.error('Unhandled Student Dashboard Fetch Error:', err);
+      }
     } finally {
+      isFetchingRef.current = false;
       setLoading(false);
-      isInitialMountRef.current = false; // Release loop execution block lock
+      setRefreshing(false);
     }
-  }, []);
+  }, [user?.email]);
 
-  // Sync state cleanly based only on changes to primitive values
+  // ---------- Lifecycle / Subscription Layer ----------
   useEffect(() => {
-    if (user?.email) {
-      loadData(user.email);
+    if (!user?.email) return;
 
-      if (!CONFIG.ENABLE_REAL_TIME) return;
+    loadStudentData(false);
 
-      const channel = supabase
-        .channel(`student-dashboard-${user.email}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_profiles' }, () => {
-          loadData(user.email);
-        })
-        .subscribe();
+    // Stable handler to receive notifications from real-time engine safely
+    const handleRealtimeChange = () => {
+      loadStudentData(false);
+    };
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user?.email, loadData]);
+    const channels = [
+      supabase
+        .channel(`student-bookings-${user.email}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_bookings', filter: `student_email=eq.${user.email}` }, handleRealtimeChange)
+        .subscribe(),
+      supabase
+        .channel('student-resource-sync')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'resources' }, handleRealtimeChange)
+        .subscribe()
+    ];
 
-  const toggleSection = useCallback((key) => {
-    setActiveSection(prev => prev === key ? null : key);
-  }, []);
+    // Lazy fallback polling layer (every 5 minutes) instead of aggressive database checking
+    const pollingFallback = setInterval(() => {
+      loadStudentData(false);
+    }, 1000 * 60 * 5);
 
-  const handleDeleteAccount = async () => {
-    setDeletingAccount(true);
-    try {
-      const { error: deleteError } = await supabase
-        .from('user_profiles')
-        .update({ role: 'deleted', updated_at: new Date().toISOString() })
-        .eq('email', user.email);
-
-      if (deleteError) throw deleteError;
-      await supabase.auth.signOut();
-      window.location.href = '/';
-    } catch (err) {
-      console.error('Delete account error:', err);
-      toast.error('Failed to delete account.');
-      setDeletingAccount(false);
-    }
-  };
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center max-w-sm">
-          <GraduationCap className="w-16 h-16 text-primary mx-auto mb-4" />
-          <h2 className="font-playfair text-2xl font-bold mb-2">Student Dashboard</h2>
-          <p className="text-muted-foreground mb-6">{CONFIG.MESSAGES.SIGN_IN_REQUIRED}</p>
-          <Button onClick={() => window.location.href = '/login'} className="bg-primary">Sign In</Button>
-        </div>
-      </div>
-    );
-  }
+    return () => {
+      clearInterval(pollingFallback);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+      channels.forEach(channel => supabase.removeChannel(channel));
+    };
+  }, [user?.email, loadStudentData]);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs text-muted-foreground">Loading your dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="max-w-md w-full border-destructive/20 bg-destructive/5">
-          <CardContent className="pt-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
-            <p className="text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={() => loadData(user?.email)} variant="outline">Retry</Button>
-          </CardContent>
-        </Card>
+      <div className="min-h-[70vh] flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="font-playfair text-3xl font-bold text-foreground">
-                Welcome back, {user.full_name?.split(' ')[0] || 'Student'}!
-              </h1>
-              <span className="text-2xl">👋</span>
-            </div>
-            <p className="text-muted-foreground mt-1">{CONFIG.MESSAGES.WELCOME}</p>
-          </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            {isPremium && !isOnTrial ? (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 px-3 py-1.5">
-                <Star className="w-4 h-4 fill-current" /> Premium Member
-              </Badge>
-            ) : isOnTrial ? (
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200 gap-1.5 px-3 py-1.5">
-                <Clock className="w-4 h-4" /> Free Trial — {trialDaysLeft}d left
-              </Badge>
-            ) : (
-              <Link to="/premium">
-                <Button size="sm" className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md">
-                  <Crown className="w-4 h-4" /> Upgrade — {CONFIG.PREMIUM_CURRENCY}{CONFIG.STUDENT_PREMIUM_PRICE}/month
-                </Button>
-              </Link>
-            )}
-          </div>
+    <div className="space-y-8 py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Top Banner section */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40 p-6 rounded-2xl border border-border">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-tight">Welcome back, Scholar!</h1>
+          <p className="text-muted-foreground text-sm mt-1">Track your classes, access study material, and manage your progress.</p>
         </div>
-
-        {/* Announcements */}
-        {CONFIG.ENABLE_ANNOUNCEMENTS && announcements.length > 0 && (
-          <div className="mb-5 space-y-2">
-            {announcements.map(a => <AnnouncementBanner key={a.id} announcement={a} />)}
-          </div>
-        )}
-
-        {/* Quick Actions */}
-        {CONFIG.ENABLE_QUICK_ACTIONS && (
-          <div className="mb-6">
-            <StudentQuickActions onAction={toggleSection} activeSection={activeSection} />
-          </div>
-        )}
-
-        {/* ===== SECTIONS CONTENT ===== */}
-        {activeSection === 'subjects' && (
-          <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-primary" /> My Subjects
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {SUBJECTS.map((subject) => (
-                    <Link key={subject.code} to={`/subjects/${subject.code}`} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-all group">
-                      <span className="text-xl">{subject.icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate group-hover:text-primary">{subject.name}</p>
-                        <p className="text-xs text-muted-foreground">{subject.category}</p>
-                      </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
-                    </Link>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {activeSection === 'progress' && (
-          <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-            <div className="grid sm:grid-cols-3 gap-4">
-              <ProgressCharts user={user} />
-              <GradeProgressTracker user={user} />
-              <StudyReminderManager user={user} />
-            </div>
-            <StudentProgressDashboard user={user} />
-            <SyllabusTopicTracker user={user} />
-            <StudyHeatmap user={user} />
-          </div>
-        )}
-
-        {activeSection === 'ai' && (
-          <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="AI Study Planner">
-              <AIStudyPlanner user={user} />
-            </DashboardPremiumGate>
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="AI Study Assistant">
-              <AIStudyAssistant user={user} />
-            </DashboardPremiumGate>
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Interactive Flashcards">
-              <InteractiveFlashcards />
-            </DashboardPremiumGate>
-          </div>
-        )}
-
-        {activeSection === 'goals' && (
-          <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-            <WeeklyGoals user={user} />
-            <div className="grid sm:grid-cols-2 gap-4">
-              <MilestoneBadges user={user} />
-              <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Study Gamification">
-                <StudyGamification user={user} />
-              </DashboardPremiumGate>
-            </div>
-          </div>
-        )}
-
-        {activeSection === 'simulations' && (
-          <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <SimulationLab isTutor={false} />
-          </div>
-        )}
-
-        {activeSection === 'bookmarks' && (
-          <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <ResourceBookmarks user={user} />
-          </div>
-        )}
-
-        {activeSection === 'messages' && (
-          <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
-            {counselorInfo && (
-              <Card className="border-primary/20 bg-primary/5">
-                <CardContent className="py-4 px-5 flex items-center justify-between gap-4 flex-wrap">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-sm">
-                      {counselorInfo.name[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold">{counselorInfo.schoolName}</p>
-                      <p className="text-xs text-muted-foreground">Your school counselor is available to chat</p>
-                    </div>
-                  </div>
-                  <Button size="sm" className="gap-1.5" onClick={() => setCounselorChat(true)}>
-                    <MessageCircle className="w-3.5 h-3.5" /> Message Counselor
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-primary" /> Message a Tutor
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {tutors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">{CONFIG.MESSAGES.NO_TUTORS}</p>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {tutors.map(t => <TutorItem key={t.id} tutor={t} onChat={setActiveChat} />)}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Discussion Board">
-              <DiscussionBoard user={user} />
-            </DashboardPremiumGate>
-          </div>
-        )}
-
-        {activeSection === 'applications' && (
-          <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="University Application Tracker">
-              <ApplicationTracker userEmail={user?.email} />
-            </DashboardPremiumGate>
-          </div>
-        )}
-
-        {/* ===== DEFAULT OVERVIEW ===== */}
-        {!activeSection && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard label="Subjects" value={SUBJECTS.length} icon={BookOpen} color="bg-primary/10 text-primary" subtitle="CAPS Aligned" />
-              <StatCard label="Grades" value="10–12" icon={GraduationCap} color="bg-blue-100 text-blue-700" subtitle="FET Phase" />
-              <StatCard label="Resources" value={resources.length} icon={TrendingUp} color="bg-green-100 text-green-700" subtitle="Available now" />
-              <StatCard label="Status" value={isPremium ? (isOnTrial ? 'Trial' : 'Premium') : 'Free'} icon={Star} color="bg-amber-100 text-amber-700" subtitle="Active" />
-            </div>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-primary" /> Recent Resources
-                  </CardTitle>
-                  {resources.length > 0 && (
-                    <Link to="/search" className="text-xs text-primary hover:underline flex items-center gap-0.5">
-                      View all <ChevronRight className="w-3 h-3" />
-                    </Link>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-1">
-                {resources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">{CONFIG.MESSAGES.NO_RESOURCES}</p>
-                ) : (
-                  resources.map((r) => <ResourceItem key={r.id} resource={r} isPremium={isPremium} />)
-                )}
-              </CardContent>
-            </Card>
-
-            {!isPremium && <PremiumUpsell price={CONFIG.STUDENT_PREMIUM_PRICE} currency={CONFIG.PREMIUM_CURRENCY} />}
-
-            {/* Danger Zone */}
-            <div className="border border-destructive/20 rounded-2xl p-5 bg-destructive/5">
-              <p className="text-sm font-semibold text-destructive flex items-center gap-1.5 mb-1">
-                <AlertTriangle className="w-4 h-4" /> Danger Zone
-              </p>
-              <p className="text-xs text-muted-foreground mb-3">Permanently delete your account and all associated data.</p>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm" className="gap-2" disabled={deletingAccount}>
-                    <Trash2 className="w-4 h-4" /> Delete My Account
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>{CONFIG.MESSAGES.DELETE_CONFIRM}</AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                      {deletingAccount ? 'Deleting...' : 'Yes, delete my account'}
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </div>
-          </div>
-        )}
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={() => loadStudentData(true)} 
+          disabled={refreshing}
+          className="sm:self-center gap-1.5 self-start"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          {refreshing ? 'Refreshing...' : 'Refresh Dashboard'}
+        </Button>
       </div>
 
-      {/* Floating View Modals */}
-      {activeChat && <LiveTutorChat user={user} tutorEmail={activeChat.email} tutorName={activeChat.name} onClose={() => setActiveChat(null)} />}
-      {counselorChat && counselorInfo && (
-        <CounselorChat user={user} counselorEmail={counselorInfo.email} counselorName={counselorInfo.name} schoolName={counselorInfo.schoolName} onClose={() => setCounselorChat(false)} />
-      )}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Main Content Columns */}
+        <div className="lg:col-span-2 space-y-8">
+          
+          {/* Section: Bookings */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="font-playfair text-xl flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-primary" /> Upcoming Sessions
+              </CardTitle>
+              <Badge variant="secondary">{bookings.length} Scheduled</Badge>
+            </CardHeader>
+            <CardContent>
+              {bookings.length === 0 ? (
+                <div className="text-center py-8 border border-dashed rounded-xl bg-muted/20">
+                  <Clock className="w-8 h-8 mx-auto text-muted-foreground stroke-1 mb-2" />
+                  <p className="text-sm text-muted-foreground">No upcoming booking requests found.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {bookings.map((booking) => (
+                    <div key={booking.id} className="flex items-center justify-between p-4 rounded-xl border border-border bg-card hover:bg-muted/10 transition-colors">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-sm">{booking.subject}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <span>{booking.date}</span> • <span>{booking.time}</span>
+                        </p>
+                      </div>
+                      <Badge className={
+                        booking.status === 'confirmed' ? 'bg-green-100 text-green-700 hover:bg-green-100' :
+                        booking.status === 'pending' ? 'bg-amber-100 text-amber-700 hover:bg-amber-100' :
+                        'bg-muted text-muted-foreground'
+                      }>
+                        {booking.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Section: Study Materials */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
+              <CardTitle className="font-playfair text-xl flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-primary" /> Curated Resources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {resources.length === 0 ? (
+                <p className="text-sm text-center py-6 text-muted-foreground">No learning resources available yet.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {resources.map((res) => (
+                    <div key={res.id} className="p-4 rounded-xl border border-border flex flex-col justify-between hover:border-primary/40 transition-all bg-card group">
+                      <div>
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <Badge variant="outline" className="text-[10px] tracking-wide uppercase px-1.5">{res.grade || 'FET'}</Badge>
+                          <span className="text-[11px] font-medium text-primary font-sans">{res.subject}</span>
+                        </div>
+                        <h3 className="font-medium text-sm text-card-foreground line-clamp-1 group-hover:text-primary transition-colors">{res.title}</h3>
+                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{res.description || 'No summary text provided.'}</p>
+                      </div>
+                      <div className="mt-4 pt-3 border-t border-border/60 flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground capitalize">{res.type || 'Document'}</span>
+                        <Button size="sm" variant="ghost" className="h-7 text-xs px-2 gap-1 group-hover:translate-x-0.5 transition-transform">
+                          View <ChevronRight className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar Content Column */}
+        <div className="space-y-8">
+          {/* Top Tutors Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-playfair text-xl flex items-center gap-2">
+                <GraduationCap className="w-5 h-5 text-primary" /> Verified Educators
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {tutors.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">No certified instructors available.</p>
+              ) : (
+                tutors.map((tutor) => (
+                  <div key={tutor.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40">
+                    <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary">
+                      {tutor.full_name?.[0] || 'E'}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{tutor.full_name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{tutor.subjects?.join(', ') || 'General FET'}</p>
+                    </div>
+                    <div className="flex items-center text-amber-500 gap-0.5 text-xs font-medium">
+                      <Star className="w-3 h-3 fill-current" />
+                      <span>{tutor.rating || '5.0'}</span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
