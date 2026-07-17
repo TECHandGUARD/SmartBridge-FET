@@ -1,7 +1,8 @@
 // src/components/layout/AppLayout.jsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useAuth } from '@/lib/AuthContext'; 
 import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
 import Footer from './Footer';
@@ -9,12 +10,10 @@ import MobileHeader from './MobileHeader';
 import MobileBottomTabs from './MobileBottomTabs';
 import Onboarding from '@/pages/Onboarding';
 import TutorPendingScreen from '@/pages/TutorPendingScreen';
-import { toast } from 'sonner';
 
 // ============================================================
-// 🔧 SOFT-CODED CONFIGURATION
+// CONFIGURATION LAYER
 // ============================================================
-
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || 'aneleqamata95@gmail.com,aneleq@techandguard.co.za')
@@ -24,17 +23,6 @@ const CONFIG = {
 
   TUTOR_ROLES: ['sace_tutor', 'student_tutor', 'tutor_pending'],
 };
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
-function getDashboardPath(role) {
-  if (role === 'admin') return '/admin';
-  if (CONFIG.TUTOR_ROLES.includes(role)) return '/tutor-dashboard';
-  if (role === 'parent') return '/parent-dashboard';
-  return '/student-dashboard';
-}
 
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
@@ -47,207 +35,102 @@ function useIsMobile() {
 }
 
 // ============================================================
-// Animation Config
+// Animation Config (Smooth UX Experience)
 // ============================================================
-
 const pageVariants = {
-  initial: { opacity: 0, x: 24 },
+  initial: { opacity: 0, x: 16 },
   animate: { opacity: 1, x: 0 },
-  exit:    { opacity: 0, x: -24 },
+  exit:    { opacity: 0, x: -16 },
 };
-const pageTransition = { duration: 0.22, ease: 'easeInOut' };
+const pageTransition = { duration: 0.2, ease: 'easeOut' };
 
 // ============================================================
 // Main Component
 // ============================================================
-
 export default function AppLayout() {
-  const [user, setUser] = useState(null);
+  // Consume data entirely from global AuthContext
+  const { user, loading: authLoading, checkUser } = useAuth();
   const [tutorVerified, setTutorVerified] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [verifyingTutor, setVerifyingTutor] = useState(false);
+  
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const fetchUser = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError || !authUser) {
-        setUser(null);
+  // Determine if user has hardcoded Admin privilege
+  const isAdmin = user && (user.role === 'admin' || CONFIG.ADMIN_EMAILS.includes(user.email));
+
+  // Verify tutor documents in background without overwriting the master user session
+  useEffect(() => {
+    async function verifyTutorCompliance() {
+      if (!user || isAdmin || !CONFIG.TUTOR_ROLES.includes(user.role)) {
         setTutorVerified(null);
         return;
       }
 
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', authUser.email)
-        .single();
-
-      if (profileError && profileError.code !== 'PGRST116') {
-        console.error('Profile fetch error:', profileError);
-      }
-
-      // Check if user is in admin list
-      const isHardcodedAdmin = CONFIG.ADMIN_EMAILS.includes(authUser.email);
-      const userData = {
-        ...authUser,
-        ...profile,
-        email: authUser.email,
-        full_name: profile?.full_name || authUser.user_metadata?.full_name,
-        role: isHardcodedAdmin ? 'admin' : (profile?.role || 'user'),
-        onboarding_complete: isHardcodedAdmin ? true : (profile?.onboarding_complete || false),
-      };
-      
-      setUser(userData);
-
-      if (userData && CONFIG.TUTOR_ROLES.includes(userData.role)) {
-        const { data: profiles, error: tutorError } = await supabase
+      setVerifyingTutor(true);
+      try {
+        const { data: profile, error: tutorError } = await supabase
           .from('tutor_profiles')
-          .select('*')
-          .eq('user_email', userData.email);
+          .select('is_verified')
+          .eq('user_email', user.email)
+          .maybeSingle();
         
-        if (!tutorError) {
-          const isProfileVerified = profiles?.length > 0 ? profiles[0].is_verified === true : false;
-          const isRoleCorrect = userData.role !== 'tutor_pending' && userData.role !== 'user';
-          setTutorVerified(isProfileVerified || isRoleCorrect);
+        if (!tutorError && profile) {
+          setTutorVerified(profile.is_verified === true);
         } else {
-          setTutorVerified(null);
+          setTutorVerified(false);
         }
-      } else {
-        setTutorVerified(null);
+      } catch (err) {
+        console.error('Tutor validation runtime error:', err);
+        setTutorVerified(false);
+      } finally {
+        setVerifyingTutor(false);
       }
-    } catch (error) {
-      console.error('Fetch user failed:', error);
-      setUser(null);
-      setTutorVerified(null);
-    } finally {
-      setLoading(false);
     }
-  }, []);
 
-  useEffect(() => { fetchUser(); }, [fetchUser]);
+    verifyTutorCompliance();
+  }, [user, isAdmin]);
 
   const handleOnboardingComplete = async () => {
-    setLoading(true);
-    const maxAttempts = 10;
-    let attempts = 0;
-    let updatedUser = null;
-    
-    while (attempts < maxAttempts && !updatedUser) {
-      await new Promise(r => setTimeout(r, 500));
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (authUser) {
-        const { data: profile } = await supabase
-          .from('users')
-          .select('*')
-          .eq('email', authUser.email)
-          .single();
-        
-        if (profile && profile.role !== 'user') {
-          updatedUser = { ...authUser, ...profile };
-        }
-      }
-      attempts++;
+    if (checkUser) {
+      await checkUser();
     }
-    
-    setUser(updatedUser);
-    const role = updatedUser?.role;
-
-    if (CONFIG.TUTOR_ROLES.includes(role)) {
-      const { data: profiles } = await supabase
-        .from('tutor_profiles')
-        .select('*')
-        .eq('user_email', updatedUser.email);
-      const isProfileVerified = profiles?.length > 0 ? profiles[0].is_verified === true : false;
-      setTutorVerified(isProfileVerified);
-    } else {
-      setTutorVerified(null);
-      navigate(getDashboardPath(role), { replace: true });
-    }
-    setLoading(false);
   };
 
-  if (loading) return (
+  // Block rendering while authenticating to prevent component layout flashing
+  if (authLoading || verifyingTutor) return (
     <div className="fixed inset-0 flex items-center justify-center bg-background">
       <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
     </div>
   );
 
+  // 1. Guest view tree
   if (!user) {
-    return isMobile ? (
-      <div className="min-h-screen bg-background flex flex-col">
-        <MobileHeader />
-        <main className="flex-1 pt-14 pb-16">
-          <AnimatePresence mode="wait">
-            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-              <Outlet context={{ user }} />
-            </motion.div>
-          </AnimatePresence>
-        </main>
-        <MobileBottomTabs user={user} />
-      </div>
-    ) : (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar user={user} />
-        <main className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-              <Outlet context={{ user }} />
-            </motion.div>
-          </AnimatePresence>
-        </main>
-        <Footer />
-      </div>
-    );
+    return renderStructuralTree(isMobile, location, null);
   }
 
-  // Admin bypass – skip onboarding and pending screens
-  const isAdmin = user.role === 'admin' || CONFIG.ADMIN_EMAILS.includes(user.email);
+  // 2. Admin superpowers bypass
   if (isAdmin) {
-    return isMobile ? (
-      <div className="min-h-screen bg-background flex flex-col">
-        <MobileHeader />
-        <main className="flex-1 pt-14 pb-16">
-          <AnimatePresence mode="wait">
-            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-              <Outlet context={{ user }} />
-            </motion.div>
-          </AnimatePresence>
-        </main>
-        <MobileBottomTabs user={user} />
-      </div>
-    ) : (
-      <div className="min-h-screen bg-background flex flex-col">
-        <Navbar user={user} />
-        <main className="flex-1">
-          <AnimatePresence mode="wait">
-            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-              <Outlet context={{ user }} />
-            </motion.div>
-          </AnimatePresence>
-        </main>
-        <Footer />
-      </div>
-    );
+    return renderStructuralTree(isMobile, location, user);
   }
 
-  // Onboarding for new users
-  const shouldOnboard = user.role === 'user';
-  if (shouldOnboard) {
+  // 3. User onboarding funnel check
+  if (user.role === 'user' || !user.onboarding_complete) {
     return <Onboarding user={user} onComplete={handleOnboardingComplete} />;
   }
 
-  // Tutor pending screen (only for non-admin tutor roles)
-  const isTutorRole = CONFIG.TUTOR_ROLES.includes(user.role);
-  const isTutorPending = isTutorRole && tutorVerified === false;
-  if (isTutorPending) {
-    return <TutorPendingScreen user={user} onRefresh={fetchUser} />;
+  // 4. Tutor verification hold check
+  if (CONFIG.TUTOR_ROLES.includes(user.role) && tutorVerified === false) {
+    return <TutorPendingScreen user={user} onRefresh={handleOnboardingComplete} />;
   }
 
-  // Normal layout for authenticated, onboarded users
+  // 5. Normal verified application layout view
+  return renderStructuralTree(isMobile, location, user);
+}
+
+// Helper structural renderer to maintain layout clean code separation
+function renderStructuralTree(isMobile, location, user) {
   return isMobile ? (
     <div className="min-h-screen bg-background flex flex-col">
       <MobileHeader />
