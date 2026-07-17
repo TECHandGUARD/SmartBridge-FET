@@ -1,6 +1,6 @@
 // src/pages/StudentDashboard.jsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useOutletContext } from 'react-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
 import usePremiumAccess from '@/hooks/usePremiumAccess';
@@ -10,9 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   GraduationCap, BookOpen, Star, TrendingUp, ArrowRight,
   MessageCircle, Crown, Trash2, AlertTriangle, Loader2,
-  Sparkles, Zap, Clock, Calendar, Award, Target,
-  Brain, Users, FileText, BarChart3, Home,
-  ChevronRight, Bell, Gift, Rocket, Trophy
+  Sparkles, Clock, FileText, ChevronRight
 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -45,25 +43,15 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
-
 const CONFIG = {
-  // App name
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-
-  // Premium pricing
   STUDENT_PREMIUM_PRICE: Number(import.meta.env.VITE_STUDENT_PREMIUM_PRICE) || 20,
   PREMIUM_CURRENCY: import.meta.env.VITE_PREMIUM_CURRENCY || 'R',
-
-  // Display limits
   RESOURCES_DISPLAY_LIMIT: Number(import.meta.env.VITE_STUDENT_RESOURCES_LIMIT) || 6,
   TUTORS_DISPLAY_LIMIT: Number(import.meta.env.VITE_STUDENT_TUTORS_LIMIT) || 10,
-
-  // Feature flags
   ENABLE_ANNOUNCEMENTS: import.meta.env.VITE_ENABLE_STUDENT_ANNOUNCEMENTS !== 'false',
   ENABLE_QUICK_ACTIONS: import.meta.env.VITE_ENABLE_STUDENT_QUICK_ACTIONS !== 'false',
   ENABLE_REAL_TIME: import.meta.env.VITE_ENABLE_STUDENT_REAL_TIME !== 'false',
-
-  // Messages
   MESSAGES: {
     WELCOME: import.meta.env.VITE_STUDENT_WELCOME_MSG || 'Your learning journey continues here.',
     NO_RESOURCES: import.meta.env.VITE_STUDENT_NO_RESOURCES_MSG || 'No resources available yet. Check back soon!',
@@ -81,7 +69,6 @@ const CONFIG = {
 // ============================================================
 // Sub-Components
 // ============================================================
-
 function StatCard({ label, value, icon: Icon, color, subtitle }) {
   return (
     <Card className="border-border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
@@ -106,9 +93,7 @@ function ResourceItem({ resource, isPremium }) {
         <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">{resource.title}</p>
         <p className="text-xs text-muted-foreground">{resource.grade} • {resource.type}</p>
       </div>
-      {resource.is_premium && !isPremium && (
-        <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-      )}
+      {resource.is_premium && !isPremium && <Star className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />}
       {resource.is_premium && isPremium && (
         <Badge className="bg-amber-100 text-amber-700 text-[10px] flex-shrink-0">
           <Sparkles className="w-2.5 h-2.5 mr-0.5" /> Premium
@@ -153,8 +138,6 @@ function PremiumUpsell({ price, currency }) {
   return (
     <div className="bg-gradient-to-br from-primary via-primary/90 to-green-dark rounded-2xl p-6 text-primary-foreground relative overflow-hidden">
       <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-      <div className="absolute -bottom-10 -left-10 w-24 h-24 bg-white/5 rounded-full blur-2xl" />
-
       <div className="relative flex items-start gap-4">
         <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
           <Crown className="w-6 h-6" />
@@ -170,15 +153,7 @@ function PremiumUpsell({ price, currency }) {
                 {CONFIG.MESSAGES.UPGRADE_BUTTON.replace('{price}', formattedPrice)}
               </Button>
             </Link>
-            <Link to="/premium" className="flex-1">
-              <Button size="sm" variant="outline" className="border-white/30 text-white hover:bg-white/10 w-full">
-                Learn More
-              </Button>
-            </Link>
           </div>
-          <p className="text-xs text-primary-foreground/60 mt-3">
-            {CONFIG.MESSAGES.UPGRADE_NOTE}
-          </p>
         </div>
       </div>
     </div>
@@ -188,10 +163,10 @@ function PremiumUpsell({ price, currency }) {
 // ============================================================
 // Main Component
 // ============================================================
-
 export default function StudentDashboard() {
   const { user } = useOutletContext() || {};
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
+  
   const [resources, setResources] = useState([]);
   const [tutors, setTutors] = useState([]);
   const [activeChat, setActiveChat] = useState(null);
@@ -203,26 +178,21 @@ export default function StudentDashboard() {
   const [error, setError] = useState(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
 
-  // ============================================================
-  // Load Data
-  // ============================================================
+  // 🛡️ Lock reference preventing simultaneous duplicate network loops
+  const isInitialMountRef = useRef(false);
 
-  const loadData = useCallback(async () => {
-    if (!user?.email) {
-      setLoading(false);
-      return;
-    }
-
+  // ============================================================
+  // Isolated Safe Fetch Mechanism
+  // ============================================================
+  const loadData = useCallback(async (targetEmail) => {
+    if (!targetEmail || isInitialMountRef.current) return;
+    
+    isInitialMountRef.current = true;
     setLoading(true);
     setError(null);
 
     try {
-      const [
-        resourcesResult,
-        tutorsResult,
-        announcementsResult,
-        counselorResult
-      ] = await Promise.all([
+      const [resourcesResult, tutorsResult, announcementsResult, counselorResult] = await Promise.all([
         supabase
           .from('resources')
           .select('*')
@@ -255,7 +225,6 @@ export default function StudentDashboard() {
       setResources(resourcesResult.data || []);
       setTutors(tutorsResult.data || []);
 
-      // Filter announcements
       if (!announcementsResult.error && announcementsResult.data) {
         const filtered = announcementsResult.data.filter(a => {
           const aud = a.audience || [];
@@ -264,15 +233,14 @@ export default function StudentDashboard() {
         setAnnouncements(filtered);
       }
 
-      // Find counselor
       if (!counselorResult.error && counselorResult.data) {
         const mine = counselorResult.data.find(c => {
           const emails = c.student_emails || [];
           const schoolEmails = (c.schools || []).flatMap(s => s.student_emails || []);
-          return emails.includes(user.email) || schoolEmails.includes(user.email);
+          return emails.includes(targetEmail) || schoolEmails.includes(targetEmail);
         });
         if (mine) {
-          const school = (mine.schools || []).find(s => (s.student_emails || []).includes(user.email));
+          const school = (mine.schools || []).find(s => (s.student_emails || []).includes(targetEmail));
           setCounselorInfo({
             email: mine.counselor_email,
             name: mine.counselor_email.split('@')[0],
@@ -280,38 +248,34 @@ export default function StudentDashboard() {
           });
         }
       }
-
     } catch (err) {
       console.error('Error loading dashboard data:', err);
       setError(CONFIG.MESSAGES.LOAD_FAILED);
-      toast.error(CONFIG.MESSAGES.LOAD_FAILED);
     } finally {
       setLoading(false);
+      isInitialMountRef.current = false; // Release loop execution block lock
     }
-  }, [user?.email]);
+  }, []);
 
+  // Sync state cleanly based only on changes to primitive values
   useEffect(() => {
-    loadData();
+    if (user?.email) {
+      loadData(user.email);
 
-    // Real-time subscription for tutor updates
-    if (!CONFIG.ENABLE_REAL_TIME) return;
+      if (!CONFIG.ENABLE_REAL_TIME) return;
 
-    const channel = supabase
-      .channel('student-dashboard-tutors')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'tutor_profiles' },
-        () => loadData()
-      )
-      .subscribe();
+      const channel = supabase
+        .channel(`student-dashboard-${user.email}`)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_profiles' }, () => {
+          loadData(user.email);
+        })
+        .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [loadData]);
-
-  // ============================================================
-  // Handlers
-  // ============================================================
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user?.email, loadData]);
 
   const toggleSection = useCallback((key) => {
     setActiveSection(prev => prev === key ? null : key);
@@ -320,32 +284,20 @@ export default function StudentDashboard() {
   const handleDeleteAccount = async () => {
     setDeletingAccount(true);
     try {
-      const { error } = await supabase
+      const { error: deleteError } = await supabase
         .from('user_profiles')
         .update({ role: 'deleted', updated_at: new Date().toISOString() })
         .eq('email', user.email);
 
-      if (error) throw error;
-
+      if (deleteError) throw deleteError;
       await supabase.auth.signOut();
       window.location.href = '/';
     } catch (err) {
       console.error('Delete account error:', err);
-      toast.error('Failed to delete account. Please contact support.');
+      toast.error('Failed to delete account.');
       setDeletingAccount(false);
     }
   };
-
-  // ============================================================
-  // Computed Values
-  // ============================================================
-
-  const subjectsCount = SUBJECTS.length;
-  const formattedPrice = `${CONFIG.PREMIUM_CURRENCY}${CONFIG.STUDENT_PREMIUM_PRICE}`;
-
-  // ============================================================
-  // Access Control
-  // ============================================================
 
   if (!user) {
     return (
@@ -360,24 +312,16 @@ export default function StudentDashboard() {
     );
   }
 
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <p className="text-xs text-muted-foreground animate-pulse">Loading your dashboard...</p>
+          <p className="text-xs text-muted-foreground">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
-
-  // ============================================================
-  // Error State
-  // ============================================================
 
   if (error) {
     return (
@@ -386,21 +330,17 @@ export default function StudentDashboard() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
             <p className="text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={loadData} variant="outline">Retry</Button>
+            <Button onClick={() => loadData(user?.email)} variant="outline">Retry</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // ============================================================
-  // Render
-  // ============================================================
-
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
+        
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -410,23 +350,21 @@ export default function StudentDashboard() {
               </h1>
               <span className="text-2xl">👋</span>
             </div>
-            <p className="text-muted-foreground mt-1">
-              {CONFIG.MESSAGES.WELCOME}
-            </p>
+            <p className="text-muted-foreground mt-1">{CONFIG.MESSAGES.WELCOME}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {isPremium && !isOnTrial ? (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800 gap-1.5 px-3 py-1.5">
+              <Badge className="bg-amber-100 text-amber-700 border-amber-200 gap-1.5 px-3 py-1.5">
                 <Star className="w-4 h-4 fill-current" /> Premium Member
               </Badge>
             ) : isOnTrial ? (
-              <Badge className="bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800 gap-1.5 px-3 py-1.5">
+              <Badge className="bg-blue-100 text-blue-700 border-blue-200 gap-1.5 px-3 py-1.5">
                 <Clock className="w-4 h-4" /> Free Trial — {trialDaysLeft}d left
               </Badge>
             ) : (
               <Link to="/premium">
-                <Button size="sm" className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-md hover:shadow-lg transition-all duration-300">
-                  <Crown className="w-4 h-4" /> Upgrade — {formattedPrice}/month
+                <Button size="sm" className="gap-1.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-md">
+                  <Crown className="w-4 h-4" /> Upgrade — {CONFIG.PREMIUM_CURRENCY}{CONFIG.STUDENT_PREMIUM_PRICE}/month
                 </Button>
               </Link>
             )}
@@ -436,9 +374,7 @@ export default function StudentDashboard() {
         {/* Announcements */}
         {CONFIG.ENABLE_ANNOUNCEMENTS && announcements.length > 0 && (
           <div className="mb-5 space-y-2">
-            {announcements.map(a => (
-              <AnnouncementBanner key={a.id} announcement={a} />
-            ))}
+            {announcements.map(a => <AnnouncementBanner key={a.id} announcement={a} />)}
           </div>
         )}
 
@@ -449,34 +385,25 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* ===== SECTIONS ===== */}
-
-        {/* My Subjects */}
+        {/* ===== SECTIONS CONTENT ===== */}
         {activeSection === 'subjects' && (
           <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
-            <Card className="border-border">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg font-playfair flex items-center gap-2">
-                    <BookOpen className="w-5 h-5 text-primary" /> My Subjects
-                  </CardTitle>
-                  <span className="text-xs text-muted-foreground">{subjectsCount} subjects</span>
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-primary" /> My Subjects
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {SUBJECTS.map((subject) => (
-                    <Link
-                      key={subject.code}
-                      to={`/subjects/${subject.code}`}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-all duration-200 group hover:scale-[1.02]"
-                    >
-                      <span className="text-xl group-hover:scale-110 transition-transform">{subject.icon}</span>
+                    <Link key={subject.code} to={`/subjects/${subject.code}`} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-all group">
+                      <span className="text-xl">{subject.icon}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate group-hover:text-primary transition-colors">{subject.name}</p>
+                        <p className="text-sm font-semibold truncate group-hover:text-primary">{subject.name}</p>
                         <p className="text-xs text-muted-foreground">{subject.category}</p>
                       </div>
-                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                      <ArrowRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary" />
                     </Link>
                   ))}
                 </div>
@@ -485,7 +412,6 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* My Progress */}
         {activeSection === 'progress' && (
           <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
             <div className="grid sm:grid-cols-3 gap-4">
@@ -499,7 +425,6 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* AI Tools */}
         {activeSection === 'ai' && (
           <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="AI Study Planner">
@@ -514,7 +439,6 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Goals & Badges */}
         {activeSection === 'goals' && (
           <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
             <WeeklyGoals user={user} />
@@ -527,21 +451,18 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Simulations */}
         {activeSection === 'simulations' && (
           <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
             <SimulationLab isTutor={false} />
           </div>
         )}
 
-        {/* Bookmarks */}
         {activeSection === 'bookmarks' && (
           <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
             <ResourceBookmarks user={user} />
           </div>
         )}
 
-        {/* Messages */}
         {activeSection === 'messages' && (
           <div className="mb-6 space-y-4 animate-in slide-in-from-top-2 duration-300">
             {counselorInfo && (
@@ -563,22 +484,18 @@ export default function StudentDashboard() {
               </Card>
             )}
 
-            <Card className="border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-playfair flex items-center gap-2">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
                   <MessageCircle className="w-5 h-5 text-primary" /> Message a Tutor
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {tutors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    {CONFIG.MESSAGES.NO_TUTORS}
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{CONFIG.MESSAGES.NO_TUTORS}</p>
                 ) : (
                   <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {tutors.map(t => (
-                      <TutorItem key={t.id} tutor={t} onChat={setActiveChat} />
-                    ))}
+                    {tutors.map(t => <TutorItem key={t.id} tutor={t} onChat={setActiveChat} />)}
                   </div>
                 )}
               </CardContent>
@@ -590,7 +507,6 @@ export default function StudentDashboard() {
           </div>
         )}
 
-        {/* Applications */}
         {activeSection === 'applications' && (
           <div className="mb-6 animate-in slide-in-from-top-2 duration-300">
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="University Application Tracker">
@@ -602,43 +518,17 @@ export default function StudentDashboard() {
         {/* ===== DEFAULT OVERVIEW ===== */}
         {!activeSection && (
           <div className="space-y-6">
-            {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard
-                label="Subjects"
-                value={subjectsCount}
-                icon={BookOpen}
-                color="bg-primary/10 text-primary"
-                subtitle="CAPS Aligned"
-              />
-              <StatCard
-                label="Grades"
-                value="10–12"
-                icon={GraduationCap}
-                color="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
-                subtitle="FET Phase"
-              />
-              <StatCard
-                label="Resources"
-                value={resources.length}
-                icon={TrendingUp}
-                color="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-400"
-                subtitle={resources.length > 0 ? 'Available now' : 'Coming soon'}
-              />
-              <StatCard
-                label="Status"
-                value={isPremium ? (isOnTrial ? 'Trial' : 'Premium') : 'Free'}
-                icon={Star}
-                color="bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
-                subtitle={isPremium ? 'Active' : 'Upgrade available'}
-              />
+              <StatCard label="Subjects" value={SUBJECTS.length} icon={BookOpen} color="bg-primary/10 text-primary" subtitle="CAPS Aligned" />
+              <StatCard label="Grades" value="10–12" icon={GraduationCap} color="bg-blue-100 text-blue-700" subtitle="FET Phase" />
+              <StatCard label="Resources" value={resources.length} icon={TrendingUp} color="bg-green-100 text-green-700" subtitle="Available now" />
+              <StatCard label="Status" value={isPremium ? (isOnTrial ? 'Trial' : 'Premium') : 'Free'} icon={Star} color="bg-amber-100 text-amber-700" subtitle="Active" />
             </div>
 
-            {/* Recent Resources */}
-            <Card className="border-border">
-              <CardHeader className="pb-3">
+            <Card>
+              <CardHeader>
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-playfair flex items-center gap-2">
+                  <CardTitle className="text-base flex items-center gap-2">
                     <FileText className="w-4 h-4 text-primary" /> Recent Resources
                   </CardTitle>
                   {resources.length > 0 && (
@@ -650,30 +540,21 @@ export default function StudentDashboard() {
               </CardHeader>
               <CardContent className="space-y-1">
                 {resources.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    {CONFIG.MESSAGES.NO_RESOURCES}
-                  </p>
+                  <p className="text-sm text-muted-foreground text-center py-4">{CONFIG.MESSAGES.NO_RESOURCES}</p>
                 ) : (
-                  resources.slice(0, 5).map((r) => (
-                    <ResourceItem key={r.id} resource={r} isPremium={isPremium} />
-                  ))
+                  resources.map((r) => <ResourceItem key={r.id} resource={r} isPremium={isPremium} />)
                 )}
               </CardContent>
             </Card>
 
-            {/* Premium Upsell */}
-            {!isPremium && (
-              <PremiumUpsell price={CONFIG.STUDENT_PREMIUM_PRICE} currency={CONFIG.PREMIUM_CURRENCY} />
-            )}
+            {!isPremium && <PremiumUpsell price={CONFIG.STUDENT_PREMIUM_PRICE} currency={CONFIG.PREMIUM_CURRENCY} />}
 
-            {/* Account Deletion */}
+            {/* Danger Zone */}
             <div className="border border-destructive/20 rounded-2xl p-5 bg-destructive/5">
               <p className="text-sm font-semibold text-destructive flex items-center gap-1.5 mb-1">
                 <AlertTriangle className="w-4 h-4" /> Danger Zone
               </p>
-              <p className="text-xs text-muted-foreground mb-3">
-                Permanently delete your account and all associated data. This cannot be undone.
-              </p>
+              <p className="text-xs text-muted-foreground mb-3">Permanently delete your account and all associated data.</p>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" className="gap-2" disabled={deletingAccount}>
@@ -683,16 +564,11 @@ export default function StudentDashboard() {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      {CONFIG.MESSAGES.DELETE_CONFIRM}
-                    </AlertDialogDescription>
+                    <AlertDialogDescription>{CONFIG.MESSAGES.DELETE_CONFIRM}</AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={handleDeleteAccount}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
+                    <AlertDialogAction onClick={handleDeleteAccount} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
                       {deletingAccount ? 'Deleting...' : 'Yes, delete my account'}
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -703,23 +579,10 @@ export default function StudentDashboard() {
         )}
       </div>
 
-      {/* Floating Chats */}
-      {activeChat && (
-        <LiveTutorChat
-          user={user}
-          tutorEmail={activeChat.email}
-          tutorName={activeChat.name}
-          onClose={() => setActiveChat(null)}
-        />
-      )}
+      {/* Floating View Modals */}
+      {activeChat && <LiveTutorChat user={user} tutorEmail={activeChat.email} tutorName={activeChat.name} onClose={() => setActiveChat(null)} />}
       {counselorChat && counselorInfo && (
-        <CounselorChat
-          user={user}
-          counselorEmail={counselorInfo.email}
-          counselorName={counselorInfo.name}
-          schoolName={counselorInfo.schoolName}
-          onClose={() => setCounselorChat(false)}
-        />
+        <CounselorChat user={user} counselorEmail={counselorInfo.email} counselorName={counselorInfo.name} schoolName={counselorInfo.schoolName} onClose={() => setCounselorChat(false)} />
       )}
     </div>
   );
