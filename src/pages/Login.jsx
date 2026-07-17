@@ -1,5 +1,5 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,9 +9,8 @@ import { GraduationCap, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ============================================================
-// 🔧 SOFT-CODED CONFIGURATION (Admin control via environment)
+// 🔧 FULLY SOFT-CODED CONFIGURATION
 // ============================================================
-
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || '')
@@ -29,11 +28,17 @@ const CONFIG = {
   // Feature flags
   ENABLE_ADMIN_BYPASS: import.meta.env.VITE_ENABLE_ADMIN_BYPASS !== 'false',
   ENABLE_GOOGLE_SIGN_IN: import.meta.env.VITE_ENABLE_GOOGLE_SIGN_IN !== 'false',
-};
 
-// ============================================================
-// Login Component
-// ============================================================
+  // System Text / Feedback Messages
+  MESSAGES: {
+    SUBTITLE: import.meta.env.VITE_LOGIN_SUBTITLE || 'Sign in to continue your learning journey',
+    MISSING_FIELDS: import.meta.env.VITE_LOGIN_MISSING_FIELDS_MSG || 'Please enter both email and password',
+    WELCOME: import.meta.env.VITE_LOGIN_WELCOME_MSG || 'Welcome back!',
+    GOOGLE_DISABLED: import.meta.env.VITE_LOGIN_GOOGLE_DISABLED_MSG || 'Google sign-in is currently disabled.',
+    FAILED_SIGNIN: import.meta.env.VITE_LOGIN_FAILED_MSG || 'Failed to sign in. Please try again.',
+    FAILED_GOOGLE: import.meta.env.VITE_LOGIN_FAILED_GOOGLE_MSG || 'Failed to sign in with Google',
+  }
+};
 
 export default function Login() {
   const { signIn, signInWithGoogle, user, isLoadingAuth } = useAuth();
@@ -43,66 +48,59 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Redirect if already logged in (with admin bypass)
-  useEffect(() => {
-    if (user && !isLoadingAuth) {
-      const isAdmin = CONFIG.ENABLE_ADMIN_BYPASS && (
-        CONFIG.ADMIN_EMAILS.includes(user.email) ||
-        user.role === 'admin' ||
-        user.is_super_admin === true
-      );
+  const isAdmin = useMemo(() => {
+    if (!user || !CONFIG.ENABLE_ADMIN_BYPASS) return false;
+    return CONFIG.ADMIN_EMAILS.includes(user.email) || user.role === 'admin' || user.is_super_admin === true;
+  }, [user?.email, user?.role, user?.is_super_admin]);
 
+  useEffect(() => {
+    if (isLoadingAuth) return;
+
+    if (user) {
       if (isAdmin) {
         navigate(CONFIG.ADMIN_ROUTE, { replace: true });
-        return;
-      }
-
-      if (user.onboarding_complete) {
+      } else if (user.onboarding_complete) {
         navigate(CONFIG.DASHBOARD_ROUTE, { replace: true });
       } else {
         navigate(CONFIG.ONBOARDING_ROUTE, { replace: true });
       }
     }
-  }, [user, isLoadingAuth, navigate]);
+  }, [user, isAdmin, isLoadingAuth, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
     if (!trimmedEmail || !trimmedPassword) {
-      toast.error('Please enter both email and password');
+      toast.error(CONFIG.MESSAGES.MISSING_FIELDS);
       return;
     }
 
     setLoading(true);
     try {
       const result = await signIn(trimmedEmail, trimmedPassword);
-      if (result.success) {
-        toast.success('Welcome back!');
+      if (result?.success) {
+        toast.success(CONFIG.MESSAGES.WELCOME);
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error.message || 'Failed to sign in. Please try again.');
-    } finally {
+      toast.error(error.message || CONFIG.MESSAGES.FAILED_SIGNIN);
       setLoading(false);
     }
   };
 
   const handleGoogleSignIn = async () => {
     if (!CONFIG.ENABLE_GOOGLE_SIGN_IN) {
-      toast.info('Google sign-in is currently disabled.');
+      toast.info(CONFIG.MESSAGES.GOOGLE_DISABLED);
       return;
     }
-
     setLoading(true);
     try {
       await signInWithGoogle();
-      // Note: signInWithGoogle redirects the user; we don't need to setLoading(false) here
     } catch (error) {
       console.error('Google sign in error:', error);
-      toast.error('Failed to sign in with Google');
+      toast.error(CONFIG.MESSAGES.FAILED_GOOGLE);
       setLoading(false);
     }
   };
@@ -119,9 +117,7 @@ export default function Login() {
           <CardTitle className="font-playfair text-3xl font-bold">
             {CONFIG.APP_NAME} – Sign In
           </CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Sign in to continue your learning journey
-          </p>
+          <p className="text-sm text-muted-foreground">{CONFIG.MESSAGES.SUBTITLE}</p>
         </CardHeader>
         <CardContent className="space-y-6 pb-8">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -154,7 +150,7 @@ export default function Login() {
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => setShowPassword(prev => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -167,11 +163,7 @@ export default function Login() {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 gap-2 bg-primary hover:bg-primary/90 text-base font-semibold"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full h-12 gap-2 text-base font-semibold" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
@@ -186,21 +178,12 @@ export default function Login() {
           {CONFIG.ENABLE_GOOGLE_SIGN_IN && (
             <>
               <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
+                <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
                   <span className="bg-background px-4 text-muted-foreground">Or continue with</span>
                 </div>
               </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full h-12 gap-2 text-base"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-              >
+              <Button type="button" variant="outline" className="w-full h-12 gap-2 text-base" onClick={handleGoogleSignIn} disabled={loading}>
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -214,9 +197,7 @@ export default function Login() {
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
-            <Link to={CONFIG.REGISTER_ROUTE} className="text-primary font-semibold hover:underline">
-              Sign up
-            </Link>
+            <Link to={CONFIG.REGISTER_ROUTE} className="text-primary font-semibold hover:underline">Sign up</Link>
           </p>
         </CardContent>
       </Card>
