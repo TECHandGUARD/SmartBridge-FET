@@ -1,6 +1,6 @@
 // src/components/layout/AppLayout.jsx
-import { useState, useEffect } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '@/lib/AuthContext'; 
 import { supabase } from '@/lib/supabaseClient';
@@ -24,19 +24,26 @@ const CONFIG = {
   TUTOR_ROLES: ['sace_tutor', 'student_tutor', 'tutor_pending'],
 };
 
+// Optimized event hook with simple throttling/passive listeners
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
   useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
+    let timeoutId = null;
+    const handler = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setIsMobile(window.innerWidth < 768);
+      }, 100); // Throttled to prevent UI stuttering
+    };
+    window.addEventListener('resize', handler, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handler);
+      clearTimeout(timeoutId);
+    };
   }, []);
   return isMobile;
 }
 
-// ============================================================
-// Animation Config (Smooth UX Experience)
-// ============================================================
 const pageVariants = {
   initial: { opacity: 0, x: 16 },
   animate: { opacity: 1, x: 0 },
@@ -44,26 +51,66 @@ const pageVariants = {
 };
 const pageTransition = { duration: 0.2, ease: 'easeOut' };
 
+// Separate Layout Tree component to keep DOM lifecycles stable
+const StructuralTree = React.memo(function StructuralTree({ isMobile, location, user }) {
+  if (isMobile) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <MobileHeader />
+        <main className="flex-1 pt-14 pb-16">
+          <AnimatePresence mode="wait">
+            <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+              <Outlet context={{ user }} />
+            </motion.div>
+          </AnimatePresence>
+        </main>
+        <MobileBottomTabs user={user} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Navbar user={user} />
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
+            <Outlet context={{ user }} />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+      <Footer />
+    </div>
+  );
+});
+
 // ============================================================
 // Main Component
 // ============================================================
 export default function AppLayout() {
-  // Consume data entirely from global AuthContext
   const { user, loading: authLoading, checkUser } = useAuth();
   const [tutorVerified, setTutorVerified] = useState(null);
   const [verifyingTutor, setVerifyingTutor] = useState(false);
   
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine if user has hardcoded Admin privilege
-  const isAdmin = user && (user.role === 'admin' || CONFIG.ADMIN_EMAILS.includes(user.email));
+  // Primary Check: Derive Admin identity securely using stable fields
+  const isAdmin = useMemo(() => {
+    if (!user) return false;
+    return user.role === 'admin' || CONFIG.ADMIN_EMAILS.includes(user.email);
+  }, [user?.email, user?.role]);
 
-  // Verify tutor documents in background without overwriting the master user session
+  // Use stable primitives (user?.id, user?.email) to break object reference loops
+  const userId = user?.id;
+  const userEmail = user?.email;
+  const userRole = user?.role;
+
   useEffect(() => {
+    let active = true;
+
     async function verifyTutorCompliance() {
-      if (!user || isAdmin || !CONFIG.TUTOR_ROLES.includes(user.role)) {
+      if (!userId || isAdmin || !CONFIG.TUTOR_ROLES.includes(userRole)) {
         setTutorVerified(null);
         return;
       }
@@ -73,9 +120,11 @@ export default function AppLayout() {
         const { data: profile, error: tutorError } = await supabase
           .from('tutor_profiles')
           .select('is_verified')
-          .eq('user_email', user.email)
+          .eq('user_email', userEmail)
           .maybeSingle();
         
+        if (!active) return; // Discard state mutations if component unmounted or changed
+
         if (!tutorError && profile) {
           setTutorVerified(profile.is_verified === true);
         } else {
@@ -83,14 +132,18 @@ export default function AppLayout() {
         }
       } catch (err) {
         console.error('Tutor validation runtime error:', err);
-        setTutorVerified(false);
+        if (active) setTutorVerified(false);
       } finally {
-        setVerifyingTutor(false);
+        if (active) setVerifyingTutor(false);
       }
     }
 
     verifyTutorCompliance();
-  }, [user, isAdmin]);
+
+    return () => {
+      active = false; // Cancels outstanding network state updates
+    };
+  }, [userId, userEmail, userRole, isAdmin]);
 
   const handleOnboardingComplete = async () => {
     if (checkUser) {
@@ -98,21 +151,23 @@ export default function AppLayout() {
     }
   };
 
-  // Block rendering while authenticating to prevent component layout flashing
-  if (authLoading || verifyingTutor) return (
-    <div className="fixed inset-0 flex items-center justify-center bg-background">
-      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-    </div>
-  );
+  // Block rendering to prevent component layout flashing
+  if (authLoading || verifyingTutor) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   // 1. Guest view tree
   if (!user) {
-    return renderStructuralTree(isMobile, location, null);
+    return <StructuralTree isMobile={isMobile} location={location} user={null} />;
   }
 
   // 2. Admin superpowers bypass
   if (isAdmin) {
-    return renderStructuralTree(isMobile, location, user);
+    return <StructuralTree isMobile={isMobile} location={location} user={user} />;
   }
 
   // 3. User onboarding funnel check
@@ -126,34 +181,5 @@ export default function AppLayout() {
   }
 
   // 5. Normal verified application layout view
-  return renderStructuralTree(isMobile, location, user);
-}
-
-// Helper structural renderer to maintain layout clean code separation
-function renderStructuralTree(isMobile, location, user) {
-  return isMobile ? (
-    <div className="min-h-screen bg-background flex flex-col">
-      <MobileHeader />
-      <main className="flex-1 pt-14 pb-16">
-        <AnimatePresence mode="wait">
-          <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-            <Outlet context={{ user }} />
-          </motion.div>
-        </AnimatePresence>
-      </main>
-      <MobileBottomTabs user={user} />
-    </div>
-  ) : (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navbar user={user} />
-      <main className="flex-1">
-        <AnimatePresence mode="wait">
-          <motion.div key={location.pathname} variants={pageVariants} initial="initial" animate="animate" exit="exit" transition={pageTransition}>
-            <Outlet context={{ user }} />
-          </motion.div>
-        </AnimatePresence>
-      </main>
-      <Footer />
-    </div>
-  );
+  return <StructuralTree isMobile={isMobile} location={location} user={user} />;
 }
