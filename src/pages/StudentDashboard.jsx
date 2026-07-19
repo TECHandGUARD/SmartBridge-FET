@@ -1,5 +1,5 @@
 // src/pages/StudentDashboard.jsx
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,49 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const RESOURCES_DISPLAY_LIMIT = 6;
+// ============================================================
+// 🔧 SOFT-CODED CONFIGURATION
+// ============================================================
+
+const CONFIG = {
+  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
+  
+  // Display limits
+  RESOURCES_LIMIT: Number(import.meta.env.VITE_STUDENT_RESOURCES_LIMIT) || 6,
+  TUTORS_LIMIT: Number(import.meta.env.VITE_STUDENT_TUTORS_LIMIT) || 5,
+  BOOKINGS_LIMIT: Number(import.meta.env.VITE_STUDENT_BOOKINGS_LIMIT) || 20,
+  
+  // Real-time settings
+  DEBOUNCE_DELAY: Number(import.meta.env.VITE_STUDENT_DEBOUNCE_DELAY) || 2000,
+  POLLING_INTERVAL: Number(import.meta.env.VITE_STUDENT_POLLING_INTERVAL) || 300000, // 5 minutes
+  
+  // Feature flags
+  FEATURES: {
+    ENABLE_REAL_TIME: import.meta.env.VITE_STUDENT_ENABLE_REAL_TIME !== 'false',
+    ENABLE_POLLING: import.meta.env.VITE_STUDENT_ENABLE_POLLING !== 'false',
+    ENABLE_LOGGING: import.meta.env.VITE_STUDENT_ENABLE_LOGGING !== 'false',
+  },
+  
+  // Messages
+  MESSAGES: {
+    WELCOME: import.meta.env.VITE_STUDENT_WELCOME_MSG || 'Welcome back, Scholar!',
+    WELCOME_DESC: import.meta.env.VITE_STUDENT_WELCOME_DESC || 'Track your classes, access study material, and manage your progress.',
+    NO_BOOKINGS: import.meta.env.VITE_STUDENT_NO_BOOKINGS_MSG || 'No upcoming booking requests found.',
+    NO_RESOURCES: import.meta.env.VITE_STUDENT_NO_RESOURCES_MSG || 'No learning resources available yet.',
+    NO_TUTORS: import.meta.env.VITE_STUDENT_NO_TUTORS_MSG || 'No certified instructors available.',
+    REFRESH: import.meta.env.VITE_STUDENT_REFRESH_BTN || 'Refresh Dashboard',
+    REFRESHING: import.meta.env.VITE_STUDENT_REFRESHING_BTN || 'Refreshing...',
+    ERROR_LOADING: import.meta.env.VITE_STUDENT_ERROR_LOADING || 'Failed to load dashboard data',
+    COMPONENT_ERROR: import.meta.env.VITE_STUDENT_COMPONENT_ERROR || 'Failed to load this section. Please try again.',
+  },
+  
+  // Currency
+  CURRENCY: import.meta.env.VITE_PREMIUM_CURRENCY || 'R',
+};
+
+// ============================================================
+// Main Component
+// ============================================================
 
 export default function StudentDashboard() {
   const { user } = useAuth();
@@ -26,12 +68,14 @@ export default function StudentDashboard() {
   // ---------- Structural Protection Guard Rails ----------
   const isFetchingRef = useRef(false);
   const abortControllerRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   // ---------- Protected Data Fetching Layer ----------
   const loadStudentData = useCallback(async (isManualRefresh = false) => {
     if (!user?.email) return;
 
-    // 1. Double-trigger lock mechanism
+    // Prevent duplicate concurrent executions
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
@@ -39,33 +83,36 @@ export default function StudentDashboard() {
       setRefreshing(true);
     }
 
-    // 2. Clear outstanding requests
+    // Cancel any ongoing network requests
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
     abortControllerRef.current = new AbortController();
 
+    const { RESOURCES_LIMIT, TUTORS_LIMIT, BOOKINGS_LIMIT } = CONFIG;
+
     try {
-      // Fetch data concurrently using Promise.allSettled to prevent single-query failure from crashing the loop
+      // Fetch data concurrently using Promise.allSettled to prevent single-query failure
       const [resourcesRes, bookingsRes, tutorsRes] = await Promise.allSettled([
         supabase
           .from('resources')
           .select('*')
           .eq('is_approved', true)
           .order('created_at', { ascending: false })
-          .limit(RESOURCES_DISPLAY_LIMIT),
+          .limit(RESOURCES_LIMIT),
         
         supabase
           .from('tutor_bookings')
           .select('*')
           .eq('student_email', user.email)
-          .order('date', { ascending: true }),
+          .order('date', { ascending: true })
+          .limit(BOOKINGS_LIMIT),
 
         supabase
           .from('tutor_profiles')
           .select('*')
           .eq('is_verified', true)
-          .limit(5)
+          .limit(TUTORS_LIMIT)
       ]);
 
       // Parse results safely
@@ -83,41 +130,74 @@ export default function StudentDashboard() {
         setTutors(tutorsRes.value.data || []);
       }
 
-      // Safe, deduplicated Activity Logging
-      if (!isManualRefresh) {
-        await supabase.from('activity_log').insert({
-          event_type: 'student_dashboard_view',
-          user_email: user.email,
-          description: `Student dashboard viewed by ${user.email}`
-        }).select().maybeSingle(); // Prevent catching error bubbles
+      // Safe activity logging (with error handling)
+      if (CONFIG.FEATURES.ENABLE_LOGGING && !isManualRefresh) {
+        try {
+          await supabase
+            .from('activity_log')
+            .insert({
+              event_type: 'student_dashboard_view',
+              user_email: user.email,
+              description: `Student dashboard viewed by ${user.email}`
+            });
+        } catch (logErr) {
+          // Silently fail - don't break the main flow
+          console.warn('Activity log failed:', logErr.message);
+        }
       }
 
     } catch (err) {
-      if (err.name !== 'AbortError') {
+      if (err.name !== 'AbortError' && isMountedRef.current) {
         console.error('Unhandled Student Dashboard Fetch Error:', err);
+        toast.error(CONFIG.MESSAGES.ERROR_LOADING);
       }
     } finally {
-      isFetchingRef.current = false;
-      setLoading(false);
-      setRefreshing(false);
+      if (isMountedRef.current) {
+        isFetchingRef.current = false;
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   }, [user?.email]);
 
-  // ---------- Lifecycle / Subscription Layer ----------
+  // ---------- Lifecycle / Subscription Layer (with Debouncing) ----------
   useEffect(() => {
-    if (!user?.email) return;
+    isMountedRef.current = true;
 
+    if (!user?.email) {
+      setLoading(false);
+      return;
+    }
+
+    // Initial load
     loadStudentData(false);
 
-    // Stable handler to receive notifications from real-time engine safely
+    // ✅ FIXED: Debounced real-time handler to prevent infinite loops
     const handleRealtimeChange = () => {
-      loadStudentData(false);
+      if (!CONFIG.FEATURES.ENABLE_REAL_TIME) return;
+      
+      // Clear any pending debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      
+      // Set a new debounce timer
+      debounceTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current && !isFetchingRef.current) {
+          loadStudentData(false);
+        }
+        debounceTimerRef.current = null;
+      }, CONFIG.DEBOUNCE_DELAY);
     };
 
     const channels = [
       supabase
         .channel(`student-bookings-${user.email}`)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_bookings', filter: `student_email=eq.${user.email}` }, handleRealtimeChange)
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'tutor_bookings', filter: `student_email=eq.${user.email}` }, 
+          handleRealtimeChange
+        )
         .subscribe(),
       supabase
         .channel('student-resource-sync')
@@ -125,33 +205,66 @@ export default function StudentDashboard() {
         .subscribe()
     ];
 
-    // Lazy fallback polling layer (every 5 minutes) instead of aggressive database checking
-    const pollingFallback = setInterval(() => {
-      loadStudentData(false);
-    }, 1000 * 60 * 5);
+    // Lazy fallback polling layer (every 5 minutes)
+    let pollingFallback = null;
+    if (CONFIG.FEATURES.ENABLE_POLLING) {
+      pollingFallback = setInterval(() => {
+        if (isMountedRef.current && !isFetchingRef.current) {
+          loadStudentData(false);
+        }
+      }, CONFIG.POLLING_INTERVAL);
+    }
 
     return () => {
-      clearInterval(pollingFallback);
-      if (abortControllerRef.current) abortControllerRef.current.abort();
-      channels.forEach(channel => supabase.removeChannel(channel));
+      isMountedRef.current = false;
+      
+      // Clear debounce timer
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      
+      if (pollingFallback) {
+        clearInterval(pollingFallback);
+      }
+      
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+      
+      channels.forEach(channel => {
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {
+          // Channel already removed
+        }
+      });
     };
   }, [user?.email, loadStudentData]);
 
+  // ---------- Loading State ----------
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center bg-background">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm text-muted-foreground mt-3 animate-pulse">Loading your dashboard...</p>
       </div>
     );
   }
 
+  // ---------- Render ----------
   return (
     <div className="space-y-8 py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       {/* Top Banner section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40 p-6 rounded-2xl border border-border">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-tight">Welcome back, Scholar!</h1>
-          <p className="text-muted-foreground text-sm mt-1">Track your classes, access study material, and manage your progress.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-tight">
+            {CONFIG.MESSAGES.WELCOME}
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {CONFIG.MESSAGES.WELCOME_DESC}
+          </p>
         </div>
         <Button 
           size="sm" 
@@ -161,7 +274,7 @@ export default function StudentDashboard() {
           className="sm:self-center gap-1.5 self-start"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          {refreshing ? 'Refreshing...' : 'Refresh Dashboard'}
+          {refreshing ? CONFIG.MESSAGES.REFRESHING : CONFIG.MESSAGES.REFRESH}
         </Button>
       </div>
 
@@ -181,7 +294,7 @@ export default function StudentDashboard() {
               {bookings.length === 0 ? (
                 <div className="text-center py-8 border border-dashed rounded-xl bg-muted/20">
                   <Clock className="w-8 h-8 mx-auto text-muted-foreground stroke-1 mb-2" />
-                  <p className="text-sm text-muted-foreground">No upcoming booking requests found.</p>
+                  <p className="text-sm text-muted-foreground">{CONFIG.MESSAGES.NO_BOOKINGS}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -216,7 +329,10 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent>
               {resources.length === 0 ? (
-                <p className="text-sm text-center py-6 text-muted-foreground">No learning resources available yet.</p>
+                <div className="text-center py-8 border border-dashed rounded-xl bg-muted/20">
+                  <FileText className="w-8 h-8 mx-auto text-muted-foreground stroke-1 mb-2" />
+                  <p className="text-sm text-muted-foreground">{CONFIG.MESSAGES.NO_RESOURCES}</p>
+                </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {resources.map((res) => (
@@ -254,10 +370,13 @@ export default function StudentDashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               {tutors.length === 0 ? (
-                <p className="text-sm text-muted-foreground italic">No certified instructors available.</p>
+                <div className="text-center py-6 border border-dashed rounded-xl bg-muted/20">
+                  <GraduationCap className="w-8 h-8 mx-auto text-muted-foreground stroke-1 mb-2" />
+                  <p className="text-sm text-muted-foreground italic">{CONFIG.MESSAGES.NO_TUTORS}</p>
+                </div>
               ) : (
                 tutors.map((tutor) => (
-                  <div key={tutor.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40">
+                  <div key={tutor.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 border border-border/40 hover:bg-muted/50 transition-colors">
                     <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center font-bold text-sm text-primary">
                       {tutor.full_name?.[0] || 'E'}
                     </div>
