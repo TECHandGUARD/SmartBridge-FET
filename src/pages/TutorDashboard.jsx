@@ -47,8 +47,17 @@ const CONFIG = {
   COMMISSION_FLAT_FEE: Number(import.meta.env.VITE_TUTOR_COMMISSION_FLAT_FEE) || 20,
   YOCO_TUTOR_PRO_LINK: import.meta.env.VITE_YOCO_TUTOR_PRO_LINK || 'https://pay.yoco.com/r/78MMPk',
   PAYOUT_DAY: import.meta.env.VITE_PAYOUT_DAY || 'Thursday',
+  
+  // ✅ NEW: Real-time & Debounce Settings
+  DEBOUNCE_DELAY: Number(import.meta.env.VITE_TUTOR_DEBOUNCE_DELAY) || 2000,
+  POLLING_INTERVAL: Number(import.meta.env.VITE_TUTOR_POLLING_INTERVAL) || 300000,
+  
+  // Feature flags
   ENABLE_REAL_TIME: import.meta.env.VITE_ENABLE_TUTOR_REAL_TIME !== 'false',
   ENABLE_ANNOUNCEMENTS: import.meta.env.VITE_ENABLE_TUTOR_ANNOUNCEMENTS !== 'false',
+  ENABLE_POLLING: import.meta.env.VITE_TUTOR_ENABLE_POLLING !== 'false',
+  ENABLE_LOGGING: import.meta.env.VITE_TUTOR_ENABLE_LOGGING !== 'false',
+  
   MESSAGES: {
     WELCOME: import.meta.env.VITE_TUTOR_WELCOME_MSG || 'Your professional tutoring workspace — everything in one place.',
     NO_RESOURCES: import.meta.env.VITE_TUTOR_NO_RESOURCES_MSG || 'No resources uploaded yet. Start sharing your knowledge!',
@@ -60,6 +69,12 @@ const CONFIG = {
     UPGRADE_DESC: import.meta.env.VITE_TUTOR_UPGRADE_DESC || 'Eliminate the {commission}% platform commission on all your bookings. Featured listing + advanced analytics.',
     UPGRADE_NOTE: import.meta.env.VITE_TUTOR_UPGRADE_NOTE || 'Use your email as reference on Yoco. Activated by Admin within 60 min.',
     LOAD_FAILED: import.meta.env.VITE_TUTOR_LOAD_FAILED_MSG || 'Failed to load dashboard data.',
+    LOADING: import.meta.env.VITE_TUTOR_LOADING_MSG || 'Loading your dashboard...',
+    REFRESH: import.meta.env.VITE_TUTOR_REFRESH_BTN || 'Refresh',
+    REFRESHING: import.meta.env.VITE_TUTOR_REFRESHING_BTN || 'Refreshing...',
+    RESOURCE_DELETED: import.meta.env.VITE_TUTOR_RESOURCE_DELETED_MSG || 'Resource deleted.',
+    RESOURCE_DELETE_ERROR: import.meta.env.VITE_TUTOR_RESOURCE_DELETE_ERROR_MSG || 'Failed to delete resource.',
+    RESOURCE_UPLOADED: import.meta.env.VITE_TUTOR_RESOURCE_UPLOADED_MSG || '📄 New resource uploaded successfully!',
   },
 };
 
@@ -186,18 +201,34 @@ export default function TutorDashboard() {
   const [activeSection, setActiveSection] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // 🛡️ Lock reference tracking execution windows to defeat infinite loops
-  const isInitialMountRef = useRef(false);
+  // 🛡️ Guard Rails for Infinite Loop Protection
+  const isFetchingRef = useRef(false);
+  const abortControllerRef = useRef(null);
+  const debounceTimerRef = useRef(null);
+  const isMountedRef = useRef(true);
 
   // ============================================================
-  // Load Data
+  // Load Data (with AbortController & Mount Protection)
   // ============================================================
-  const loadData = useCallback(async (targetEmail) => {
-    if (!targetEmail || isInitialMountRef.current) return;
+  const loadData = useCallback(async (targetEmail, isManualRefresh = false) => {
+    if (!targetEmail || isFetchingRef.current) return;
 
-    isInitialMountRef.current = true;
+    // If it's a manual refresh, set refreshing state
+    if (isManualRefresh) {
+      setRefreshing(true);
+    }
+
+    isFetchingRef.current = true;
+    
+    // Cancel any ongoing request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     setLoading(true);
     setError(null);
 
@@ -239,28 +270,66 @@ export default function TutorDashboard() {
       if (profileRes.error) throw profileRes.error;
       if (resourcesRes.error) throw resourcesRes.error;
 
-      setAnnouncements(fetchedAnnouncements);
-      setProfile(profileRes.data);
-      setResources(resourcesRes.data || []);
+      if (isMountedRef.current) {
+        setAnnouncements(fetchedAnnouncements);
+        setProfile(profileRes.data);
+        setResources(resourcesRes.data || []);
+      }
 
     } catch (err) {
-      console.error('Error loading tutor dashboard:', err);
-      setError(CONFIG.MESSAGES.LOAD_FAILED);
-      toast.error(CONFIG.MESSAGES.LOAD_FAILED);
+      if (err.name !== 'AbortError' && isMountedRef.current) {
+        console.error('Error loading tutor dashboard:', err);
+        setError(CONFIG.MESSAGES.LOAD_FAILED);
+        toast.error(CONFIG.MESSAGES.LOAD_FAILED);
+      }
     } finally {
-      setLoading(false);
-      isInitialMountRef.current = false; // Release execution lock
+      if (isMountedRef.current) {
+        setLoading(false);
+        setRefreshing(false);
+      }
+      isFetchingRef.current = false;
     }
   }, []);
 
   // ============================================================
-  // Effects & Real-time Subscriptions
+  // Effects & Real-time Subscriptions (with Debouncing)
   // ============================================================
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (user?.email) {
+      // Initial load
       loadData(user.email);
 
       if (!CONFIG.ENABLE_REAL_TIME) return;
+
+      // ✅ FIXED: Debounced handler to prevent infinite loops
+      const handleRealtimeChange = (payload) => {
+        // Clear any pending debounce timer
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        
+        // Set a new debounce timer
+        debounceTimerRef.current = setTimeout(() => {
+          if (isMountedRef.current && !isFetchingRef.current) {
+            // Handle the specific change
+            if (payload.eventType === 'INSERT') {
+              setResources(prev => [payload.new, ...prev]);
+              toast.info(CONFIG.MESSAGES.RESOURCE_UPLOADED);
+            } else if (payload.eventType === 'UPDATE') {
+              setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+            } else if (payload.eventType === 'DELETE') {
+              setResources(prev => prev.filter(r => r.id !== payload.old.id));
+            } else {
+              // For other changes, reload full data
+              loadData(user.email);
+            }
+          }
+          debounceTimerRef.current = null;
+        }, CONFIG.DEBOUNCE_DELAY);
+      };
 
       const channel = supabase
         .channel(`tutor_resources_${user.email}`)
@@ -272,21 +341,43 @@ export default function TutorDashboard() {
             table: 'resources',
             filter: `tutor_email=eq.${user.email}`,
           },
-          (payload) => {
-            if (payload.eventType === 'INSERT') {
-              setResources(prev => [payload.new, ...prev]);
-              toast.info('📄 New resource uploaded successfully!');
-            } else if (payload.eventType === 'UPDATE') {
-              setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
-            } else if (payload.eventType === 'DELETE') {
-              setResources(prev => prev.filter(r => r.id !== payload.old.id));
-            }
-          }
+          handleRealtimeChange
         )
         .subscribe();
 
+      // Polling fallback (every 5 minutes)
+      let pollingFallback = null;
+      if (CONFIG.ENABLE_POLLING) {
+        pollingFallback = setInterval(() => {
+          if (isMountedRef.current && !isFetchingRef.current) {
+            loadData(user.email);
+          }
+        }, CONFIG.POLLING_INTERVAL);
+      }
+
       return () => {
-        supabase.removeChannel(channel);
+        isMountedRef.current = false;
+        
+        // Clear debounce timer
+        if (debounceTimerRef.current) {
+          clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = null;
+        }
+        
+        if (pollingFallback) {
+          clearInterval(pollingFallback);
+        }
+        
+        if (abortControllerRef.current) {
+          abortControllerRef.current.abort();
+          abortControllerRef.current = null;
+        }
+        
+        try {
+          supabase.removeChannel(channel);
+        } catch (e) {
+          // Channel already removed
+        }
       };
     }
   }, [user?.email, loadData]);
@@ -306,10 +397,10 @@ export default function TutorDashboard() {
       if (error) throw error;
 
       setResources(prev => prev.filter(r => r.id !== id));
-      toast.success('Resource deleted.');
+      toast.success(CONFIG.MESSAGES.RESOURCE_DELETED);
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete resource.');
+      toast.error(CONFIG.MESSAGES.RESOURCE_DELETE_ERROR);
     }
   };
 
@@ -369,7 +460,7 @@ export default function TutorDashboard() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-xs text-muted-foreground animate-pulse">Loading your dashboard...</p>
+        <p className="text-sm text-muted-foreground animate-pulse">{CONFIG.MESSAGES.LOADING}</p>
       </div>
     );
   }
@@ -381,7 +472,7 @@ export default function TutorDashboard() {
           <CardContent className="pt-6 text-center">
             <AlertTriangle className="w-12 h-12 text-destructive mx-auto mb-3" />
             <p className="text-destructive font-medium mb-4">{error}</p>
-            <Button onClick={() => loadData(user.email)} variant="outline">Retry</Button>
+            <Button onClick={() => loadData(user.email, true)} variant="outline">Retry</Button>
           </CardContent>
         </Card>
       </div>
@@ -402,7 +493,7 @@ export default function TutorDashboard() {
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Header */}
+        {/* Header with Refresh Button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -414,6 +505,16 @@ export default function TutorDashboard() {
             <p className="text-muted-foreground mt-1">{CONFIG.MESSAGES.WELCOME}</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => loadData(user.email, true)} 
+              disabled={refreshing}
+              className="gap-1.5"
+            >
+              <Loader2 className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? CONFIG.MESSAGES.REFRESHING : CONFIG.MESSAGES.REFRESH}
+            </Button>
             {isVerified && (
               hasSace ? (
                 <Badge className="bg-green-100 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-400 dark:border-green-800 gap-1.5">
