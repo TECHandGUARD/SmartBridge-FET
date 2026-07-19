@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useEffect } from 'react';
+import { useEffect, Suspense, lazy } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
@@ -28,69 +28,125 @@ const CONFIG = {
 };
 
 // ============================================================
-// Import all page components
+// Import all page components (with lazy loading for better performance)
 // ============================================================
 
-import Home from './pages/Home';
-import Subjects from './pages/Subjects';
-import SubjectDetail from './pages/SubjectDetail';
-import Premium from './pages/Premium';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import AboutTechAndGuard from './pages/AboutTechAndGuard';
-import StudentDashboard from './pages/StudentDashboard';
-import ParentDashboard from './pages/ParentDashboard';
-import TutorDashboard from './pages/TutorDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import CounselorDashboard from './pages/CounselorDashboard';
-import Tutors from './pages/Tutors';
-import ResourceSearch from './pages/ResourceSearch';
-import PracticeQuiz from './pages/PracticeQuiz';
-import Bookings from './pages/Bookings';
-import GroupStudyRooms from './pages/GroupStudyRooms';
-import VideoLessons from './pages/VideoLessons';
-import ResourcesLibrary from './pages/ResourcesLibrary';
-import CommunityForum from './pages/CommunityForum';
-import BursaryFinder from './pages/BursaryFinder';
-import StudentOpportunities from './pages/StudentOpportunities';
-import CAPSAdmin from './pages/CAPSAdmin';
-import PayoutLog from './pages/PayoutLog';
-import Onboarding from './pages/Onboarding';
+// ✅ LAZY LOAD DASHBOARDS to prevent them from loading until needed
+const Home = lazy(() => import('./pages/Home'));
+const Subjects = lazy(() => import('./pages/Subjects'));
+const SubjectDetail = lazy(() => import('./pages/SubjectDetail'));
+const Premium = lazy(() => import('./pages/Premium'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const AboutTechAndGuard = lazy(() => import('./pages/AboutTechAndGuard'));
+const StudentDashboard = lazy(() => import('./pages/StudentDashboard'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
+const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
+const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
+const CounselorDashboard = lazy(() => import('./pages/CounselorDashboard'));
+const Tutors = lazy(() => import('./pages/Tutors'));
+const ResourceSearch = lazy(() => import('./pages/ResourceSearch'));
+const PracticeQuiz = lazy(() => import('./pages/PracticeQuiz'));
+const Bookings = lazy(() => import('./pages/Bookings'));
+const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
+const VideoLessons = lazy(() => import('./pages/VideoLessons'));
+const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
+const CommunityForum = lazy(() => import('./pages/CommunityForum'));
+const BursaryFinder = lazy(() => import('./pages/BursaryFinder'));
+const StudentOpportunities = lazy(() => import('./pages/StudentOpportunities'));
+const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
+const PayoutLog = lazy(() => import('./pages/PayoutLog'));
+const Onboarding = lazy(() => import('./pages/Onboarding'));
 
-// Auth pages
+// Auth pages (keep them immediate since they're critical)
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import AuthCallback from './pages/AuthCallback';
-import ResetPassword from './pages/ResetPassword';   // ✅ Added
+import ResetPassword from './pages/ResetPassword';
 
 // ============================================================
-// Fallback Component for Error Boundary
+// 🔧 Page Wrapper with Suspense & Error Boundary
 // ============================================================
 
-function ErrorFallback({ error, resetErrorBoundary }) {
+function PageWrapper({ children }) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <div className="text-center max-w-md border border-destructive/20 bg-destructive/5 rounded-2xl p-8">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
-          <span className="text-3xl">⚠️</span>
+    <Suspense
+      fallback={
+        <div className="min-h-[60vh] flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+          </div>
         </div>
-        <h2 className="font-playfair text-xl font-bold text-foreground mb-2">
-          {CONFIG.MESSAGES.ERROR_TITLE}
-        </h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          {CONFIG.MESSAGES.ERROR_DESC}
-        </p>
-        {CONFIG.APP_ENV === 'development' && (
-          <pre className="text-xs text-left bg-muted p-3 rounded-lg overflow-auto max-h-32 mb-4">
-            {error?.message || 'Unknown error'}
-          </pre>
-        )}
-        <Button onClick={resetErrorBoundary} variant="outline" className="gap-2">
-          <RefreshCw className="w-4 h-4" /> Try Again
-        </Button>
-      </div>
-    </div>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
+
+// ============================================================
+// Dashboard Wrapper with Reset on Error
+// ============================================================
+
+function DashboardWrapper({ children, dashboardName }) {
+  const [resetKey, setResetKey] = useState(0);
+
+  const handleReset = () => {
+    // Force re-mount the component
+    setResetKey(prev => prev + 1);
+  };
+
+  return (
+    <ErrorBoundary
+      key={resetKey}
+      FallbackComponent={({ error, resetErrorBoundary }) => (
+        <div className="min-h-[60vh] flex items-center justify-center p-4">
+          <div className="text-center max-w-md border border-destructive/20 bg-destructive/5 rounded-2xl p-8">
+            <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">⚠️</span>
+            </div>
+            <h2 className="font-playfair text-xl font-bold text-foreground mb-2">
+              Failed to load {dashboardName || 'Dashboard'}
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">
+              {CONFIG.MESSAGES.ERROR_DESC}
+            </p>
+            {CONFIG.APP_ENV === 'development' && (
+              <pre className="text-xs text-left bg-muted p-3 rounded-lg overflow-auto max-h-32 mb-4">
+                {error?.message || 'Unknown error'}
+              </pre>
+            )}
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button 
+                onClick={() => {
+                  resetErrorBoundary();
+                  handleReset();
+                }} 
+                variant="outline" 
+                className="gap-2"
+              >
+                <RefreshCw className="w-4 h-4" /> Try Again
+              </Button>
+              <Button 
+                onClick={() => window.location.href = '/'} 
+                variant="ghost"
+                className="gap-2"
+              >
+                Return Home
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      onReset={() => {
+        // Additional cleanup if needed
+        console.log(`🔄 Resetting ${dashboardName || 'Dashboard'}`);
+      }}
+    >
+      {children}
+    </ErrorBoundary>
   );
 }
 
@@ -99,7 +155,25 @@ function ErrorFallback({ error, resetErrorBoundary }) {
 // ============================================================
 
 function Page({ component: Component, ...props }) {
-  return <Component {...props} />;
+  return (
+    <PageWrapper>
+      <Component {...props} />
+    </PageWrapper>
+  );
+}
+
+// ============================================================
+// Dashboard Page Component (with extra error handling)
+// ============================================================
+
+function DashboardPage({ component: Component, name, ...props }) {
+  return (
+    <PageWrapper>
+      <DashboardWrapper dashboardName={name}>
+        <Component {...props} />
+      </DashboardWrapper>
+    </PageWrapper>
+  );
 }
 
 // ============================================================
@@ -135,7 +209,7 @@ const AuthenticatedApp = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/auth/callback" element={<AuthCallback />} />
-      <Route path="/reset-password" element={<ResetPassword />} />  {/* ✅ Uncommented */}
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* ============================================================
           MAIN APP LAYOUT (header + footer)
@@ -153,8 +227,14 @@ const AuthenticatedApp = () => {
 
         {/* Authenticated */}
         <Route element={<ProtectedRoute />}>
-          <Route path="/student-dashboard" element={<Page component={StudentDashboard} />} />
-          <Route path="/parent-dashboard" element={<Page component={ParentDashboard} />} />
+          <Route 
+            path="/student-dashboard" 
+            element={<DashboardPage component={StudentDashboard} name="Student Dashboard" />} 
+          />
+          <Route 
+            path="/parent-dashboard" 
+            element={<DashboardPage component={ParentDashboard} name="Parent Dashboard" />} 
+          />
           <Route path="/bookings" element={<Page component={Bookings} />} />
           <Route path="/search" element={<Page component={ResourceSearch} />} />
           <Route path="/quiz" element={<Page component={PracticeQuiz} />} />
@@ -175,7 +255,10 @@ const AuthenticatedApp = () => {
             />
           }
         >
-          <Route path="/tutor-dashboard" element={<Page component={TutorDashboard} />} />
+          <Route 
+            path="/tutor-dashboard" 
+            element={<DashboardPage component={TutorDashboard} name="Tutor Dashboard" />} 
+          />
         </Route>
 
         {/* Admin-only */}
@@ -187,7 +270,10 @@ const AuthenticatedApp = () => {
             />
           }
         >
-          <Route path="/admin" element={<Page component={AdminDashboard} />} />
+          <Route 
+            path="/admin" 
+            element={<DashboardPage component={AdminDashboard} name="Admin Dashboard" />} 
+          />
           <Route path="/caps-admin" element={<Page component={CAPSAdmin} />} />
           <Route path="/payout-log" element={<Page component={PayoutLog} />} />
         </Route>
