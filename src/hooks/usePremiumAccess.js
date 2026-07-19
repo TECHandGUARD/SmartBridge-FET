@@ -1,3 +1,4 @@
+// src/hooks/usePremiumAccess.js
 /**
  * ====================================================================
  * SECURITY SUBSCRIPTION GATEWAY: SMARTBRIDGE FET
@@ -31,6 +32,27 @@ const ADMIN_EMAILS = import.meta.env.VITE_ADMIN_EMAILS
 // ============================================================
 
 const subscriptionCache = new Map();
+
+// ============================================================
+// Helper: Safe activity logging (no .catch() bug)
+// ============================================================
+
+const logActivity = async (eventType, userEmail, userId, description, metadata = {}) => {
+  try {
+    await supabase
+      .from('activity_log')
+      .insert({
+        event_type: eventType,
+        user_email: userEmail,
+        user_id: userId,
+        description: description,
+        metadata: metadata
+      });
+  } catch (err) {
+    // Silently fail - don't break the main flow
+    console.warn('⚠️ Activity log failed:', err.message);
+  }
+};
 
 // ============================================================
 // Main Hook
@@ -109,19 +131,14 @@ export default function usePremiumAccess(user) {
         setTrialDaysLeft(0);
         setLoading(false);
 
-        // Activity logging
-        supabase
-          .from('activity_log')
-          .insert({
-            event_type: 'premium_access_granted',
-            user_email: userEmail,
-            user_id: userId,
-            description: 'Super admin premium access granted',
-            metadata: {
-              reason: isSuperAdminFlag ? 'database_field' : 'role_or_email'
-            }
-          })
-          .catch(() => {});
+        // ✅ FIXED: Use safe logging helper instead of .catch()
+        await logActivity(
+          'premium_access_granted',
+          userEmail,
+          userId,
+          'Super admin premium access granted',
+          { reason: isSuperAdminFlag ? 'database_field' : 'role_or_email' }
+        );
       }
       return;
     }
@@ -145,10 +162,11 @@ export default function usePremiumAccess(user) {
       }
 
       // Fetch subscription from Supabase
+      // ✅ FIXED: Use 'user_email' column (not 'student_email')
       const { data: subscription, error: subError } = await supabase
         .from('subscriptions')
-        .select('plan_tier, status, trial_started_at')
-        .eq('student_email', userEmail.trim().toLowerCase())
+        .select('plan, status, trial_started_at')
+        .eq('user_email', userEmail.trim().toLowerCase())
         .maybeSingle();
 
       if (subError) {
@@ -161,25 +179,23 @@ export default function usePremiumAccess(user) {
       let daysLeft = 0;
 
       // 1. Evaluate Paid Premium Tier Status
-      if (subscription && subscription.plan_tier === 'premium' && subscription.status === 'active') {
+      // ✅ FIXED: Use 'plan' column (not 'plan_tier')
+      if (subscription && subscription.plan === 'premium' && subscription.status === 'active') {
         premium = true;
         trial = false;
         daysLeft = 0;
 
-        // Log active premium access
-        supabase
-          .from('activity_log')
-          .insert({
-            event_type: 'premium_access_granted',
-            user_email: userEmail,
-            user_id: userId,
-            description: 'Active premium subscription',
-            metadata: {
-              plan_tier: subscription.plan_tier,
-              status: subscription.status
-            }
-          })
-          .catch(() => {});
+        // ✅ FIXED: Use safe logging helper
+        await logActivity(
+          'premium_access_granted',
+          userEmail,
+          userId,
+          'Active premium subscription',
+          {
+            plan: subscription.plan,
+            status: subscription.status
+          }
+        );
       } else {
         // 2. Evaluate 3-Day Trial Access
         const trialStartStr = subscription?.trial_started_at;
@@ -190,19 +206,14 @@ export default function usePremiumAccess(user) {
             trial = true;
             daysLeft = calculatedDays;
 
-            // Log trial access
-            supabase
-              .from('activity_log')
-              .insert({
-                event_type: 'trial_access_granted',
-                user_email: userEmail,
-                user_id: userId,
-                description: `Trial access - ${daysLeft} days remaining`,
-                metadata: {
-                  days_remaining: daysLeft
-                }
-              })
-              .catch(() => {});
+            // ✅ FIXED: Use safe logging helper
+            await logActivity(
+              'trial_access_granted',
+              userEmail,
+              userId,
+              `Trial access - ${daysLeft} days remaining`,
+              { days_remaining: daysLeft }
+            );
           }
         }
       }
