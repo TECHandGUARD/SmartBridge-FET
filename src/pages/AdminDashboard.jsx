@@ -1,6 +1,6 @@
 // src/pages/AdminDashboard.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase, executeQuery } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -277,16 +277,12 @@ export default function AdminDashboard() {
   const debounceTimerRef = useRef(null);
   const isMountedRef = useRef(true);
 
-  // ---------- Load User Count (with deduplication) ----------
+  // ---------- Load User Count (for pagination) ----------
   const loadUserCount = useCallback(async () => {
     try {
-      const cacheKey = 'admin_user_count';
-      const { count, error } = await executeQuery(
-        cacheKey,
-        () => supabase
-          .from('users')
-          .select('*', { count: 'exact', head: true })
-      );
+      const { count, error } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true });
       
       if (error) throw error;
       if (isMountedRef.current) {
@@ -297,7 +293,7 @@ export default function AdminDashboard() {
     }
   }, []);
 
-  // ---------- Load Dashboard Data (Paginated, with deduplication) ----------
+  // ---------- Load Dashboard Data (Paginated) ----------
   const loadDashboardData = useCallback(async (isManualRefresh = false) => {
     if (!user?.email) return;
     
@@ -321,16 +317,12 @@ export default function AdminDashboard() {
         await loadUserCount();
       }
 
-      // 2. Load First Batch of Users (with deduplication)
-      const usersCacheKey = `admin_users_first_${PAGE_SIZE}`;
-      const { data: usersData, error: usersError } = await executeQuery(
-        usersCacheKey,
-        () => supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(0, PAGE_SIZE - 1)
-      );
+      // 2. Load First Batch of Users
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(0, PAGE_SIZE - 1);
       
       if (usersError) throw usersError;
       
@@ -338,42 +330,30 @@ export default function AdminDashboard() {
       setHasMoreUsers((usersData?.length || 0) >= PAGE_SIZE);
       setUsersPage(1);
 
-      // 3. Load Other Data (each with its own cache key)
+      // 3. Load Other Data (limited counts)
       const [
-        tutorsRes,
-        resourcesRes,
-        subsRes,
-        bookingsRes,
-        logsRes,
-        bannerRes
+        { data: tutorsData, error: tutorsError },
+        { data: resourcesData, error: resourcesError },
+        { data: subsData, error: subsError },
+        { data: bookingsData, error: bookingsError },
+        { data: logsData, error: logsError },
+        { data: bannerData, error: bannerError }
       ] = await Promise.all([
-        executeQuery('admin_tutors_200', () =>
-          supabase.from('tutor_profiles').select('*').order('created_at', { ascending: false }).limit(200)
-        ),
-        executeQuery('admin_resources_200', () =>
-          supabase.from('resources').select('*').order('created_at', { ascending: false }).limit(200)
-        ),
-        executeQuery('admin_subscriptions_active_200', () =>
-          supabase.from('subscriptions').select('*').eq('status', 'active').limit(200)
-        ),
-        executeQuery('admin_bookings_200', () =>
-          supabase.from('tutor_bookings').select('*').order('created_at', { ascending: false }).limit(200)
-        ),
-        executeQuery('admin_activity_logs_100', () =>
-          supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100)
-        ),
-        executeQuery('admin_banner_clicks_1000', () =>
-          supabase.from('banner_clicks').select('*').order('click_timestamp', { ascending: false }).limit(1000)
-        )
+        supabase.from('tutor_profiles').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('resources').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('subscriptions').select('*').eq('status', 'active').limit(200),
+        supabase.from('tutor_bookings').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100),
+        supabase.from('banner_clicks').select('*').order('click_timestamp', { ascending: false }).limit(1000)
       ]);
 
       if (isMountedRef.current) {
-        if (!tutorsRes.error) setTutors(tutorsRes.data || []);
-        if (!resourcesRes.error) setResources(resourcesRes.data || []);
-        if (!subsRes.error) setSubscriptions(subsRes.data || []);
-        if (!bookingsRes.error) setBookings(bookingsRes.data || []);
-        if (!logsRes.error) setLogs(logsRes.data || []);
-        if (!bannerRes.error) setBannerClicks(bannerRes.data || []);
+        setTutors(tutorsData || []);
+        setResources(resourcesData || []);
+        setSubscriptions(subsData || []);
+        setBookings(bookingsData || []);
+        setLogs(logsData || []);
+        setBannerClicks(bannerData || []);
       }
 
     } catch (err) {
@@ -390,7 +370,7 @@ export default function AdminDashboard() {
     }
   }, [user?.email, totalUserCount, loadUserCount]);
 
-  // ---------- Load More Users (Pagination, with deduplication) ----------
+  // ---------- Load More Users (Pagination) ----------
   const loadMoreUsers = useCallback(async () => {
     if (loadingMore || !hasMoreUsers) return;
     
@@ -398,17 +378,13 @@ export default function AdminDashboard() {
     const PAGE_SIZE = CONFIG.PAGINATION.DEFAULT_PAGE_SIZE;
     const start = users.length;
     const end = start + PAGE_SIZE - 1;
-    const cacheKey = `admin_users_more_${start}_${end}`;
 
     try {
-      const { data, error } = await executeQuery(
-        cacheKey,
-        () => supabase
-          .from('users')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(start, end)
-      );
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(start, end);
       
       if (error) throw error;
       
@@ -427,7 +403,7 @@ export default function AdminDashboard() {
     }
   }, [users.length, hasMoreUsers, loadingMore]);
 
-  // ---------- Real-time Subscriptions (unchanged) ----------
+  // ---------- Real-time Subscriptions (Debounced) ----------
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -506,7 +482,7 @@ export default function AdminDashboard() {
     };
   }, [user?.email, loadDashboardData]);
 
-  // ---------- Resource Approval/Rejection (direct, as they are mutations) ----------
+  // ---------- Resource Approval/Rejection ----------
   const handleApproveResource = async (resource) => {
     try {
       const { error } = await supabase
@@ -577,7 +553,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---------- Email Test (direct, unchanged) ----------
+  // ---------- Email Test ----------
   const sendTestEmail = async () => {
     if (!CONFIG.FEATURES.ENABLE_EMAIL_TEST) {
       toast.info('Email testing is disabled.');
@@ -656,7 +632,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ---------- Export Bookings (unchanged) ----------
+  // ---------- Export Bookings ----------
   const exportBookingsCSV = () => {
     if (!CONFIG.FEATURES.ENABLE_EXPORT) {
       toast.info('Export is disabled.');
@@ -694,7 +670,7 @@ export default function AdminDashboard() {
     toast.success(`Exported ${confirmed.length} bookings`);
   };
 
-  // ---------- Metrics Calculations (unchanged) ----------
+  // ---------- Metrics Calculations ----------
   const premiumRevenue = subscriptions
     .filter(s => s.plan === 'premium' || s.plan_type === 'premium')
     .reduce((sum, s) => sum + (s.amount_paid || 20), 0);
@@ -738,7 +714,6 @@ export default function AdminDashboard() {
     );
   }
 
-  // ---------- Render (unchanged) ----------
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -784,7 +759,7 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        {/* Tabs Grid Navigation - unchanged */}
+        {/* Tabs Grid Navigation */}
         <Tabs defaultValue="registrations">
           <TabsList className="mb-6 flex-wrap h-auto gap-1">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
@@ -811,7 +786,10 @@ export default function AdminDashboard() {
             <TabsTrigger value="system" className="gap-1.5"><Settings className="w-3.5 h-3.5" /> System Test</TabsTrigger>
           </TabsList>
 
-          {/* Tab Content – unchanged */}
+          {/* ============================================================
+              TAB CONTENT WITH ERROR BOUNDARIES
+              ============================================================ */}
+
           <TabsContent value="registrations">
             <SafeSubComponent>
               <UserRegistrationsPanel />
