@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
-import { useEffect, Suspense, lazy } from 'react';
+import { useEffect, Suspense, lazy, useState } from 'react';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,41 @@ import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
 import AuthCallback from './pages/AuthCallback';
 import ResetPassword from './pages/ResetPassword';
+
+// ============================================================
+// 🔧 Error Fallback Component (was missing)
+// ============================================================
+
+function ErrorFallback({ error, resetErrorBoundary }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="text-center max-w-md border border-destructive/20 bg-destructive/5 rounded-2xl p-8">
+        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+          <span className="text-3xl">⚠️</span>
+        </div>
+        <h2 className="font-playfair text-xl font-bold text-foreground mb-2">
+          {CONFIG.MESSAGES.ERROR_TITLE}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          {CONFIG.MESSAGES.ERROR_DESC}
+        </p>
+        {CONFIG.APP_ENV === 'development' && (
+          <pre className="text-xs text-left bg-muted p-3 rounded-lg overflow-auto max-h-32 mb-4">
+            {error?.message || 'Unknown error'}
+          </pre>
+        )}
+        <div className="flex flex-col sm:flex-row gap-2 justify-center">
+          <Button onClick={resetErrorBoundary} variant="outline" className="gap-2">
+            <RefreshCw className="w-4 h-4" /> Try Again
+          </Button>
+          <Button onClick={() => window.location.href = '/'} variant="ghost">
+            Return Home
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================
 // 🔧 Page Wrapper with Suspense & Error Boundary
