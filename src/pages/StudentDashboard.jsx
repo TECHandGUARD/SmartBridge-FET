@@ -1,36 +1,34 @@
 // src/pages/StudentDashboard.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, executeQuery, fetchApprovedResources, fetchTutors } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input'; // ✅ added missing import
 import { 
   BookOpen, Calendar, Clock, Star, FileText, ChevronRight, 
   GraduationCap, TrendingUp, Activity, Loader2, RefreshCw, AlertCircle,
-  Plus, ChevronDown, ChevronUp, Search, Filter, Lock   // <-- Lock added here
+  Plus, ChevronDown, ChevronUp, Search, Filter, Lock  // ✅ added Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ============================================================
-// 🔧 SOFT-CODED CONFIGURATION
+// 🔧 SOFT-CODED CONFIGURATION (unchanged)
 // ============================================================
 
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   
-  // Display limits
   RESOURCES_INITIAL_LIMIT: Number(import.meta.env.VITE_STUDENT_RESOURCES_INITIAL_LIMIT) || 6,
   RESOURCES_BATCH_SIZE: Number(import.meta.env.VITE_STUDENT_RESOURCES_BATCH_SIZE) || 20,
   TUTORS_LIMIT: Number(import.meta.env.VITE_STUDENT_TUTORS_LIMIT) || 5,
   BOOKINGS_LIMIT: Number(import.meta.env.VITE_STUDENT_BOOKINGS_LIMIT) || 20,
   MAX_RESOURCES: Number(import.meta.env.VITE_STUDENT_MAX_RESOURCES) || 1000,
   
-  // Real-time settings
   DEBOUNCE_DELAY: Number(import.meta.env.VITE_STUDENT_DEBOUNCE_DELAY) || 2000,
   POLLING_INTERVAL: Number(import.meta.env.VITE_STUDENT_POLLING_INTERVAL) || 300000,
   
-  // Feature flags
   FEATURES: {
     ENABLE_REAL_TIME: import.meta.env.VITE_STUDENT_ENABLE_REAL_TIME !== 'false',
     ENABLE_POLLING: import.meta.env.VITE_STUDENT_ENABLE_POLLING !== 'false',
@@ -38,7 +36,6 @@ const CONFIG = {
     ENABLE_RESOURCE_SEARCH: import.meta.env.VITE_STUDENT_ENABLE_RESOURCE_SEARCH !== 'false',
   },
   
-  // Messages
   MESSAGES: {
     WELCOME: import.meta.env.VITE_STUDENT_WELCOME_MSG || 'Welcome back, Scholar!',
     WELCOME_DESC: import.meta.env.VITE_STUDENT_WELCOME_DESC || 'Track your classes, access study material, and manage your progress.',
@@ -63,7 +60,7 @@ const CONFIG = {
 };
 
 // ============================================================
-// 📚 Resources Section with Load More
+// 📚 Resources Section (unchanged – uses props)
 // ============================================================
 
 function ResourcesSection({ 
@@ -299,20 +296,23 @@ export default function StudentDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isPremium, setIsPremium] = useState(false);
 
-  // ---------- Structural Protection Guard Rails ----------
+  // ---------- Guard Rails ----------
   const isFetchingRef = useRef(false);
   const abortControllerRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const isMountedRef = useRef(true);
 
-  // ---------- Load Resource Count ----------
+  // ---------- Load Resource Count (using executeQuery) ----------
   const loadResourceCount = useCallback(async () => {
+    const cacheKey = 'resource_count:approved';
     try {
-      const { count, error } = await supabase
-        .from('resources')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_approved', true);
-      
+      const { count, error } = await executeQuery(
+        cacheKey,
+        () => supabase
+          .from('resources')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_approved', true)
+      );
       if (error) throw error;
       if (isMountedRef.current) {
         setTotalResourceCount(count || 0);
@@ -322,20 +322,24 @@ export default function StudentDashboard() {
     }
   }, []);
 
-  // ---------- Load Resources (Paginated) ----------
+  // ---------- Load Resources (Paginated) – using executeQuery ----------
   const loadResources = useCallback(async (offset = 0, isLoadMore = false) => {
     if (!user?.email) return;
     
     const { RESOURCES_INITIAL_LIMIT, RESOURCES_BATCH_SIZE, MAX_RESOURCES } = CONFIG;
     const limit = isLoadMore ? RESOURCES_BATCH_SIZE : RESOURCES_INITIAL_LIMIT;
-    
+    const cacheKey = `resources:approved:${limit}:${offset}`;
+
     try {
-      const { data, error } = await supabase
-        .from('resources')
-        .select('*')
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      const { data, error } = await executeQuery(
+        cacheKey,
+        () => supabase
+          .from('resources')
+          .select('*')
+          .eq('is_approved', true)
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1)
+      );
       
       if (error) throw error;
       
@@ -359,22 +363,18 @@ export default function StudentDashboard() {
   // ---------- Load More Resources ----------
   const loadMoreResources = useCallback(async () => {
     if (loadingMore || !hasMoreResources) return;
-    
     setLoadingMore(true);
     await loadResources(resourceOffset, true);
     setLoadingMore(false);
   }, [resourceOffset, hasMoreResources, loadingMore, loadResources]);
 
-  // ---------- Load All Dashboard Data ----------
+  // ---------- Load All Dashboard Data (using executeQuery) ----------
   const loadStudentData = useCallback(async (isManualRefresh = false) => {
     if (!user?.email) return;
-
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
 
-    if (isManualRefresh) {
-      setRefreshing(true);
-    }
+    if (isManualRefresh) setRefreshing(true);
 
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
@@ -384,52 +384,56 @@ export default function StudentDashboard() {
     const { TUTORS_LIMIT, BOOKINGS_LIMIT } = CONFIG;
 
     try {
-      // Load all data concurrently
-      const [resourcesRes, bookingsRes, tutorsRes, countRes, premiumRes] = await Promise.allSettled([
-        loadResources(0, false),
-        supabase
+      // Load resources (initial batch) and count
+      await loadResources(0, false);
+      await loadResourceCount();
+
+      // Load bookings with deduplication
+      const bookingsCacheKey = `bookings:${user.email}:${BOOKINGS_LIMIT}`;
+      const { data: bookingsData, error: bookingsError } = await executeQuery(
+        bookingsCacheKey,
+        () => supabase
           .from('tutor_bookings')
           .select('*')
           .eq('student_email', user.email)
           .order('date', { ascending: true })
-          .limit(BOOKINGS_LIMIT),
-        supabase
+          .limit(BOOKINGS_LIMIT)
+      );
+      if (!bookingsError && bookingsData) setBookings(bookingsData);
+
+      // Load tutors with deduplication
+      const tutorsCacheKey = `tutors:verified:${TUTORS_LIMIT}`;
+      const { data: tutorsData, error: tutorsError } = await executeQuery(
+        tutorsCacheKey,
+        () => supabase
           .from('tutor_profiles')
           .select('*')
           .eq('is_verified', true)
-          .limit(TUTORS_LIMIT),
-        loadResourceCount(),
-        // Check if user is premium
-        supabase
-          .from('subscriptions')
-          .select('plan, status')
-          .eq('user_email', user.email)
-          .eq('status', 'active')
-          .maybeSingle()
-      ]);
-
-      // Parse bookings
-      if (bookingsRes.status === 'fulfilled' && !bookingsRes.value.error) {
-        setBookings(bookingsRes.value.data || []);
-      }
-
-      // Parse tutors
-      if (tutorsRes.status === 'fulfilled' && !tutorsRes.value.error) {
-        setTutors(tutorsRes.value.data || []);
-        // Extract unique subjects from tutors
+          .limit(TUTORS_LIMIT)
+      );
+      if (!tutorsError && tutorsData) {
+        setTutors(tutorsData);
         const allSubjects = new Set();
-        (tutorsRes.value.data || []).forEach(t => {
+        tutorsData.forEach(t => {
           (t.subjects || []).forEach(s => allSubjects.add(s));
         });
         setSubjects(Array.from(allSubjects).slice(0, 10));
       }
 
       // Check premium status
-      if (premiumRes.status === 'fulfilled' && !premiumRes.value.error) {
-        setIsPremium(!!premiumRes.value.data);
-      }
+      const premiumCacheKey = `subscription:${user.email}:active`;
+      const { data: premiumData, error: premiumError } = await executeQuery(
+        premiumCacheKey,
+        () => supabase
+          .from('subscriptions')
+          .select('plan, status')
+          .eq('user_email', user.email)
+          .eq('status', 'active')
+          .maybeSingle()
+      );
+      if (!premiumError) setIsPremium(!!premiumData);
 
-      // Safe activity logging
+      // Activity logging (not cached)
       if (CONFIG.FEATURES.ENABLE_LOGGING && !isManualRefresh) {
         try {
           await supabase
@@ -458,25 +462,18 @@ export default function StudentDashboard() {
     }
   }, [user?.email, loadResources, loadResourceCount]);
 
-  // ---------- Lifecycle / Subscription Layer ----------
+  // ---------- Lifecycle (unchanged) ----------
   useEffect(() => {
     isMountedRef.current = true;
-
     if (!user?.email) {
       setLoading(false);
       return;
     }
-
     loadStudentData(false);
 
     const handleRealtimeChange = () => {
       if (!CONFIG.FEATURES.ENABLE_REAL_TIME) return;
-      
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-      
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = setTimeout(() => {
         if (isMountedRef.current && !isFetchingRef.current) {
           loadStudentData(false);
@@ -510,25 +507,11 @@ export default function StudentDashboard() {
 
     return () => {
       isMountedRef.current = false;
-      
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
-      }
-      
-      if (pollingFallback) {
-        clearInterval(pollingFallback);
-      }
-      
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
-      }
-      
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      if (pollingFallback) clearInterval(pollingFallback);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
       channels.forEach(channel => {
-        try {
-          supabase.removeChannel(channel);
-        } catch (e) {}
+        try { supabase.removeChannel(channel); } catch (e) {}
       });
     };
   }, [user?.email, loadStudentData]);
@@ -543,10 +526,9 @@ export default function StudentDashboard() {
     );
   }
 
-  // ---------- Render ----------
+  // ---------- Render (unchanged) ----------
   return (
     <div className="space-y-8 py-6 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      {/* Top Banner section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/40 p-6 rounded-2xl border border-border">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold font-playfair tracking-tight">
@@ -576,10 +558,7 @@ export default function StudentDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content Columns */}
         <div className="lg:col-span-2 space-y-8">
-          
-          {/* Section: Resources with Load More */}
           <ResourcesSection
             resources={resources}
             totalCount={totalResourceCount}
@@ -591,7 +570,6 @@ export default function StudentDashboard() {
             isPremium={isPremium}
           />
 
-          {/* Section: Bookings */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle className="font-playfair text-xl flex items-center gap-2">
@@ -630,9 +608,7 @@ export default function StudentDashboard() {
           </Card>
         </div>
 
-        {/* Sidebar Content Column */}
         <div className="space-y-8">
-          {/* Top Tutors Panel */}
           <Card>
             <CardHeader>
               <CardTitle className="font-playfair text-xl flex items-center gap-2">
