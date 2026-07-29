@@ -372,7 +372,6 @@ export const getRealtimeHealth = () => {
 export const emergencyReset = async () => {
   console.warn('🔥 EMERGENCY RESET: Destroying all Supabase state.');
   await unsubscribeAll();
-  // Optionally, force re-authentication? Not here.
   console.log('✅ Emergency reset complete.');
 };
 
@@ -380,4 +379,162 @@ export const emergencyReset = async () => {
 if (typeof window !== 'undefined') {
   window.__supabaseEmergencyReset = emergencyReset;
   window.__supabaseChannels = getRealtimeHealth;
+}
+
+// ============================================================
+// 🧠 REQUEST CACHE & DEDUPLICATION (Fixes infinite loop)
+// ============================================================
+
+const requestCache = new Map();
+const FAILURE_FLAG = Symbol('FAILURE_FLAG');
+
+/**
+ * Execute a Supabase query with deduplication and retry limiting.
+ * 
+ * 🔥 This is the CRITICAL FIX for your infinite loop:
+ * - If the same query is already in flight, it returns the existing promise.
+ * - If a request fails, it is marked as failed and will NOT be retried automatically.
+ * - Prevents the browser from being overwhelmed with `ERR_INSUFFICIENT_RESOURCES`.
+ *
+ * @param {string} cacheKey - Unique identifier for the query (e.g., 'resources:home:6').
+ * @param {Function} queryFn - Function that returns a promise.
+ * @param {number} ttl - Time-to-live in milliseconds (default 10000).
+ * @returns {Promise<any>}
+ */
+export const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
+  const now = Date.now();
+  const cached = requestCache.get(cacheKey);
+
+  // If there's a cached entry and it's still within TTL, return its promise
+  if (cached && (now - cached.timestamp < ttl)) {
+    // If the cached promise failed, DO NOT reuse it – reject immediately
+    if (cached.failed) {
+      return Promise.reject(new Error(`Query "${cacheKey}" previously failed. Not retrying.`));
+    }
+    return cached.promise;
+  }
+
+  // Start a new query
+  const promise = queryFn()
+    .then(result => {
+      // Clean up on success
+      requestCache.delete(cacheKey);
+      return result;
+    })
+    .catch(error => {
+      // Mark this query as failed so it won't be retried
+      requestCache.set(cacheKey, { 
+        failed: true, 
+        timestamp: now,
+        error: error 
+      });
+      // Re-throw so the caller knows it failed
+      throw error;
+    });
+
+  requestCache.set(cacheKey, { 
+    promise, 
+    timestamp: now,
+    failed: false 
+  });
+
+  // Auto-clean after TTL even if the promise hasn't resolved
+  setTimeout(() => {
+    requestCache.delete(cacheKey);
+  }, ttl);
+
+  return promise;
+};
+
+/**
+ * Clear the entire request cache manually.
+ */
+export const clearQueryCache = () => requestCache.clear();
+
+/**
+ * Get cache statistics for debugging.
+ */
+export const getCacheStats = () => {
+  const stats = { size: requestCache.size, keys: [] };
+  for (const [key, value] of requestCache) {
+    stats.keys.push({ 
+      key, 
+      failed: value.failed || false,
+      timestamp: value.timestamp 
+    });
+  }
+  return stats;
+};
+
+// ============================================================
+// 🎯 READY-TO-USE QUERY WRAPPERS FOR COMMON USE CASES
+// ============================================================
+
+/**
+ * Fetch approved resources with a cache deduplication.
+ * Use this instead of direct supabase.from('resources') in your Home page.
+ */
+export const fetchApprovedResources = (limit = 6, offset = 0) => {
+  const cacheKey = `resources:approved:${limit}:${offset}`;
+  return executeQuery(cacheKey, () =>
+    supabase
+      .from('resources')
+      .select('*')
+      .eq('is_approved', true)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+  );
+};
+
+/**
+ * Fetch a single resource by ID with cache deduplication.
+ */
+export const fetchResourceById = (id) => {
+  const cacheKey = `resource:${id}`;
+  return executeQuery(cacheKey, () =>
+    supabase
+      .from('resources')
+      .select('*')
+      .eq('id', id)
+      .single()
+  );
+};
+
+/**
+ * Fetch tutor profiles with cache deduplication.
+ */
+export const fetchTutors = (limit = 5) => {
+  const cacheKey = `tutors:${limit}`;
+  return executeQuery(cacheKey, () =>
+    supabase
+      .from('tutor_profiles')
+      .select('*')
+      .eq('is_verified', true)
+      .limit(limit)
+  );
+};
+
+/**
+ * Fetch upcoming bookings for a student with cache deduplication.
+ */
+export const fetchStudentBookings = (studentEmail, limit = 20) => {
+  const cacheKey = `bookings:${studentEmail}:${limit}`;
+  return executeQuery(cacheKey, () =>
+    supabase
+      .from('tutor_bookings')
+      .select('*')
+      .eq('student_email', studentEmail)
+      .order('date', { ascending: true })
+      .limit(limit)
+  );
+};
+
+// ============================================================
+// 🧹 CLEANUP ON PAGE UNLOAD
+// ============================================================
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('beforeunload', () => {
+    clearQueryCache();
+  });
 }
