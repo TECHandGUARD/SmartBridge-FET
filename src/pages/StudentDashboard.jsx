@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { 
   BookOpen, Calendar, Clock, Star, FileText, ChevronRight, 
   GraduationCap, TrendingUp, Activity, Loader2, RefreshCw, AlertCircle,
-  Plus, ChevronDown, ChevronUp, Search, Filter
+  Plus, ChevronDown, ChevronUp, Search, Filter, Lock   // <-- Lock added here
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -385,7 +385,7 @@ export default function StudentDashboard() {
 
     try {
       // Load all data concurrently
-      const [resourcesRes, bookingsRes, tutorsRes, countRes] = await Promise.allSettled([
+      const [resourcesRes, bookingsRes, tutorsRes, countRes, premiumRes] = await Promise.allSettled([
         loadResources(0, false),
         supabase
           .from('tutor_bookings')
