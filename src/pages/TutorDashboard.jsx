@@ -1,7 +1,7 @@
 // src/pages/TutorDashboard.jsx
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, executeQuery } from '@/lib/supabaseClient';
 import { SUBJECTS } from '@/lib/subjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,7 +37,7 @@ import LessonPlanner from '@/components/tutor/LessonPlanner';
 import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 // ============================================================
-// 🔧 SOFT-CODED CONFIGURATION
+// 🔧 SOFT-CODED CONFIGURATION (unchanged)
 // ============================================================
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
@@ -48,11 +48,9 @@ const CONFIG = {
   YOCO_TUTOR_PRO_LINK: import.meta.env.VITE_YOCO_TUTOR_PRO_LINK || 'https://pay.yoco.com/r/78MMPk',
   PAYOUT_DAY: import.meta.env.VITE_PAYOUT_DAY || 'Thursday',
   
-  // ✅ NEW: Real-time & Debounce Settings
   DEBOUNCE_DELAY: Number(import.meta.env.VITE_TUTOR_DEBOUNCE_DELAY) || 2000,
   POLLING_INTERVAL: Number(import.meta.env.VITE_TUTOR_POLLING_INTERVAL) || 300000,
   
-  // Feature flags
   ENABLE_REAL_TIME: import.meta.env.VITE_ENABLE_TUTOR_REAL_TIME !== 'false',
   ENABLE_ANNOUNCEMENTS: import.meta.env.VITE_ENABLE_TUTOR_ANNOUNCEMENTS !== 'false',
   ENABLE_POLLING: import.meta.env.VITE_TUTOR_ENABLE_POLLING !== 'false',
@@ -79,7 +77,7 @@ const CONFIG = {
 };
 
 // ============================================================
-// Sub-Components
+// Sub-Components (unchanged)
 // ============================================================
 function StatCard({ label, value, icon: Icon, color, subtitle }) {
   return (
@@ -204,26 +202,21 @@ export default function TutorDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  // 🛡️ Guard Rails for Infinite Loop Protection
+  // Guard Rails
   const isFetchingRef = useRef(false);
   const abortControllerRef = useRef(null);
   const debounceTimerRef = useRef(null);
   const isMountedRef = useRef(true);
 
   // ============================================================
-  // Load Data (with AbortController & Mount Protection)
+  // Load Data – using executeQuery
   // ============================================================
   const loadData = useCallback(async (targetEmail, isManualRefresh = false) => {
     if (!targetEmail || isFetchingRef.current) return;
 
-    // If it's a manual refresh, set refreshing state
-    if (isManualRefresh) {
-      setRefreshing(true);
-    }
-
+    if (isManualRefresh) setRefreshing(true);
     isFetchingRef.current = true;
     
-    // Cancel any ongoing request
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
@@ -236,13 +229,16 @@ export default function TutorDashboard() {
       // 1. Load announcements
       let fetchedAnnouncements = [];
       if (CONFIG.ENABLE_ANNOUNCEMENTS) {
-        const { data: announcementData, error: announcementError } = await supabase
-          .from('platform_announcements')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-          .limit(10);
-
+        const cacheKey = 'announcements:active:tutor';
+        const { data: announcementData, error: announcementError } = await executeQuery(
+          cacheKey,
+          () => supabase
+            .from('platform_announcements')
+            .select('*')
+            .eq('is_active', true)
+            .order('created_at', { ascending: false })
+            .limit(10)
+        );
         if (!announcementError && announcementData) {
           fetchedAnnouncements = announcementData.filter(a => {
             const aud = a.audience || [];
@@ -252,28 +248,33 @@ export default function TutorDashboard() {
       }
 
       // 2. Load tutor profile
-      const profileQuery = supabase
-        .from('tutor_profiles')
-        .select('*')
-        .eq('user_email', targetEmail)
-        .maybeSingle();
+      const profileCacheKey = `tutor_profile:${targetEmail}`;
+      const { data: profileData, error: profileError } = await executeQuery(
+        profileCacheKey,
+        () => supabase
+          .from('tutor_profiles')
+          .select('*')
+          .eq('user_email', targetEmail)
+          .maybeSingle()
+      );
+      if (profileError) throw profileError;
 
       // 3. Load resources
-      const resourcesQuery = supabase
-        .from('resources')
-        .select('*')
-        .eq('tutor_email', targetEmail)
-        .order('created_at', { ascending: false });
-
-      const [profileRes, resourcesRes] = await Promise.all([profileQuery, resourcesQuery]);
-
-      if (profileRes.error) throw profileRes.error;
-      if (resourcesRes.error) throw resourcesRes.error;
+      const resourcesCacheKey = `tutor_resources:${targetEmail}`;
+      const { data: resourcesData, error: resourcesError } = await executeQuery(
+        resourcesCacheKey,
+        () => supabase
+          .from('resources')
+          .select('*')
+          .eq('tutor_email', targetEmail)
+          .order('created_at', { ascending: false })
+      );
+      if (resourcesError) throw resourcesError;
 
       if (isMountedRef.current) {
         setAnnouncements(fetchedAnnouncements);
-        setProfile(profileRes.data);
-        setResources(resourcesRes.data || []);
+        setProfile(profileData);
+        setResources(resourcesData || []);
       }
 
     } catch (err) {
@@ -292,29 +293,23 @@ export default function TutorDashboard() {
   }, []);
 
   // ============================================================
-  // Effects & Real-time Subscriptions (with Debouncing)
+  // Effects & Real-time Subscriptions (unchanged logic)
   // ============================================================
   useEffect(() => {
     isMountedRef.current = true;
 
     if (user?.email) {
-      // Initial load
       loadData(user.email);
 
       if (!CONFIG.ENABLE_REAL_TIME) return;
 
-      // ✅ FIXED: Debounced handler to prevent infinite loops
       const handleRealtimeChange = (payload) => {
-        // Clear any pending debounce timer
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
           debounceTimerRef.current = null;
         }
-        
-        // Set a new debounce timer
         debounceTimerRef.current = setTimeout(() => {
           if (isMountedRef.current && !isFetchingRef.current) {
-            // Handle the specific change
             if (payload.eventType === 'INSERT') {
               setResources(prev => [payload.new, ...prev]);
               toast.info(CONFIG.MESSAGES.RESOURCE_UPLOADED);
@@ -323,7 +318,6 @@ export default function TutorDashboard() {
             } else if (payload.eventType === 'DELETE') {
               setResources(prev => prev.filter(r => r.id !== payload.old.id));
             } else {
-              // For other changes, reload full data
               loadData(user.email);
             }
           }
@@ -345,7 +339,6 @@ export default function TutorDashboard() {
         )
         .subscribe();
 
-      // Polling fallback (every 5 minutes)
       let pollingFallback = null;
       if (CONFIG.ENABLE_POLLING) {
         pollingFallback = setInterval(() => {
@@ -357,45 +350,27 @@ export default function TutorDashboard() {
 
       return () => {
         isMountedRef.current = false;
-        
-        // Clear debounce timer
-        if (debounceTimerRef.current) {
-          clearTimeout(debounceTimerRef.current);
-          debounceTimerRef.current = null;
-        }
-        
-        if (pollingFallback) {
-          clearInterval(pollingFallback);
-        }
-        
-        if (abortControllerRef.current) {
-          abortControllerRef.current.abort();
-          abortControllerRef.current = null;
-        }
-        
+        if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+        if (pollingFallback) clearInterval(pollingFallback);
+        if (abortControllerRef.current) abortControllerRef.current.abort();
         try {
           supabase.removeChannel(channel);
-        } catch (e) {
-          // Channel already removed
-        }
+        } catch (e) {}
       };
     }
   }, [user?.email, loadData]);
 
   // ============================================================
-  // Handlers
+  // Handlers (unchanged)
   // ============================================================
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
-
     try {
       const { error } = await supabase
         .from('resources')
         .delete()
         .eq('id', id);
-
       if (error) throw error;
-
       setResources(prev => prev.filter(r => r.id !== id));
       toast.success(CONFIG.MESSAGES.RESOURCE_DELETED);
     } catch (error) {
@@ -409,7 +384,7 @@ export default function TutorDashboard() {
   }, []);
 
   // ============================================================
-  // Access Control & Layout States
+  // Access Control (unchanged)
   // ============================================================
   const authorizedRoles = useMemo(() => ['tutor', 'sace_tutor', 'student_tutor', 'admin'], []);
 
@@ -480,7 +455,7 @@ export default function TutorDashboard() {
   }
 
   // ============================================================
-  // Computed Values
+  // Computed Values (unchanged)
   // ============================================================
   const totalDownloads = resources.reduce((sum, r) => sum + (Number(r.download_count) || 0), 0);
   const premiumResources = resources.filter(r => r.is_premium).length;
@@ -489,10 +464,12 @@ export default function TutorDashboard() {
   const hasSace = profile?.sace_number || false;
   const formattedPrice = `${CONFIG.PREMIUM_CURRENCY}${CONFIG.TUTOR_PRO_PRICE}`;
 
+  // ============================================================
+  // Render (unchanged)
+  // ============================================================
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-
         {/* Header with Refresh Button */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
