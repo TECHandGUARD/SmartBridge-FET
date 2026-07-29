@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import React, { useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import { 
@@ -14,6 +14,9 @@ import RoleDashboardCards from '@/components/home/RoleDashboardCards';
 import PremiumBanner from '@/components/home/PremiumBanner';
 import TechGuardBanner from '@/components/marketing/TechGuardBanner';
 import PersonalizedHome from '@/components/home/PersonalizedHome';
+
+// Import the new wrappers
+import { fetchApprovedResources, fetchTutors } from '@/lib/supabaseClient';
 
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
@@ -45,7 +48,7 @@ const CONFIG = {
 };
 
 // ============================================================
-// Sub-Components (Memoized for High-Throughput Performance)
+// Sub-Components (Memoized)
 // ============================================================
 const ComplianceBadges = React.memo(function ComplianceBadges() {
   const badges = [
@@ -99,7 +102,7 @@ const FooterSocialLinks = React.memo(function FooterSocialLinks() {
 });
 
 const Footer = React.memo(function Footer() {
-  const subjects = useMemo(() => CONFIG.MESSAGES.SUBJECTS_LIST.split(',').map(s => s.trim()), []);
+  const subjects = React.useMemo(() => CONFIG.MESSAGES.SUBJECTS_LIST.split(',').map(s => s.trim()), []);
 
   return (
     <footer className="bg-card border-t border-border/50 py-12">
@@ -172,9 +175,19 @@ const Footer = React.memo(function Footer() {
 });
 
 // ============================================================
-// Main Public Landing Shell
+// Main Public Landing Shell (now with pre-fetching)
 // ============================================================
 function PublicLandingView() {
+  // Pre-fetch resources and tutors on mount – this fills the cache
+  // so that child components (like SubjectsPreview, RoleDashboardCards)
+  // can use the cached data if they call the same wrappers.
+  React.useEffect(() => {
+    // Fetch the first 6 approved resources (used by SubjectsPreview)
+    fetchApprovedResources(6, 0).catch(() => {});
+    // Fetch the first 5 tutors (used by RoleDashboardCards)
+    fetchTutors(5).catch(() => {});
+  }, []);
+
   return (
     <main className="min-h-screen bg-background animate-in fade-in duration-300">
       <HeroSection />
@@ -200,7 +213,6 @@ function PublicLandingView() {
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
 
-  // Unified rendering prevents component remount storms if auth state momentarily flickers
   return (
     <>
       {isAuthenticated && user ? (
