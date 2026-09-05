@@ -341,10 +341,20 @@ const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
 };
 
 // ============================================================
-// 🎯 INTERCEPTOR: Automatically wrap EVERY supabase.from() query
+// ✅ FIX: Guard against undefined supabase before binding
 // ============================================================
 
-const originalFrom = supabase.from.bind(supabase);
+let originalFrom = null;
+
+// ✅ Only create the binding if supabase is defined
+if (supabase && typeof supabase.from === 'function') {
+  try {
+    originalFrom = supabase.from.bind(supabase);
+  } catch (e) {
+    console.warn('⚠️ Failed to bind supabase.from:', e.message);
+    originalFrom = null;
+  }
+}
 
 /**
  * Creates a cache key from the query builder's internal state.
@@ -374,33 +384,35 @@ const buildCacheKey = (tableName, queryBuilder) => {
   }
 };
 
-// Monkey-patch supabase.from to wrap the query execution with deduplication.
+// ✅ Monkey-patch supabase.from to wrap the query execution with deduplication.
 // We'll intercept the .then method of the query builder.
-supabase.from = function(tableName) {
-  const queryBuilder = originalFrom(tableName);
-  // Wrap the query builder's then and catch to use executeQuery.
-  // We'll create a proxy that overrides the then method.
-  // This is a simplified version – for production, we'd need to handle all promise methods.
-  const originalThen = queryBuilder.then.bind(queryBuilder);
-  const originalCatch = queryBuilder.catch.bind(queryBuilder);
-  const originalFinally = queryBuilder.finally.bind(queryBuilder);
+if (supabase && originalFrom) {
+  supabase.from = function(tableName) {
+    const queryBuilder = originalFrom(tableName);
+    // Wrap the query builder's then and catch to use executeQuery.
+    // We'll create a proxy that overrides the then method.
+    // This is a simplified version – for production, we'd need to handle all promise methods.
+    const originalThen = queryBuilder.then.bind(queryBuilder);
+    const originalCatch = queryBuilder.catch.bind(queryBuilder);
+    const originalFinally = queryBuilder.finally.bind(queryBuilder);
 
-  // We'll create a new promise-returning function.
-  const execute = () => {
-    // Build a cache key based on the table name and the query parameters.
-    // Since we can't easily extract the query details, we'll use a simpler approach:
-    // We'll generate a key based on the table name and a timestamp? No, that would break deduplication.
-    // Instead, we'll use a global counter to generate a unique key for each query chain.
-    // This is not ideal, but it's a trade-off.
-    // For a proper solution, we should use the provided wrappers (fetchApprovedResources, etc.).
-    // I'll recommend using the wrappers and provide them below.
-    // For now, we'll leave the interceptor as a placeholder and focus on the wrappers.
+    // We'll create a new promise-returning function.
+    const execute = () => {
+      // Build a cache key based on the table name and the query parameters.
+      // Since we can't easily extract the query details, we'll use a simpler approach:
+      // We'll generate a key based on the table name and a timestamp? No, that would break deduplication.
+      // Instead, we'll use a global counter to generate a unique key for each query chain.
+      // This is not ideal, but it's a trade-off.
+      // For a proper solution, we should use the provided wrappers (fetchApprovedResources, etc.).
+      // I'll recommend using the wrappers and provide them below.
+      // For now, we'll leave the interceptor as a placeholder and focus on the wrappers.
+      return queryBuilder;
+    };
+
+    // We'll just return the original query builder, but we'll add a note to use the wrappers.
     return queryBuilder;
   };
-
-  // We'll just return the original query builder, but we'll add a note to use the wrappers.
-  return queryBuilder;
-};
+}
 
 // ============================================================
 // 🎯 RECOMMENDED: USE THESE WRAPPERS INSTEAD OF DIRECT QUERIES
