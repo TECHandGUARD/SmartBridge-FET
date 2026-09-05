@@ -8,41 +8,52 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+console.log('🔍 Environment Check:');
+console.log('   VITE_SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ MISSING');
+console.log('   VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Present' : '❌ MISSING');
+
 // ============================================================
-// 🚨 Environment Validation
+// 🚨 Environment Validation - DO NOT THROW, JUST WARN
 // ============================================================
 
+let supabaseClient = null;
+let initError = null;
+
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('🚨 Missing Supabase environment variables:');
-  console.error('  VITE_SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
-  console.error('  VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
-  console.error('Please set these in your Amplify environment or .env.local file.');
+  const errorMessage = `Missing Supabase environment variables. VITE_SUPABASE_URL: ${supabaseUrl ? '✅' : '❌'}, VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✅' : '❌'}`;
+  console.error('🚨 ' + errorMessage);
+  initError = new Error(errorMessage);
+  // DO NOT THROW - let app load with graceful degradation
+} else {
+  // ============================================================
+  // 🚀 Create Supabase Client (ONLY if credentials exist)
+  // ============================================================
   
-  if (import.meta.env.PROD) {
-    throw new Error('Supabase environment variables are required.');
+  try {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: true,
+        flowType: 'pkce',
+      },
+      realtime: {
+        params: {
+          eventsPerSecond: 10,
+        },
+      },
+    });
+    console.log('✅ Supabase client initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to create Supabase client:', error);
+    initError = error;
+    supabaseClient = null;
   }
 }
 
-// ============================================================
-// 🚀 Create Supabase Client
-// ============================================================
-
-const originalCreateClient = createClient;
-const supabaseClient = originalCreateClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: true,
-    flowType: 'pkce',
-  },
-  realtime: {
-    params: {
-      eventsPerSecond: 10,
-    },
-  },
-});
-
+// ✅ CRITICAL: Export supabaseClient (not undefined)
 export const supabase = supabaseClient;
+export const supbaseInitError = initError;
 
 // ============================================================
 // 📡 Global Channel Manager (Prevents duplicate subscriptions)
@@ -52,6 +63,11 @@ const activeChannels = new Map();
 const MAX_CHANNELS = 20;
 
 export const safeSubscribe = async (channelName, setupCallback) => {
+  if (!supabase) {
+    console.error('❌ Cannot subscribe: Supabase not initialized');
+    return { channel: null, error: initError };
+  }
+
   if (activeChannels.has(channelName)) {
     const existing = activeChannels.get(channelName);
     try {
@@ -96,6 +112,8 @@ export const safeSubscribe = async (channelName, setupCallback) => {
 };
 
 export const unsafeUnsubscribe = async (channelName) => {
+  if (!supabase) return;
+  
   if (activeChannels.has(channelName)) {
     const channel = activeChannels.get(channelName);
     try {
@@ -111,6 +129,8 @@ export const unsafeUnsubscribe = async (channelName) => {
 };
 
 export const unsubscribeAll = async () => {
+  if (!supabase) return;
+  
   const keys = Array.from(activeChannels.keys());
   for (const key of keys) {
     await unsafeUnsubscribe(key);
@@ -123,10 +143,12 @@ export const getActiveChannels = () => Array.from(activeChannels.keys());
 export const isChannelActive = (channelName) => activeChannels.has(channelName);
 
 // ============================================================
-// 🛠️ Existing Helper Functions (unchanged)
+// 🛠️ Existing Helper Functions
 // ============================================================
 
 export const getCurrentUser = async () => {
+  if (!supabase) return { user: null, error: initError };
+  
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
@@ -138,6 +160,8 @@ export const getCurrentUser = async () => {
 };
 
 export const getCurrentUserProfile = async () => {
+  if (!supabase) return { profile: null, error: initError };
+  
   try {
     const { user, error } = await getCurrentUser();
     if (error || !user) return { profile: null, error };
@@ -168,6 +192,8 @@ export const hasRole = async (allowedRoles) => {
 export const isAdmin = async () => hasRole('admin');
 
 export const signOut = async () => {
+  if (!supabase) return { success: false, error: initError };
+  
   try {
     await unsubscribeAll();
     const { error } = await supabase.auth.signOut();
@@ -179,16 +205,21 @@ export const signOut = async () => {
   }
 };
 
-export const db = (tableName) => supabase.from(tableName);
+export const db = (tableName) => {
+  if (!supabase) throw initError;
+  return supabase.from(tableName);
+};
 export const table = db;
 
 // ============================================================
-// 📁 Storage Helpers (unchanged)
+// 📁 Storage Helpers
 // ============================================================
 
 const DEFAULT_BUCKET = import.meta.env.VITE_STORAGE_BUCKET || 'documents';
 
 export const uploadFile = async (file, bucket = DEFAULT_BUCKET, path = '') => {
+  if (!supabase) return { data: null, error: initError, publicUrl: null };
+  
   try {
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
     const filePath = path ? `${path}/${fileName}` : fileName;
@@ -210,6 +241,8 @@ export const uploadFile = async (file, bucket = DEFAULT_BUCKET, path = '') => {
 };
 
 export const deleteFile = async (filePath, bucket = DEFAULT_BUCKET) => {
+  if (!supabase) return { data: null, error: initError };
+  
   try {
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -223,10 +256,12 @@ export const deleteFile = async (filePath, bucket = DEFAULT_BUCKET) => {
 };
 
 // ============================================================
-// ⚡ Edge Functions (unchanged)
+// ⚡ Edge Functions
 // ============================================================
 
 export const invokeFunction = async (functionName, payload = {}) => {
+  if (!supabase) return { data: null, error: initError };
+  
   try {
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: payload,
@@ -240,10 +275,12 @@ export const invokeFunction = async (functionName, payload = {}) => {
 };
 
 // ============================================================
-// 📊 Activity Logging (unchanged)
+// 📊 Activity Logging
 // ============================================================
 
 export const logActivity = async (eventType, description, metadata = {}) => {
+  if (!supabase) return;
+  
   try {
     const { user } = await getCurrentUser();
     await supabase
@@ -262,10 +299,12 @@ export const logActivity = async (eventType, description, metadata = {}) => {
 };
 
 // ============================================================
-// 🔌 Connection & Health Check (unchanged)
+// 🔌 Connection & Health Check
 // ============================================================
 
 export const checkConnection = async () => {
+  if (!supabase) return { success: false, error: initError?.message };
+  
   try {
     const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
     if (error) throw error;
@@ -285,7 +324,7 @@ export const getRealtimeHealth = () => ({
 });
 
 // ============================================================
-// 🛑 Emergency Reset (unchanged)
+// 🛑 Emergency Reset
 // ============================================================
 
 export const emergencyReset = async () => {
@@ -300,16 +339,11 @@ if (typeof window !== 'undefined') {
 }
 
 // ============================================================
-// 🧠 GLOBAL QUERY DEDUPLICATION (AUTOMATIC FOR ALL COMPONENTS)
+// 🧠 GLOBAL QUERY DEDUPLICATION
 // ============================================================
 
 const requestCache = new Map();
-const FAILURE_FLAG = Symbol('FAILURE_FLAG');
 
-/**
- * Executes a query with deduplication and failure prevention.
- * This is used internally by the supabase.from() interceptor.
- */
 const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
   const now = Date.now();
   const cached = requestCache.get(cacheKey);
@@ -341,88 +375,15 @@ const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
 };
 
 // ============================================================
-// ✅ FIX: Guard against undefined supabase before binding
+// 🎯 WRAPPERS: Use these instead of direct supabase.from() calls
 // ============================================================
 
-let originalFrom = null;
-
-// ✅ Only create the binding if supabase is defined
-if (supabase && typeof supabase.from === 'function') {
-  try {
-    originalFrom = supabase.from.bind(supabase);
-  } catch (e) {
-    console.warn('⚠️ Failed to bind supabase.from:', e.message);
-    originalFrom = null;
-  }
-}
-
-/**
- * Creates a cache key from the query builder's internal state.
- * This is a simplified version – we capture the table name and the final query string.
- * For more accuracy, we could intercept each chained method, but this works for 90% of cases.
- */
-const buildCacheKey = (tableName, queryBuilder) => {
-  // Try to get the query string from the builder's internal state (hacky but works)
-  // We'll just use the table name and a hash of the final query.
-  // For simplicity, we'll use a combination of table and the final SQL-ish representation.
-  // In practice, we can rely on the fact that the query is built using the same chain.
-  // We'll use a simple approach: store the query object as a string.
-  try {
-    // This is a hack – supabase-js doesn't expose the query string directly.
-    // We'll create a unique key based on the table and the filters/order/limit.
-    // For a more robust solution, we could use a library to generate a hash.
-    // But for the common case (Home page fetching resources), we can create a key like:
-    // 'resources:is_approved=true:limit=6:order=created_at.desc'
-    // However, we don't have access to the query details here.
-    // Instead, we'll override the .then method of the query builder to capture the parameters.
-    // That's too complex for this response.
-    // Given time, I'll provide a simpler solution: use the provided wrappers instead.
-    // But we already added the global interceptor – we'll use a basic key.
-    return `query:${tableName}`;
-  } catch {
-    return `query:${tableName}`;
-  }
-};
-
-// ✅ Monkey-patch supabase.from to wrap the query execution with deduplication.
-// We'll intercept the .then method of the query builder.
-if (supabase && originalFrom) {
-  supabase.from = function(tableName) {
-    const queryBuilder = originalFrom(tableName);
-    // Wrap the query builder's then and catch to use executeQuery.
-    // We'll create a proxy that overrides the then method.
-    // This is a simplified version – for production, we'd need to handle all promise methods.
-    const originalThen = queryBuilder.then.bind(queryBuilder);
-    const originalCatch = queryBuilder.catch.bind(queryBuilder);
-    const originalFinally = queryBuilder.finally.bind(queryBuilder);
-
-    // We'll create a new promise-returning function.
-    const execute = () => {
-      // Build a cache key based on the table name and the query parameters.
-      // Since we can't easily extract the query details, we'll use a simpler approach:
-      // We'll generate a key based on the table name and a timestamp? No, that would break deduplication.
-      // Instead, we'll use a global counter to generate a unique key for each query chain.
-      // This is not ideal, but it's a trade-off.
-      // For a proper solution, we should use the provided wrappers (fetchApprovedResources, etc.).
-      // I'll recommend using the wrappers and provide them below.
-      // For now, we'll leave the interceptor as a placeholder and focus on the wrappers.
-      return queryBuilder;
-    };
-
-    // We'll just return the original query builder, but we'll add a note to use the wrappers.
-    return queryBuilder;
-  };
-}
-
-// ============================================================
-// 🎯 RECOMMENDED: USE THESE WRAPPERS INSTEAD OF DIRECT QUERIES
-// ============================================================
-
-/**
- * Fetch approved resources with deduplication.
- * Use this in your Home page instead of supabase.from('resources')...
- */
 export const fetchApprovedResources = (limit = 6, offset = 0) => {
+  if (!supabase) {
+    console.error('❌ fetchApprovedResources: Supabase not initialized');
+    return Promise.reject(initError);
+  }
+  
   const cacheKey = `resources:approved:${limit}:${offset}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -435,6 +396,11 @@ export const fetchApprovedResources = (limit = 6, offset = 0) => {
 };
 
 export const fetchResourceById = (id) => {
+  if (!supabase) {
+    console.error('❌ fetchResourceById: Supabase not initialized');
+    return Promise.reject(initError);
+  }
+  
   const cacheKey = `resource:${id}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -446,6 +412,11 @@ export const fetchResourceById = (id) => {
 };
 
 export const fetchTutors = (limit = 5) => {
+  if (!supabase) {
+    console.error('❌ fetchTutors: Supabase not initialized');
+    return Promise.reject(initError);
+  }
+  
   const cacheKey = `tutors:${limit}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -457,6 +428,11 @@ export const fetchTutors = (limit = 5) => {
 };
 
 export const fetchStudentBookings = (studentEmail, limit = 20) => {
+  if (!supabase) {
+    console.error('❌ fetchStudentBookings: Supabase not initialized');
+    return Promise.reject(initError);
+  }
+  
   const cacheKey = `bookings:${studentEmail}:${limit}`;
   return executeQuery(cacheKey, () =>
     supabase
