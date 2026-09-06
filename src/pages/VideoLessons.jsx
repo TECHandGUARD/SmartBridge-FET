@@ -1,7 +1,7 @@
 // src/pages/VideoLessons.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -311,7 +311,8 @@ function UploadForm({ form, setForm, videoFile, setVideoFile, uploading, onSubmi
 // ============================================================
 
 export default function VideoLessons() {
-  const { user } = useOutletContext() || {};
+  // ✅ FIXED: Use useAuth() instead of useOutletContext()
+  const { user } = useAuth();
   const [videos, setVideos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [playing, setPlaying] = useState(null);
