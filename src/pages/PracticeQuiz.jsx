@@ -1,7 +1,8 @@
 // src/pages/PracticeQuiz.jsx
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -179,7 +180,8 @@ function ProgressStats({ current, total, correct, incorrect }) {
 // ============================================================
 
 export default function PracticeQuiz() {
-  const { user } = useOutletContext();
+  // ✅ FIXED: Use useAuth() instead of useOutletContext()
+  const { user } = useAuth();
   const navigate = useNavigate();
 
   const [stage, setStage] = useState('select');
