@@ -5,10 +5,11 @@ import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { 
   BookOpen, Calendar, Clock, Star, FileText, ChevronRight, 
   GraduationCap, TrendingUp, Activity, Loader2, RefreshCw, AlertCircle,
-  Plus, ChevronDown, ChevronUp, Search, Filter
+  Plus, ChevronDown, ChevronUp, Search, Filter, Lock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -283,6 +284,7 @@ function ResourcesSection({
 // ============================================================
 
 export default function StudentDashboard() {
+  // ✅ FIXED: Use useAuth() instead of useOutletContext()
   const { user } = useAuth();
 
   // ---------- State ----------
@@ -385,7 +387,7 @@ export default function StudentDashboard() {
 
     try {
       // Load all data concurrently
-      const [resourcesRes, bookingsRes, tutorsRes, countRes] = await Promise.allSettled([
+      const [resourcesRes, bookingsRes, tutorsRes, premiumRes] = await Promise.allSettled([
         loadResources(0, false),
         supabase
           .from('tutor_bookings')
