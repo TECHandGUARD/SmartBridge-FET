@@ -1,7 +1,8 @@
 // src/pages/ParentDashboard.jsx
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Link, useOutletContext } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { SUBJECTS } from '@/lib/subjects';
 import usePremiumAccess from '@/hooks/usePremiumAccess';
 import { Badge } from '@/components/ui/badge';
@@ -123,7 +124,8 @@ function PremiumCard({ price, link, title, description, buttonText, note }) {
 // Main Component
 // ============================================================
 export default function ParentDashboard() {
-  const { user } = useOutletContext() || {};
+  // ✅ FIXED: Use useAuth() instead of useOutletContext()
+  const { user } = useAuth();
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   
   const [tutors, setTutors] = useState([]);
