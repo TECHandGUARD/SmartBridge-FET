@@ -1,7 +1,7 @@
 // src/pages/TutorDashboard.jsx
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { SUBJECTS } from '@/lib/subjects';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -193,7 +193,8 @@ function UpgradeCard({ price, currency, commission, link }) {
 // Main Component
 // ============================================================
 export default function TutorDashboard() {
-  const { user } = useOutletContext() || {};
+  // ✅ FIXED: Use useAuth() instead of useOutletContext()
+  const { user } = useAuth();
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   
   const [profile, setProfile] = useState(null);
