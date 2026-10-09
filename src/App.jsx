@@ -57,6 +57,8 @@ const StudentOpportunities = lazy(() => import('./pages/StudentOpportunities'));
 const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
 const PayoutLog = lazy(() => import('./pages/PayoutLog'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
+// ✅ FIXED: Correct import path for TutorPendingScreen
+const TutorPendingScreen = lazy(() => import('./pages/TutorPendingScreen'));
 
 // Auth pages (keep them immediate since they're critical)
 import Login from './pages/Login';
