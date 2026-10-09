@@ -3,6 +3,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from '@/App.jsx';
 import '@/index.css';
+import { initializeConfig } from '@/lib/config-validator';
 
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
@@ -12,19 +13,21 @@ const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   APP_ENV: import.meta.env.VITE_APP_ENV || 'development',
   NODE_ENV: import.meta.env.MODE || 'development',
-  
+
   // Feature flags
   ENABLE_STRICT_MODE: import.meta.env.VITE_ENABLE_STRICT_MODE !== 'false',
   ENABLE_DEV_TOOLS: import.meta.env.VITE_ENABLE_DEV_TOOLS !== 'false',
   ENABLE_LOGGING: import.meta.env.VITE_ENABLE_LOGGING !== 'false',
   ENABLE_PERFORMANCE_MONITORING: import.meta.env.VITE_ENABLE_PERFORMANCE_MONITORING !== 'false',
-  
+
   // Performance
   REPORT_WEB_VITALS: import.meta.env.VITE_REPORT_WEB_VITALS !== 'false',
-  
+
   // Error handling
   ENABLE_ERROR_BOUNDARY: import.meta.env.VITE_ENABLE_ERROR_BOUNDARY !== 'false',
 };
+
+const startupValidation = initializeConfig();
 
 // ============================================================
 // Console branding (development only)
@@ -57,16 +60,11 @@ const consoleBranding = () => {
 
 const reportError = (error, errorInfo = null) => {
   if (CONFIG.APP_ENV === 'production') {
-    // Send to error tracking service (e.g., Sentry)
-    // Example: Sentry.captureException(error, { extra: errorInfo });
-    
-    // Log silently in production (only to error tracking)
     if (CONFIG.ENABLE_LOGGING) {
       console.error('🚨 Application Error:', error);
       if (errorInfo) console.error('Error Info:', errorInfo);
     }
   } else {
-    // Full logging in development
     console.error('🚨 Application Error:', error);
     if (errorInfo) console.error('Error Info:', errorInfo);
   }
@@ -78,9 +76,6 @@ const reportError = (error, errorInfo = null) => {
 
 const reportWebVitals = (metric) => {
   if (CONFIG.REPORT_WEB_VITALS && CONFIG.APP_ENV === 'production') {
-    // Send to analytics
-    // Example: Analytics.sendWebVitals(metric);
-    
     if (CONFIG.ENABLE_LOGGING) {
       console.log(`📊 Web Vitals - ${metric.name}:`, metric.value);
     }
@@ -88,37 +83,84 @@ const reportWebVitals = (metric) => {
 };
 
 // ============================================================
+// Configuration fallback UI
+// ============================================================
+
+const renderConfigurationError = (rootElement) => {
+  const errorMessage = startupValidation.errors.join('\n');
+
+  rootElement.innerHTML = `
+    <div style="
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f8fafc;
+      font-family: 'Inter', -apple-system, sans-serif;
+      padding: 24px;
+    ">
+      <div style="
+        max-width: 560px;
+        width: 100%;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        padding: 32px;
+      ">
+        <div style="font-size: 42px; margin-bottom: 16px; text-align: center;">⚠️</div>
+        <h1 style="font-size: 28px; font-weight: 700; margin: 0 0 12px; color: #111827; text-align: center;">
+          App configuration is incomplete
+        </h1>
+        <p style="margin: 0 0 20px; color: #4b5563; line-height: 1.6; text-align: center;">
+          SmartBridge FET could not start because required environment variables are missing.
+        </p>
+        <div style="
+          background: #fef2f2;
+          border: 1px solid #fecaca;
+          border-radius: 12px;
+          padding: 16px;
+          color: #7f1d1d;
+          font-size: 14px;
+          white-space: pre-line;
+          line-height: 1.7;
+        ">
+          ${errorMessage}
+        </div>
+        <p style="margin-top: 20px; color: #6b7280; font-size: 13px; text-align: center;">
+          Please contact the project administrator or check the environment configuration.
+        </p>
+      </div>
+    </div>
+  `;
+};
+
+// ============================================================
 // Initialize Application
 // ============================================================
 
 const initApp = () => {
-  // 1. Console branding
   consoleBranding();
 
-  // 2. Find root element
   const rootElement = document.getElementById('root');
-  
+
   if (!rootElement) {
     console.error('❌ Root element not found!');
     return;
   }
 
-  // 3. Set document title
+  if (!startupValidation.isValid) {
+    renderConfigurationError(rootElement);
+    return;
+  }
+
   document.title = CONFIG.APP_NAME;
 
-  // 4. Set favicon (optional)
-  // const favicon = document.querySelector('link[rel="icon"]');
-  // if (favicon) favicon.href = '/favicon.ico';
-
-  // 5. Create React root
   const root = ReactDOM.createRoot(rootElement);
 
-  // 6. Render app with error handling
   try {
-    // Build the render tree
     let renderTree = <App />;
 
-    // Wrap with StrictMode (development only or if enabled)
     if (CONFIG.ENABLE_STRICT_MODE) {
       renderTree = (
         <React.StrictMode>
@@ -127,27 +169,16 @@ const initApp = () => {
       );
     }
 
-    // Render
     root.render(renderTree);
 
-    // 7. Report web vitals
     if (CONFIG.REPORT_WEB_VITALS) {
-      // Import and report web vitals
-      // import('web-vitals').then(({ onCLS, onFID, onFCP, onLCP, onTTFB }) => {
-      //   onCLS(reportWebVitals);
-      //   onFID(reportWebVitals);
-      //   onFCP(reportWebVitals);
-      //   onLCP(reportWebVitals);
-      //   onTTFB(reportWebVitals);
-      // });
+      // Web vitals integration can be enabled when needed.
     }
 
-    // 8. Application ready log
     if (CONFIG.ENABLE_LOGGING) {
       console.log(`✅ ${CONFIG.APP_NAME} initialized successfully (${CONFIG.APP_ENV})`);
     }
 
-    // 9. Performance monitoring
     if (CONFIG.ENABLE_PERFORMANCE_MONITORING && 'performance' in window) {
       const navigationTiming = performance.getEntriesByType('navigation')[0];
       if (navigationTiming) {
@@ -156,17 +187,13 @@ const initApp = () => {
           console.log(`⏱️ Page load time: ${loadTime.toFixed(2)}ms`);
         }
         if (loadTime > 3000 && CONFIG.APP_ENV === 'production') {
-          // Warn if load time is too high
           console.warn(`⚠️ Page load time is high: ${loadTime.toFixed(2)}ms`);
         }
       }
     }
 
   } catch (error) {
-    // 10. Catch render errors
     reportError(error);
-    
-    // Show fallback UI
     renderFallback(rootElement);
   }
 };
@@ -236,10 +263,8 @@ const renderFallback = (rootElement) => {
 // ============================================================
 
 if (document.readyState === 'loading') {
-  // Wait for DOM to load
   document.addEventListener('DOMContentLoaded', initApp);
 } else {
-  // DOM already loaded
   initApp();
 }
 
@@ -254,14 +279,5 @@ export { reportWebVitals, reportError };
 // ============================================================
 
 if (CONFIG.APP_ENV === 'production' && 'serviceWorker' in navigator) {
-  // Uncomment to register service worker
-  // window.addEventListener('load', () => {
-  //   navigator.serviceWorker.register('/sw.js')
-  //     .then(registration => {
-  //       console.log('SW registered: ', registration);
-  //     })
-  //     .catch(registrationError => {
-  //       console.log('SW registration failed: ', registrationError);
-  //     });
-  // });
+  // Service worker registration kept disabled until a production strategy exists.
 }
