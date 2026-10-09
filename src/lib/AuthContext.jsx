@@ -1,6 +1,6 @@
 // src/lib/AuthContext.jsx
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseStatus } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
   APP_URL: import.meta.env.VITE_APP_URL || window.location.origin,
+  AUTH_TIMEOUT_MS: Number(import.meta.env.VITE_AUTH_TIMEOUT_MS) || 12000,
 };
 
 // ============================================================
@@ -17,6 +18,20 @@ const CONFIG = {
 // ============================================================
 
 const AuthContext = createContext();
+
+const withTimeout = (promise, timeoutMs = CONFIG.AUTH_TIMEOUT_MS) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error('Authentication timed out. Please check your connection and try again.'));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise,
+    timeoutPromise,
+  ]).finally(() => clearTimeout(timeoutId));
+};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -29,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   // Mount ref for preventing state updates on unmounted components
   const isMountedRef = useRef(true);
-  
+
   // Version counter for invalidating stale operations
   const sessionVersionRef = useRef(0);
 
@@ -55,12 +70,18 @@ export const AuthProvider = ({ children }) => {
 
   const fetchUserProfile = useCallback(async (userId) => {
     if (!userId) return null;
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Please check the environment variables.');
+    }
+
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      const { data, error } = await withTimeout(
+        supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle(),
+      );
 
       if (error && error.code !== 'PGRST116') {
         console.error('Error fetching user profile:', error);
@@ -117,7 +138,7 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(true);
       return { success: true, user: mergedUser };
     }
-    
+
     return { success: false, reason: 'unmounted' };
   }, [fetchUserProfile]);
 
@@ -127,13 +148,27 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = useCallback(async () => {
     const operationVersion = sessionVersionRef.current;
-    
+
+    if (!supabase || !supabaseStatus.isReady) {
+      if (isMountedRef.current && operationVersion === sessionVersionRef.current) {
+        setAuthError({
+          type: 'supabase_unavailable',
+          message: 'Authentication service is not configured correctly. Please contact support or check the app configuration.',
+        });
+        setUser(null);
+        setIsAuthenticated(false);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+      }
+      return;
+    }
+
     setIsLoadingAuth(true);
     setAuthError(null);
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const { data: { session }, error } = await withTimeout(supabase.auth.getSession());
+
       if (error) throw error;
 
       if (operationVersion !== sessionVersionRef.current) {
@@ -152,7 +187,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Auth check failed:', error);
       if (isMountedRef.current && operationVersion === sessionVersionRef.current) {
-        setAuthError({ type: 'auth_required', message: error.message });
+        setAuthError({
+          type: 'supabase_unavailable',
+          message: error.message || 'Unable to reach the authentication service. Please check your connection and try again.',
+        });
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -170,6 +208,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     isMountedRef.current = true;
+
+    if (!supabase || !supabaseStatus.isReady) {
+      setAuthError({
+        type: 'supabase_unavailable',
+        message: 'Supabase is not configured. Please contact the administrator.',
+      });
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+      return () => {
+        isMountedRef.current = false;
+      };
+    }
 
     checkUser();
 
@@ -242,31 +292,40 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const signIn = async (email, password) => {
+    if (!supabase || !supabaseStatus.isReady) {
+      const error = new Error('Supabase is not configured. Please contact support.');
+      setAuthError({ type: 'supabase_unavailable', message: error.message });
+      toast.error(error.message);
+      return { success: false, error };
+    }
+
     const operationVersion = bumpSessionVersion();
-    
+
     setIsLoadingAuth(true);
     setAuthError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password })
+      );
 
       if (error) throw error;
 
       const result = await setUserWithProfile(data.user, operationVersion);
-      
+
       if (result.success) {
         toast.success('Signed in successfully!');
         return { success: true, data };
-      } else {
-        console.log(`⚠️ Sign in completed but session was invalidated: ${result.reason}`);
-        return { success: false, error: new Error('Session was invalidated'), invalidated: true };
       }
+
+      console.log(`⚠️ Sign in completed but session was invalidated: ${result.reason}`);
+      return { success: false, error: new Error('Session was invalidated'), invalidated: true };
     } catch (error) {
       console.error('Sign in error:', error);
-      setAuthError({ type: 'login_failed', message: error.message });
+      setAuthError({
+        type: 'login_failed',
+        message: error.message || 'Failed to sign in. Please try again.',
+      });
       toast.error(error.message || 'Failed to sign in');
       return { success: false, error };
     } finally {
@@ -279,23 +338,32 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const signInWithGoogle = async () => {
+    if (!supabase || !supabaseStatus.isReady) {
+      const error = new Error('Supabase is not configured. Authentication is unavailable.');
+      setAuthError({ type: 'supabase_unavailable', message: error.message });
+      toast.error(error.message);
+      return { success: false, error };
+    }
+
     setIsLoadingAuth(true);
     setAuthError(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${CONFIG.APP_URL}/auth/callback`
-        }
-      });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${CONFIG.APP_URL}/auth/callback`
+          }
+        })
+      );
 
       if (error) throw error;
 
       return { success: true, data };
     } catch (error) {
       console.error('Google sign in error:', error);
-      setAuthError({ type: 'login_failed', message: error.message });
+      setAuthError({ type: 'login_failed', message: error.message || 'Failed to sign in with Google' });
       toast.error(error.message || 'Failed to sign in with Google');
       return { success: false, error };
     } finally {
@@ -308,22 +376,31 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const signUp = async (email, password, metadata = {}) => {
+    if (!supabase || !supabaseStatus.isReady) {
+      const error = new Error('Supabase is not configured. Registration is unavailable.');
+      setAuthError({ type: 'supabase_unavailable', message: error.message });
+      toast.error(error.message);
+      return { success: false, error };
+    }
+
     const operationVersion = bumpSessionVersion();
-    
+
     setIsLoadingAuth(true);
     setAuthError(null);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: metadata.full_name || '',
-            ...metadata
+      const { data, error } = await withTimeout(
+        supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: metadata.full_name || '',
+              ...metadata
+            }
           }
-        }
-      });
+        })
+      );
 
       if (error) throw error;
 
@@ -344,21 +421,21 @@ export const AuthProvider = ({ children }) => {
         }
 
         const result = await setUserWithProfile(data.user, operationVersion);
-        
+
         if (result.success) {
           toast.success('Account created! Please check your email to verify.');
           return { success: true, data };
-        } else {
-          console.log(`⚠️ Sign up completed but session was invalidated: ${result.reason}`);
-          return { success: false, error: new Error('Session was invalidated'), invalidated: true };
         }
+
+        console.log(`⚠️ Sign up completed but session was invalidated: ${result.reason}`);
+        return { success: false, error: new Error('Session was invalidated'), invalidated: true };
       }
 
       toast.success('Account created! Please check your email to verify.');
       return { success: true, data };
     } catch (error) {
       console.error('Sign up error:', error);
-      setAuthError({ type: 'signup_failed', message: error.message });
+      setAuthError({ type: 'signup_failed', message: error.message || 'Failed to sign up' });
       toast.error(error.message || 'Failed to sign up');
       return { success: false, error };
     } finally {
@@ -373,7 +450,7 @@ export const AuthProvider = ({ children }) => {
   const signOut = async () => {
     try {
       bumpSessionVersion();
-      
+
       if (isMountedRef.current) {
         setUser(null);
         setIsAuthenticated(false);
@@ -381,17 +458,27 @@ export const AuthProvider = ({ children }) => {
         setAuthChecked(true);
       }
 
-      await supabase.auth.signOut();
+      if (!supabase || !supabaseStatus.isReady) {
+        toast.success('Signed out successfully');
+        return { success: true };
+      }
+
+      const { error } = await withTimeout(supabase.auth.signOut());
+      if (error) throw error;
+
       toast.success('Signed out successfully');
-      
+
       requestAnimationFrame(() => {
         if (isMountedRef.current) {
           window.location.href = '/';
         }
       });
+
+      return { success: true };
     } catch (error) {
       console.error('Sign out error:', error);
-      toast.error('Failed to sign out');
+      toast.error(error.message || 'Failed to sign out');
+      return { success: false, error };
     }
   };
 
@@ -400,7 +487,7 @@ export const AuthProvider = ({ children }) => {
   // ============================================================
 
   const navigateToLogin = () => {
-    window.location.href = '/login';
+    window.location.assign('/login');
   };
 
   // ============================================================
@@ -411,13 +498,19 @@ export const AuthProvider = ({ children }) => {
     if (!user?.id) return { success: false, error: 'No user logged in' };
 
     try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          ...updates,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
+      if (!supabase || !supabaseStatus.isReady) {
+        throw new Error('Supabase is not configured. Profile updates are unavailable.');
+      }
+
+      const { error } = await withTimeout(
+        supabase
+          .from('users')
+          .update({
+            ...updates,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id)
+      );
 
       if (error) throw error;
 
