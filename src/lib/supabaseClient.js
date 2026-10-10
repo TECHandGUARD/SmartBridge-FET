@@ -8,9 +8,11 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-console.log('🔍 Environment Check:');
-console.log('   VITE_SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ MISSING');
-console.log('   VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Present' : '❌ MISSING');
+if (import.meta.env.DEV) {
+  console.log('🔍 Environment Check:');
+  console.log('   VITE_SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ MISSING');
+  console.log('   VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Present' : '❌ MISSING');
+}
 
 // ============================================================
 // 🚨 Environment Validation - DO NOT THROW, JUST WARN
@@ -28,7 +30,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
   // ============================================================
   // 🚀 Create Supabase Client (ONLY if credentials exist)
   // ============================================================
-  
+
   try {
     supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
@@ -43,7 +45,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
         },
       },
     });
-    console.log('✅ Supabase client initialized successfully');
+    if (import.meta.env.DEV) {
+      console.log('✅ Supabase client initialized successfully');
+    }
   } catch (error) {
     console.error('❌ Failed to create Supabase client:', error);
     initError = error;
@@ -53,46 +57,78 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 // ✅ CRITICAL: Export supabaseClient (not undefined)
 export const supabase = supabaseClient;
+
+// Corrected spelling (was: supbaseInitError)
+export const supabaseInitError = initError;
+// @deprecated - typo alias kept for backward compatibility. Migrate imports to `supabaseInitError`.
 export const supbaseInitError = initError;
 
 // ============================================================
-// 📡 Global Channel Manager (Prevents duplicate subscriptions)
+// 📡 Global Channel Manager (Reference-Counted)
 // ============================================================
 
+// Map<channelName, { channel, subscribers: Set<string> }>
 const activeChannels = new Map();
 const MAX_CHANNELS = 20;
 
-export const safeSubscribe = async (channelName, setupCallback) => {
+const generateSubscriberId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `sub_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
+
+/**
+ * Subscribe to a realtime channel with reference counting.
+ * Multiple components can subscribe to the same channelName;
+ * the underlying Supabase channel is only created once and torn
+ * down when the last subscriber unsubscribes.
+ *
+ * @param {string} channelName
+ * @param {(channel: any) => Promise<any>} setupCallback
+ * @param {string} [subscriberId] - stable ID per caller (e.g. from useRef). Auto-generated if omitted.
+ * @returns {Promise<{ channel: any, error: any, subscriberId: string }>}
+ */
+export const safeSubscribe = async (channelName, setupCallback, subscriberId = generateSubscriberId()) => {
   if (!supabase) {
     console.error('❌ Cannot subscribe: Supabase not initialized');
-    return { channel: null, error: initError };
+    return { channel: null, error: initError, subscriberId };
   }
 
-  if (activeChannels.has(channelName)) {
-    const existing = activeChannels.get(channelName);
-    try {
-      await supabase.removeChannel(existing);
-    } catch (e) {
-      console.warn(`⚠️ Failed to remove existing channel "${channelName}":`, e.message);
-    }
-    activeChannels.delete(channelName);
+  // Existing channel → just add another subscriber
+  const existing = activeChannels.get(channelName);
+  if (existing) {
+    existing.subscribers.add(subscriberId);
+    return { channel: existing.channel, error: null, subscriberId };
   }
 
+  // Enforce channel ceiling
   if (activeChannels.size >= MAX_CHANNELS) {
     console.warn(`⚠️ Too many active channels (${activeChannels.size}). Removing oldest.`);
     const oldestKey = activeChannels.keys().next().value;
     const oldest = activeChannels.get(oldestKey);
     try {
-      await supabase.removeChannel(oldest);
-    } catch (e) {}
+      await supabase.removeChannel(oldest.channel);
+    } catch (e) {
+      // ignore
+    }
     activeChannels.delete(oldestKey);
   }
 
   try {
     let channel = supabase.channel(channelName);
     channel = await setupCallback(channel);
+
+    // Dev-only sanity check: channelName and topic should align
+    if (import.meta.env.DEV && channel?.topic && channel.topic !== `realtime:${channelName}`) {
+      console.warn(
+        `⚠️ safeSubscribe("${channelName}") - setupCallback returned channel with topic "${channel.topic}". ` +
+        `Cleanup may leak.`
+      );
+    }
+
     const subscription = channel.subscribe((status, err) => {
-      if (status === 'SUBSCRIBED') {
+      if (import.meta.env.DEV && status === 'SUBSCRIBED') {
         console.log(`✅ Subscribed to channel: ${channelName}`);
       } else if (status === 'CHANNEL_ERROR') {
         console.error(`❌ Channel error: ${channelName}`, err);
@@ -103,40 +139,66 @@ export const safeSubscribe = async (channelName, setupCallback) => {
       }
     });
 
-    activeChannels.set(channelName, subscription);
-    return { channel: subscription, error: null };
+    activeChannels.set(channelName, {
+      channel: subscription,
+      subscribers: new Set([subscriberId]),
+    });
+
+    return { channel: subscription, error: null, subscriberId };
   } catch (error) {
     console.error(`❌ Failed to subscribe to channel "${channelName}":`, error);
-    return { channel: null, error };
+    return { channel: null, error, subscriberId };
   }
 };
 
-export const unsafeUnsubscribe = async (channelName) => {
+/**
+ * Unsubscribe. If a subscriberId is provided, only that subscriber is
+ * removed; the underlying channel is torn down when the last subscriber
+ * leaves. If omitted, the entire channel is removed (backward compatible).
+ */
+export const unsafeUnsubscribe = async (channelName, subscriberId) => {
   if (!supabase) return;
-  
-  if (activeChannels.has(channelName)) {
-    const channel = activeChannels.get(channelName);
-    try {
-      await supabase.removeChannel(channel);
-      activeChannels.delete(channelName);
-      console.log(`✅ Unsubscribed from channel: ${channelName}`);
-    } catch (error) {
-      console.error(`❌ Failed to unsubscribe from "${channelName}":`, error);
-    }
-  } else {
+
+  const entry = activeChannels.get(channelName);
+  if (!entry) {
     console.warn(`⚠️ Channel "${channelName}" not found in active map.`);
+    return;
+  }
+
+  if (subscriberId) {
+    entry.subscribers.delete(subscriberId);
+    if (entry.subscribers.size > 0) {
+      if (import.meta.env.DEV) {
+        console.log(
+          `↩️ Unsubscribed subscriber from "${channelName}" (${entry.subscribers.size} remaining).`
+        );
+      }
+      return;
+    }
+  }
+
+  try {
+    await supabase.removeChannel(entry.channel);
+    activeChannels.delete(channelName);
+    if (import.meta.env.DEV) {
+      console.log(`✅ Unsubscribed from channel: ${channelName}`);
+    }
+  } catch (error) {
+    console.error(`❌ Failed to unsubscribe from "${channelName}":`, error);
   }
 };
 
 export const unsubscribeAll = async () => {
   if (!supabase) return;
-  
+
   const keys = Array.from(activeChannels.keys());
   for (const key of keys) {
     await unsafeUnsubscribe(key);
   }
   activeChannels.clear();
-  console.log('✅ All channels unsubscribed.');
+  if (import.meta.env.DEV) {
+    console.log('✅ All channels unsubscribed.');
+  }
 };
 
 export const getActiveChannels = () => Array.from(activeChannels.keys());
@@ -148,7 +210,7 @@ export const isChannelActive = (channelName) => activeChannels.has(channelName);
 
 export const getCurrentUser = async () => {
   if (!supabase) return { user: null, error: initError };
-  
+
   try {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) throw error;
@@ -161,7 +223,7 @@ export const getCurrentUser = async () => {
 
 export const getCurrentUserProfile = async () => {
   if (!supabase) return { profile: null, error: initError };
-  
+
   try {
     const { user, error } = await getCurrentUser();
     if (error || !user) return { profile: null, error };
@@ -169,7 +231,7 @@ export const getCurrentUserProfile = async () => {
       .from('users')
       .select('*')
       .eq('id', user.id)
-      .single();
+      .maybeSingle(); // tolerate missing profile row (e.g. during signup)
     if (profileError) throw profileError;
     return { profile, error: null };
   } catch (error) {
@@ -193,7 +255,7 @@ export const isAdmin = async () => hasRole('admin');
 
 export const signOut = async () => {
   if (!supabase) return { success: false, error: initError };
-  
+
   try {
     await unsubscribeAll();
     const { error } = await supabase.auth.signOut();
@@ -219,7 +281,7 @@ const DEFAULT_BUCKET = import.meta.env.VITE_STORAGE_BUCKET || 'documents';
 
 export const uploadFile = async (file, bucket = DEFAULT_BUCKET, path = '') => {
   if (!supabase) return { data: null, error: initError, publicUrl: null };
-  
+
   try {
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
     const filePath = path ? `${path}/${fileName}` : fileName;
@@ -242,7 +304,7 @@ export const uploadFile = async (file, bucket = DEFAULT_BUCKET, path = '') => {
 
 export const deleteFile = async (filePath, bucket = DEFAULT_BUCKET) => {
   if (!supabase) return { data: null, error: initError };
-  
+
   try {
     const { data, error } = await supabase.storage
       .from(bucket)
@@ -261,7 +323,7 @@ export const deleteFile = async (filePath, bucket = DEFAULT_BUCKET) => {
 
 export const invokeFunction = async (functionName, payload = {}) => {
   if (!supabase) return { data: null, error: initError };
-  
+
   try {
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: payload,
@@ -280,7 +342,7 @@ export const invokeFunction = async (functionName, payload = {}) => {
 
 export const logActivity = async (eventType, description, metadata = {}) => {
   if (!supabase) return;
-  
+
   try {
     const { user } = await getCurrentUser();
     await supabase
@@ -302,13 +364,26 @@ export const logActivity = async (eventType, description, metadata = {}) => {
 // 🔌 Connection & Health Check
 // ============================================================
 
+/**
+ * Ping the Supabase REST endpoint directly. This checks *connectivity*
+ * only - it does NOT depend on auth state or table permissions.
+ */
 export const checkConnection = async () => {
   if (!supabase) return { success: false, error: initError?.message };
-  
+
   try {
-    const { data, error } = await supabase.from('users').select('count', { count: 'exact', head: true });
-    if (error) throw error;
-    console.log('✅ Supabase connection successful');
+    // HEAD request against the REST root — always available, no auth needed
+    const res = await fetch(`${supabaseUrl}/rest/v1/`, {
+      method: 'HEAD',
+      headers: { apikey: supabaseAnonKey },
+    });
+    if (!res.ok && res.status !== 404) {
+      // 404 is fine: REST root often has no route, but the server answered
+      throw new Error(`HTTP ${res.status}`);
+    }
+    if (import.meta.env.DEV) {
+      console.log('✅ Supabase connection successful');
+    }
     return { success: true };
   } catch (error) {
     console.error('❌ Supabase connection failed:', error.message);
@@ -344,31 +419,68 @@ if (typeof window !== 'undefined') {
 
 const requestCache = new Map();
 
+/**
+ * Deduplicate in-flight queries and cache successful results for `ttl` ms.
+ *
+ * Handles two distinct failure modes:
+ *   1. PostgrestError returned as `{ data: null, error }` (Supabase does not reject)
+ *   2. Genuine thrown exceptions (network, JSON parse, etc.)
+ * Both are memoized so a burst of callers does not stampede a failing endpoint.
+ *
+ * @param {string} cacheKey
+ * @param {() => Promise<any>} queryFn
+ * @param {number} [ttl=10000]
+ */
 const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
   const now = Date.now();
   const cached = requestCache.get(cacheKey);
 
-  if (cached && (now - cached.timestamp < ttl)) {
+  if (cached && now - cached.timestamp < ttl) {
     if (cached.failed) {
-      return Promise.reject(new Error(`Query "${cacheKey}" previously failed. Not retrying.`));
+      return Promise.reject(cached.error);
     }
     return cached.promise;
   }
 
-  const promise = queryFn()
-    .then(result => {
-      requestCache.delete(cacheKey);
+  const promise = (async () => {
+    try {
+      const result = await queryFn();
+
+      // Supabase returns { data, error } rather than rejecting
+      if (result && typeof result === 'object' && 'error' in result && result.error) {
+        requestCache.set(cacheKey, {
+          failed: true,
+          timestamp: Date.now(),
+          error: result.error,
+        });
+        // Still return the result so callers can inspect { data, error }
+        return result;
+      }
+
+      // Success: keep the resolved promise in cache for the TTL
       return result;
-    })
-    .catch(error => {
-      requestCache.set(cacheKey, { failed: true, timestamp: now, error });
+    } catch (error) {
+      requestCache.set(cacheKey, {
+        failed: true,
+        timestamp: Date.now(),
+        error,
+      });
       throw error;
-    });
+    }
+  })();
 
-  requestCache.set(cacheKey, { promise, timestamp: now, failed: false });
+  requestCache.set(cacheKey, {
+    promise,
+    timestamp: now,
+    failed: false,
+  });
 
+  // Schedule eviction regardless of outcome
   setTimeout(() => {
-    requestCache.delete(cacheKey);
+    const current = requestCache.get(cacheKey);
+    if (current && current.promise === promise) {
+      requestCache.delete(cacheKey);
+    }
   }, ttl);
 
   return promise;
@@ -383,7 +495,7 @@ export const fetchApprovedResources = (limit = 6, offset = 0) => {
     console.error('❌ fetchApprovedResources: Supabase not initialized');
     return Promise.reject(initError);
   }
-  
+
   const cacheKey = `resources:approved:${limit}:${offset}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -400,7 +512,7 @@ export const fetchResourceById = (id) => {
     console.error('❌ fetchResourceById: Supabase not initialized');
     return Promise.reject(initError);
   }
-  
+
   const cacheKey = `resource:${id}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -416,7 +528,7 @@ export const fetchTutors = (limit = 5) => {
     console.error('❌ fetchTutors: Supabase not initialized');
     return Promise.reject(initError);
   }
-  
+
   const cacheKey = `tutors:${limit}`;
   return executeQuery(cacheKey, () =>
     supabase
@@ -432,7 +544,7 @@ export const fetchStudentBookings = (studentEmail, limit = 20) => {
     console.error('❌ fetchStudentBookings: Supabase not initialized');
     return Promise.reject(initError);
   }
-  
+
   const cacheKey = `bookings:${studentEmail}:${limit}`;
   return executeQuery(cacheKey, () =>
     supabase
