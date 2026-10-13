@@ -49,20 +49,23 @@ test('failed email sends do not set reminder flags; successful NBT tracking uses
  }
 });
 
-test('approval retries reuse the pending ID and guide-specific publication fields after a tracking failure',async()=>{
- let fail=true;const item={id:'pending-id',status:'pending',title:'Guide',external_link:'https://example.test/guide.pdf',category:'General'};
+test('opportunity reviews call one atomic RPC with the verified actor and handle retries/failures',async()=>{
+ const id='00000000-0000-4000-8000-000000000811';let fail=true;
  const client=fakeClient({id:'user-id',role:'student',is_super_admin:true,is_active:true},call=>{
-  if(call.table==='pending_opportunity_guides'&&call.operation==='select')return {data:item,error:null};
-  if(call.table==='pending_opportunity_guides'&&call.operation==='update'&&fail){fail=false;return {data:null,error:{message:'status save failed'}};}
-  return {data:null,error:null};
+  assert.equal(call.operation,'rpc');assert.equal(call.table,'review_opportunity_content');
+  if(fail){fail=false;return {data:null,error:{message:'database unavailable'}};}
+  return {data:{success:true,action:'approved',skipped:true},error:null};
  });
  const runtime=edgeRuntime('approveOpportunityContent',{client});
- assert.equal((await runtime.handle(request({type:'guide',id:item.id,action:'approve'}))).status,500);
- assert.equal((await runtime.handle(request({type:'guide',id:item.id,action:'approve'}))).status,200);
- const writes=client.calls.filter(call=>call.table==='opportunity_guides');assert.equal(writes.length,2);
- for(const call of writes){assert.equal(call.operation,'upsert');assert.equal(call.data.id,item.id);assert.equal(call.data.is_pending,false);assert.ok(!Object.hasOwn(call.data,'is_approved'));}
- const rejection=await runtime.handle(request({type:'guide',id:item.id,action:'reject'}));assert.equal(rejection.status,200);
- const write=client.calls.at(-1);assert.equal(write.data.reviewed_by,'user-id');assert.ok(!Object.hasOwn(write.data,'rejected_by'));
+ const payload={type:'guide',id,action:'approve',admin_notes:'Reviewed',actor_id:'forged-user'};
+ assert.equal((await runtime.handle(request(payload))).status,503);
+ const response=await runtime.handle(request(payload));assert.equal(response.status,200);assert.equal((await response.json()).skipped,true);
+ const writes=client.calls.filter(call=>call.table!=='users');assert.equal(writes.length,2);
+ for(const call of writes){assert.equal(call.data.actor_id,'user-id');assert.equal(call.data.item_id,id);assert.equal(call.data.review_notes,'Reviewed');}
+ for(const payload of [{type:'guide',id:'bad',action:'approve'},{type:'bad',id,action:'approve'},{type:'guide',id,action:'delete'},{type:'guide',id,action:'approve',admin_notes:'x'.repeat(5001)}]){
+  assert.equal((await runtime.handle(request(payload))).status,400);
+ }
+ assert.equal(client.calls.filter(call=>call.table==='review_opportunity_content').length,2);
 });
 
 test('email retries keep the same key, reject missing provider IDs, and require real sender configuration',async()=>{

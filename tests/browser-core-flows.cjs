@@ -16,6 +16,7 @@ const assert=require('node:assert/strict');
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
  let failResult=true, failBooking=true, failOnboarding=false;
+ let hasPremium=false;let examRows=[];const examWrites=[];
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
  const bookingCalls=[];let links=[];let bookingRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];let roomPosts=[{id:'00000000-0000-4000-8000-000000000201',room_id:'math',author_id:'00000000-0000-4000-8000-000000000202',author_name:'Other learner',type:'Note',title:'Approved note',body:'Safe study content',moderation_status:'approved',created_at:'2026-10-13T10:00:00Z'}];const studyCalls=[];let denyStudyQuota=true,failStudyPost=true,roomReplies=[];
 
@@ -30,6 +31,12 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/quizzes') data=[{id:'quiz-1',title:'Test Quiz',subject:'Mathematics',grade:'Grade 12',questions:[{question:'Test question?',options:['A','B','C','D'],correct_index:0,explanation:'Test explanation'}]}];
   if(url.pathname==='/rest/v1/quiz_results' && req.method()==='POST') { const body=req.postDataJSON();writes.push(body); if(failResult){failResult=false;status=403;data={message:'Test save failure',code:'42501'};}else data={...body,id:'result-1'}; }
   if(url.pathname==='/rest/v1/tutor_profiles') data=['sace_tutor','tutor'].includes(profile.role) ? {is_verified:true} : null;
+  if(url.pathname==='/rest/v1/subscriptions' && hasPremium) data=[{id:'subscription-test',status:'active',end_date:'2099-12-31'}];
+  if(url.pathname==='/rest/v1/exam_schedule') {
+    if(req.method()==='POST') {const body=req.postDataJSON();assert.equal(body.student_id,profile.id);assert.equal(body.student_email,profile.email);examWrites.push(body);data={...body,id:'exam-test',is_published:false};examRows=[data];}
+    else if(req.method()==='DELETE') {assert.equal(url.searchParams.get('id'),'eq.exam-test');examRows=[];data=[];}
+    else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=examRows;}
+  }
   if(url.pathname==='/rest/v1/study_reminders') {
     if(req.method()==='POST') { const body=req.postDataJSON();const row=Array.isArray(body)?body[0]:body;assert.ok(row.time);assert.equal('reminder_time' in row,false);assert.equal(row.student_id,profile.id);contractWrites.push(row);reminderRows=[{...row,id:'reminder-1'}];data=reminderRows[0]; }
     else {assert.equal(url.searchParams.has('user_email'),false);assert.equal(url.searchParams.get('select')?.includes('reminder_time'),false);data=reminderRows;}
@@ -145,6 +152,23 @@ const assert=require('node:assert/strict');
  await page.getByText(/^Goal added successfully!/).waitFor();
  assert.ok(contractWrites.some(row=>row.week_start),'Goal saves with canonical fields');
  console.log('PASS: reminders and weekly goals use real schema fields and ownership IDs');
+ hasPremium=true;
+ await page.goto('http://127.0.0.1:5173/student-dashboard?section=ai');
+ await page.getByText('Upcoming Exams / Tests',{exact:true}).waitFor();
+ await page.getByText('Upcoming Exams / Tests',{exact:true}).locator('..').getByRole('button',{name:'Add',exact:true}).click();
+ await page.getByRole('combobox').filter({hasText:'Select subject'}).click();
+ await page.getByRole('option',{name:'Mathematics',exact:true}).click();
+ await page.locator('input[type="date"]').fill('2099-12-01');
+ await page.getByRole('button',{name:'Add Exam',exact:true}).click();
+ await page.getByRole('button',{name:'Delete Mathematics exam'}).waitFor();
+ assert.equal(examWrites.length,1);
+ await page.reload();
+ await page.getByRole('button',{name:'Delete Mathematics exam'}).click();
+ await page.waitForFunction(()=>!document.querySelector('[aria-label="Delete Mathematics exam"]'));
+ assert.equal(examRows.length,0);
+ hasPremium=false;
+ console.log('PASS: personal exam save, UUID-scoped reload and deletion use the ownership contract');
+ await page.goto('http://127.0.0.1:5173/student-dashboard?section=goals');
  await page.getByRole('button',{name:'My Progress',exact:true}).click();
 
 

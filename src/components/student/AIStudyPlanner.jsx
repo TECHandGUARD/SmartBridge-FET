@@ -52,13 +52,13 @@ export default function AIStudyPlanner({
     notes: ''
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     setError(null);
     try {
       const {
         data: examsData,
         error: examsError
-      } = await supabase.from('exam_schedule').select('*').eq('student_email', user.email).order('exam_date', {
+      } = await supabase.from('exam_schedule').select('*').eq('student_id', user.id).order('exam_date', {
         ascending: true
       });
       if (examsError) throw examsError;
@@ -75,12 +75,12 @@ export default function AIStudyPlanner({
       setError('Failed to load exam data');
       toast.error('Failed to load exam data');
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   const addExam = async () => {
-    if (!newExam.subject || !newExam.exam_date) {
+    if (!user?.id || !newExam.subject || !newExam.exam_date) {
       toast.error('Please select a subject and exam date.');
       return;
     }
@@ -90,7 +90,7 @@ export default function AIStudyPlanner({
         error
       } = await supabase.from('exam_schedule').insert({
         student_email: user.email,
-        student_id: user.id || null,
+        student_id: user.id,
         subject: newExam.subject,
         grade: newExam.grade,
         exam_date: newExam.exam_date,
@@ -313,7 +313,7 @@ Respond with a structured JSON study plan.`,
                       <Badge className={`text-[10px] px-1.5 py-0 ml-auto ${days <= 3 ? 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300' : days <= 7 ? 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300' : 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300'}`}>
                         {days <= 0 ? 'Today!' : `${days}d`}
                       </Badge>
-                      <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeExam(exam.id)}>
+                      <Button variant="ghost" size="icon" aria-label={`Delete ${exam.subject} exam`} disabled={exam.is_published === true} className="h-6 w-6 text-muted-foreground hover:text-destructive" onClick={() => removeExam(exam.id)}>
                         <Trash2 className="w-3 h-3" />
                       </Button>
                     </div>;

@@ -218,32 +218,32 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
 
         {}
         <div className="flex gap-2 flex-wrap mt-2">
-          <Select value={subject} onValueChange={setSubject}>
+          <Select value={subject || '__all__'} onValueChange={value => setSubject(value === '__all__' ? '' : value)}>
             <SelectTrigger className="h-8 text-xs w-44">
               <SelectValue placeholder="Filter by subject…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All subjects</SelectItem>
+              <SelectItem value="__all__">All subjects</SelectItem>
               {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.icon} {s.name}</SelectItem>)}
             </SelectContent>
           </Select>
 
-          <Select value={grade} onValueChange={setGrade}>
+          <Select value={grade || '__all__'} onValueChange={value => setGrade(value === '__all__' ? '' : value)}>
             <SelectTrigger className="h-8 text-xs w-36">
               <SelectValue placeholder="Filter by grade…" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All grades</SelectItem>
+              <SelectItem value="__all__">All grades</SelectItem>
               {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
 
-          {resources.length > 0 && <Select value={selectedResource} onValueChange={setSelectedResource}>
+          {resources.length > 0 && <Select value={selectedResource || '__none__'} onValueChange={value => setSelectedResource(value === '__none__' ? '' : value)}>
               <SelectTrigger className="h-8 text-xs w-52">
                 <SelectValue placeholder="Ask about a resource…" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No resource selected</SelectItem>
+                <SelectItem value="__none__">No resource selected</SelectItem>
                 {resources.slice(0, 15).map(r => <SelectItem key={r.id} value={r.id}>
                     {r.source_type === 'tutor' ? '👨‍🏫 ' : '📚 '}
                     {r.title.substring(0, 34)}{r.title.length > 34 ? '…' : ''}

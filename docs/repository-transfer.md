@@ -4,6 +4,10 @@ Updated 13 October 2026. Target: `TECHandGUARD/SmartBridge-FET`, based on main `
 
 ## Implemented repairs
 
+The subsequent local MVP access work is recorded in [mvp-backend-access.md](mvp-backend-access.md).
+It adds catalogue/queue/exam policies and atomic opportunity review after the verified baseline,
+bringing fresh replay to ten migrations and seven SQL suites. Production remains unchanged.
+
 The reconciled code includes database-backed onboarding and account permissions, role navigation, owned bookings with server prices, learner-approved parent access, study logging, private-file references, scoped AI/email APIs, configurable Yoco/Paystack providers, authenticated/signed callbacks, disabled-by-default scheduled jobs, admin Operations controls and sanitized monitoring. Existing university administration, paginated administrator loading, configurable UI primitives, query/realtime helpers, entity definitions and app assets are retained.
 
 Broad frontend typechecking now passes without narrowing its source include scope or adding blanket suppression. UI primitives have actual HTML/Radix prop contracts; genuine incompatible callers, numeric attributes, subject-object rendering, calendar/checkbox props, dashboard props and optional callbacks were corrected. Supabase JavaScript is pinned to 2.117.3 with its lockfile.

@@ -42,9 +42,9 @@ for(const name of fs.readdirSync(directory).filter(x=>x.endsWith('.sql')).sort()
   console.log('PASS: baseline column/default parity, policy inventory, existing-schema guard and drift rejection');
  }
 }
-console.log('PASS: fresh schema, original history, baseline and seven repairs replay');
+console.log('PASS: fresh schema, original history, baseline and all repairs replay');
 await db.exec('begin;');
-for(const name of ['test-core-flows.sql','test-bookings-and-links.sql','test-api-integrations.sql','test-payment-gateways.sql','test-operations.sql','test-study-rooms.sql']){
+for(const name of ['test-core-flows.sql','test-bookings-and-links.sql','test-api-integrations.sql','test-payment-gateways.sql','test-operations.sql','test-study-rooms.sql','test-mvp-access.sql']){
  console.log('TEST',name);await db.exec(fs.readFileSync(path.join(process.cwd(),'db',name),'utf8'));}
-await db.exec('rollback;');console.log('PASS: all six security/workflow SQL fixtures');
+await db.exec('rollback;');console.log('PASS: all seven security/workflow SQL fixtures');
 }finally{await db.close();}})().catch(e=>{console.error('ERROR',e.message,e.where||'',e.detail||'');process.exit(1)});

@@ -1,5 +1,9 @@
 # Schema-only baseline
 
+The [MVP access follow-up](../../docs/mvp-backend-access.md) adds one later repair;
+the current replay includes ten migrations and seven SQL suites. The captured
+baseline itself remains unchanged and still reproduces the original nine-migration checkpoint.
+
 Captured from SmartBridge FET (`bbhrnidzjeccggununzq`) on 13 October 2026. This snapshot contains definitions and bucket settings, not customer rows, uploaded files, credentials or provider configuration values. The existing recorded website migration is recovered from its stored SQL; no new production migration history has been written.
 
 The captured schema has 54 public tables, 7 application functions, 134 application/storage policies, 49 application/auth triggers, one view and one custom RLS event trigger. There are no application enum types or sequences. Extension-owned functions and managed Supabase Auth/Storage internals are not reimplemented by the baseline.

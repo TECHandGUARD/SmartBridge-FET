@@ -12,7 +12,7 @@
       "deployed_version": 7,
       "deployed_verify_jwt": true,
       "deployed_bundle_sha256": "4d66fe45745987c9e163c87b3be8e7691dcc1ffa88cf79addd11e52db8cc3d96",
-      "reconciled_entrypoint_sha256": "eb5c4d864636e2858699a2a778a35e08a5aba0eb29e4f2acbe34bd0d4990dd97",
+      "reconciled_entrypoint_sha256": "ba3476716ce259cc21af230b35546eb0b46391b05bd04f5fd0ae927a57468aef",
       "dependencies": [
         "supabase/shared/config.ts",
         "supabase/shared/http.ts",

@@ -13,10 +13,12 @@ export default function TechGuardBanner() {
         }
       } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
+      if (!session?.user?.id) return;
       const {
         error
       } = await supabase.from('banner_clicks').insert({
         banner_name: 'tech_guard',
+        user_id: session.user.id,
         user_email: userEmail || null,
         click_timestamp: new Date().toISOString()
       });

@@ -2,6 +2,10 @@
 
 ## Prepared and verified
 
+Local development continues on Free with no hosted branch or billing authorization.
+The later [MVP access follow-up](mvp-backend-access.md) adds a tenth migration and
+seventh SQL suite; include that migration before deploying its atomic review handler.
+
 The schema-only baseline and original migration history are reconstructed in the repository. `npm run check:db` tests a fresh PostgreSQL 17 replay of all nine migrations and the six SQL workflow/security suites. The existing live-schema guard passes without changing production. All 38 Edge Function source bundles can be prepared with `npm run prepare:edge -- /tmp/staging-functions`; custom entrypoints and JWT settings are declared in `supabase/config.toml`.
 
 ## Hosted staging gate
