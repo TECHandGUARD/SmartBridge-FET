@@ -1,33 +1,16 @@
+import {consumeQuota,readJson} from '../../shared/api.ts';
+import { serverConnection, geminiSettings } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const { subject, grade, topic, question_count = 5 } = await req.json();
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'user');
+    await consumeQuota(supabase,user.id,'ai');
+    const { subject, grade, topic, question_count = 5 } = await readJson(req);
 
     if (!subject || !grade || !topic) {
       return new Response(
@@ -84,19 +67,13 @@ Rules:
 - Strictly follow CAPS curriculum scope for ${grade} ${subject}`;
 
     // Call Gemini AI
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
-      return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    const { url: geminiUrl, apiKey: geminiApiKey } = geminiSettings();
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`,
+      geminiUrl,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
         body: JSON.stringify({
           contents: [{
             parts: [{ text: prompt }]
@@ -124,19 +101,19 @@ Rules:
 
     let result = { questions: [], topic_summary: "" };
     try {
-      const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/) || 
+      const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/) ||
                         textResponse.match(/\{\s*"questions"\s*:\s*\[[\s\S]*\]\s*\}/);
       const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : textResponse;
       result = JSON.parse(jsonString);
-      
+
       if (!result.questions || !Array.isArray(result.questions)) {
         result.questions = [];
       }
     } catch (parseError) {
       return new Response(
-        JSON.stringify({ 
-          error: "Failed to parse Gemini response", 
-          raw_response: textResponse 
+        JSON.stringify({
+          error: "Failed to parse Gemini response",
+          raw_response: textResponse
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -146,9 +123,9 @@ Rules:
       JSON.stringify({
         questions: result.questions || [],
         topic_summary: result.topic_summary || "",
-        resources_used: matchedResources.map((r: any) => ({ 
-          title: r.title, 
-          url: r.resource_url 
+        resources_used: matchedResources.map((r: any) => ({
+          title: r.title,
+          url: r.resource_url
         }))
       }),
       { headers: { "Content-Type": "application/json" } }
@@ -157,7 +134,7 @@ Rules:
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'generate-quiz'));

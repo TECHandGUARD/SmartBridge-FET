@@ -1,12 +1,11 @@
+import {Briefcase} from 'lucide-react';
+import {Badge} from '@/components/ui/badge';
 // src/components/ui/calendar.jsx
 import * as React from "react";
-import { 
-  ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Sparkles, Zap, Target, Clock, Trophy, Award,
-  GraduationCap, Users, BookOpen, TrendingUp,
-  Heart, Star, Flame, Crown, Gift, Rocket,
-  CheckCircle, AlertCircle, Bell, Coffee, Moon,
-  Sun, Cloud, CloudRain, Thermometer
+import {
+  ChevronLeft, ChevronRight,
+  Sparkles, Target, Clock, Trophy, BookOpen,
+  CheckCircle
 } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
@@ -51,6 +50,7 @@ const CONFIG = {
 
 // ─── Streak Display ──────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {streak?: number}} props */
 function StreakDisplay({ streak = 0 }) {
   const isOnStreak = streak > 0;
   const emojis = ['🔥', '⚡', '💪', '🚀', '🌟', '🏆', '👑'];
@@ -59,8 +59,8 @@ function StreakDisplay({ streak = 0 }) {
   return (
     <div className={cn(
       "flex items-center gap-2 px-3 py-1.5 rounded-full",
-      isOnStreak 
-        ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-200/50" 
+      isOnStreak
+        ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-200/50"
         : "bg-muted/30 border border-border/50"
     )}>
       <span className="text-lg">{isOnStreak ? emoji : '⏸️'}</span>
@@ -74,6 +74,7 @@ function StreakDisplay({ streak = 0 }) {
 
 // ─── Goal Card ─────────────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {icon?: React.ElementType; label?: React.ReactNode; current?: number; target?: number; color?: string}} props */
 function GoalCard({ icon: Icon, label, current, target, color }) {
   const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
   const isComplete = percentage >= 100;
@@ -91,7 +92,7 @@ function GoalCard({ icon: Icon, label, current, target, color }) {
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div 
+          <div
             className={cn(
               "h-full rounded-full transition-all duration-500",
               isComplete ? "bg-green-500" : "bg-primary"
@@ -109,6 +110,7 @@ function GoalCard({ icon: Icon, label, current, target, color }) {
 
 // ─── Session Time Slot ─────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {time?: any; subject?: any; tutor?: any; status?: any}} props */
 function SessionSlot({ time, subject, tutor, status }) {
   const statusColors = {
     confirmed: "border-green-200 bg-green-50/50",
@@ -142,6 +144,7 @@ function SessionSlot({ time, subject, tutor, status }) {
 
 // ─── Achievement Badge ────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {icon?: React.ElementType; label?: React.ReactNode; unlocked?: any; color?: any}} props */
 function AchievementBadge({ icon: Icon, label, unlocked, color }) {
   return (
     <div className={cn(
@@ -166,7 +169,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, color }) {
 
 /**
  * Enhanced Calendar – An engaging, feature-rich calendar for students and tutors.
- * 
+ *
  * @param {Object} props
  * @param {string} props.userType - 'student' | 'tutor' | 'parent'
  * @param {number} props.studyStreak - Current study streak in days
@@ -178,6 +181,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, color }) {
  * @param {function} props.onSelect - Callback when date is selected
  * @param {string} props.className - Additional CSS classes
  */
+/** @param {Omit<React.ComponentPropsWithoutRef<typeof DayPicker>, 'mode'|'selected'|'onSelect'> & {userType?: string; studyStreak?: number; dailyGoals?: any; sessions?: any; earnings?: number; achievements?: any; selected?: any; onSelect?: (...args: any[]) => any}} props */
 function Calendar({
   className,
   userType = 'student',
@@ -200,8 +204,8 @@ function Calendar({
 
   const renderHeader = () => {
     const title = isTutor ? CONFIG.MESSAGES.TUTOR_TITLE : CONFIG.MESSAGES.STUDENT_TITLE;
-    const subtitle = isTutor 
-      ? `💰 R${earnings.toFixed(2)} this month · ${sessions.length} sessions` 
+    const subtitle = isTutor
+      ? `💰 R${earnings.toFixed(2)} this month · ${sessions.length} sessions`
       : `${studyStreak} day streak · ${dailyGoals.filter(g => g.current >= g.target).length}/${dailyGoals.length} goals met`;
 
     return (
@@ -312,7 +316,7 @@ function Calendar({
         selected={selected}
         onSelect={onSelect}
         showOutsideDays={CONFIG.SHOW_OUTSIDE_DAYS}
-        firstWeekday={CONFIG.FIRST_WEEKDAY}
+        weekStartsOn={/** @type {0|1|2|3|4|5|6} */ (CONFIG.FIRST_WEEKDAY >= 0 && CONFIG.FIRST_WEEKDAY <= 6 ? CONFIG.FIRST_WEEKDAY : 1)}
         className="[&_.rdp-caption]:justify-center"
         classNames={{
           months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
@@ -347,10 +351,12 @@ function Calendar({
           ...props.classNames,
         }}
         components={{
-          IconLeft: ({ className, ...props }) => (
+          IconLeft: /** @param {import('lucide-react').LucideProps} props */
+({ className, ...props }) => (
             <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
           ),
-          IconRight: ({ className, ...props }) => (
+          IconRight: /** @param {import('lucide-react').LucideProps} props */
+({ className, ...props }) => (
             <ChevronRight className={cn("h-4 w-4", className)} {...props} />
           ),
         }}

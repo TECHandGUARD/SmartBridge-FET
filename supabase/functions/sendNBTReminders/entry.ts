@@ -1,29 +1,18 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - cron job can call without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     // Fetch all NBT registrations with status 'registered'
     const { data: registrations, error: regError } = await supabase
       .from("nbt_registrations")
@@ -154,7 +143,7 @@ SmartBridge FET Team`;
   </div>
 </div>`;
 
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -167,24 +156,25 @@ SmartBridge FET Team`;
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           const emailResult = await resendResponse.json();
 
           // Update reminder_sent flag
-          await supabase
+          const {error: trackingError} = await supabase
             .from("nbt_registrations")
-            .update({ 
+            .update({
               reminder_sent: true,
-              reminder_sent_at: new Date().toISOString()
+              updated_at: new Date().toISOString()
             })
             .eq("id", reg.id);
+          if (trackingError) throw trackingError;
 
-          results.push({ 
-            email: reg.student_email, 
+          results.push({
+            email: reg.student_email,
             test_date: reg.test_date,
-            email_id: emailResult.id 
+            email_id: emailResult.id
           });
 
           // Log in audit log
@@ -194,28 +184,28 @@ SmartBridge FET Team`;
               event_type: "notification_sent",
               user_email: reg.student_email,
               description: `NBT reminder sent for test on ${reg.test_date}`,
-              metadata: JSON.stringify({
+              metadata: {
                 test_date: reg.test_date,
                 registration_id: reg.id,
                 days_until: daysUntil,
                 email_id: emailResult.id
-              })
+              }
             });
         } else {
           const errorText = await resendResponse.text();
           console.error(`Failed to send email to ${reg.student_email}:`, errorText);
-          results.push({ 
-            email: reg.student_email, 
+          results.push({
+            email: reg.student_email,
             test_date: reg.test_date,
-            error: errorText 
+            error: errorText
           });
         }
       } catch (emailError) {
         console.error(`Error sending email to ${reg.student_email}:`, emailError.message);
-        results.push({ 
-          email: reg.student_email, 
+        results.push({
+          email: reg.student_email,
           test_date: reg.test_date,
-          error: emailError.message 
+          error: emailError.message
         });
       }
     }
@@ -233,7 +223,7 @@ SmartBridge FET Team`;
     console.error("Error sending NBT reminders:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'send-nbt-reminders'));

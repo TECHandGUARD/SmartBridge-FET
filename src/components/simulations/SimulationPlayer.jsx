@@ -1,51 +1,13 @@
+import { AlertTriangle, Shield, Loader2 } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
-import { X, Monitor, Download, ExternalLink, ShieldAlert, CheckCircle2, AlertTriangle, Shield, Loader2 } from 'lucide-react';
+import { X, Monitor, Download, ExternalLink, ShieldAlert, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// SCHOOL SAFETY POLICY: Domain Whitelist
-// Only approved educational domains can be embedded
-// ============================================================
-
-const APPROVED_DOMAINS = [
-  'phet.colorado.edu',           // PhET Interactive Simulations (University of Colorado)
-  'lab.concord.org',              // Concord Consortium
-  'smartbridge.co.za',            // Custom hosted content
-  'amplifyapp.com',               // AWS Amplify hosted
-  'supabase.co',                  // Supabase storage
-  'www.youtube.com',              // Educational videos
-  'youtu.be',                    // YouTube short links
-  'www.youtube-nocookie.com',    // YouTube privacy-enhanced
-  'drive.google.com',            // Google Drive hosted worksheets
-  'docs.google.com',             // Google Docs
-  'geogebra.org',                // GeoGebra
-  'www.geogebra.org',            // GeoGebra
-  'desmos.com',                  // Desmos
-  'www.desmos.com',              // Desmos
-  'siyavula.com',                // Siyavula - SA CAPS aligned
-  'www.siyavula.com',            // Siyavula
-  'mindsetlearn.co.za',          // Mindset Learn - SA
-  'www.mindsetlearn.co.za',      // Mindset Learn
-  '2enable.org',                 // 2Enable - SA
-  'www.2enable.org',             // 2Enable
-  'learningportal.dbe.gov.za',   // DBE Portal
-  'resources.sace.org.za',       // SACE Resources
-];
-
-// ============================================================
-// PropTypes
-// ============================================================
-
+const APPROVED_DOMAINS = ['phet.colorado.edu', 'lab.concord.org', 'smartbridge.co.za', 'amplifyapp.com', 'supabase.co', 'www.youtube.com', 'youtu.be', 'www.youtube-nocookie.com', 'drive.google.com', 'docs.google.com', 'geogebra.org', 'www.geogebra.org', 'desmos.com', 'www.desmos.com', 'siyavula.com', 'www.siyavula.com', 'mindsetlearn.co.za', 'www.mindsetlearn.co.za', '2enable.org', 'www.2enable.org', 'learningportal.dbe.gov.za', 'resources.sace.org.za'];
 const propTypes = {
   simulation: PropTypes.shape({
     id: PropTypes.string.isRequired,
@@ -59,42 +21,39 @@ const propTypes = {
     simulation_url: PropTypes.string.isRequired,
     duration: PropTypes.number,
     is_new: PropTypes.bool,
-    is_approved: PropTypes.bool,
+    is_approved: PropTypes.bool
   }).isRequired,
   isTutor: PropTypes.bool,
   user: PropTypes.object,
-  onClose: PropTypes.func.isRequired,
+  onClose: PropTypes.func.isRequired
 };
-
-// ============================================================
-// Helper: Validate Educational Domain
-// ============================================================
-
 function validateEducationalDomain(url) {
   if (!url || url.trim() === '') {
-    return { valid: false, message: 'No URL provided' };
+    return {
+      valid: false,
+      message: 'No URL provided'
+    };
   }
-
   try {
     const parsedUrl = new URL(url);
-    const isApproved = APPROVED_DOMAINS.some(domain => 
-      parsedUrl.hostname === domain || 
-      parsedUrl.hostname.endsWith('.' + domain)
-    );
-    
+    const isApproved = APPROVED_DOMAINS.some(domain => parsedUrl.hostname === domain || parsedUrl.hostname.endsWith('.' + domain));
     if (!isApproved) {
-      return { 
-        valid: false, 
-        message: `Access Denied: "${parsedUrl.hostname}" is not in the approved domain list. Only verified educational sources are permitted.` 
+      return {
+        valid: false,
+        message: `Access Denied: "${parsedUrl.hostname}" is not in the approved domain list. Only verified educational sources are permitted.`
       };
     }
-    
-    return { valid: true, hostname: parsedUrl.hostname };
+    return {
+      valid: true,
+      hostname: parsedUrl.hostname
+    };
   } catch {
-    return { valid: false, message: 'Invalid URL format. Please check the address.' };
+    return {
+      valid: false,
+      message: 'Invalid URL format. Please check the address.'
+    };
   }
 }
-
 function extractUrlFromIframe(input) {
   const iframeMatch = input.match(/src=["']([^"']+)["']/i);
   if (iframeMatch) {
@@ -102,12 +61,12 @@ function extractUrlFromIframe(input) {
   }
   return input.trim();
 }
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function SimulationPlayer({ simulation, isTutor = false, user = null, onClose }) {
+export default function SimulationPlayer({
+  simulation,
+  isTutor = false,
+  user = null,
+  onClose
+}) {
   const [lessonMode, setLessonMode] = useState(false);
   const [customEmbed, setCustomEmbed] = useState('');
   const [showEmbedInput, setShowEmbedInput] = useState(false);
@@ -115,8 +74,6 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
   const [securityWarning, setSecurityWarning] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
-
-  // Validate default URL on load
   useEffect(() => {
     const validation = validateEducationalDomain(simulation.simulation_url);
     if (!validation.valid) {
@@ -124,25 +81,17 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
       toast.error('This simulation uses an unverified URL');
     }
   }, [simulation.simulation_url]);
-
-  // ============================================================
-  // Launch Lesson Mode (Projector Mode)
-  // ============================================================
-
   const launchLessonMode = () => {
     const validation = validateEducationalDomain(embedSrc);
     if (!validation.valid) {
       toast.error(validation.message || 'Cannot launch - invalid URL');
       return;
     }
-
     const win = window.open(embedSrc, '_blank', 'fullscreen=yes,toolbar=no,menubar=no,scrollbars=no,resizable=yes');
     if (win) {
       win.focus();
       setLessonMode(true);
       toast.info('Lesson mode activated - simulation opened in new window');
-      
-      // Log activity for POPIA compliance
       logActivity('simulation_lesson_mode', {
         simulation_id: simulation.id,
         simulation_title: simulation.title,
@@ -150,38 +99,25 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
       });
     }
   };
-
-  // ============================================================
-  // Apply Custom Embed (Tutor Only)
-  // ============================================================
-
   const applyCustomEmbed = () => {
     setSecurityWarning(null);
     setLoadError(null);
-    
     if (!customEmbed.trim()) {
       setSecurityWarning('Please enter a URL or iframe code');
       return;
     }
-
     let targetUrl = extractUrlFromIframe(customEmbed);
-    
-    // Validate domain against whitelist
     const validation = validateEducationalDomain(targetUrl);
-    
     if (!validation.valid) {
       setSecurityWarning(validation.message || 'Invalid URL');
       toast.error(validation.message || 'Invalid URL');
       return;
     }
-
     setEmbedSrc(targetUrl);
     setShowEmbedInput(false);
     setCustomEmbed('');
     setIsLoading(true);
     toast.success('Custom simulation loaded successfully');
-    
-    // Log activity
     logActivity('simulation_custom_embed', {
       simulation_id: simulation.id,
       simulation_title: simulation.title,
@@ -189,18 +125,12 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
       hostname: validation.hostname
     });
   };
-
-  // ============================================================
-  // Reset to Default
-  // ============================================================
-
   const resetToDefault = () => {
     const validation = validateEducationalDomain(simulation.simulation_url);
     if (!validation.valid) {
       toast.error('Default URL is not approved');
       return;
     }
-    
     setEmbedSrc(simulation.simulation_url);
     setShowEmbedInput(false);
     setSecurityWarning(null);
@@ -209,49 +139,28 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
     setIsLoading(true);
     toast.info('Reset to default simulation');
   };
-
-  // ============================================================
-  // Activity Logging
-  // ============================================================
-
   const logActivity = async (eventType, metadata) => {
     try {
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: eventType,
-          user_email: user?.email || 'system',
-          user_id: user?.id || null,
-          description: `${eventType.replace(/_/g, ' ')}: ${metadata.simulation_title}`,
-          metadata: metadata
-        });
-    } catch {
-      // Silent fail for logging
-    }
+      await supabase.from('activity_log').insert({
+        event_type: eventType,
+        user_email: user?.email || 'system',
+        user_id: user?.id || null,
+        description: `${eventType.replace(/_/g, ' ')}: ${metadata.simulation_title}`,
+        metadata: metadata
+      });
+    } catch {}
   };
-
-  // ============================================================
-  // Handle iframe Load Error
-  // ============================================================
-
   const handleIframeError = () => {
     setLoadError('Failed to load simulation content. Please check your internet connection.');
     setIsLoading(false);
   };
-
   const handleIframeLoad = () => {
     setIsLoading(false);
     setLoadError(null);
   };
+  return <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
 
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
-      
-      {/* Top Bar */}
+      {}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-slate-800 shrink-0 shadow-md">
         <div className="flex items-center gap-2.5 min-w-0">
           <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30 shrink-0 text-[10px] font-bold uppercase tracking-wider">
@@ -261,192 +170,114 @@ export default function SimulationPlayer({ simulation, isTutor = false, user = n
           <Badge variant="outline" className="text-slate-400 border-slate-700 shrink-0 text-[10px] font-semibold hidden sm:inline-flex">
             {simulation.caps_topic || 'CAPS Topic'}
           </Badge>
-          {simulation.grade_level && (
-            <Badge variant="outline" className="text-slate-400 border-slate-700 shrink-0 text-[10px] hidden md:inline-flex">
+          {simulation.grade_level && <Badge variant="outline" className="text-slate-400 border-slate-700 shrink-0 text-[10px] hidden md:inline-flex">
               Grade {simulation.grade_level}
-            </Badge>
-          )}
+            </Badge>}
         </div>
-        
+
         <div className="flex items-center gap-2 ml-4 shrink-0">
-          {/* Tutor-only features */}
-          {isTutor && (
-            <>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5 text-xs font-semibold h-8 bg-transparent"
-                onClick={() => {
-                  setShowEmbedInput(!showEmbedInput);
-                  setSecurityWarning(null);
-                }}
-              >
+          {}
+          {isTutor && <>
+              <Button type="button" size="sm" variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5 text-xs font-semibold h-8 bg-transparent" onClick={() => {
+            setShowEmbedInput(!showEmbedInput);
+            setSecurityWarning(null);
+          }}>
                 <ExternalLink className="w-3.5 h-3.5 text-slate-400" /> Custom URL
               </Button>
-              <Button
-                type="button"
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-1.5 text-xs h-8 shadow-sm"
-                onClick={launchLessonMode}
-              >
+              <Button type="button" size="sm" className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-1.5 text-xs h-8 shadow-sm" onClick={launchLessonMode}>
                 <Monitor className="w-3.5 h-3.5" /> Projector
               </Button>
-            </>
-          )}
-          
-          {/* Worksheet Download */}
-          {simulation.worksheet_url && (
-            <a href={simulation.worksheet_url} target="_blank" rel="noopener noreferrer" className="inline-block">
-              <Button 
-                type="button"
-                size="sm" 
-                variant="outline" 
-                className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5 text-xs font-semibold h-8 bg-transparent"
-              >
+            </>}
+
+          {}
+          {simulation.worksheet_url && <a href={simulation.worksheet_url} target="_blank" rel="noopener noreferrer" className="inline-block">
+              <Button type="button" size="sm" variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800 gap-1.5 text-xs font-semibold h-8 bg-transparent">
                 <Download className="w-3.5 h-3.5 text-slate-400" /> Worksheet
               </Button>
-            </a>
-          )}
-          
-          {/* Close Button */}
-          <Button 
-            type="button"
-            size="icon" 
-            variant="ghost" 
-            className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 w-8 rounded-lg transition-colors" 
-            onClick={onClose}
-          >
+            </a>}
+
+          {}
+          <Button type="button" size="icon" variant="ghost" className="text-slate-400 hover:text-white hover:bg-slate-800 h-8 w-8 rounded-lg transition-colors" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
-      {/* Security Badge - Always Visible */}
+      {}
       <div className="bg-slate-900/80 border-b border-slate-800 px-4 py-1.5 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2 text-[10px] text-slate-400">
           <Shield className="w-3 h-3 text-emerald-400" />
           <span>Secure educational content</span>
-          {!isTutor && (
-            <span className="text-emerald-400 ml-2">✓ Verified source</span>
-          )}
+          {!isTutor && <span className="text-emerald-400 ml-2">✓ Verified source</span>}
         </div>
-        {isTutor && (
-          <Badge variant="outline" className="text-[9px] text-slate-500 border-slate-700">
+        {isTutor && <Badge variant="outline" className="text-[9px] text-slate-500 border-slate-700">
             Tutor Mode • Custom URLs allowed
-          </Badge>
-        )}
+          </Badge>}
       </div>
 
-      {/* Custom URL Input Panel (Tutor Only) */}
-      {showEmbedInput && (
-        <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-col gap-2 transition-all shrink-0">
+      {}
+      {showEmbedInput && <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-col gap-2 transition-all shrink-0">
           <div className="flex gap-2">
-            <input
-              className="flex-1 rounded-lg bg-slate-950 border border-slate-800 text-white px-3 py-1.5 text-xs font-medium placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Paste approved educational URL or iframe code (PhET, Concord, GeoGebra, etc.)"
-              value={customEmbed}
-              onChange={e => setCustomEmbed(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && applyCustomEmbed()}
-            />
+            <input className="flex-1 rounded-lg bg-slate-950 border border-slate-800 text-white px-3 py-1.5 text-xs font-medium placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Paste approved educational URL or iframe code (PhET, Concord, GeoGebra, etc.)" value={customEmbed} onChange={e => setCustomEmbed(e.target.value)} onKeyDown={e => e.key === 'Enter' && applyCustomEmbed()} />
             <Button size="sm" type="button" className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs" onClick={applyCustomEmbed}>
               Apply
             </Button>
-            <Button 
-              size="sm" 
-              type="button"
-              variant="ghost" 
-              className="text-slate-400 text-xs font-medium hover:text-white" 
-              onClick={resetToDefault}
-            >
+            <Button size="sm" type="button" variant="ghost" className="text-slate-400 text-xs font-medium hover:text-white" onClick={resetToDefault}>
               Reset
             </Button>
           </div>
-          
-          {/* Security Warning */}
-          {securityWarning && (
-            <div className="p-2.5 bg-red-950/40 border border-red-900/60 rounded-lg text-red-400 text-[11px] font-semibold flex items-center gap-2">
+
+          {}
+          {securityWarning && <div className="p-2.5 bg-red-950/40 border border-red-900/60 rounded-lg text-red-400 text-[11px] font-semibold flex items-center gap-2">
               <ShieldAlert className="w-4 h-4 text-red-500 shrink-0" />
               <div>{securityWarning}</div>
-            </div>
-          )}
-          
-          {/* Approved Domains List */}
+            </div>}
+
+          {}
           <div className="text-[10px] text-slate-500 mt-1">
             <span className="font-semibold">Approved domains:</span> {APPROVED_DOMAINS.join(', ')}
           </div>
-        </div>
-      )}
+        </div>}
 
-      {/* Main Simulation Iframe with Security Sandbox */}
+      {}
       <div className="flex-1 relative bg-slate-950">
-        {/* Loading State */}
-        {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
+        {}
+        {isLoading && <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="w-8 h-8 text-primary animate-spin" />
               <p className="text-slate-400 text-xs font-medium">Loading simulation...</p>
             </div>
-          </div>
-        )}
+          </div>}
 
-        {/* Error State */}
-        {loadError && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
+        {}
+        {loadError && <div className="absolute inset-0 flex items-center justify-center bg-slate-950 z-10">
             <div className="flex flex-col items-center gap-3 max-w-md text-center">
               <AlertTriangle className="w-10 h-10 text-amber-500" />
               <p className="text-slate-300 text-sm font-semibold">Unable to load simulation</p>
               <p className="text-slate-400 text-xs">{loadError}</p>
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="border-slate-700 text-slate-300 hover:bg-slate-800"
-                onClick={() => {
-                  setIsLoading(true);
-                  setLoadError(null);
-                  setEmbedSrc(embedSrc); // Re-trigger load
-                }}
-              >
+              <Button size="sm" variant="outline" className="border-slate-700 text-slate-300 hover:bg-slate-800" onClick={() => {
+            setIsLoading(true);
+            setLoadError(null);
+            setEmbedSrc(embedSrc);
+          }}>
                 Retry
               </Button>
             </div>
-          </div>
-        )}
+          </div>}
 
-        <iframe
-          src={embedSrc}
-          title={simulation.title}
-          className="w-full h-full border-0 bg-slate-950"
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads"
-          allow="fullscreen; autoplay; encrypted-media"
-          allowFullScreen
-          referrerPolicy="strict-origin-when-cross-origin"
-          onError={handleIframeError}
-          onLoad={handleIframeLoad}
-        />
+        <iframe src={embedSrc} title={simulation.title} className="w-full h-full border-0 bg-slate-950" sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-downloads" allow="fullscreen; autoplay; encrypted-media" allowFullScreen referrerPolicy="strict-origin-when-cross-origin" onError={handleIframeError} onLoad={handleIframeLoad} />
       </div>
 
-      {/* Projector Mode Status */}
-      {lessonMode && (
-        <div className="shrink-0 bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex items-center justify-between shadow-lg">
+      {}
+      {lessonMode && <div className="shrink-0 bg-slate-900 border-t border-slate-800 px-4 py-2.5 flex items-center justify-between shadow-lg">
           <span className="text-slate-300 text-xs font-medium flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-500" /> 
+            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
             Projector mode active. Simulation is displayed in a separate window for classroom projection.
           </span>
-          <Button 
-            type="button"
-            size="sm" 
-            variant="ghost" 
-            className="text-blue-400 hover:text-blue-300 font-bold text-xs p-0 h-auto bg-transparent" 
-            onClick={() => setLessonMode(false)}
-          >
+          <Button type="button" size="sm" variant="ghost" className="text-blue-400 hover:text-blue-300 font-bold text-xs p-0 h-auto bg-transparent" onClick={() => setLessonMode(false)}>
             Dismiss
           </Button>
-        </div>
-      )}
-    </div>
-  );
+        </div>}
+    </div>;
 }
-
-// Add PropTypes to the component
 SimulationPlayer.propTypes = propTypes;

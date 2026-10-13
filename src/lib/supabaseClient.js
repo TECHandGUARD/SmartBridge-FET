@@ -1,73 +1,48 @@
-// src/lib/supabaseClient.js
+import {PRIVATE_BUCKETS,uploadPrivate} from './private-storage.js';
+import {createQueryCache} from './query-cache.js';
+import {createClientReporter,monitoredFetch} from './monitoring.js';
 import { createClient } from '@supabase/supabase-js';
 
-// ============================================================
-// 🔧 Environment Variables (Soft-coded)
-// ============================================================
+import { appConfig, configurationError } from './config.js';
+export { configurationError };
+const supabaseUrl = appConfig.supabaseUrl;
+const supabaseAnonKey = appConfig.supabaseKey;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Create Supabase client
+let reportRequest=(_code)=>{};
+export const supabase = configurationError ? null : createClient(supabaseUrl, supabaseAnonKey, {
+  global: {fetch: monitoredFetch(globalThis.fetch.bind(globalThis),code=>reportRequest(code))},
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    storage: typeof window === 'undefined' ? undefined : window.localStorage,
+  },
+  db: {
+    schema: 'public',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
 
-if (import.meta.env.DEV) {
-  console.log('🔍 Environment Check:');
-  console.log('   VITE_SUPABASE_URL:', supabaseUrl ? '✅ Present' : '❌ MISSING');
-  console.log('   VITE_SUPABASE_ANON_KEY:', supabaseAnonKey ? '✅ Present' : '❌ MISSING');
-}
+reportRequest=createClientReporter(supabase);
 
-// ============================================================
-// 🚨 Environment Validation - DO NOT THROW, JUST WARN
-// ============================================================
+// Optional: Helper function to check if user is authenticated
+export const isAuthenticated = async () => {
+  if (!supabase) return false;
+  const { data: { session } } = await supabase.auth.getSession();
+  return !!session;
+};
 
-let supabaseClient = null;
-let initError = null;
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  const errorMessage = `Missing Supabase environment variables. VITE_SUPABASE_URL: ${supabaseUrl ? '✅' : '❌'}, VITE_SUPABASE_ANON_KEY: ${supabaseAnonKey ? '✅' : '❌'}`;
-  console.error('🚨 ' + errorMessage);
-  initError = new Error(errorMessage);
-  // DO NOT THROW - let app load with graceful degradation
-} else {
-  // ============================================================
-  // 🚀 Create Supabase Client (ONLY if credentials exist)
-  // ============================================================
-
-  try {
-    supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true,
-        flowType: 'pkce',
-      },
-      realtime: {
-        params: {
-          eventsPerSecond: 10,
-        },
-      },
-    });
-    if (import.meta.env.DEV) {
-      console.log('✅ Supabase client initialized successfully');
-    }
-  } catch (error) {
-    console.error('❌ Failed to create Supabase client:', error);
-    initError = error;
-    supabaseClient = null;
-  }
-}
-
-// ✅ CRITICAL: Export supabaseClient (not undefined)
-export const supabase = supabaseClient;
-
-// Corrected spelling (was: supbaseInitError)
+const initError = configurationError ? new Error(configurationError) : null;
 export const supabaseInitError = initError;
-// @deprecated - typo alias kept for backward compatibility. Migrate imports to `supabaseInitError`.
 export const supbaseInitError = initError;
 
-// ============================================================
-// 📡 Global Channel Manager (Reference-Counted)
-// ============================================================
-
-// Map<channelName, { channel, subscribers: Set<string> }>
 const activeChannels = new Map();
 const MAX_CHANNELS = 20;
 
@@ -243,15 +218,17 @@ export const getCurrentUserProfile = async () => {
 export const hasRole = async (allowedRoles) => {
   try {
     const { profile, error } = await getCurrentUserProfile();
-    if (error || !profile) return false;
+    if (error || !profile || profile.is_active===false) return false;
     const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
-    return roles.includes(profile.role);
+    return roles.includes(profile.is_super_admin===true?'admin':profile.role);
   } catch {
     return false;
   }
 };
 
-export const isAdmin = async () => hasRole('admin');
+export const isAdmin = async () => {
+ const {profile,error}=await getCurrentUserProfile();return !error&&profile?.is_active!==false&&profile?.is_super_admin===true;
+};
 
 export const signOut = async () => {
   if (!supabase) return { success: false, error: initError };
@@ -277,12 +254,18 @@ export const table = db;
 // 📁 Storage Helpers
 // ============================================================
 
-const DEFAULT_BUCKET = import.meta.env.VITE_STORAGE_BUCKET || 'documents';
+const DEFAULT_BUCKET = 'application_documents';
+const PUBLIC_BUCKETS = new Set(['avatars','videos','caps_documents','prospectus','opportunity_guides']);
 
 export const uploadFile = async (file, bucket = DEFAULT_BUCKET, path = '') => {
   if (!supabase) return { data: null, error: initError, publicUrl: null };
 
   try {
+    if(PRIVATE_BUCKETS.has(bucket)){
+      const uploaded=await uploadPrivate(supabase,bucket,file);
+      return {data:{path:uploaded.path},error:null,reference:uploaded.reference,publicUrl:null};
+    }
+    if(!PUBLIC_BUCKETS.has(bucket)) throw new Error('Unsupported storage bucket');
     const fileName = `${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
     const filePath = path ? `${path}/${fileName}` : fileName;
     const { data, error } = await supabase.storage
@@ -408,83 +391,15 @@ export const emergencyReset = async () => {
   console.log('✅ Emergency reset complete.');
 };
 
-if (typeof window !== 'undefined') {
-  window.__supabaseEmergencyReset = emergencyReset;
-  window.__supabaseChannels = getRealtimeHealth;
-}
+
 
 // ============================================================
 // 🧠 GLOBAL QUERY DEDUPLICATION
 // ============================================================
 
-const requestCache = new Map();
-
-/**
- * Deduplicate in-flight queries and cache successful results for `ttl` ms.
- *
- * Handles two distinct failure modes:
- *   1. PostgrestError returned as `{ data: null, error }` (Supabase does not reject)
- *   2. Genuine thrown exceptions (network, JSON parse, etc.)
- * Both are memoized so a burst of callers does not stampede a failing endpoint.
- *
- * @param {string} cacheKey
- * @param {() => Promise<any>} queryFn
- * @param {number} [ttl=10000]
- */
-const executeQuery = (cacheKey, queryFn, ttl = 10000) => {
-  const now = Date.now();
-  const cached = requestCache.get(cacheKey);
-
-  if (cached && now - cached.timestamp < ttl) {
-    if (cached.failed) {
-      return Promise.reject(cached.error);
-    }
-    return cached.promise;
-  }
-
-  const promise = (async () => {
-    try {
-      const result = await queryFn();
-
-      // Supabase returns { data, error } rather than rejecting
-      if (result && typeof result === 'object' && 'error' in result && result.error) {
-        requestCache.set(cacheKey, {
-          failed: true,
-          timestamp: Date.now(),
-          error: result.error,
-        });
-        // Still return the result so callers can inspect { data, error }
-        return result;
-      }
-
-      // Success: keep the resolved promise in cache for the TTL
-      return result;
-    } catch (error) {
-      requestCache.set(cacheKey, {
-        failed: true,
-        timestamp: Date.now(),
-        error,
-      });
-      throw error;
-    }
-  })();
-
-  requestCache.set(cacheKey, {
-    promise,
-    timestamp: now,
-    failed: false,
-  });
-
-  // Schedule eviction regardless of outcome
-  setTimeout(() => {
-    const current = requestCache.get(cacheKey);
-    if (current && current.promise === promise) {
-      requestCache.delete(cacheKey);
-    }
-  }, ttl);
-
-  return promise;
-};
+const queryCache = createQueryCache();
+const executeQuery = queryCache.execute;
+supabase?.auth.onAuthStateChange(()=>queryCache.clear());
 
 // ============================================================
 // 🎯 WRAPPERS: Use these instead of direct supabase.from() calls
@@ -532,7 +447,7 @@ export const fetchTutors = (limit = 5) => {
   const cacheKey = `tutors:${limit}`;
   return executeQuery(cacheKey, () =>
     supabase
-      .from('tutor_profiles')
+      .from('tutor_directory')
       .select('*')
       .eq('is_verified', true)
       .limit(limit)
@@ -556,16 +471,5 @@ export const fetchStudentBookings = (studentEmail, limit = 20) => {
   );
 };
 
-export const clearQueryCache = () => requestCache.clear();
-export const getCacheStats = () => {
-  const stats = { size: requestCache.size, keys: [] };
-  for (const [key, value] of requestCache) {
-    stats.keys.push({ key, failed: value.failed || false, timestamp: value.timestamp });
-  }
-  return stats;
-};
-
-if (typeof window !== 'undefined') {
-  window.__supabaseCacheStats = getCacheStats;
-  window.__supabaseClearCache = clearQueryCache;
-}
+export const clearQueryCache = ()=>queryCache.clear();
+export const getCacheStats = ()=>({size:queryCache.size});

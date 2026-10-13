@@ -60,13 +60,13 @@ function StarRating({ rating }) {
   return (
     <div className="flex items-center gap-0.5">
       {[1, 2, 3, 4, 5].map(i => (
-        <Star 
-          key={i} 
+        <Star
+          key={i}
           className={`w-3.5 h-3.5 ${
-            i <= Math.round(rating) 
-              ? 'fill-amber-400 text-amber-400' 
+            i <= Math.round(rating)
+              ? 'fill-amber-400 text-amber-400'
               : 'text-muted-foreground/30'
-          }`} 
+          }`}
         />
       ))}
     </div>
@@ -112,10 +112,10 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
 
   const loadReviews = useCallback(async () => {
     if (!tutor?.user_email || !open) return;
-    
+
     setLoadingReviews(true);
     setError(null);
-    
+
     try {
       const { data, error: reviewsError } = await supabase
         .from('tutor_reviews')
@@ -123,7 +123,7 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
         .eq('tutor_email', tutor.user_email)
         .order('created_at', { ascending: false })
         .limit(5);
-      
+
       if (reviewsError) throw reviewsError;
       setReviews(data || []);
     } catch (err) {
@@ -137,10 +137,10 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
 
   useEffect(() => {
     loadReviews();
-    
+
     // Log activity for POPIA compliance
     if (open && tutor?.user_email && user?.email) {
-      supabase
+      Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'tutor_profile_viewed',
@@ -151,7 +151,7 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
             tutor_email: tutor.user_email,
             tutor_name: tutor.full_name
           }
-        })
+        }))
         .catch(() => {});
     }
   }, [loadReviews, open, tutor, user]);
@@ -407,15 +407,15 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                 </Button>
               </a>
             )}
-            <Button 
-              variant="outline" 
-              className="flex-1 gap-1.5 text-sm h-10" 
+            <Button
+              variant="outline"
+              className="flex-1 gap-1.5 text-sm h-10"
               onClick={() => { onClose(); onChat(tutor); }}
             >
               <MessageCircle className="w-4 h-4" /> Chat
             </Button>
-            <Button 
-              className="flex-1 gap-1.5 text-sm h-10 bg-primary hover:bg-primary/90" 
+            <Button
+              className="flex-1 gap-1.5 text-sm h-10 bg-primary hover:bg-primary/90"
               onClick={() => { onClose(); onBook(tutor); }}
             >
               <CalendarDays className="w-4 h-4" /> Book

@@ -1,0 +1,153 @@
+project_id = "SmartBridge-FET"
+
+[functions.approve-opportunity-content]
+verify_jwt = true
+entrypoint = "./functions/approveOpportunityContent/entry.ts"
+
+[functions.check-rate-limit]
+verify_jwt = true
+entrypoint = "./functions/checkRateLimit/entry.ts"
+
+[functions.create-checkout]
+verify_jwt = true
+entrypoint = "./functions/createCheckout/entry.ts"
+
+[functions.discover-application-deadlines]
+verify_jwt = true
+entrypoint = "./functions/discoverApplicationDeadlines/entry.ts"
+
+[functions.discover-opportunity-guides]
+verify_jwt = true
+entrypoint = "./functions/discoverOpportunityGuides/entry.ts"
+
+[functions.discover-university-prospectuses]
+verify_jwt = true
+entrypoint = "./functions/discoverUniversityProspectuses/entry.ts"
+
+[functions.download-caps-zip]
+verify_jwt = true
+entrypoint = "./functions/downloadCAPSZip/entry.ts"
+
+[functions.expire-subscriptions]
+verify_jwt = false
+entrypoint = "./functions/expireSubscriptions/entry.ts"
+
+[functions.generate-lesson-plan]
+verify_jwt = true
+entrypoint = "./functions/generateLessonPlan/entry.ts"
+
+[functions.generate-quiz]
+verify_jwt = true
+entrypoint = "./functions/generateQuiz/entry.ts"
+
+[functions.get-bursary-recommendations]
+verify_jwt = true
+entrypoint = "./functions/getBursaryRecommendations/entry.ts"
+
+[functions.get-chatbot-configuration]
+verify_jwt = true
+entrypoint = "./functions/getChatbotConfiguration/entry.ts"
+
+[functions.invoke-llm]
+verify_jwt = true
+entrypoint = "./functions/invokeLLM/entry.ts"
+
+[functions.moderate-post]
+verify_jwt = true
+entrypoint = "./functions/moderatePost/entry.ts"
+
+[functions.moderate-reply]
+verify_jwt = true
+entrypoint = "./functions/moderateReply/entry.ts"
+
+[functions.notify-booking-confirmed]
+verify_jwt = false
+entrypoint = "./functions/notifyBookingConfirmed/entry.ts"
+
+[functions.notify-document-status]
+verify_jwt = true
+entrypoint = "./functions/notifyDocumentStatus/entry.ts"
+
+[functions.notify-new-resource]
+verify_jwt = false
+entrypoint = "./functions/notifyNewResource/entry.ts"
+
+[functions.notify-payout-status-change]
+verify_jwt = false
+entrypoint = "./functions/notifyPayoutStatusChange/entry.ts"
+
+[functions.notify-user-approved]
+verify_jwt = true
+entrypoint = "./functions/notifyUserApproved/entry.ts"
+
+[functions.notify-user-rejected]
+verify_jwt = true
+entrypoint = "./functions/notifyUserRejected/entry.ts"
+
+[functions.operations-status]
+verify_jwt = true
+entrypoint = "./functions/operationsStatus/entry.ts"
+
+[functions.payment-gateways]
+verify_jwt = true
+entrypoint = "./functions/paymentGateways/entry.ts"
+
+[functions.paystack-webhook]
+verify_jwt = false
+entrypoint = "./functions/paystackWebhook/entry.ts"
+
+[functions.report-content]
+verify_jwt = true
+entrypoint = "./functions/reportContent/entry.ts"
+
+[functions.resend-webhook]
+verify_jwt = false
+entrypoint = "./functions/resendWebhook/entry.ts"
+
+[functions.run-scheduled-job]
+verify_jwt = false
+entrypoint = "./functions/runScheduledJob/entry.ts"
+
+[functions.send-chat-attachment]
+verify_jwt = true
+entrypoint = "./functions/sendChatAttachment/entry.ts"
+
+[functions.send-counselor-reminders]
+verify_jwt = true
+entrypoint = "./functions/sendCounselorReminders/entry.ts"
+
+[functions.send-deadline-reminders]
+verify_jwt = false
+entrypoint = "./functions/sendDeadlineReminders/entry.ts"
+
+[functions.send-email]
+verify_jwt = true
+entrypoint = "./functions/sendEmail/entry.ts"
+
+[functions.send-nbt-reminders]
+verify_jwt = false
+entrypoint = "./functions/sendNBTReminders/entry.ts"
+
+[functions.send-operational-alerts]
+verify_jwt = false
+entrypoint = "./functions/sendOperationalAlerts/entry.ts"
+
+[functions.send-session-reminders]
+verify_jwt = false
+entrypoint = "./functions/sendSessionReminders/entry.ts"
+
+[functions.send-study-reminders]
+verify_jwt = false
+entrypoint = "./functions/sendStudyReminders/entry.ts"
+
+[functions.send-weekly-parent-reports]
+verify_jwt = false
+entrypoint = "./functions/sendWeeklyParentReports/entry.ts"
+
+[functions.student-opportunities-assistant]
+verify_jwt = true
+entrypoint = "./functions/studentOpportunitiesAssistant/entry.ts"
+
+[functions.yoco-webhook]
+verify_jwt = false
+entrypoint = "./functions/yocoWebhook/entry.ts"

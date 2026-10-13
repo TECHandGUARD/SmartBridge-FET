@@ -1,30 +1,18 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - cron job can call without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
-    // Calculate the target date: 7 days from now (SAST)
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     const now = new Date();
     const sast = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     const target = new Date(sast);
@@ -161,7 +149,7 @@ Hi there,
 
 This is a reminder that the following application deadline${entries.length > 1 ? "s are" : " is"} 7 days away. Don't miss out!
 
-${entries.map(({ deadline }: any) => 
+${entries.map(({ deadline }: any) =>
   `- ${deadline.event_name}\n  ${deadline.university ? `${deadline.university} · ` : ""}${deadline.category}\n  📅 Due: ${new Date(deadline.date + "T00:00:00").toLocaleDateString("en-ZA", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}\n  ${deadline.description || ""}`
 ).join("\n\n")}
 
@@ -187,7 +175,7 @@ Tech & GUARD Pty Ltd`;
       `;
 
       try {
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -200,7 +188,7 @@ Tech & GUARD Pty Ltd`;
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           const emailResult = await resendResponse.json();
@@ -213,11 +201,11 @@ Tech & GUARD Pty Ltd`;
               event_type: "notification_sent",
               user_email: studentEmail,
               description: `Deadline reminder sent for ${entries.length} deadlines`,
-              metadata: JSON.stringify({
+              metadata: {
                 deadline_count: entries.length,
                 date_checked: targetDateStr,
                 email_id: emailResult.id
-              })
+              }
             });
         } else {
           const errorText = await resendResponse.text();
@@ -243,7 +231,7 @@ Tech & GUARD Pty Ltd`;
     console.error("Error sending deadline reminders:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'send-deadline-reminders'));

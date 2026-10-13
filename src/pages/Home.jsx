@@ -1,11 +1,10 @@
 // src/pages/Home.jsx
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
-import { 
-  GraduationCap, BookOpen, Users, Star, Shield, 
-  Award, CheckCircle, ChevronRight, Sparkles,
-  TrendingUp, Clock, Globe, Zap, Heart, MapPin,
+import {
+  GraduationCap, BookOpen, Users, Star, Shield,
+  Award, CheckCircle, Clock, Globe, MapPin,
   Twitter, Linkedin, Instagram, Facebook, Mail
 } from 'lucide-react';
 import HeroSection from '@/components/home/HeroSection';
@@ -61,7 +60,7 @@ const ComplianceBadges = React.memo(function ComplianceBadges() {
   return (
     <div className="flex flex-wrap justify-center gap-3">
       {badges.map((badge) => (
-        <span 
+        <span
           key={badge.label}
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${badge.color}`}
         >

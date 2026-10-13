@@ -1,34 +1,17 @@
 // src/pages/Login.jsx
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/lib/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import { toast } from 'sonner';
-
 // ============================================================
 // 🔧 FULLY SOFT-CODED CONFIGURATION
 // ============================================================
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-  ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || '')
-    .split(',')
-    .map(email => email.trim())
-    .filter(Boolean),
-
   // Redirect destinations
   DASHBOARD_ROUTE: import.meta.env.VITE_DASHBOARD_ROUTE || '/',
   ADMIN_ROUTE: import.meta.env.VITE_ADMIN_ROUTE || '/admin',
   ONBOARDING_ROUTE: import.meta.env.VITE_ONBOARDING_ROUTE || '/onboarding',
   REGISTER_ROUTE: import.meta.env.VITE_REGISTER_ROUTE || '/register',
   FORGOT_PASSWORD_ROUTE: import.meta.env.VITE_FORGOT_PASSWORD_ROUTE || '/forgot-password',
-
   // Feature flags
-  ENABLE_ADMIN_BYPASS: import.meta.env.VITE_ENABLE_ADMIN_BYPASS !== 'false',
   ENABLE_GOOGLE_SIGN_IN: import.meta.env.VITE_ENABLE_GOOGLE_SIGN_IN !== 'false',
-
   // System Text / Feedback Messages
   MESSAGES: {
     SUBTITLE: import.meta.env.VITE_LOGIN_SUBTITLE || 'Sign in to continue your learning journey',
@@ -36,60 +19,54 @@ const CONFIG = {
     WELCOME: import.meta.env.VITE_LOGIN_WELCOME_MSG || 'Welcome back!',
     GOOGLE_DISABLED: import.meta.env.VITE_LOGIN_GOOGLE_DISABLED_MSG || 'Google sign-in is currently disabled.',
     FAILED_SIGNIN: import.meta.env.VITE_LOGIN_FAILED_MSG || 'Failed to sign in. Please try again.',
-    FAILED_GOOGLE: import.meta.env.VITE_LOGIN_FAILED_GOOGLE_MSG || 'Failed to sign in with Google',
+    FAILED_GOOGLE: import.meta.env.VITE_LOGIN_FAILED_GOOGLE_MSG || 'Failed to sign in with Google'
   }
 };
-
+import { getAccountDestination } from '@/lib/navigation';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/lib/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GraduationCap, Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { toast } from 'sonner';
 export default function Login() {
-  const { signIn, signInWithGoogle, user, isLoadingAuth } = useAuth();
+  const {
+    signIn,
+    signInWithGoogle,
+    user,
+    isLoadingAuth
+  } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const isAdmin = useMemo(() => {
-    if (!user || !CONFIG.ENABLE_ADMIN_BYPASS) return false;
-    return CONFIG.ADMIN_EMAILS.includes(user.email) || user.role === 'admin' || user.is_super_admin === true;
-  }, [user?.email, user?.role, user?.is_super_admin]);
-
   useEffect(() => {
-    if (isLoadingAuth) return;
-
-    if (user) {
-      if (isAdmin) {
-        navigate(CONFIG.ADMIN_ROUTE, { replace: true });
-      } else if (user.onboarding_complete) {
-        navigate(CONFIG.DASHBOARD_ROUTE, { replace: true });
-      } else {
-        navigate(CONFIG.ONBOARDING_ROUTE, { replace: true });
-      }
-    }
-  }, [user, isAdmin, isLoadingAuth, navigate]);
-
-  const handleSubmit = async (e) => {
+    if (user && !isLoadingAuth) navigate(getAccountDestination(user), {
+      replace: true
+    });
+  }, [user, isLoadingAuth, navigate]);
+  const handleSubmit = async e => {
     e.preventDefault();
     const trimmedEmail = email.trim();
-    const trimmedPassword = password.trim();
-
+    const trimmedPassword = password;
     if (!trimmedEmail || !trimmedPassword) {
       toast.error(CONFIG.MESSAGES.MISSING_FIELDS);
       return;
     }
-
     setLoading(true);
     try {
       const result = await signIn(trimmedEmail, trimmedPassword);
-      if (result?.success) {
-        toast.success(CONFIG.MESSAGES.WELCOME);
-      }
+      if (result?.success) toast.success(CONFIG.MESSAGES.WELCOME);
+      else setLoading(false);
     } catch (error) {
       console.error('Login error:', error);
       toast.error(error.message || CONFIG.MESSAGES.FAILED_SIGNIN);
       setLoading(false);
     }
   };
-
   const handleGoogleSignIn = async () => {
     if (!CONFIG.ENABLE_GOOGLE_SIGN_IN) {
       toast.info(CONFIG.MESSAGES.GOOGLE_DISABLED);
@@ -97,16 +74,15 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      await signInWithGoogle();
+      const result = await signInWithGoogle();
+      if (!result.success) setLoading(false);
     } catch (error) {
       console.error('Google sign in error:', error);
       toast.error(CONFIG.MESSAGES.FAILED_GOOGLE);
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
+  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
       <Card className="w-full max-w-md border-border shadow-xl">
         <CardHeader className="text-center space-y-3 pt-8">
           <div className="flex justify-center">
@@ -124,35 +100,15 @@ export default function Login() {
             <div className="space-y-2">
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="Email address"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="pl-10 h-12"
-                  disabled={loading}
-                />
+                <Input type="email" placeholder="Email address" value={email} onChange={e => setEmail(e.target.value)} required className="pl-10 h-12" disabled={loading} />
               </div>
             </div>
 
             <div className="space-y-2">
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  className="pl-10 pr-10 h-12"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(prev => !prev)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                >
+                <Input type={showPassword ? 'text' : 'password'} placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} required className="pl-10 pr-10 h-12" disabled={loading} />
+                <button type="button" onClick={() => setShowPassword(prev => !prev)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
@@ -164,19 +120,14 @@ export default function Login() {
             </div>
 
             <Button type="submit" className="w-full h-12 gap-2 text-base font-semibold" disabled={loading}>
-              {loading ? (
-                <>
+              {loading ? <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   Signing in...
-                </>
-              ) : (
-                'Sign In'
-              )}
+                </> : 'Sign In'}
             </Button>
           </form>
 
-          {CONFIG.ENABLE_GOOGLE_SIGN_IN && (
-            <>
+          {CONFIG.ENABLE_GOOGLE_SIGN_IN && <>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-border" /></div>
                 <div className="relative flex justify-center text-xs uppercase">
@@ -185,15 +136,14 @@ export default function Login() {
               </div>
               <Button type="button" variant="outline" className="w-full h-12 gap-2 text-base" onClick={handleGoogleSignIn} disabled={loading}>
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
                 </svg>
                 Sign in with Google
               </Button>
-            </>
-          )}
+            </>}
 
           <p className="text-center text-sm text-muted-foreground">
             Don't have an account?{' '}
@@ -201,6 +151,5 @@ export default function Login() {
           </p>
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }

@@ -11,7 +11,8 @@ const Tooltip = TooltipPrimitive.Root
 
 const TooltipTrigger = TooltipPrimitive.Trigger
 
-const TooltipContent = React.forwardRef(({ className, sideOffset = 4, ...props }, ref) => (
+const TooltipContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content> & {sideOffset?: number}} props @param {React.ForwardedRef<any>} ref */
+({ className, sideOffset = 4, ...props }, ref) => (
   <TooltipPrimitive.Portal>
     <TooltipPrimitive.Content
       ref={ref}

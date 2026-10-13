@@ -1,34 +1,27 @@
+import { appConfig } from '@/lib/config';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const techGuardUrl = import.meta.env.VITE_TECH_GUARD_URL || 'https://www.techandguard.co.za';
-
-// ============================================================
-// Main Component
-// ============================================================
-
 export default function TechGuardBanner() {
   const handleBannerClick = async () => {
     try {
-      // Get current user session
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: {
+          session
+        }
+      } = await supabase.auth.getSession();
       const userEmail = session?.user?.email;
-      
-      // Track banner click in banner_clicks table
-      const { error } = await supabase
-        .from('banner_clicks')
-        .insert({
-          banner_name: 'tech_guard',
-          user_email: userEmail || null,
-          clicked_at: new Date().toISOString()
-        });
-      
+      if (!session?.user?.id) return;
+      const {
+        error
+      } = await supabase.from('banner_clicks').insert({
+        banner_name: 'tech_guard',
+        user_id: session.user.id,
+        user_email: userEmail || null,
+        click_timestamp: new Date().toISOString()
+      });
       if (error) {
         console.error('Banner click tracking error:', error);
       } else {
@@ -38,18 +31,12 @@ export default function TechGuardBanner() {
       console.log('Banner click tracking failed:', error);
     }
   };
-
-  return (
-    <div className="bg-gradient-to-r from-tech-guard-blue to-tech-guard-orange py-12 px-4">
+  return <div className="bg-gradient-to-r from-tech-guard-blue to-tech-guard-orange py-12 px-4">
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-8">
-        {/* Left: Logo and Content */}
+        {}
         <div className="flex items-center gap-6 flex-1">
           <div className="hidden sm:flex items-center justify-center w-16 h-16 bg-white/10 rounded-lg">
-            <img 
-              src="https://media.base44.com/images/public/69f6ba09033268ca85425d9c/de3a26233_tech-guard.png" 
-              alt="Tech & GUARD" 
-              className="w-10 h-10 object-contain" 
-            />
+            {appConfig.company.logoUrl ? <img src={appConfig.company.logoUrl} alt={appConfig.company.name} className="w-10 h-10 object-contain" /> : <span className="text-white font-bold">T&amp;G</span>}
           </div>
           <div>
             <h3 className="text-2xl sm:text-3xl font-bold text-white mb-2">Tech & GUARD</h3>
@@ -59,23 +46,15 @@ export default function TechGuardBanner() {
           </div>
         </div>
 
-        {/* Right: CTA Button */}
+        {}
         <div className="flex-shrink-0">
-          <a 
-            href={techGuardUrl} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            onClick={handleBannerClick}
-          >
-            <Button 
-              className="bg-secondary hover:bg-secondary/90 text-foreground font-semibold gap-2 whitespace-nowrap"
-            >
+          <a href={appConfig.company.website} target="_blank" rel="noopener noreferrer" onClick={handleBannerClick}>
+            <Button className="bg-secondary hover:bg-secondary/90 text-foreground font-semibold gap-2 whitespace-nowrap">
               Explore Now
               <ArrowRight className="w-4 h-4" />
             </Button>
           </a>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 }

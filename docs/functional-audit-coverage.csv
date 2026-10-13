@@ -1,0 +1,309 @@
+file,bytes,review_checks
+.gitignore,2218,inventory/configuration review
+ChatService.ts,12010,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+README.md,1784,inventory/configuration review
+_redirects,24,inventory/configuration review
+amplify.yml,1567,inventory/configuration review
+components.json,444,JSON/JSONC syntax; declaration/contract inventory
+db/test-bookings-and-links.sql,7196,migration/test review; existing rollback validation
+db/test-core-flows.sql,4000,migration/test review; existing rollback validation
+docs/technical-repair.md,7759,inventory/configuration review
+docs/ux-flow.md,3954,inventory/configuration review
+eslint.config.js,1574,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+index.html,778,inventory/configuration review
+jsconfig.json,596,JSON/JSONC syntax; declaration/contract inventory
+package-lock.json,354050,JSON/JSONC syntax; declaration/contract inventory
+package.json,3416,JSON/JSONC syntax; declaration/contract inventory
+postcss.config.js,80,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/App.jsx,13872,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ProtectedRoute.jsx,917,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/UserNotRegisteredError.jsx,2841,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/AdminAlertBell.jsx,11198,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/AdminUserViewer.jsx,16576,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/AnnouncementManager.jsx,12406,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/AutoParentReports.jsx,9506,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/AutomatedBillingPayouts.jsx,15130,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/CAPSDocumentManager.jsx,13060,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/ContentModerationPanel.jsx,17150,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/DocumentVerificationPanel.jsx,10704,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/FeatureFlagPanel.jsx,14240,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/KnowledgeBaseManager.jsx,24978,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/OpportunitiesContentReview.jsx,27784,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/ResourceRatingsPanel.jsx,10429,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/StudentLeaderboard.jsx,6736,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/SystemConfigPanel.jsx,7878,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/TutorEarningsTable.jsx,4625,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/TutorPayoutDashboard.jsx,11177,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/TutorVerificationHub.jsx,20140,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/admin/UserRegistrationsPanel.jsx,18380,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/counselor/CounselorChat.jsx,6893,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/counselor/CounselorInbox.jsx,10838,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/counselor/NBTCounselorTracker.jsx,8898,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/counselor/SchoolSelector.jsx,3723,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/discussion/AnswerThread.jsx,8819,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/discussion/DiscussionBoard.jsx,13360,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/forum/CreatePostModal.jsx,5839,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/forum/ForumPostCard.jsx,764,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/forum/ForumPostDetail.jsx,14642,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/home/HeroSection.jsx,3797,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/home/PersonalizedHome.jsx,13496,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/home/PremiumBanner.jsx,2433,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/home/RoleDashboardCards.jsx,3477,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/home/SubjectsPreview.jsx,1925,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/layout/AppLayout.jsx,3279,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/layout/Footer.jsx,1884,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/layout/MobileBottomTabs.jsx,1215,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/layout/MobileHeader.jsx,2687,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/layout/Navbar.jsx,2803,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/legal/DefinitionTable.jsx,785,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/marketing/TechGuardBanner.jsx,2207,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/onboarding/TutorConsentModal.jsx,9314,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/AIAssistantChat.jsx,7536,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/APSCalculator.jsx,11019,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/ApplicationAnalytics.jsx,5714,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/ApplicationDocumentVault.jsx,9860,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/ApplicationTracker.jsx,12844,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/DeadlinesCalendar.jsx,11934,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/NBTPrepPlanner.jsx,18189,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/NBTResources.jsx,5326,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/NBTScheduler.jsx,21911,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/PDFGuides.jsx,10263,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/PremiumGate.jsx,1099,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/ProspectusLibrary.jsx,10111,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/UniversityComparison.jsx,20153,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/opportunities/UniversityDirectory.jsx,4823,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/parent/ParentChildLink.jsx,2829,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/parent/ParentProgressDashboard.jsx,18851,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/parent/ParentQuickActions.jsx,2269,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/parent/ParentSummaryReport.jsx,7057,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/parent/WeeklyEmailReport.jsx,4828,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/quiz/AIQuizGenerator.jsx,7993,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/quiz/QuizBuilder.jsx,18812,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/resources/CAPSDocRating.jsx,6492,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/resources/ResourceFilter.jsx,1990,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/resources/ResourceRating.jsx,3442,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/simulations/QuizSync.jsx,10074,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/simulations/SimulationCard.jsx,6432,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/simulations/SimulationLab.jsx,8232,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/simulations/SimulationPlayer.jsx,9872,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/AIStudyAssistant.jsx,10992,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/AIStudyPlanner.jsx,15962,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/GradeProgressTracker.jsx,6172,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/InteractiveFlashcards.jsx,13892,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/MilestoneBadges.jsx,12585,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/ProgressCharts.jsx,8591,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/ResourceBookmarks.jsx,4124,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudentProgressDashboard.jsx,13950,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudentQuickActions.jsx,2658,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudyGamification.jsx,8961,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudyHeatmap.jsx,6051,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudyReminderManager.jsx,10602,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/StudyStreakTracker.jsx,7972,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/SyllabusTopicTracker.jsx,11022,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/TutorReviewModal.jsx,8522,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/student/WeeklyGoals.jsx,13196,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/study/StudyRoomBoard.jsx,11347,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/subject/SubjectTutors.jsx,3758,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/BookingCalendar.jsx,11240,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/BookingModal.jsx,6172,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/BookingRequests.jsx,26038,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/ChatInbox.jsx,31576,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/LessonPlanForm.jsx,24786,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/LessonPlanner.jsx,28915,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/LiveTutorChat.jsx,12158,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/MeetingLinks.jsx,10407,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/ResourceTemplateUploader.jsx,10992,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/StudentCRM.jsx,15916,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorAvailabilityManager.jsx,8657,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorBusinessSummary.jsx,16042,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorEarningsDashboard.jsx,24465,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorPendingScreen.jsx,2775,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorProfileEditor.jsx,36902,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorProfileModal.jsx,13896,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorQuickActions.jsx,2834,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorReviews.jsx,4867,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorStudentProgressChart.jsx,25633,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/TutorVerificationBadge.jsx,11381,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/tutor/UpcomingSessionsWidget.jsx,6724,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/DashboardPremiumGate.jsx,1403,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/PremiumBadge.jsx,1896,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/TrialBanner.jsx,1300,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/accordion.jsx,2218,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/alert-dialog.jsx,4843,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/alert.jsx,1774,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/aspect-ratio.jsx,140,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/avatar.jsx,1626,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/badge.jsx,1132,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/breadcrumb.jsx,3016,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/button.jsx,1910,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/calendar.jsx,2851,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/card.jsx,2322,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/carousel.jsx,5588,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/chart.jsx,9080,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/checkbox.jsx,1075,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/collapsible.jsx,329,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/command.jsx,5254,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/context-menu.jsx,7671,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/dialog.jsx,4160,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/drawer.jsx,3151,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/dropdown-menu.jsx,7849,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/form.jsx,3894,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/hover-card.jsx,1273,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/input-otp.jsx,2419,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/input.jsx,841,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/label.jsx,714,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/menubar.jsx,8794,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/navigation-menu.jsx,5489,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/pagination.jsx,2612,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/popover.jsx,1365,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/progress.jsx,862,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/radio-group.jsx,1533,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/resizable.jsx,1570,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/scroll-area.jsx,1790,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/select.jsx,6082,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/separator.jsx,797,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/sheet.jsx,4333,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/sidebar.jsx,24136,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/skeleton.jsx,227,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/slider.jsx,1105,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/sonner.jsx,799,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/switch.jsx,1218,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/table.jsx,3425,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/tabs.jsx,2102,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/textarea.jsx,744,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/toast.jsx,4879,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/toaster.jsx,785,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/toggle-group.jsx,1686,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/toggle.jsx,1501,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/tooltip.jsx,1290,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/components/ui/use-toast.jsx,3379,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/entities/Quiz.json,472,JSON/JSONC syntax; declaration/contract inventory
+src/hooks/use-mobile.jsx,1372,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/hooks/useFeatureFlags.js,5658,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/hooks/useParentLinks.js,1221,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/hooks/usePremiumAccess.js,2046,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/index.css,4912,inventory/configuration review
+src/lib/AuthContext.jsx,6818,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/PageNotFound.jsx,4068,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/app-params.js,2693,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/auth-utils.js,1053,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/booking-request.js,389,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/bookings.js,577,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/capsTopics.js,5326,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/navigation.js,2908,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/query-client.js,380,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/simulations.js,7114,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/subjects.js,5386,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/supabaseClient.js,1334,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/useDashboardSection.js,897,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/utils.js,190,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/lib/weekly-goals.js,1338,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/main.jsx,399,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/AboutTechAndGuard.jsx,14826,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/AdminDashboard.jsx,29273,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/AuthCallback.jsx,802,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Bookings.jsx,17290,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/BursaryFinder.jsx,15533,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/CAPSAdmin.jsx,27541,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/CommunityForum.jsx,12192,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/CounselorDashboard.jsx,17978,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/ForgotPassword.jsx,3886,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/GroupStudyRooms.jsx,10474,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Home.jsx,2479,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Login.jsx,6696,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Onboarding.jsx,12210,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/ParentDashboard.jsx,11802,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/PayoutLog.jsx,8180,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/PracticeQuiz.jsx,15308,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Premium.jsx,13899,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/PrivacyPolicy.jsx,3389,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Register.jsx,8415,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/ResetPassword.jsx,2169,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/ResourceSearch.jsx,10989,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/ResourcesLibrary.jsx,12137,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/StudentDashboard.jsx,22068,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/StudentOpportunities.jsx,8858,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/SubjectDetail.jsx,9956,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Subjects.jsx,4126,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/TermsOfService.jsx,3354,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/TutorDashboard.jsx,17137,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/Tutors.jsx,11437,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/pages/VideoLessons.jsx,20978,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+src/utils/index.ts,1347,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/.app.jsonc,38,JSON/JSONC syntax; declaration/contract inventory
+supabase/.app.jsonc.txt,38,inventory/configuration review
+supabase/config.jsonc,182,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ActivityLog.jsonc,525,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ApplicationDeadline.jsonc,563,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ApplicationDocument.jsonc,1030,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/BannerClick.jsonc,209,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/Bursary.jsonc,1252,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/CAPSDocument.jsonc,1243,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ChatMessage.jsonc,421,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/DiscussionAnswer.jsonc,593,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/DiscussionPost.jsonc,712,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/EducationalResource.jsonc,1413,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ExamSchedule.jsonc,716,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/FeatureToggle.jsonc,1186,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ForumComment.jsonc,861,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ForumPost.jsonc,1687,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/LessonPlan.jsonc,1858,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/NBTRegistration.jsonc,1553,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/NBTTestDate.jsonc,842,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/OpportunityGuide.jsonc,521,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/PendingApplicationDeadline.jsonc,824,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/PendingOpportunityGuide.jsonc,775,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/PendingUniversityProspectus.jsonc,701,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/PlatformAnnouncement.jsonc,764,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/Quiz.jsonc,943,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/QuizResult.jsonc,610,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/Resource.jsonc,995,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ResourceBookmark.jsonc,378,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/ResourceRating.jsonc,337,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/SchoolCounselor.jsonc,867,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/StudentNote.jsonc,1032,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/StudentProgress.jsonc,487,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/StudyReminder.jsonc,628,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/StudyRoomPost.jsonc,1061,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/StudySession.jsonc,439,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/Subject.jsonc,671,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/Subscription.jsonc,782,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/SystemConfiguration.jsonc,679,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/TutorAvailability.jsonc,646,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/TutorBooking.jsonc,1257,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/TutorPayout.jsonc,729,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/TutorProfile.jsonc,2300,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/TutorReview.jsonc,539,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/UniversityApplication.jsonc,767,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/UniversityProspectus.jsonc,451,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/User.jsonc,1170,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/VideoLesson.jsonc,966,JSON/JSONC syntax; declaration/contract inventory
+supabase/entities/WeeklyGoal.jsonc,895,JSON/JSONC syntax; declaration/contract inventory
+supabase/functions/approveOpportunityContent/entry.ts,7928,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/discoverApplicationDeadlines/entry.ts,6287,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/discoverOpportunityGuides/entry.ts,6058,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/discoverUniversityProspectuses/entry.ts,7547,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/downloadCAPSZip/entry.ts,3777,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/expireSubscriptions/entry.ts,3709,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/generateQuiz/entry.ts,6069,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/getBursaryRecommendations/entry.ts,4684,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/getChatbotConfiguration/entry.ts,3834,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyBookingConfirmed/entry.ts,3223,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyDocumentStatus/entry.ts,5475,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyNewResource/entry.ts,3536,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyPayoutStatusChange/entry.ts,3304,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyUserApproved/entry.ts,4867,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/notifyUserRejected/entry.ts,3214,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/sendCounselorReminders/entry.ts,4129,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/sendDeadlineReminders/entry.ts,8302,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/sendNBTReminders/entry.ts,4703,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/sendSessionReminders/entry.ts,5693,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/sendStudyReminders/entry.ts,4157,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/functions/studentOpportunitiesAssistant/entry.ts,5678,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+supabase/migrations/20261011153804_repair_core_flows.sql,12015,migration/test review; existing rollback validation
+supabase/migrations/20261011161203_booking_and_parent_permissions.sql,14704,migration/test review; existing rollback validation
+supabase/migrations/20261011162032_study_progress_contract.sql,4722,migration/test review; existing rollback validation
+tailwind.config.js,2878,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+tests/browser-core-flows.cjs,19516,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+tests/core-flow.test.js,3065,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable
+vite.config.js,555,syntax/import scan; backend-call extraction; targeted runtime/contract tracing where applicable

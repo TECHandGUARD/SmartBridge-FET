@@ -10,14 +10,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, XCircle, ExternalLink, RefreshCw, Calendar, BookOpen, GraduationCap, Flag, Plus, X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
 const DEADLINE_CATEGORIES = ["University Application", "NBT", "Bursary", "Other"];
 const GUIDE_CATEGORIES = ["NBT Prep", "University Requirements", "Bursaries", "Career Guidance", "General"];
-
 const categoryColor = {
   "University Application": "bg-blue-100 text-blue-700",
   "NBT": "bg-purple-100 text-purple-700",
@@ -29,24 +23,20 @@ const categoryColor = {
   "Career Guidance": "bg-green-100 text-green-700",
   "General": "bg-gray-100 text-gray-700"
 };
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Manual Form Components
-// ============================================================
-
-function ManualDeadlineForm({ onSaved, onCancel }) {
-  const [form, setForm] = useState({ 
-    event_name: '', 
-    university: '', 
-    date: '', 
-    category: 'University Application', 
-    description: '', 
-    link: '' 
+function ManualDeadlineForm({
+  onSaved,
+  onCancel
+}) {
+  const [form, setForm] = useState({
+    event_name: '',
+    university: '',
+    date: '',
+    category: 'University Application',
+    description: '',
+    link: ''
   });
   const [saving, setSaving] = useState(false);
-
   const handleSave = async () => {
     if (!form.event_name || !form.date || !form.category) {
       toast.error('Event name, date and category are required.');
@@ -54,22 +44,19 @@ function ManualDeadlineForm({ onSaved, onCancel }) {
     }
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('application_deadlines')
-        .insert([{
-          event_name: form.event_name,
-          university: form.university || null,
-          date: form.date,
-          category: form.category,
-          description: form.description || null,
-          link: form.link || null,
-          is_approved: true,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }]);
-      
+      const {
+        error
+      } = await supabase.from('application_deadlines').insert([{
+        event_name: form.event_name,
+        university: form.university || null,
+        date: form.date,
+        category: form.category,
+        description: form.description || null,
+        link: form.link || null,
+        is_approved: true,
+        is_active: true
+      }]);
       if (error) throw error;
-      
       toast.success('Deadline added and published!');
       onSaved();
     } catch (err) {
@@ -79,9 +66,7 @@ function ManualDeadlineForm({ onSaved, onCancel }) {
       setSaving(false);
     }
   };
-
-  return (
-    <Card className="border-primary/30 bg-primary/5">
+  return <Card className="border-primary/30 bg-primary/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Plus className="w-4 h-4 text-primary" /> Add Deadline Manually
@@ -91,31 +76,31 @@ function ManualDeadlineForm({ onSaved, onCancel }) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Event Name *</Label>
-            <Input 
-              placeholder="e.g. UCT Application Opens" 
-              value={form.event_name} 
-              onChange={e => setForm(p => ({ ...p, event_name: e.target.value }))} 
-            />
+            <Input placeholder="e.g. UCT Application Opens" value={form.event_name} onChange={e => setForm(p => ({
+            ...p,
+            event_name: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">University (optional)</Label>
-            <Input 
-              placeholder="e.g. UCT" 
-              value={form.university} 
-              onChange={e => setForm(p => ({ ...p, university: e.target.value }))} 
-            />
+            <Input placeholder="e.g. UCT" value={form.university} onChange={e => setForm(p => ({
+            ...p,
+            university: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Date *</Label>
-            <Input 
-              type="date" 
-              value={form.date} 
-              onChange={e => setForm(p => ({ ...p, date: e.target.value }))} 
-            />
+            <Input type="date" value={form.date} onChange={e => setForm(p => ({
+            ...p,
+            date: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Category *</Label>
-            <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+            <Select value={form.category} onValueChange={v => setForm(p => ({
+            ...p,
+            category: v
+          }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {DEADLINE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -124,20 +109,17 @@ function ManualDeadlineForm({ onSaved, onCancel }) {
           </div>
           <div className="sm:col-span-2 space-y-1">
             <Label className="text-xs">Description</Label>
-            <Textarea 
-              placeholder="Short description..." 
-              value={form.description} 
-              onChange={e => setForm(p => ({ ...p, description: e.target.value }))} 
-              className="resize-none h-20" 
-            />
+            <Textarea placeholder="Short description..." value={form.description} onChange={e => setForm(p => ({
+            ...p,
+            description: e.target.value
+          }))} className="resize-none h-20" />
           </div>
           <div className="sm:col-span-2 space-y-1">
             <Label className="text-xs">Link (URL)</Label>
-            <Input 
-              placeholder="https://..." 
-              value={form.link} 
-              onChange={e => setForm(p => ({ ...p, link: e.target.value }))} 
-            />
+            <Input placeholder="https://..." value={form.link} onChange={e => setForm(p => ({
+            ...p,
+            link: e.target.value
+          }))} />
           </div>
         </div>
         <div className="flex gap-2">
@@ -150,20 +132,20 @@ function ManualDeadlineForm({ onSaved, onCancel }) {
           </Button>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
-
-function ManualGuideForm({ onSaved, onCancel }) {
-  const [form, setForm] = useState({ 
-    title: '', 
-    description: '', 
-    category: 'General', 
-    external_link: '', 
-    source: '' 
+function ManualGuideForm({
+  onSaved,
+  onCancel
+}) {
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    category: 'General',
+    external_link: '',
+    source: ''
   });
   const [saving, setSaving] = useState(false);
-
   const handleSave = async () => {
     if (!form.title || !form.category) {
       toast.error('Title and category are required.');
@@ -171,21 +153,20 @@ function ManualGuideForm({ onSaved, onCancel }) {
     }
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('opportunity_guides')
-        .insert([{
-          title: form.title,
-          description: form.description || null,
-          category: form.category,
-          external_link: form.external_link || null,
-          source: form.source || null,
-          is_approved: true,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }]);
-      
+      const {
+        error
+      } = await supabase.from('opportunity_guides').insert([{
+        title: form.title,
+        description: form.description || null,
+        category: form.category,
+        file_url: form.external_link || null,
+        metadata: {
+          source: form.source || null
+        },
+        is_pending: false,
+        is_active: true
+      }]);
       if (error) throw error;
-      
       toast.success('Guide added and published!');
       onSaved();
     } catch (err) {
@@ -195,9 +176,7 @@ function ManualGuideForm({ onSaved, onCancel }) {
       setSaving(false);
     }
   };
-
-  return (
-    <Card className="border-primary/30 bg-primary/5">
+  return <Card className="border-primary/30 bg-primary/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Plus className="w-4 h-4 text-primary" /> Add Guide Manually
@@ -207,15 +186,17 @@ function ManualGuideForm({ onSaved, onCancel }) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">Title *</Label>
-            <Input 
-              placeholder="e.g. How to Apply for NSFAS" 
-              value={form.title} 
-              onChange={e => setForm(p => ({ ...p, title: e.target.value }))} 
-            />
+            <Input placeholder="e.g. How to Apply for NSFAS" value={form.title} onChange={e => setForm(p => ({
+            ...p,
+            title: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Category *</Label>
-            <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
+            <Select value={form.category} onValueChange={v => setForm(p => ({
+            ...p,
+            category: v
+          }))}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
                 {GUIDE_CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -224,28 +205,24 @@ function ManualGuideForm({ onSaved, onCancel }) {
           </div>
           <div className="sm:col-span-2 space-y-1">
             <Label className="text-xs">Description</Label>
-            <Textarea 
-              placeholder="Short description..." 
-              value={form.description} 
-              onChange={e => setForm(p => ({ ...p, description: e.target.value }))} 
-              className="resize-none h-20" 
-            />
+            <Textarea placeholder="Short description..." value={form.description} onChange={e => setForm(p => ({
+            ...p,
+            description: e.target.value
+          }))} className="resize-none h-20" />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Resource Link (URL)</Label>
-            <Input 
-              placeholder="https://..." 
-              value={form.external_link} 
-              onChange={e => setForm(p => ({ ...p, external_link: e.target.value }))} 
-            />
+            <Input placeholder="https://..." value={form.external_link} onChange={e => setForm(p => ({
+            ...p,
+            external_link: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Source</Label>
-            <Input 
-              placeholder="e.g. NSFAS Website" 
-              value={form.source} 
-              onChange={e => setForm(p => ({ ...p, source: e.target.value }))} 
-            />
+            <Input placeholder="e.g. NSFAS Website" value={form.source} onChange={e => setForm(p => ({
+            ...p,
+            source: e.target.value
+          }))} />
           </div>
         </div>
         <div className="flex gap-2">
@@ -258,20 +235,20 @@ function ManualGuideForm({ onSaved, onCancel }) {
           </Button>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
-
-function ManualProspectusForm({ onSaved, onCancel }) {
-  const [form, setForm] = useState({ 
-    university_name: '', 
-    year: new Date().getFullYear() + 1, 
-    description: '', 
-    file_url: '', 
-    application_link: '' 
+function ManualProspectusForm({
+  onSaved,
+  onCancel
+}) {
+  const [form, setForm] = useState({
+    university_name: '',
+    year: new Date().getFullYear() + 1,
+    description: '',
+    file_url: '',
+    application_link: ''
   });
   const [saving, setSaving] = useState(false);
-
   const handleSave = async () => {
     if (!form.university_name || !form.year) {
       toast.error('University name and year are required.');
@@ -279,21 +256,18 @@ function ManualProspectusForm({ onSaved, onCancel }) {
     }
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('university_prospectuses')
-        .insert([{
-          university_name: form.university_name,
-          year: Number(form.year),
-          description: form.description || null,
-          file_url: form.file_url || null,
-          application_link: form.application_link || null,
-          is_approved: true,
-          is_active: true,
-          created_at: new Date().toISOString(),
-        }]);
-      
+      const {
+        error
+      } = await supabase.from('university_prospectuses').insert([{
+        university_name: form.university_name,
+        year: Number(form.year),
+        description: form.description || null,
+        file_url: form.file_url || null,
+        application_link: form.application_link || null,
+        is_approved: true,
+        is_active: true
+      }]);
       if (error) throw error;
-      
       toast.success('Prospectus added and published!');
       onSaved();
     } catch (err) {
@@ -303,9 +277,7 @@ function ManualProspectusForm({ onSaved, onCancel }) {
       setSaving(false);
     }
   };
-
-  return (
-    <Card className="border-primary/30 bg-primary/5">
+  return <Card className="border-primary/30 bg-primary/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Plus className="w-4 h-4 text-primary" /> Add Prospectus Manually
@@ -315,46 +287,38 @@ function ManualProspectusForm({ onSaved, onCancel }) {
         <div className="grid sm:grid-cols-2 gap-3">
           <div className="space-y-1">
             <Label className="text-xs">University Name *</Label>
-            <Input 
-              placeholder="e.g. University of Cape Town" 
-              value={form.university_name} 
-              onChange={e => setForm(p => ({ ...p, university_name: e.target.value }))} 
-            />
+            <Input placeholder="e.g. University of Cape Town" value={form.university_name} onChange={e => setForm(p => ({
+            ...p,
+            university_name: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Year *</Label>
-            <Input 
-              type="number" 
-              min="2024" 
-              max="2030" 
-              value={form.year} 
-              onChange={e => setForm(p => ({ ...p, year: e.target.value }))} 
-            />
+            <Input type="number" min="2024" max="2030" value={form.year} onChange={e => setForm(p => ({
+            ...p,
+            year: Number(e.target.value)
+          }))} />
           </div>
           <div className="sm:col-span-2 space-y-1">
             <Label className="text-xs">Description</Label>
-            <Textarea 
-              placeholder="Brief description..." 
-              value={form.description} 
-              onChange={e => setForm(p => ({ ...p, description: e.target.value }))} 
-              className="resize-none h-20" 
-            />
+            <Textarea placeholder="Brief description..." value={form.description} onChange={e => setForm(p => ({
+            ...p,
+            description: e.target.value
+          }))} className="resize-none h-20" />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Prospectus PDF URL</Label>
-            <Input 
-              placeholder="https://..." 
-              value={form.file_url} 
-              onChange={e => setForm(p => ({ ...p, file_url: e.target.value }))} 
-            />
+            <Input placeholder="https://..." value={form.file_url} onChange={e => setForm(p => ({
+            ...p,
+            file_url: e.target.value
+          }))} />
           </div>
           <div className="space-y-1">
             <Label className="text-xs">Application Link</Label>
-            <Input 
-              placeholder="https://..." 
-              value={form.application_link} 
-              onChange={e => setForm(p => ({ ...p, application_link: e.target.value }))} 
-            />
+            <Input placeholder="https://..." value={form.application_link} onChange={e => setForm(p => ({
+            ...p,
+            application_link: e.target.value
+          }))} />
           </div>
         </div>
         <div className="flex gap-2">
@@ -367,14 +331,8 @@ function ManualProspectusForm({ onSaved, onCancel }) {
           </Button>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
-
-// ============================================================
-// Main Component
-// ============================================================
-
 export default function OpportunitiesContentReview() {
   const [deadlines, setDeadlines] = useState([]);
   const [guides, setGuides] = useState([]);
@@ -384,47 +342,37 @@ export default function OpportunitiesContentReview() {
   const [running, setRunning] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [showForm, setShowForm] = useState(null);
-
   const loadAll = useCallback(async () => {
     setLoading(true);
     try {
-      // Load pending deadlines
-      const { data: deadlinesData, error: deadlinesError } = await supabase
-        .from('pending_application_deadlines')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: deadlinesData,
+        error: deadlinesError
+      } = await supabase.from('pending_application_deadlines').select('*').eq('status', 'pending').order('created_at', {
+        ascending: false
+      });
       if (deadlinesError) throw deadlinesError;
-      
-      // Load pending guides
-      const { data: guidesData, error: guidesError } = await supabase
-        .from('pending_opportunity_guides')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: guidesData,
+        error: guidesError
+      } = await supabase.from('pending_opportunity_guides').select('*').eq('status', 'pending').order('created_at', {
+        ascending: false
+      });
       if (guidesError) throw guidesError;
-      
-      // Load pending prospectuses
-      const { data: prospectusesData, error: prospectusesError } = await supabase
-        .from('pending_university_prospectuses')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: prospectusesData,
+        error: prospectusesError
+      } = await supabase.from('pending_university_prospectuses').select('*').eq('status', 'pending').order('created_at', {
+        ascending: false
+      });
       if (prospectusesError) throw prospectusesError;
-      
-      // Load flagged forum posts
-      const { data: flaggedData, error: flaggedError } = await supabase
-        .from('forum_posts')
-        .select('*')
-        .eq('is_flagged', true)
-        .eq('is_removed', false)
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: flaggedData,
+        error: flaggedError
+      } = await supabase.from('forum_posts').select('*').eq('is_flagged', true).eq('is_removed', false).order('created_at', {
+        ascending: false
+      });
       if (flaggedError) throw flaggedError;
-      
       setDeadlines(deadlinesData || []);
       setGuides(guidesData || []);
       setProspectuses(prospectusesData || []);
@@ -436,15 +384,17 @@ export default function OpportunitiesContentReview() {
       setLoading(false);
     }
   }, []);
-
-  useEffect(() => { 
-    loadAll(); 
+  useEffect(() => {
+    loadAll();
   }, [loadAll]);
-
   const runDiscovery = async (fnName, label) => {
     setRunning(label);
     try {
-      const { error } = await supabase.functions.invoke(fnName, { body: {} });
+      const {
+        error
+      } = await supabase.functions.invoke(fnName, {
+        body: {}
+      });
       if (error) throw error;
       toast.success(`${label} discovery completed!`);
       await loadAll();
@@ -455,12 +405,17 @@ export default function OpportunitiesContentReview() {
       setRunning(null);
     }
   };
-
   const handleApprove = async (type, id) => {
     setProcessingId(id);
     try {
-      const { error } = await supabase.functions.invoke('approve-opportunity-content', {
-        body: { type, id, action: 'approve' }
+      const {
+        error
+      } = await supabase.functions.invoke('approve-opportunity-content', {
+        body: {
+          type,
+          id,
+          action: 'approve'
+        }
       });
       if (error) throw error;
       toast.success(`${type} approved successfully!`);
@@ -472,12 +427,17 @@ export default function OpportunitiesContentReview() {
       setProcessingId(null);
     }
   };
-
   const handleReject = async (type, id) => {
     setProcessingId(id);
     try {
-      const { error } = await supabase.functions.invoke('approve-opportunity-content', {
-        body: { type, id, action: 'reject' }
+      const {
+        error
+      } = await supabase.functions.invoke('approve-opportunity-content', {
+        body: {
+          type,
+          id,
+          action: 'reject'
+        }
       });
       if (error) throw error;
       toast.success(`${type} rejected successfully!`);
@@ -489,16 +449,14 @@ export default function OpportunitiesContentReview() {
       setProcessingId(null);
     }
   };
-
-  const handleRemoveFlaggedPost = async (postId) => {
+  const handleRemoveFlaggedPost = async postId => {
     try {
-      const { error } = await supabase
-        .from('forum_posts')
-        .update({ 
-          is_removed: true, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', postId);
+      const {
+        error
+      } = await supabase.from('forum_posts').update({
+        is_removed: true,
+        updated_at: new Date().toISOString()
+      }).eq('id', postId);
       if (error) throw error;
       setFlaggedPosts(prev => prev.filter(p => p.id !== postId));
       toast.success('Post removed successfully');
@@ -507,16 +465,14 @@ export default function OpportunitiesContentReview() {
       toast.error(`Failed to remove post: ${err.message}`);
     }
   };
-
-  const handleDismissFlag = async (postId) => {
+  const handleDismissFlag = async postId => {
     try {
-      const { error } = await supabase
-        .from('forum_posts')
-        .update({ 
-          is_flagged: false, 
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', postId);
+      const {
+        error
+      } = await supabase.from('forum_posts').update({
+        is_flagged: false,
+        updated_at: new Date().toISOString()
+      }).eq('id', postId);
       if (error) throw error;
       setFlaggedPosts(prev => prev.filter(p => p.id !== postId));
       toast.success('Flag dismissed');
@@ -525,9 +481,10 @@ export default function OpportunitiesContentReview() {
       toast.error(`Failed to dismiss flag: ${err.message}`);
     }
   };
-
-  const ActionButtons = ({ type, id }) => (
-    <div className="flex gap-2 mt-3">
+  const ActionButtons = ({
+    type,
+    id
+  }) => <div className="flex gap-2 mt-3">
       <Button size="sm" className="gap-1.5 bg-green-600 hover:bg-green-700" disabled={processingId === id} onClick={() => handleApprove(type, id)}>
         <CheckCircle className="w-3.5 h-3.5" />
         {processingId === id ? 'Processing...' : 'Approve'}
@@ -535,19 +492,13 @@ export default function OpportunitiesContentReview() {
       <Button size="sm" variant="destructive" className="gap-1.5" disabled={processingId === id} onClick={() => handleReject(type, id)}>
         <XCircle className="w-3.5 h-3.5" /> Reject
       </Button>
-    </div>
-  );
-
+    </div>;
   if (loading) {
-    return (
-      <div className="flex justify-center py-8">
+    return <div className="flex justify-center py-8">
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="text-xl font-bold">Opportunities Content Review</h2>
         <div className="flex gap-2 flex-wrap">
@@ -589,12 +540,11 @@ export default function OpportunitiesContentReview() {
               {showForm === 'deadline' ? 'Cancel' : 'Add Manually'}
             </Button>
           </div>
-          {showForm === 'deadline' && <ManualDeadlineForm onSaved={() => { setShowForm(null); loadAll(); }} onCancel={() => setShowForm(null)} />}
-          {deadlines.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No pending deadlines. Click "Discover Deadlines" to search, or add one manually above.</p>
-          ) : (
-            deadlines.map(d => (
-              <div key={d.id} className="border rounded-xl p-4 bg-card">
+          {showForm === 'deadline' && <ManualDeadlineForm onSaved={() => {
+          setShowForm(null);
+          loadAll();
+        }} onCancel={() => setShowForm(null)} />}
+          {deadlines.length === 0 ? <p className="text-center text-muted-foreground py-8">No pending deadlines. Click "Discover Deadlines" to search, or add one manually above.</p> : deadlines.map(d => <div key={d.id} className="border rounded-xl p-4 bg-card">
                 <div className="flex flex-wrap gap-2 mb-2">
                   <Badge className={categoryColor[d.category] || ""}>{d.category}</Badge>
                   <Badge variant="outline">{d.date}</Badge>
@@ -605,9 +555,7 @@ export default function OpportunitiesContentReview() {
                 {d.link && <a href={d.link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"><ExternalLink className="w-3 h-3" /> {d.link}</a>}
                 {d.source && <p className="text-xs text-muted-foreground mt-1">Source: {d.source}</p>}
                 <ActionButtons type="deadline" id={d.id} />
-              </div>
-            ))
-          )}
+              </div>)}
         </TabsContent>
 
         <TabsContent value="guides" className="space-y-3 mt-4">
@@ -617,21 +565,18 @@ export default function OpportunitiesContentReview() {
               {showForm === 'guide' ? 'Cancel' : 'Add Manually'}
             </Button>
           </div>
-          {showForm === 'guide' && <ManualGuideForm onSaved={() => { setShowForm(null); loadAll(); }} onCancel={() => setShowForm(null)} />}
-          {guides.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No pending guides. Click "Discover Guides" to search, or add one manually above.</p>
-          ) : (
-            guides.map(g => (
-              <div key={g.id} className="border rounded-xl p-4 bg-card">
+          {showForm === 'guide' && <ManualGuideForm onSaved={() => {
+          setShowForm(null);
+          loadAll();
+        }} onCancel={() => setShowForm(null)} />}
+          {guides.length === 0 ? <p className="text-center text-muted-foreground py-8">No pending guides. Click "Discover Guides" to search, or add one manually above.</p> : guides.map(g => <div key={g.id} className="border rounded-xl p-4 bg-card">
                 <div className="flex flex-wrap gap-2 mb-2"><Badge className={categoryColor[g.category] || ""}>{g.category}</Badge></div>
                 <p className="font-semibold">{g.title}</p>
                 {g.description && <p className="text-sm text-muted-foreground mt-1">{g.description}</p>}
                 {g.external_link && <a href={g.external_link} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary hover:underline mt-1"><ExternalLink className="w-3 h-3" /> View Resource</a>}
                 {g.source && <p className="text-xs text-muted-foreground mt-1">Source: {g.source}</p>}
                 <ActionButtons type="guide" id={g.id} />
-              </div>
-            ))
-          )}
+              </div>)}
         </TabsContent>
 
         <TabsContent value="prospectuses" className="space-y-3 mt-4">
@@ -641,12 +586,11 @@ export default function OpportunitiesContentReview() {
               {showForm === 'prospectus' ? 'Cancel' : 'Add Manually'}
             </Button>
           </div>
-          {showForm === 'prospectus' && <ManualProspectusForm onSaved={() => { setShowForm(null); loadAll(); }} onCancel={() => setShowForm(null)} />}
-          {prospectuses.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No pending prospectuses. Click "Discover Prospectuses" to search, or add one manually above.</p>
-          ) : (
-            prospectuses.map(p => (
-              <div key={p.id} className="border rounded-xl p-4 bg-card">
+          {showForm === 'prospectus' && <ManualProspectusForm onSaved={() => {
+          setShowForm(null);
+          loadAll();
+        }} onCancel={() => setShowForm(null)} />}
+          {prospectuses.length === 0 ? <p className="text-center text-muted-foreground py-8">No pending prospectuses. Click "Discover Prospectuses" to search, or add one manually above.</p> : prospectuses.map(p => <div key={p.id} className="border rounded-xl p-4 bg-card">
                 <div className="flex flex-wrap gap-2 mb-2"><Badge variant="outline">Year: {p.year}</Badge></div>
                 <p className="font-semibold">{p.university_name}</p>
                 {p.description && <p className="text-sm text-muted-foreground mt-1">{p.description}</p>}
@@ -656,17 +600,11 @@ export default function OpportunitiesContentReview() {
                 </div>
                 {p.source && <p className="text-xs text-muted-foreground mt-1">Source: {p.source}</p>}
                 <ActionButtons type="prospectus" id={p.id} />
-              </div>
-            ))
-          )}
+              </div>)}
         </TabsContent>
 
         <TabsContent value="forum" className="space-y-3 mt-4">
-          {flaggedPosts.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No flagged forum posts.</p>
-          ) : (
-            flaggedPosts.map(post => (
-              <div key={post.id} className="border border-orange-200 rounded-xl p-4 bg-orange-50/30">
+          {flaggedPosts.length === 0 ? <p className="text-center text-muted-foreground py-8">No flagged forum posts.</p> : flaggedPosts.map(post => <div key={post.id} className="border border-orange-200 rounded-xl p-4 bg-orange-50/30">
                 <Badge className="bg-orange-100 text-orange-700 mb-2">Flagged</Badge>
                 <p className="font-semibold">{post.title}</p>
                 <p className="text-sm text-muted-foreground mt-1 line-clamp-3">{post.body}</p>
@@ -680,11 +618,8 @@ export default function OpportunitiesContentReview() {
                     <CheckCircle className="w-3.5 h-3.5" /> Dismiss Flag
                   </Button>
                 </div>
-              </div>
-            ))
-          )}
+              </div>)}
         </TabsContent>
       </Tabs>
-    </div>
-  );
+    </div>;
 }

@@ -107,12 +107,13 @@ const collapsibleTriggerVariants = cva(
  *   <CollapsibleContent>Content</CollapsibleContent>
  * </Collapsible>
  */
-const Collapsible = React.forwardRef(({ 
+const Collapsible = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.Root> & {variant?: "default"|"ghost"|"outline"|"primary"|null; size?: "sm"|"default"|"lg"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   variant = "default",
   size = "default",
   className,
   disabled = false,
-  ...props 
+  ...props
 }, ref) => {
   return (
     <CollapsiblePrimitive.Root
@@ -145,7 +146,8 @@ Collapsible.displayName = CollapsiblePrimitive.Root.displayName;
  * @param {string} props.expandLabel - Accessibility label when collapsed
  * @param {string} props.collapseLabel - Accessibility label when expanded
  */
-const CollapsibleTrigger = React.forwardRef(({
+const CollapsibleTrigger = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleTrigger> & {icon?: React.ElementType; hideIcon?: boolean; variant?: "default"|"ghost"|"outline"|"primary"|null; size?: "sm"|"default"|"lg"|null; expandLabel?: any; collapseLabel?: any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   icon,
@@ -201,7 +203,8 @@ CollapsibleTrigger.displayName = CollapsiblePrimitive.CollapsibleTrigger.display
  * @param {React.ReactNode} props.children - Content
  * @param {number} props.animationDuration - Override animation duration (ms)
  */
-const CollapsibleContent = React.forwardRef(({
+const CollapsibleContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CollapsiblePrimitive.CollapsibleContent> & {animationDuration?: number}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   animationDuration = CONFIG.ANIMATION_DURATION,

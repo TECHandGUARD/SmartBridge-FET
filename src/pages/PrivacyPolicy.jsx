@@ -4,11 +4,11 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Loader2, AlertCircle, ShieldCheck, 
-  FileText, CheckCircle, Lock, Users,
-  GraduationCap, Briefcase, ChevronRight,
-  Clock, Printer, Download, Share2
+import {
+  Loader2, AlertCircle, ShieldCheck,
+  FileText, Lock, Users,
+  GraduationCap,
+  Clock, Printer, Download
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -134,17 +134,17 @@ export default function PrivacyPolicy() {
   // Role Detection
   // ============================================================
 
-  const isTutor = useMemo(() => 
+  const isTutor = useMemo(() =>
     ['sace_tutor', 'student_tutor', 'tutor', 'tutor_pending'].includes(user?.role),
     [user?.role]
   );
 
-  const isParent = useMemo(() => 
+  const isParent = useMemo(() =>
     user?.role === 'parent',
     [user?.role]
   );
 
-  const isStudent = useMemo(() => 
+  const isStudent = useMemo(() =>
     user?.role === 'student' || !user || (!isTutor && !isParent),
     [user?.role, isTutor, isParent]
   );
@@ -346,11 +346,11 @@ export default function PrivacyPolicy() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <RoleBadge 
-                role={user?.role} 
-                isTutor={isTutor} 
-                isParent={isParent} 
-                isStudent={isStudent} 
+              <RoleBadge
+                role={user?.role}
+                isTutor={isTutor}
+                isParent={isParent}
+                isStudent={isStudent}
               />
               <ActionButtons onPrint={handlePrint} onDownload={handleDownload} />
             </div>

@@ -1,6 +1,6 @@
 // src/components/ui/PremiumBadge.jsx
 import { Link } from 'react-router-dom';
-import { Star, Lock, Sparkles, Crown } from 'lucide-react';
+import { Star, Lock, Sparkles } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 // ============================================================
@@ -32,13 +32,15 @@ const CONFIG = {
 // Sub-Components
 // ============================================================
 
-const BadgeVariant = ({ label, icon: Icon, className = '' }) => (
+const BadgeVariant = /** @param {React.ComponentPropsWithoutRef<'span'> & {label?: React.ReactNode; icon?: React.ElementType}} props */
+({ label, icon: Icon, className = '' }) => (
   <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold shadow-sm ${className}`}>
     <Icon className="w-2.5 h-2.5 fill-current" /> {label}
   </span>
 );
 
-const OverlayVariant = ({ label, buttonText, className = '', onUpgrade }) => (
+const OverlayVariant = /** @param {React.ComponentPropsWithoutRef<'div'> & {label?: React.ReactNode; buttonText?: any; onUpgrade?: (...args: any[]) => any}} props */
+({ label, buttonText, className = '', onUpgrade }) => (
   <div className={`absolute inset-0 bg-gradient-to-br from-amber-900/70 to-black/60 flex flex-col items-center justify-center gap-2 rounded-inherit ${className}`}>
     <div className="w-10 h-10 rounded-full bg-amber-400/20 border-2 border-amber-400 flex items-center justify-center animate-pulse">
       <Lock className="w-5 h-5 text-amber-300" />
@@ -59,7 +61,8 @@ const OverlayVariant = ({ label, buttonText, className = '', onUpgrade }) => (
   </div>
 );
 
-const LockVariant = ({ label, icon: Icon, className = '', size = 'sm' }) => {
+const LockVariant = /** @param {React.HTMLAttributes<HTMLElement> & {label?: React.ReactNode; icon?: React.ElementType; size?: string}} props */
+({ label, icon: Icon, className = '', size = 'sm' }) => {
   const sizeClasses = {
     sm: 'text-xs px-2.5 py-1',
     md: 'text-sm px-3 py-1.5',
@@ -84,7 +87,7 @@ const LockVariant = ({ label, icon: Icon, className = '', size = 'sm' }) => {
 
 /**
  * PremiumBadge — visual indicator for premium-locked content.
- * 
+ *
  * @param {Object} props
  * @param {'badge'|'overlay'|'lock'|'trial'} props.variant - Display variant
  * @param {string} props.className - Additional CSS classes
@@ -92,16 +95,17 @@ const LockVariant = ({ label, icon: Icon, className = '', size = 'sm' }) => {
  * @param {string} props.buttonText - Custom button text (overlay variant only)
  * @param {string} props.style - Badge style ('default' | 'gold' | 'dark' | 'primary')
  * @param {string} props.size - Size for lock variant ('sm' | 'md' | 'lg')
- * @param {function} props.onUpgrade - Callback when upgrade button is clicked
+ * @param {() => void} props.onUpgrade - Callback when upgrade button is clicked
  * @param {boolean} props.showIcon - Whether to show the icon
- * 
+ *
  * @example
  * <PremiumBadge variant="badge" />
  * <PremiumBadge variant="overlay" label="PREMIUM" buttonText="Unlock Now" />
  * <PremiumBadge variant="lock" size="md" />
  * <PremiumBadge variant="trial" label="FREE TRIAL" style="gold" />
  */
-export default function PremiumBadge({
+export default /** @param {React.ComponentPropsWithoutRef<'span'> & {variant?: string; label?: React.ReactNode; buttonText?: any; size?: string; onUpgrade?: (...args: any[]) => any; showIcon?: boolean}} props */
+function PremiumBadge({
   variant = 'badge',
   className = '',
   label,

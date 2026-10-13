@@ -1,210 +1,118 @@
-// src/pages/Bookings.jsx
-import { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { bookingRequest as prepareRequest } from '@/lib/booking-request';
+import { createBooking } from '@/lib/bookings';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, BookOpen, Plus, Loader2, Star, CheckCircle, XCircle, ExternalLink } from 'lucide-react';
-import { SUBJECTS } from '@/lib/subjects';
+import { Calendar, Clock, Plus, Loader2, XCircle, ExternalLink, Star, BookOpen } from 'lucide-react';
 import { toast } from 'sonner';
 import TutorReviewModal from '@/components/student/TutorReviewModal';
 
-// ============================================================
-// 🔧 SOFT-CODED CONFIGURATION (All adjustable via .env)
-// ============================================================
+const SUBJECT_OPTIONS = ['Mathematics', 'Physical Sciences', 'Life Sciences', 'Accounting', 'Economics', 'History', 'Geography', 'Business Studies'];
 
-const CONFIG = {
-  // Booking defaults
-  DEFAULT_TIME: import.meta.env.VITE_BOOKING_DEFAULT_TIME || '09:00',
-  DEFAULT_DURATION: Number(import.meta.env.VITE_BOOKING_DEFAULT_DURATION) || 1,
-  MIN_BOOKING_HOURS: Number(import.meta.env.VITE_BOOKING_MIN_HOURS) || 1,
-  MAX_BOOKING_HOURS: Number(import.meta.env.VITE_BOOKING_MAX_HOURS) || 3,
-  BOOKING_HOURS_STEP: Number(import.meta.env.VITE_BOOKING_HOURS_STEP) || 0.5,
-  
-  // Status styles
-  STATUS_STYLES: {
-    pending: import.meta.env.VITE_STATUS_PENDING_STYLE || 'bg-amber-100 text-amber-700 border-amber-200',
-    confirmed: import.meta.env.VITE_STATUS_CONFIRMED_STYLE || 'bg-green-100 text-green-700 border-green-200',
-    cancelled: import.meta.env.VITE_STATUS_CANCELLED_STYLE || 'bg-red-100 text-red-700 border-red-200',
-    completed: import.meta.env.VITE_STATUS_COMPLETED_STYLE || 'bg-blue-100 text-blue-700 border-blue-200',
-  },
-  
-  // Toast messages
-  MESSAGES: {
-    BOOKING_SUCCESS: import.meta.env.VITE_BOOKING_SUCCESS_MSG || 'Booking request sent! The tutor will confirm shortly.',
-    BOOKING_FAILED: import.meta.env.VITE_BOOKING_FAILED_MSG || 'Failed to create booking. Please try again.',
-    CANCEL_SUCCESS: import.meta.env.VITE_CANCEL_SUCCESS_MSG || 'Booking cancelled.',
-    CANCEL_FAILED: import.meta.env.VITE_CANCEL_FAILED_MSG || 'Failed to cancel booking.',
-    FILL_REQUIRED: import.meta.env.VITE_FILL_REQUIRED_MSG || 'Please fill in all required fields.',
-    NO_TUTORS: import.meta.env.VITE_NO_TUTORS_MSG || 'No verified tutors available. Please check back later.',
-  },
-  
-  // Feature flags
-  ENABLE_REVIEWS: import.meta.env.VITE_ENABLE_TUTOR_REVIEWS !== 'false',
-  ENABLE_SESSION_LINKS: import.meta.env.VITE_ENABLE_SESSION_LINKS !== 'false',
-  ENABLE_BOOKING_CANCELLATION: import.meta.env.VITE_ENABLE_BOOKING_CANCELLATION !== 'false',
-  
-  // Pagination
-  TUTORS_LIMIT: Number(import.meta.env.VITE_TUTORS_DISPLAY_LIMIT) || 30,
-  BOOKINGS_LIMIT: Number(import.meta.env.VITE_BOOKINGS_DISPLAY_LIMIT) || 50,
+const STATUS_STYLES = {
+  pending: 'bg-amber-50 text-amber-700 border-amber-200',
+  confirmed: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+  cancelled: 'bg-red-50 text-red-700 border-red-200',
+  completed: 'bg-blue-50 text-blue-700 border-blue-200',
 };
 
-// ============================================================
-// Component
-// ============================================================
-
 export default function Bookings() {
-  const { user } = useOutletContext() || {};
+  const { user } = useAuth();
+
   const [bookings, setBookings] = useState([]);
   const [tutors, setTutors] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [reviewTarget, setReviewTarget] = useState(null);
-  
+
   const [form, setForm] = useState({
     tutor_email: '',
-    subject: '',
+    subject: 'Mathematics',
     date: '',
-    time: CONFIG.DEFAULT_TIME,
-    duration_hours: CONFIG.DEFAULT_DURATION,
+    time: '14:00',
+    duration_hours: '1',
     message: ''
   });
 
-  // Generate booking reference
-  const generateBookingRef = () => {
-    const prefix = import.meta.env.VITE_BOOKING_REF_PREFIX || 'BK';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
-  };
-
-  // ============================================================
-  // Data Fetching
-  // ============================================================
-
   useEffect(() => {
     if (!user?.email) return;
-    loadData();
+    fetchBookingDashboardData();
 
-    const channel = supabase
-      .channel('bookings-changes')
+    // Setup native Supabase realtime websocket channel subscription
+    const bookingStreamChannel = supabase
+      .channel('live_booking_mutations')
       .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tutor_bookings',
-          filter: `student_email=eq.${user.email}`
-        },
-        () => loadData()
+        { event: '*', schema: 'public', table: 'tutor_bookings' },
+        (payload) => {
+          if (payload.new && ('student_id' in payload.new ? payload.new.student_id : null) === user.id) {
+            fetchBookingDashboardData();
+          }
+        }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(bookingStreamChannel);
     };
   }, [user?.email]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const fetchBookingDashboardData = async () => {
     try {
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('tutor_bookings')
-        .select('*')
-        .eq('student_email', user.email)
-        .order('created_at', { ascending: false })
-        .limit(CONFIG.BOOKINGS_LIMIT);
+      setLoading(true);
 
-      if (bookingsError) throw bookingsError;
-      setBookings(bookingsData || []);
+      const [bookingsQuery, tutorsQuery] = await Promise.all([
+        supabase.from('tutor_bookings').select('*').eq('student_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('tutor_directory').select('*').eq('is_verified', true)
+      ]);
 
-      const { data: tutorsData, error: tutorsError } = await supabase
-        .from('tutor_profiles')
-        .select('*')
-        .eq('is_verified', true)
-        .order('rating', { ascending: false })
-        .limit(CONFIG.TUTORS_LIMIT);
+      if (bookingsQuery.error) throw bookingsQuery.error;
+      if (tutorsQuery.error) throw tutorsQuery.error;
 
-      if (tutorsError) throw tutorsError;
-      setTutors(tutorsData || []);
-
-    } catch (error) {
-      console.error('Error loading bookings:', error);
-      toast.error(CONFIG.MESSAGES.BOOKING_FAILED);
+      setBookings(bookingsQuery.data || []);
+      setTutors(tutorsQuery.data || []);
+    } catch (err) {
+      toast.error(err.message || 'Failed to sync with local scheduler databases.');
     } finally {
       setLoading(false);
     }
   };
 
+  const bookingRequest = useRef(null);
   const selectedTutor = tutors.find(t => t.user_email === form.tutor_email);
+  const computedHourlyDuration = parseFloat(form.duration_hours) || 1;
+  const estimatedCost = (selectedTutor?.hourly_rate || 0) * computedHourlyDuration;
 
-  // ============================================================
-  // Handlers
-  // ============================================================
-
-  const handleBook = async () => {
-    if (!form.tutor_email || !form.subject || !form.date) {
-      toast.error(CONFIG.MESSAGES.FILL_REQUIRED);
+  const handleCreateBooking = async () => {
+    if (isSaving) return;
+    if (!selectedTutor?.user_id || !form.date) {
+      toast.error('Please specify target scheduling date and tutor requirements.');
       return;
     }
-
-    setSaving(true);
     try {
-      const tutor = tutors.find(t => t.user_email === form.tutor_email);
-      const amount = (tutor?.hourly_rate || 0) * form.duration_hours;
+      setIsSaving(true);
+      bookingRequest.current = prepareRequest(bookingRequest.current, selectedTutor, form);
+      await createBooking(selectedTutor, form, bookingRequest.current.id);
+      bookingRequest.current = null;
 
-      const { data, error } = await supabase
-        .from('tutor_bookings')
-        .insert({
-          student_email: user.email,
-          student_name: user.full_name || user.email,
-          tutor_email: form.tutor_email,
-          tutor_name: tutor?.full_name || '',
-          subject: form.subject,
-          date: form.date,
-          time: form.time,
-          duration_hours: form.duration_hours,
-          message: form.message || null,
-          amount: amount,
-          status: 'pending',
-          booking_reference: generateBookingRef()
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      setBookings(prev => [data, ...prev]);
-      setForm({ tutor_email: '', subject: '', date: '', time: CONFIG.DEFAULT_TIME, duration_hours: CONFIG.DEFAULT_DURATION, message: '' });
+      toast.success('Lesson reservation dispatched to instructor inbox successfully!');
+      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '' });
       setShowForm(false);
-      toast.success(CONFIG.MESSAGES.BOOKING_SUCCESS);
-      
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'booking_made',
-          user_email: user.email,
-          description: `Student ${user.email} booked ${tutor?.full_name || 'tutor'} for ${form.subject} on ${form.date}`
-        });
-
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      toast.error(CONFIG.MESSAGES.BOOKING_FAILED);
+      await fetchBookingDashboardData();
+    } catch (err) {
+      toast.error(err.message || 'Transaction submission error.');
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
-  const cancelBooking = async (id) => {
-    if (!CONFIG.ENABLE_BOOKING_CANCELLATION) {
-      toast.warning('Booking cancellation is currently disabled.');
-      return;
-    }
-
+  const handleCancelBooking = async (id) => {
     try {
       const { error } = await supabase
         .from('tutor_bookings')
@@ -212,258 +120,246 @@ export default function Bookings() {
         .eq('id', id);
 
       if (error) throw error;
-
-      setBookings(prev => prev.map(b => 
-        b.id === id ? { ...b, status: 'cancelled' } : b
-      ));
-      toast.success(CONFIG.MESSAGES.CANCEL_SUCCESS);
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      toast.error(CONFIG.MESSAGES.CANCEL_FAILED);
+      toast.success('Session cancellation logged.');
+      await fetchBookingDashboardData();
+    } catch (err) {
+      toast.error(err.message || 'Failed updating record parameter.');
     }
   };
 
-  // Generate duration options dynamically
-  const durationOptions = [];
-  for (let h = CONFIG.MIN_BOOKING_HOURS; h <= CONFIG.MAX_BOOKING_HOURS; h += CONFIG.BOOKING_HOURS_STEP) {
-    durationOptions.push(h);
-  }
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-2 select-none">
+        <Loader2 className="w-7 h-7 animate-spin text-blue-600" />
+        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest animate-pulse">Syncing Scheduler Matrix...</span>
       </div>
     );
   }
-
-  // ============================================================
-  // Access Control
-  // ============================================================
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">Please sign in to manage bookings.</p>
-      </div>
-    );
-  }
-
-  // ============================================================
-  // Render
-  // ============================================================
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
+    <div className="min-h-screen bg-slate-50 py-8 font-sans select-none antialiased">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
+
+        {/* Dashboard Title Header Block */}
+        <div className="flex items-center justify-between bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex-wrap gap-4">
           <div>
-            <h1 className="font-playfair text-3xl font-bold">My Bookings</h1>
-            <p className="text-muted-foreground mt-1">Book and manage your tutor sessions.</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">My Lesson Registrations</h1>
+            <p className="text-xs font-medium text-slate-400 mt-0.5">Book and manage single-session CAPS support structures</p>
           </div>
-          <Button onClick={() => setShowForm(!showForm)} className="bg-primary gap-2">
-            <Plus className="w-4 h-4" /> Book a Tutor
+          <Button type="button" onClick={() => setShowForm(!showForm)} className="h-9 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md gap-1.5 rounded-xl">
+            <Plus className="w-4 h-4" /> Schedule New Session
           </Button>
         </div>
 
-        {/* Booking Form */}
+        {/* Booking Creation Accordion Form Panel Wrapper */}
         {showForm && (
-          <Card className="mb-6 border-primary/20 shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="font-playfair text-lg flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" /> New Booking Request
+          <Card className="border-slate-200 shadow-xl bg-white overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/50">
+              <CardTitle className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                <Calendar className="w-4 h-4 text-blue-600" /> Set Up Target Lesson Request
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid sm:grid-cols-2 gap-4">
-                {/* Tutor Selection */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <Label>Tutor *</Label>
+            <CardContent className="p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Tutor Dropdown Node */}
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Instructor Registry *</Label>
                   <Select value={form.tutor_email} onValueChange={v => setForm({ ...form, tutor_email: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select a tutor..." /></SelectTrigger>
-                    <SelectContent>
-                      {tutors.length === 0 ? (
-                        <div className="p-2 text-sm text-muted-foreground">{CONFIG.MESSAGES.NO_TUTORS}</div>
-                      ) : (
-                        tutors.map(t => (
-                          <SelectItem key={t.id} value={t.user_email}>
-                            {t.full_name} {t.hourly_rate ? `— R${t.hourly_rate}/hr` : ''}
-                          </SelectItem>
-                        ))
-                      )}
+                    <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
+                      <SelectValue placeholder="Select from verified available SACE educators..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {tutors.map(t => (
+                        <SelectItem key={t.id} value={t.user_email} className="text-xs font-medium">
+                          {t.full_name} (Hourly Rank: R {t.hourly_rate} / hr)
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   {selectedTutor && (
-                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <CheckCircle className="w-3.5 h-3.5 text-green-600" />
-                      <span>{selectedTutor.subjects?.join(', ')} · {selectedTutor.qualifications}</span>
-                    </div>
+                    <p className="text-[10px] text-slate-400 font-semibold leading-none pl-0.5 mt-1.5">
+                      ✓ Qualifications: {selectedTutor.qualifications} · Focus: {selectedTutor.subjects?.join(', ')}
+                    </p>
                   )}
                 </div>
 
-                {/* Subject */}
-                <div className="space-y-1.5">
-                  <Label>Subject *</Label>
+                {/* Subject Option Node */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Curriculum Subject *</Label>
                   <Select value={form.subject} onValueChange={v => setForm({ ...form, subject: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
-                    <SelectContent>
-                      {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>)}
+                    <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {SUBJECT_OPTIONS.map(s => (
+                        <SelectItem key={s} value={s} className="text-xs font-medium">{s}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Duration - dynamically generated */}
-                <div className="space-y-1.5">
-                  <Label>Duration</Label>
-                  <Select value={String(form.duration_hours)} onValueChange={v => setForm({ ...form, duration_hours: Number(v) })}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {durationOptions.map(h => (
-                        <SelectItem key={h} value={String(h)}>
-                          {h} hour{h !== 1 ? 's' : ''}
+                {/* Duration Node */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Session Interval</Label>
+                  <Select value={form.duration_hours} onValueChange={v => setForm({ ...form, duration_hours: v })}>
+                    <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {['1', '1.5', '2', '3'].map(h => (
+                        <SelectItem key={h} value={h} className="text-xs font-medium">
+                          {h} Hour{parseFloat(h) !== 1 ? 's' : ''}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                {/* Date */}
-                <div className="space-y-1.5">
-                  <Label>Date *</Label>
-                  <Input 
-                    type="date" 
-                    value={form.date} 
-                    onChange={e => setForm({ ...form, date: e.target.value })} 
-                    min={new Date().toISOString().split('T')[0]} 
+                {/* Date Node */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Session Date *</Label>
+                  <Input
+                    type="date"
+                    value={form.date}
+                    onChange={e => setForm({ ...form, date: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="text-xs h-8 bg-white border-slate-200 cursor-pointer"
                   />
                 </div>
 
-                {/* Time - softcoded default */}
-                <div className="space-y-1.5">
-                  <Label>Time</Label>
-                  <Input 
-                    type="time" 
-                    value={form.time} 
-                    onChange={e => setForm({ ...form, time: e.target.value })} 
+                {/* Time Node */}
+                <div className="space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Start Time</Label>
+                  <Input
+                    type="time"
+                    value={form.time}
+                    onChange={e => setForm({ ...form, time: e.target.value })}
+                    className="text-xs h-8 bg-white border-slate-200 cursor-pointer"
                   />
                 </div>
 
-                {/* Message */}
-                <div className="sm:col-span-2 space-y-1.5">
-                  <Label>Message to tutor (optional)</Label>
-                  <Input 
-                    placeholder={import.meta.env.VITE_BOOKING_MESSAGE_PLACEHOLDER || 'e.g. Need help with calculus chapter 5...'} 
-                    value={form.message} 
-                    onChange={e => setForm({ ...form, message: e.target.value })} 
+                {/* Message Node */}
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Topics / Notes</Label>
+                  <Input
+                    placeholder="Specify topics needing attention, e.g., Grade 12 Electrostatics exam problems..."
+                    value={form.message}
+                    onChange={e => setForm({ ...form, message: e.target.value })}
+                    className="text-xs h-8 bg-white border-slate-200"
                   />
                 </div>
               </div>
 
-              {/* Cost Estimate */}
-              {selectedTutor?.hourly_rate > 0 && (
-                <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-sm">
-                  <p className="font-semibold">Estimated cost: <span className="text-primary">R{selectedTutor.hourly_rate * form.duration_hours}</span></p>
-                  <p className="text-xs text-muted-foreground mt-0.5">R{selectedTutor.hourly_rate}/hr × {form.duration_hours} hr</p>
+              {/* FIXED: Complete, unbroken implementation of cost estimation logic */}
+              {selectedTutor && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-blue-700">Estimated Operational Cost:</span>
+                  <span className="text-sm font-black text-blue-800">R {estimatedCost} ZAR</span>
                 </div>
               )}
 
-              <div className="flex gap-3">
-                <Button onClick={handleBook} disabled={saving} className="bg-primary gap-2">
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Calendar className="w-4 h-4" />}
-                  {saving ? 'Sending...' : 'Send Booking Request'}
+              <div className="flex gap-3 pt-1">
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setShowForm(false)}
+                  className="text-xs font-semibold text-slate-400 h-8"
+                >
+                  Cancel
                 </Button>
-                <Button variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button
+                  size="sm"
+                  type="button"
+                  onClick={handleCreateBooking}
+                  disabled={isSaving}
+                  className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm gap-1.5 rounded-xl"
+                >
+                  {isSaving ? (
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing Secure Booking...</>
+                  ) : (
+                    'Dispatch Lesson Proposal'
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Bookings List */}
+        {/* Bookings Display Stack Panel Container */}
         {bookings.length === 0 ? (
-          <Card className="border-border">
+          <Card className="border-slate-200 shadow-sm">
             <CardContent className="text-center py-16">
-              <Calendar className="w-14 h-14 text-muted-foreground mx-auto mb-4 opacity-40" />
-              <p className="font-playfair text-xl font-bold mb-1">No bookings yet</p>
-              <p className="text-muted-foreground text-sm mb-4">Book a verified tutor for personalised 1-on-1 sessions.</p>
-              <Button onClick={() => setShowForm(true)} className="bg-primary gap-2">
-                <Plus className="w-4 h-4" /> Book Your First Session
+              <Calendar className="w-14 h-14 text-slate-300 mx-auto mb-4" />
+              <p className="font-bold text-slate-600 text-base">No active lesson reservations</p>
+              <p className="text-xs text-slate-400 mt-1">Discover verified educators and schedule a session</p>
+              <Button onClick={() => setShowForm(true)} className="mt-4 h-8 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm gap-1.5 rounded-xl">
+                <Plus className="w-3.5 h-3.5" /> Find an Instructor
               </Button>
             </CardContent>
           </Card>
         ) : (
           <div className="space-y-3">
-            {bookings.map(b => (
-              <Card key={b.id} className="border-border hover:shadow-md transition-shadow">
-                <CardContent className="pt-5 pb-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                      {b.tutor_name?.[0] || 'T'}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="font-semibold">{b.tutor_name}</p>
-                        <Badge className={`text-xs ${CONFIG.STATUS_STYLES[b.status] || 'bg-muted text-muted-foreground'}`}>
-                          {b.status}
-                        </Badge>
+            {bookings.map((b) => {
+              const cleanTime = b.time?.slice(0, 5) || b.time;
+              return (
+                <Card key={b.id} className="border-slate-200 hover:shadow-md transition-shadow bg-white">
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600 font-bold flex-shrink-0">
+                        {b.tutor_name?.[0] || 'T'}
                       </div>
-                      <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{b.subject}</span>
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{b.date}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.time} · {b.duration_hours}h</span>
-                        {b.amount > 0 && <span className="flex items-center gap-1 text-primary font-medium">R{b.amount}</span>}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <p className="font-bold text-sm text-slate-800">{b.tutor_name}</p>
+                          <Badge className={`text-[10px] font-bold border ${STATUS_STYLES[b.status] || 'bg-slate-100 text-slate-600'}`}>
+                            {b.status}
+                          </Badge>
+                        </div>
+                        <div className="flex flex-wrap gap-3 text-xs text-slate-500">
+                          <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{b.subject}</span>
+                          <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{b.date}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{cleanTime} · {b.duration_hours}h</span>
+                          {b.amount > 0 && <span className="flex items-center gap-1 text-blue-600 font-bold">R{b.amount}</span>}
+                        </div>
+                        {b.message && <p className="text-xs text-slate-400 mt-1 italic">"{b.message}"</p>}
                       </div>
-                      {b.message && <p className="text-xs text-muted-foreground mt-1 italic">"{b.message}"</p>}
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {CONFIG.ENABLE_SESSION_LINKS && b.status === 'confirmed' && b.session_link && (
-                        <a href={b.session_link} target="_blank" rel="noopener noreferrer">
-                          <Button size="sm" className="text-xs gap-1 h-8 bg-green-600 hover:bg-green-700 text-white">
-                            <ExternalLink className="w-3.5 h-3.5" /> Join Session
+                      <div className="flex gap-2 flex-wrap">
+                        {b.status === 'confirmed' && b.session_link && (
+                          <a href={b.session_link} target="_blank" rel="noopener noreferrer">
+                            <Button size="sm" className="text-xs gap-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
+                              <ExternalLink className="w-3.5 h-3.5" /> Join Session
+                            </Button>
+                          </a>
+                        )}
+                        {b.status === 'completed' && (
+                          <Button size="sm" variant="outline" className="text-xs gap-1 h-8" onClick={() => setReviewTarget(b)}>
+                            <Star className="w-3.5 h-3.5" /> Review
                           </Button>
-                        </a>
-                      )}
-                      
-                      {CONFIG.ENABLE_REVIEWS && b.status === 'completed' && (
-                        <Button size="sm" variant="outline" className="text-xs gap-1 h-8" onClick={() => setReviewTarget(b)}>
-                          <Star className="w-3.5 h-3.5" /> Review
-                        </Button>
-                      )}
-                      
-                      {CONFIG.ENABLE_BOOKING_CANCELLATION && (b.status === 'pending' || b.status === 'confirmed') && (
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="text-xs text-destructive border-destructive/30 h-8 gap-1" 
-                          onClick={() => cancelBooking(b.id)}
-                        >
-                          <XCircle className="w-3.5 h-3.5" /> Cancel
-                        </Button>
-                      )}
+                        )}
+                        {(b.status === 'pending' || b.status === 'confirmed') && (
+                          <Button size="sm" variant="outline" className="text-xs text-red-600 border-red-200 hover:bg-red-50 h-8 gap-1" onClick={() => handleCancelBooking(b.id)}>
+                            <XCircle className="w-3.5 h-3.5" /> Cancel
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         )}
       </div>
 
-      {/* Review Modal */}
+      {/* Review Sub-modal injection point */}
       {reviewTarget && (
         <TutorReviewModal
           booking={reviewTarget}
           user={user}
           onClose={() => setReviewTarget(null)}
-          onReviewed={() => {
-            setReviewTarget(null);
-            toast.success('Review submitted! Thank you.');
-            loadData();
-          }}
+          onReviewed={fetchBookingDashboardData}
         />
       )}
     </div>

@@ -1,0 +1,102 @@
+status,file,lines,blocker_type,contract_or_dependency
+dormant source,ChatService.ts,70,missing-column,chat_messages.content
+dormant source,ChatService.ts,70,missing-column,chat_messages.attachment_url
+dormant source,ChatService.ts,70,missing-column,chat_messages.attachment_type
+dormant source,ChatService.ts,"70,180,200",missing-column,chat_messages.read
+dormant source,ChatService.ts,224,missing-table,chat_typing_status
+dormant source,ChatService.ts,"309,334,362,372",missing-table,chat_rooms
+staged migration required,src/components/admin/AutoParentReports.jsx,25,missing-table,study_progress
+staged migration required,src/components/admin/StudentLeaderboard.jsx,21,missing-table,study_progress
+unresolved,src/components/admin/TutorVerificationHub.jsx,227,missing-column,tutor_profiles.university
+unresolved,src/components/admin/TutorVerificationHub.jsx,227,missing-column,tutor_profiles.student_number
+unresolved,src/components/discussion/AnswerThread.jsx,"24,90,138,163",missing-table,forum_answers
+unresolved,src/components/discussion/AnswerThread.jsx,108,missing-column,forum_posts.answer_count
+unresolved,src/components/discussion/AnswerThread.jsx,170,missing-column,forum_posts.is_answered
+unresolved,src/components/discussion/DiscussionBoard.jsx,"33,189",missing-column,forum_posts.upvotes
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.content
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.subject
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.topic
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.author_role
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.is_answered
+unresolved,src/components/discussion/DiscussionBoard.jsx,189,missing-column,forum_posts.answer_count
+unresolved,src/components/opportunities/NBTPrepPlanner.jsx,"243,268",missing-table,nbt_planner_progress
+unresolved,src/components/opportunities/NBTResources.jsx,74,missing-table,nbt_resources
+staged migration required,src/components/parent/ParentProgressDashboard.jsx,38,missing-table,study_progress
+staged migration required,src/components/parent/ParentSummaryReport.jsx,27,missing-table,study_progress
+staged migration required,src/components/parent/WeeklyEmailReport.jsx,29,missing-table,study_progress
+unresolved,src/components/simulations/QuizSync.jsx,"29,70,103",missing-table,sim_quizzes
+unresolved,src/components/simulations/SimulationLab.jsx,29,missing-table,simulations
+staged migration required,src/components/student/GradeProgressTracker.jsx,24,missing-table,study_progress
+unresolved,src/components/student/InteractiveFlashcards.jsx,36,missing-table,flashcards
+unresolved,src/components/student/InteractiveFlashcards.jsx,66,missing-table,weak_concepts
+unresolved,src/components/student/InteractiveFlashcards.jsx,88,missing-table,student_analytics
+staged migration required,src/components/student/MilestoneBadges.jsx,78,missing-table,study_progress
+staged migration required,src/components/student/ProgressCharts.jsx,28,missing-table,study_progress
+staged migration required,src/components/student/StudentProgressDashboard.jsx,68,missing-table,study_progress
+staged migration required,src/components/student/StudyGamification.jsx,45,missing-table,study_progress
+unresolved,src/components/student/SyllabusTopicTracker.jsx,"100,125,138",missing-table,syllabus_progress
+staged migration required,src/components/subject/SubjectTutors.jsx,19,missing-table,tutor_directory
+unresolved,src/components/tutor/BookingRequests.jsx,102,missing-table,booking_reschedule_requests
+unresolved,src/components/tutor/BookingRequests.jsx,298,missing-column,tutor_bookings.attendance_status
+unresolved,src/components/tutor/ChatInbox.jsx,"116,151,202,375",missing-table,tutor_applications
+unresolved,src/components/tutor/ChatInbox.jsx,"131,401",missing-table,student_requests
+unresolved,src/components/tutor/ChatInbox.jsx,"330,342",missing-table,chat_typing_status
+unresolved,src/components/tutor/ChatInbox.jsx,431,missing-column,chat_messages.attachment_url
+unresolved,src/components/tutor/ChatInbox.jsx,431,missing-column,chat_messages.attachment_type
+staged migration required,src/components/tutor/LessonPlanForm.jsx,251,missing-table,study_progress
+unresolved,src/components/tutor/LiveTutorChat.jsx,"124,136,176",missing-table,chat_typing_status
+unresolved,src/components/tutor/ResourceTemplateUploader.jsx,112,missing-table,unified_resources
+unresolved,src/components/tutor/TutorEarningsDashboard.jsx,"75,116",missing-column,tutor_profiles.bank_name
+unresolved,src/components/tutor/TutorEarningsDashboard.jsx,"75,116",missing-column,tutor_profiles.account_number
+unresolved,src/components/tutor/TutorEarningsDashboard.jsx,"75,116",missing-column,tutor_profiles.account_holder
+unresolved,src/components/tutor/TutorEarningsDashboard.jsx,"75,116",missing-column,tutor_profiles.branch_code
+staged migration required,src/components/tutor/TutorStudentProgressChart.jsx,"93,157",missing-table,study_progress
+unresolved,src/components/tutor/TutorStudentProgressChart.jsx,109,missing-column,users.grade
+unresolved,src/components/tutor/TutorStudentProgressChart.jsx,109,missing-column,users.parent_email
+unresolved,src/components/tutor/TutorStudentProgressChart.jsx,125,missing-table,school_subject_averages
+unresolved,src/components/tutor/TutorVerificationBadge.jsx,"71,153",missing-table,tutor_verification_requests
+dormant source,src/hooks/useFeatureFlags.js,58,missing-column,feature_toggles.is_enabled_globally
+dormant source,src/hooks/useFeatureFlags.js,81,missing-table,feature_user_overrides
+staged migration required,src/pages/Bookings.jsx,72,missing-table,tutor_directory
+staged migration required,src/pages/ParentDashboard.jsx,35,missing-table,tutor_directory
+staged migration required,src/pages/StudentDashboard.jsx,73,missing-table,tutor_directory
+staged migration required,src/pages/Tutors.jsx,62,missing-table,tutor_directory
+unresolved,ChatService.ts,286,missing-storage-bucket,chat-attachments
+unresolved,ChatService.ts,292,missing-storage-bucket,chat-attachments
+implemented; deployment required,src/components/admin/AdminAlertBell.jsx,33,missing-function,send-email
+implemented; deployment required,src/components/admin/AutoParentReports.jsx,70,missing-function,send-email
+implemented; deployment required,src/components/admin/AutomatedBillingPayouts.jsx,83,missing-function,send-email
+unresolved,src/components/admin/KnowledgeBaseManager.jsx,158,missing-storage-bucket,educational_resources
+unresolved,src/components/admin/KnowledgeBaseManager.jsx,164,missing-storage-bucket,educational_resources
+implemented; deployment required,src/components/admin/StudentLeaderboard.jsx,63,missing-function,send-email
+implemented; deployment required,src/components/admin/TutorPayoutDashboard.jsx,54,missing-function,send-email
+implemented; deployment required,src/components/admin/TutorVerificationHub.jsx,33,missing-function,send-email
+unresolved,src/components/opportunities/ApplicationDocumentVault.jsx,60,missing-storage-bucket,application_documents
+unresolved,src/components/opportunities/ApplicationDocumentVault.jsx,67,missing-storage-bucket,application_documents
+unresolved,src/components/opportunities/ApplicationDocumentVault.jsx,123,missing-storage-bucket,application_documents
+unresolved,src/components/opportunities/NBTScheduler.jsx,101,missing-storage-bucket,nbt_results
+unresolved,src/components/opportunities/NBTScheduler.jsx,107,missing-storage-bucket,nbt_results
+implemented; deployment required,src/components/parent/WeeklyEmailReport.jsx,77,missing-function,send-email
+implemented; deployment required,src/components/student/AIStudyAssistant.jsx,99,missing-function,invoke-llm
+implemented; deployment required,src/components/student/AIStudyPlanner.jsx,146,missing-function,invoke-llm
+implemented; deployment required,src/components/tutor/BookingRequests.jsx,156,missing-function,send-email
+unresolved,src/components/tutor/ChatInbox.jsx,421,missing-storage-bucket,chat-attachments
+unresolved,src/components/tutor/ChatInbox.jsx,427,missing-storage-bucket,chat-attachments
+implemented; deployment required,src/components/tutor/LessonPlanForm.jsx,182,missing-function,generate-lesson-plan
+implemented; deployment required,src/components/tutor/LessonPlanner.jsx,299,missing-function,send-email
+implemented; deployment required,src/components/tutor/LessonPlanner.jsx,343,missing-function,generate-lesson-plan
+unresolved,src/components/tutor/ResourceTemplateUploader.jsx,97,missing-storage-bucket,tutor-resources
+unresolved,src/components/tutor/ResourceTemplateUploader.jsx,105,missing-storage-bucket,tutor-resources
+implemented; deployment required,src/components/tutor/TutorVerificationBadge.jsx,174,missing-function,send-email
+implemented; deployment required,src/pages/AdminDashboard.jsx,157,missing-function,send-email
+implemented; deployment required,src/pages/AdminDashboard.jsx,183,missing-function,send-email
+fallback exists; policies/data required,src/pages/BursaryFinder.jsx,150,missing-rpc,find_matching_bursaries_v2
+unresolved source/live drift,supabase/functions/discoverUniversityProspectuses/entry.ts,,model-lifecycle,repository: requires GEMINI_MODEL configuration; corresponding retrieved live code: gemini-pro
+unresolved source/live drift,supabase/functions/studentOpportunitiesAssistant/entry.ts,,model-lifecycle,repository: requires GEMINI_MODEL configuration; corresponding retrieved live code: gemini-pro
+unresolved source/live drift,supabase/functions/discoverApplicationDeadlines/entry.ts,,model-lifecycle,repository: requires GEMINI_MODEL configuration; corresponding retrieved live code: gemini-pro
+unresolved source/live drift,supabase/functions/generateQuiz/entry.ts,,model-lifecycle,repository: requires GEMINI_MODEL configuration; corresponding retrieved live code: gemini-pro
+unresolved source/live drift,supabase/functions/discoverOpportunityGuides/entry.ts,,model-lifecycle,repository: requires GEMINI_MODEL configuration; corresponding retrieved live code: gemini-pro
+unresolved,src/components/admin/TutorVerificationHub.jsx,227,payload-type,"qualifications is ARRAY, payload is string"
+unresolved,supabase/functions/approveOpportunityContent/entry.ts,,source/live drift,live guide approval writes nonexistent opportunity_guides.is_approved
+unresolved,amplify.yml,,hosting verification,SPA rewrite must be configured/verified on hosting
+unresolved,supabase/functions/notifyBookingConfirmed/entry.ts,,source/live drift,source log-only; live Resend implementation; data/old_data payload requires verification

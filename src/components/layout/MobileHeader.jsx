@@ -1,53 +1,28 @@
-// src/components/layout/MobileHeader.jsx
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { BookOpen, ChevronLeft } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { BookOpen, ChevronLeft, Menu } from 'lucide-react';
+import { getDashboardPath, getNavigation, isNavigationActive } from '@/lib/navigation';
+import { useAuth } from '@/lib/AuthContext';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
+import { Button } from '@/components/ui/button';
 
-// ============================================================
-// 🔧 SOFT-CODED CONFIGURATION
-// ============================================================
-
-const CONFIG = {
-  APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-  HOME_PATHS: (import.meta.env.VITE_HOME_PATHS || '/,/student-dashboard,/tutor-dashboard,/parent-dashboard,/admin')
-    .split(',')
-    .map(path => path.trim()),
-};
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function MobileHeader() {
-  const navigate = useNavigate();
+export default function MobileHeader({ user }) {
+  const [open, setOpen] = useState(false);
   const location = useLocation();
-  const isHome = CONFIG.HOME_PATHS.includes(location.pathname);
-
-  return (
-    <header
-      className="fixed top-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-sm border-b border-border flex items-center h-14 px-4 gap-3"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
-    >
-      {!isHome ? (
-        <button
-          onClick={() => navigate(-1)}
-          className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center select-none hover:bg-muted/80 transition-colors"
-          aria-label="Go back"
-        >
-          <ChevronLeft className="w-5 h-5 select-none" />
-        </button>
-      ) : (
-        <div className="w-9 h-9" />
-      )}
-
-      <Link to="/" className="flex items-center gap-2 flex-1 justify-center">
-        <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center">
-          <BookOpen className="w-4 h-4 text-primary-foreground select-none" />
-        </div>
-        <span className="font-playfair font-bold text-base text-foreground">{CONFIG.APP_NAME}</span>
-      </Link>
-
-      {/* Spacer to keep logo centred */}
-      <div className="w-9 h-9" />
-    </header>
-  );
+  const { signOut } = useAuth();
+  const dashboard = getDashboardPath(user);
+  const { primary, secondary } = getNavigation(user);
+  useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
+  return <header className="fixed inset-x-0 top-0 z-40 border-b bg-card/95 backdrop-blur-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+    <div className="flex h-14 items-center gap-2 px-3">
+      {location.pathname !== dashboard ? <Link to={dashboard} aria-label="Back to dashboard" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg hover:bg-muted"><ChevronLeft className="h-5 w-5" /></Link> : <span className="w-11 shrink-0" />}
+      <Link to="/" className="flex min-w-0 flex-1 items-center justify-center gap-2"><BookOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /><span className="truncate font-playfair font-bold">SmartBridge FET</span></Link>
+      <Sheet open={open} onOpenChange={setOpen}><SheetTrigger asChild><Button variant="ghost" className="h-11 w-11 shrink-0 p-0" aria-label="Open navigation menu"><Menu className="h-5 w-5" /></Button></SheetTrigger>
+        <SheetContent side="right" className="w-[min(90vw,360px)] overflow-y-auto"><SheetHeader><SheetTitle>Your SmartBridge</SheetTitle><SheetDescription>{user?.full_name || 'Navigate your account'}</SheetDescription></SheetHeader>
+          <nav aria-label="All pages" className="mt-6 flex flex-col gap-1">{[...primary, ...secondary].map(link => <Link key={link.path} to={link.path} onClick={() => setOpen(false)} aria-current={isNavigationActive(location, link.path) ? 'page' : undefined} className={`rounded-lg px-3 py-3 text-sm ${isNavigationActive(location, link.path) ? 'bg-primary/10 font-semibold text-primary' : 'hover:bg-muted'}`}>{link.label}</Link>)}</nav>
+          <div className="mt-5 border-t pt-5">{user ? <Button variant="outline" className="w-full" onClick={() => { setOpen(false); signOut(); }}>Sign out</Button> : <Link to="/login" onClick={() => setOpen(false)}>Sign in</Link>}</div>
+        </SheetContent>
+      </Sheet>
+    </div>
+  </header>;
 }

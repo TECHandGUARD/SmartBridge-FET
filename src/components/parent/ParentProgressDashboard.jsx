@@ -1,133 +1,98 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import useParentLinks from '@/hooks/useParentLinks';
+import ParentChildLink from './ParentChildLink';
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { TrendingUp, BookOpen, Star, Calendar, Trophy, Loader2, RefreshCw, Link2, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
-  LineChart, Line, CartesianGrid, Legend
+  LineChart, Line, CartesianGrid
 } from 'recharts';
 import { SUBJECTS } from '@/lib/subjects';
 import { toast } from 'sonner';
 
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function ParentProgressDashboard({ user, onLinked }) {
-  const [childEmail, setChildEmail] = useState(user?.linked_student_email || '');
-  const [linked, setLinked] = useState(user?.linked_student_email || '');
+export default function ParentProgressDashboard({ user, onLinked = undefined }) {
+  const { links } = useParentLinks(user);
+  const [selectedId, setSelectedId] = useState('');
+  const approved = links.filter(link => link.status === 'approved');
+  const activeLink = approved.find(link => link.student_id === selectedId) || approved[0];
+  const linked = activeLink?.student_email || '';
+  const learnerId = activeLink?.student_id;
+  const requestGeneration = useRef(0);
   const [progress, setProgress] = useState([]);
   const [quizResults, setQuizResults] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [linking, setLinking] = useState(false);
 
-  const loadChildData = useCallback(async (email) => {
-    if (!email) return;
-    
+  const loadChildData = useCallback(async (studentId) => {
+    if (!studentId) return;
+
+    const request = ++requestGeneration.current;
     setLoading(true);
     try {
       // Load student progress
       const { data: prog, error: progError } = await supabase
-        .from('student_progress')
+        .from('study_progress')
         .select('*')
-        .eq('student_email', email);
-      
+        .eq('student_id', studentId);
+
       if (progError) throw progError;
-      
+
       // Load quiz results
       const { data: quiz, error: quizError } = await supabase
         .from('quiz_results')
         .select('*')
-        .eq('student_email', email)
+        .eq('student_id', studentId)
         .order('created_at', { ascending: false })
         .limit(20);
-      
+
       if (quizError) throw quizError;
-      
+
       // Load tutor bookings
       const { data: book, error: bookError } = await supabase
         .from('tutor_bookings')
         .select('*')
-        .eq('student_email', email)
+        .eq('student_id', studentId)
         .order('created_at', { ascending: false })
         .limit(10);
-      
+
       if (bookError) throw bookError;
-      
+
+      if (request !== requestGeneration.current) return;
       setProgress(prog || []);
       setQuizResults(quiz || []);
       setBookings(book || []);
     } catch (err) {
+      if (request !== requestGeneration.current) return;
+      setProgress([]); setQuizResults([]); setBookings([]);
       console.error('Error loading child data:', err);
       toast.error('Failed to load child progress data');
     } finally {
-      setLoading(false);
+      if (request === requestGeneration.current) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    if (linked) loadChildData(linked);
-  }, [linked, loadChildData]);
+    ++requestGeneration.current;
+    setProgress([]); setQuizResults([]); setBookings([]);
+    if (learnerId) loadChildData(learnerId);
+    return () => { ++requestGeneration.current; };
+  }, [learnerId, loadChildData]);
 
-  const saveLink = async () => {
-    if (!childEmail.trim()) {
-      toast.error('Enter your child\'s email.');
-      return;
-    }
-    
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(childEmail.trim())) {
-      toast.error('Please enter a valid email address.');
-      return;
-    }
-    
-    setLinking(true);
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({ 
-          linked_student_email: childEmail.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', user.id);
-      
-      if (error) throw error;
-      
-      setLinked(childEmail.trim());
-      toast.success('Child account linked!');
-      if (onLinked) onLinked();
-    } catch (err) {
-      console.error('Link error:', err);
-      toast.error(`Failed to link account: ${err.message}`);
-    } finally {
-      setLinking(false);
-    }
-  };
-
-  // Chart data: use resources_accessed as study sessions
   const chartData = progress.map(p => ({
     subject: SUBJECTS.find(s => s.name === p.subject)?.icon + ' ' + (p.subject?.substring(0, 8) || p.subject),
-    sessions: p.resources_accessed || 0,
+    sessions: p.study_sessions || 0,
   })).filter(d => d.sessions > 0);
 
   const avgQuizScore = quizResults.length > 0
     ? Math.round(quizResults.reduce((s, q) => s + (q.percentage || 0), 0) / quizResults.length)
     : null;
 
-  const totalStudySessions = progress.reduce((s, p) => s + (p.resources_accessed || 0), 0);
+  const totalStudySessions = progress.reduce((s, p) => s + (p.study_sessions || 0), 0);
 
   // Subject mastery: combine quiz scores + resource access into a 0-100 mastery score per subject
   const masteryData = progress.map(p => {
@@ -135,14 +100,14 @@ export default function ParentProgressDashboard({ user, onLinked }) {
     const avgScore = subjectQuizzes.length > 0
       ? Math.round(subjectQuizzes.reduce((s, q) => s + (q.percentage || 0), 0) / subjectQuizzes.length)
       : 0;
-    const accessScore = Math.min((p.resources_accessed || 0) * 10, 50); // up to 50 pts from resources
+    const accessScore = Math.min((p.study_sessions || 0) * 10, 50); // up to 50 pts from resources
     const quizScore = Math.round(avgScore * 0.5); // up to 50 pts from quizzes
     const mastery = Math.min(accessScore + quizScore, 100);
     return {
       subject: (SUBJECTS.find(s => s.name === p.subject)?.icon || '') + ' ' + (p.subject?.substring(0, 10) || p.subject),
       mastery,
       quizAvg: avgScore,
-      resources: p.resources_accessed || 0,
+      resources: p.study_sessions || 0,
     };
   }).filter(d => d.mastery > 0);
 
@@ -154,7 +119,7 @@ export default function ParentProgressDashboard({ user, onLinked }) {
 
     // Header
     doc.setFontSize(20); doc.setFont('helvetica', 'bold');
-    doc.text(`${appName} — Monthly Progress Report`, 14, y); y += 8;
+    doc.text('SmartBridge FET — Monthly Progress Report', 14, y); y += 8;
     doc.setFontSize(10); doc.setFont('helvetica', 'normal');
     doc.setTextColor(100);
     doc.text(`Student: ${linked}`, 14, y); y += 5;
@@ -187,7 +152,7 @@ export default function ParentProgressDashboard({ user, onLinked }) {
       doc.text(`${p.subject} (${p.grade})`, 14, y); y += 5;
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(80);
-      doc.text(`  Resources Accessed: ${p.resources_accessed || 0}`, 14, y); y += 4;
+      doc.text(`  Study Sessions: ${p.study_sessions || 0}`, 14, y); y += 4;
       if (avgScore !== null) { doc.text(`  Quiz Average: ${avgScore}%`, 14, y); y += 4; }
       if (p.last_accessed) { doc.text(`  Last Studied: ${p.last_accessed}`, 14, y); y += 4; }
       doc.setTextColor(0);
@@ -210,19 +175,19 @@ export default function ParentProgressDashboard({ user, onLinked }) {
     }
 
     // Footer
-    const pageCount = doc.internal.getNumberOfPages();
+    const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8); doc.setTextColor(150);
-      doc.text(`${appName} • Tech & GUARD Pty Ltd • Page ${i} of ${pageCount}`, 14, 290);
+      doc.text(`SmartBridge FET • Tech & GUARD Pty Ltd • Page ${i} of ${pageCount}`, 14, 290);
     }
 
-    doc.save(`${appName}-Progress-${linked}-${monthYear.replace(' ', '-')}.pdf`);
+    doc.save(`SmartBridge-Progress-${linked}-${monthYear.replace(' ', '-')}.pdf`);
   };
 
   // Quiz score trend over time (last 10 results, sorted oldest first)
   const quizTrend = [...quizResults]
-    .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    .sort((a, b) => (new Date(a.created_at)).getTime() - (new Date(b.created_at)).getTime())
     .slice(-10)
     .map((q, i) => ({
       attempt: `#${i + 1}`,
@@ -233,51 +198,20 @@ export default function ParentProgressDashboard({ user, onLinked }) {
   return (
     <div className="space-y-4">
       {/* Link control */}
-      {!linked ? (
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-5 pb-5 space-y-3">
-            <div className="flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-primary" />
-              <p className="font-semibold">Link Your Child's Account</p>
-            </div>
-            <p className="text-sm text-muted-foreground">Enter your child's {appName} email to see their full progress.</p>
-            <div className="flex gap-2">
-              <Input 
-                type="email" 
-                placeholder="child@example.com" 
-                value={childEmail} 
-                onChange={e => setChildEmail(e.target.value)} 
-              />
-              <Button onClick={saveLink} disabled={linking} className="bg-primary gap-2 whitespace-nowrap">
-                {linking ? <Loader2 className="w-4 h-4 animate-spin" /> : <Link2 className="w-4 h-4" />}
-                Link
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
+      <ParentChildLink user={user} />
+      {approved.length > 1 && <select aria-label="Learner report" value={learnerId} onChange={event => setSelectedId(event.target.value)}>
+        {approved.map(link => <option key={link.id} value={link.student_id}>{link.student_email}</option>)}
+      </select>}
+      {!linked ? <p className="text-sm text-muted-foreground">Reports become available after the learner approves your request.</p> : (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm">
-            <Badge className="bg-green-100 text-green-700 gap-1">
-              <Link2 className="w-3 h-3" /> Linked: {linked}
-            </Badge>
+            <Badge className="bg-green-100 text-green-700 gap-1"><Link2 className="w-3 h-3" /> Linked: {linked}</Badge>
           </div>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="h-7 text-xs gap-1" 
-              onClick={() => loadChildData(linked)} 
-              disabled={loading}
-            >
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => loadChildData(learnerId)} disabled={loading}>
               <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </Button>
-            <Button 
-              size="sm" 
-              className="h-7 text-xs gap-1 bg-primary" 
-              onClick={downloadPDF} 
-              disabled={loading || progress.length === 0}
-            >
+            <Button size="sm" className="h-7 text-xs gap-1 bg-primary" onClick={downloadPDF} disabled={loading || progress.length === 0}>
               <Download className="w-3 h-3" /> Download PDF
             </Button>
           </div>
@@ -340,7 +274,7 @@ export default function ParentProgressDashboard({ user, onLinked }) {
                 <CardTitle className="text-base font-playfair flex items-center gap-2">
                   <Star className="w-4 h-4 text-amber-500" /> Subject Mastery
                 </CardTitle>
-                <p className="text-xs text-muted-foreground">Mastery score (0–100) based on quiz performance + resources accessed per subject.</p>
+                <p className="text-xs text-muted-foreground">Mastery score (0–100) based on quiz performance + study sessions per subject.</p>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
@@ -449,7 +383,7 @@ export default function ParentProgressDashboard({ user, onLinked }) {
               <CardContent className="text-center py-10 text-muted-foreground">
                 <TrendingUp className="w-12 h-12 mx-auto mb-3 opacity-20" />
                 <p className="font-medium">No activity yet</p>
-                <p className="text-sm">Your child's study data will appear here once they start using {appName}.</p>
+                <p className="text-sm">Your child's study data will appear here once they start using SmartBridge FET.</p>
               </CardContent>
             </Card>
           )}

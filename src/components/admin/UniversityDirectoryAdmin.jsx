@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Plus, Trash2, Edit, Save, X, 
+import {
+  Plus, Trash2, Edit, X,
   Loader2, Search, ChevronUp, ChevronDown,
-  CheckCircle, XCircle, RefreshCw, ExternalLink
+  CheckCircle, XCircle, ExternalLink
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,12 +49,12 @@ const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 // Add/Edit Modal
 // ============================================================
 
-function UniversityFormModal({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  university = null, 
-  saving 
+function UniversityFormModal({
+  isOpen,
+  onClose,
+  onSave,
+  university = null,
+  saving
 }) {
   const [form, setForm] = useState({
     name: '',
@@ -86,22 +86,22 @@ function UniversityFormModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     if (!form.name.trim()) {
       toast.error('University name is required');
       return;
     }
-    
+
     if (!form.url.trim()) {
       toast.error('Application URL is required');
       return;
     }
-    
+
     if (!form.province) {
       toast.error('Province is required');
       return;
     }
-    
+
     onSave(form);
   };
 
@@ -114,14 +114,14 @@ function UniversityFormModal({
           <h2 className="text-lg font-semibold">
             {university ? 'Edit University' : 'Add University'}
           </h2>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="text-muted-foreground hover:text-foreground"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="text-sm font-medium mb-1 block">
@@ -134,7 +134,7 @@ function UniversityFormModal({
               required
             />
           </div>
-          
+
           <div>
             <label className="text-sm font-medium mb-1 block">
               Application URL <span className="text-red-500">*</span>
@@ -146,7 +146,7 @@ function UniversityFormModal({
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-1 block">
@@ -164,7 +164,7 @@ function UniversityFormModal({
                 ))}
               </select>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium mb-1 block">
                 Type <span className="text-red-500">*</span>
@@ -180,7 +180,7 @@ function UniversityFormModal({
               </select>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-2 pt-2">
             <label className="text-sm font-medium flex items-center gap-2 cursor-pointer">
               <input
@@ -192,7 +192,7 @@ function UniversityFormModal({
               Active (visible to users)
             </label>
           </div>
-          
+
           <div className="flex gap-2 pt-4 border-t">
             <Button type="submit" className="flex-1 bg-primary" disabled={saving}>
               {saving ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
@@ -229,7 +229,7 @@ export default function UniversityDirectoryAdmin() {
         .from('university_directory')
         .select('*')
         .order('name', { ascending: true });
-      
+
       if (error) throw error;
       setUniversities(data || []);
     } catch (err) {
@@ -257,9 +257,9 @@ export default function UniversityDirectoryAdmin() {
           is_active: formData.is_active,
           created_at: new Date().toISOString(),
         });
-      
+
       if (error) throw error;
-      
+
       toast.success('University added successfully');
       setShowModal(false);
       loadUniversities();
@@ -273,7 +273,7 @@ export default function UniversityDirectoryAdmin() {
 
   const handleEdit = async (formData) => {
     if (!editingUniversity) return;
-    
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -287,9 +287,9 @@ export default function UniversityDirectoryAdmin() {
           updated_at: new Date().toISOString(),
         })
         .eq('id', editingUniversity.id);
-      
+
       if (error) throw error;
-      
+
       toast.success('University updated successfully');
       setShowModal(false);
       setEditingUniversity(null);
@@ -304,15 +304,15 @@ export default function UniversityDirectoryAdmin() {
 
   const handleDelete = async (university) => {
     if (!confirm(`Delete "${university.name}" permanently?`)) return;
-    
+
     try {
       const { error } = await supabase
         .from('university_directory')
         .delete()
         .eq('id', university.id);
-      
+
       if (error) throw error;
-      
+
       toast.success('University deleted');
       loadUniversities();
     } catch (err) {
@@ -325,14 +325,14 @@ export default function UniversityDirectoryAdmin() {
     try {
       const { error } = await supabase
         .from('university_directory')
-        .update({ 
+        .update({
           is_active: !university.is_active,
           updated_at: new Date().toISOString()
         })
         .eq('id', university.id);
-      
+
       if (error) throw error;
-      
+
       toast.success(`${university.name} ${university.is_active ? 'deactivated' : 'activated'}`);
       loadUniversities();
     } catch (err) {
@@ -359,7 +359,7 @@ export default function UniversityDirectoryAdmin() {
   const sorted = [...filtered].sort((a, b) => {
     const aVal = a[sortField] || '';
     const bVal = b[sortField] || '';
-    return sortDirection === 'asc' 
+    return sortDirection === 'asc'
       ? aVal.localeCompare(bVal)
       : bVal.localeCompare(aVal);
   });
@@ -438,7 +438,7 @@ export default function UniversityDirectoryAdmin() {
               <tbody>
                 {sorted.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-10 text-muted-foreground">
+                    <td colSpan={5} className="text-center py-10 text-muted-foreground">
                       {search ? 'No universities match your search.' : 'No universities found. Add your first one above.'}
                     </td>
                   </tr>
@@ -448,9 +448,9 @@ export default function UniversityDirectoryAdmin() {
                       <td className="py-3 px-4">
                         <div>
                           <p className="font-medium">{uni.name}</p>
-                          <a 
-                            href={uni.url} 
-                            target="_blank" 
+                          <a
+                            href={uni.url}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-primary hover:underline inline-flex items-center gap-0.5"
                           >

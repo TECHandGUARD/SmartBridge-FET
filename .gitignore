@@ -66,3 +66,9 @@ coverage
 *.tmp
 *.temp
 .cache
+
+.env
+.env.*
+!.env.example
+!**/.env.example
+supabase/.temp

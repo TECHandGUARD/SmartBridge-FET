@@ -32,10 +32,10 @@ export default function ResourceBookmarks({ user }) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       // ✅ Using student_email to match other tables
       const { data, error: queryError } = await supabase
@@ -43,7 +43,7 @@ export default function ResourceBookmarks({ user }) {
         .select('*')
         .eq('student_email', user.email)  // ✅ Fixed field name
         .order('created_at', { ascending: false });
-      
+
       if (queryError) throw queryError;
       setBookmarks(data || []);
     } catch (err) {
@@ -69,16 +69,16 @@ export default function ResourceBookmarks({ user }) {
         .from('resource_bookmarks')
         .delete()
         .eq('id', id);
-      
+
       if (deleteError) throw deleteError;
-      
+
       const removed = bookmarks.find(b => b.id === id);
       setBookmarks(prev => prev.filter(b => b.id !== id));
       toast.success('Bookmark removed');
-      
+
       // Log activity for POPIA compliance
       if (removed) {
-        await supabase
+        await Promise.resolve(supabase
           .from('activity_log')
           .insert({
             event_type: 'bookmark_removed',
@@ -90,10 +90,10 @@ export default function ResourceBookmarks({ user }) {
               resource_title: removed.resource_title,
               subject: removed.subject
             }
-          })
+          }))
           .catch(() => {});
       }
-      
+
     } catch (err) {
       console.error('Error removing bookmark:', err);
       toast.error('Failed to remove bookmark');
@@ -134,14 +134,14 @@ export default function ResourceBookmarks({ user }) {
           Resources you've saved for quick access.
         </p>
       </CardHeader>
-      
+
       <CardContent>
         {/* Error Display */}
         {error && (
           <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 dark:bg-red-950/20 dark:border-red-800">
             <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
-            <button 
+            <button
               onClick={loadBookmarks}
               className="ml-auto text-primary hover:underline text-xs font-medium"
             >

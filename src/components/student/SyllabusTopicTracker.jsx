@@ -116,7 +116,7 @@ export default function SyllabusTopicTracker({ user }) {
   // ============================================================
 
   const fetchCompletedTopics = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -129,7 +129,7 @@ export default function SyllabusTopicTracker({ user }) {
       const { data, error: fetchError } = await supabase
         .from('syllabus_progress')
         .select('topic_id')
-        .eq('student_email', user.email)  // ✅ Fixed
+        .eq('student_id', user.id)
         .eq('subject', selectedSubject)
         .eq('completed', true);
 
@@ -143,7 +143,7 @@ export default function SyllabusTopicTracker({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.email, selectedSubject]);
+  }, [user?.id, selectedSubject]);
 
   useEffect(() => {
     fetchCompletedTopics();
@@ -154,49 +154,50 @@ export default function SyllabusTopicTracker({ user }) {
   // ============================================================
 
   const toggleTopic = async (topicId) => {
-    if (!user?.email) {
+    if (!user?.id || saving) {
       toast.error('You must be logged in to track progress');
       return;
     }
 
     const isCompleted = completedTopics.includes(topicId);
     setSaving(true);
-    
+
     try {
       if (isCompleted) {
         // Remove completion
         const { error: deleteError } = await supabase
           .from('syllabus_progress')
           .delete()
-          .eq('student_email', user.email)  // ✅ Fixed
+          .eq('student_id', user.id)
           .eq('subject', selectedSubject)
           .eq('topic_id', topicId);
 
         if (deleteError) throw deleteError;
-        
+
         setCompletedTopics(prev => prev.filter(id => id !== topicId));
         toast.success('Topic marked as incomplete');
       } else {
         // Add completion
         const { error: insertError } = await supabase
           .from('syllabus_progress')
-          .insert([
+          .upsert([
             {
-              student_email: user.email,  // ✅ Fixed
+              student_id: user.id,
+              student_email: user.email,
               subject: selectedSubject,
               topic_id: topicId,
               completed: true,
               completed_at: new Date().toISOString()
             }
-          ]);
+          ], { onConflict: 'student_id,subject,topic_id' });
 
         if (insertError) throw insertError;
-        
+
         setCompletedTopics(prev => [...prev, topicId]);
         toast.success('Topic marked as complete! 🎉');
-        
+
         // Log activity for POPIA compliance
-        await supabase
+        await Promise.resolve(supabase
           .from('activity_log')
           .insert({
             event_type: 'syllabus_topic_completed',
@@ -207,7 +208,7 @@ export default function SyllabusTopicTracker({ user }) {
               subject: selectedSubject,
               topic_id: topicId
             }
-          })
+          }))
           .catch(() => {});
       }
     } catch (err) {
@@ -255,9 +256,9 @@ export default function SyllabusTopicTracker({ user }) {
       <CardHeader className="border-b bg-muted/30">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-            <BookOpen className="w-4 h-4 text-primary shrink-0" /> Syllabus Tracker
+            <BookOpen className="w-4 h-4 text-primary shrink-0" /> Study Topic Tracker
             <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3 text-green-500" /> CAPS Aligned
+              <Shield className="w-3 h-3 text-green-500" /> Personal checklist
             </Badge>
           </CardTitle>
           <Badge variant="outline" className="text-xs font-bold">
@@ -265,7 +266,7 @@ export default function SyllabusTopicTracker({ user }) {
           </Badge>
         </div>
         <p className="text-[10px] text-muted-foreground mt-0.5">
-          Track your progress through CAPS syllabus topics
+          Use this checklist alongside your teacher's syllabus.
         </p>
       </CardHeader>
 
@@ -275,7 +276,7 @@ export default function SyllabusTopicTracker({ user }) {
           <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[11px] font-medium flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{error}</span>
-            <button 
+            <button
               onClick={fetchCompletedTopics}
               className="ml-auto text-primary hover:underline font-medium text-xs"
             >
@@ -318,13 +319,19 @@ export default function SyllabusTopicTracker({ user }) {
           ) : (
             currentTopics.map(topic => {
               const isCompleted = completedTopics.includes(topic.id);
-              
+
               return (
                 <div
                   key={topic.id}
+                  role="checkbox"
+                  aria-label={topic.label}
+                  aria-checked={isCompleted}
+                  aria-disabled={saving}
+                  tabIndex={0}
+                  onKeyDown={event => { if (event.key === ' ' || event.key === 'Enter') { event.preventDefault(); if (!saving) toggleTopic(topic.id); } }}
                   className={`rounded-lg border p-3 transition-all cursor-pointer hover:shadow-sm ${
-                    isCompleted 
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' 
+                    isCompleted
+                      ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
                       : 'bg-card border-border hover:border-primary/30'
                   }`}
                   onClick={() => toggleTopic(topic.id)}
@@ -357,7 +364,7 @@ export default function SyllabusTopicTracker({ user }) {
                       )}
                     </Button>
                   </div>
-                  
+
                   {expanded[topic.id] && (
                     <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
                       <p>Click to {isCompleted ? 'mark as incomplete' : 'mark as complete'}</p>

@@ -55,17 +55,17 @@ export default function BookingCalendar({ user }) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data, error: bookingsError } = await supabase
         .from('tutor_bookings')
         .select('*')
         .eq('tutor_email', user.email)
         .order('date', { ascending: true });
-      
+
       if (bookingsError) throw bookingsError;
       setBookings(data || []);
     } catch (err) {
@@ -83,9 +83,9 @@ export default function BookingCalendar({ user }) {
 
   useEffect(() => {
     loadBookings();
-    
+
     if (!user?.email) return;
-    
+
     const channel = supabase
       .channel('booking_calendar')
       .on(
@@ -108,7 +108,7 @@ export default function BookingCalendar({ user }) {
         }
       )
       .subscribe();
-    
+
     return () => {
       supabase.removeChannel(channel);
     };
@@ -120,22 +120,22 @@ export default function BookingCalendar({ user }) {
 
   const confirm = async (booking) => {
     setProcessingId(booking.id);
-    
+
     try {
       const { error: updateError } = await supabase
         .from('tutor_bookings')
-        .update({ 
-          status: 'confirmed', 
-          updated_at: new Date().toISOString() 
+        .update({
+          status: 'confirmed',
+          updated_at: new Date().toISOString()
         })
         .eq('id', booking.id);
-      
+
       if (updateError) throw updateError;
-      
+
       setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'confirmed' } : b));
-      
+
       // Log activity for POPIA compliance
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'booking_confirmed',
@@ -149,9 +149,9 @@ export default function BookingCalendar({ user }) {
             date: booking.date,
             time: booking.time
           }
-        })
+        }))
         .catch(() => {});
-      
+
       toast.success('Booking confirmed!');
     } catch (err) {
       console.error('Error confirming booking:', err);
@@ -167,22 +167,22 @@ export default function BookingCalendar({ user }) {
 
   const cancel = async (booking) => {
     setProcessingId(booking.id);
-    
+
     try {
       const { error: updateError } = await supabase
         .from('tutor_bookings')
-        .update({ 
-          status: 'cancelled', 
-          updated_at: new Date().toISOString() 
+        .update({
+          status: 'cancelled',
+          updated_at: new Date().toISOString()
         })
         .eq('id', booking.id);
-      
+
       if (updateError) throw updateError;
-      
+
       setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
-      
+
       // Log activity for POPIA compliance
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'booking_cancelled',
@@ -194,9 +194,9 @@ export default function BookingCalendar({ user }) {
             student_email: booking.student_email,
             subject: booking.subject
           }
-        })
+        }))
         .catch(() => {});
-      
+
       toast.info('Booking cancelled.');
     } catch (err) {
       console.error('Error cancelling booking:', err);
@@ -316,7 +316,7 @@ export default function BookingCalendar({ user }) {
           {pendingCount > 0 && ` · ${pendingCount} pending`}
         </p>
       </CardHeader>
-      
+
       <CardContent>
         {/* Day headers */}
         <div className="grid grid-cols-7 mb-1">
@@ -326,7 +326,7 @@ export default function BookingCalendar({ user }) {
             </div>
           ))}
         </div>
-        
+
         {/* Calendar grid */}
         <div className="grid grid-cols-7 gap-0.5">
           {Array.from({ length: firstDay }).map((_, i) => (
@@ -334,11 +334,11 @@ export default function BookingCalendar({ user }) {
           ))}
           {Array.from({ length: daysInMonth }, (_, i) => i + 1).map(day => {
             const dayBookings = bookingsForDay(day);
-            const isToday = new Date().getDate() === day && 
-                           new Date().getMonth() === month && 
+            const isToday = new Date().getDate() === day &&
+                           new Date().getMonth() === month &&
                            new Date().getFullYear() === year;
             const isSelected = selected === day;
-            
+
             return (
               <button
                 key={day}
@@ -365,9 +365,9 @@ export default function BookingCalendar({ user }) {
               <p className="text-sm font-semibold">
                 {MONTHS[month]} {selected} — {selectedBookings.length} booking{selectedBookings.length !== 1 ? 's' : ''}
               </p>
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <Button
+                variant="ghost"
+                size="sm"
                 className="h-6 text-xs text-muted-foreground"
                 onClick={() => setSelected(null)}
               >
@@ -398,10 +398,10 @@ export default function BookingCalendar({ user }) {
                     </div>
                     {b.status === 'pending' && (
                       <div className="flex gap-1 flex-shrink-0">
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20" 
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20"
                           onClick={() => confirm(b)}
                           disabled={processingId === b.id}
                         >
@@ -411,10 +411,10 @@ export default function BookingCalendar({ user }) {
                             <CheckCircle className="w-4 h-4" />
                           )}
                         </Button>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          className="h-7 w-7 text-destructive hover:bg-red-50 dark:hover:bg-red-950/20" 
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-destructive hover:bg-red-50 dark:hover:bg-red-950/20"
                           onClick={() => cancel(b)}
                           disabled={processingId === b.id}
                         >
@@ -440,9 +440,9 @@ export default function BookingCalendar({ user }) {
             <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
               {pendingCount} pending booking request{pendingCount !== 1 ? 's' : ''}
             </p>
-            <Button 
-              size="sm" 
-              variant="outline" 
+            <Button
+              size="sm"
+              variant="outline"
               className="h-7 text-xs ml-auto border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/20"
               onClick={() => {
                 // Find the first pending booking and select its day

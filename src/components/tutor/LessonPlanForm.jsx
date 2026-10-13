@@ -1,3 +1,4 @@
+import { AlertCircle, Shield } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { SUBJECTS } from '@/lib/subjects';
@@ -8,27 +9,23 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Loader2, Save, ArrowLeft, Sparkles, Copy, Eye, AlertCircle, Shield } from 'lucide-react';
+import { Plus, X, Loader2, Save, ArrowLeft, Sparkles, Copy, Eye } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const AUTO_SAVE_INTERVAL = 30000; // 30 seconds
-
-// ============================================================
-// Constants
-// ============================================================
-
-const STATUS_OPTIONS = [
-  { value: 'draft', label: 'Draft', color: 'bg-muted text-muted-foreground dark:bg-muted/50' },
-  { value: 'planned', label: 'Planned', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300' },
-  { value: 'completed', label: 'Completed', color: 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300' },
-];
-
-// Quick templates
+const AUTO_SAVE_INTERVAL = 30000;
+const STATUS_OPTIONS = [{
+  value: 'draft',
+  label: 'Draft',
+  color: 'bg-muted text-muted-foreground dark:bg-muted/50'
+}, {
+  value: 'planned',
+  label: 'Planned',
+  color: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300'
+}, {
+  value: 'completed',
+  label: 'Completed',
+  color: 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300'
+}];
 const QUICK_TEMPLATES = {
   'Mathematics': {
     'Algebra - Linear Equations': {
@@ -72,18 +69,15 @@ const QUICK_TEMPLATES = {
     }
   }
 };
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
-const getDraftKey = (email) => `lesson_plan_draft_${email}`;
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function LessonPlanForm({ user, plan, students, upcomingBookings = [], onSaved, onCancel }) {
+const getDraftKey = email => `lesson_plan_draft_${email}`;
+export default function LessonPlanForm({
+  user,
+  plan,
+  students,
+  upcomingBookings = [],
+  onSaved,
+  onCancel
+}) {
   const isEditing = !!plan?.id;
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
@@ -93,11 +87,6 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [error, setError] = useState(null);
   const [draftLoaded, setDraftLoaded] = useState(false);
-
-  // ============================================================
-  // Form State
-  // ============================================================
-
   const [form, setForm] = useState({
     session_title: plan?.session_title || '',
     student_email: plan?.student_email || '',
@@ -110,15 +99,12 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
     homework_assigned: plan?.homework_assigned || '',
     notes: plan?.notes || '',
     status: plan?.status || 'draft',
-    booking_id: plan?.booking_id || '',
+    booking_id: plan?.booking_id || ''
   });
-
-  const set = (key, val) => setForm(prev => ({ ...prev, [key]: val }));
-
-  // ============================================================
-  // Load Draft on Mount
-  // ============================================================
-
+  const set = (key, val) => setForm(prev => ({
+    ...prev,
+    [key]: val
+  }));
   useEffect(() => {
     if (!isEditing && !draftLoaded) {
       const draftKey = getDraftKey(user?.email);
@@ -139,64 +125,34 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
       }
     }
   }, [isEditing, user?.email, draftLoaded]);
-
-  // ============================================================
-  // Auto-save Draft
-  // ============================================================
-
   useEffect(() => {
     if (!form.session_title && form.objectives.length === 0) return;
     if (saving) return;
-
     const autoSaveInterval = setInterval(() => {
       const draftKey = getDraftKey(user?.email);
       localStorage.setItem(draftKey, JSON.stringify(form));
-      // Only log periodically, not every auto-save
       console.log('📝 Draft auto-saved');
     }, AUTO_SAVE_INTERVAL);
-
     return () => clearInterval(autoSaveInterval);
   }, [form, saving, user?.email]);
-
-  // ============================================================
-  // Objective Operations
-  // ============================================================
-
   const addObjective = () => {
     if (!objectiveInput.trim()) return;
     set('objectives', [...form.objectives, objectiveInput.trim()]);
     setObjectiveInput('');
   };
-
-  const removeObjective = (i) => set('objectives', form.objectives.filter((_, idx) => idx !== i));
-
-  // ============================================================
-  // Resource Operations
-  // ============================================================
-
+  const removeObjective = i => set('objectives', form.objectives.filter((_, idx) => idx !== i));
   const addResource = () => {
     if (!resourceInput.trim()) return;
     set('resources_used', [...form.resources_used, resourceInput.trim()]);
     setResourceInput('');
   };
-
-  const removeResource = (i) => set('resources_used', form.resources_used.filter((_, idx) => idx !== i));
-
-  // ============================================================
-  // Student Selection
-  // ============================================================
-
-  const selectStudent = (email) => {
+  const removeResource = i => set('resources_used', form.resources_used.filter((_, idx) => idx !== i));
+  const selectStudent = email => {
     const stu = students.find(s => s.email === email);
     set('student_email', email);
     set('student_name', stu?.name || email);
   };
-
-  // ============================================================
-  // Booking Linking
-  // ============================================================
-
-  const selectBooking = (bookingId) => {
+  const selectBooking = bookingId => {
     const booking = upcomingBookings.find(b => b.id === bookingId);
     if (booking) {
       set('booking_id', bookingId);
@@ -207,17 +163,10 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
       toast.success('Linked to booking! You can now edit details if needed.');
     }
   };
-
-  // ============================================================
-  // Template Application
-  // ============================================================
-
   const applyTemplate = () => {
     if (!selectedTemplate || !form.subject) return;
-    
     const [subject, topic] = selectedTemplate.split('|');
     const template = QUICK_TEMPLATES[subject]?.[topic];
-    
     if (template) {
       set('subject', subject);
       set('session_title', `${subject} - ${topic}`);
@@ -228,22 +177,18 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
       setSelectedTemplate('');
     }
   };
-
-  // ============================================================
-  // AI Generation
-  // ============================================================
-
   const generateWithAI = async () => {
     if (!form.subject || !form.session_title) {
       toast.error('Please enter a title and select subject first');
       return;
     }
-    
     setGeneratingAI(true);
     setError(null);
-    
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('generate-lesson-plan', {
+      const {
+        data,
+        error: invokeError
+      } = await supabase.functions.invoke('generate-lesson-plan', {
         body: {
           subject: form.subject,
           topic: form.session_title,
@@ -252,31 +197,24 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
           user_email: user?.email
         }
       });
-      
       if (invokeError) throw invokeError;
-      
       if (data) {
         if (data.objectives?.length) set('objectives', data.objectives);
         if (data.resources?.length) set('resources_used', data.resources);
         if (data.homework) set('homework_assigned', data.homework);
         if (data.notes) set('notes', data.notes);
         toast.success('AI-generated content added! Review and adjust as needed.');
-        
-        // Log activity
-        await supabase
-          .from('activity_log')
-          .insert({
-            event_type: 'lesson_plan_ai_generated',
-            user_email: user.email,
-            user_id: user.id || null,
-            description: `AI generated lesson plan for ${form.subject} - ${form.session_title}`,
-            metadata: {
-              subject: form.subject,
-              topic: form.session_title,
-              grade: form.grade
-            }
-          })
-          .catch(() => {});
+        await Promise.resolve(supabase.from('activity_log').insert({
+          event_type: 'lesson_plan_ai_generated',
+          user_email: user.email,
+          user_id: user.id || null,
+          description: `AI generated lesson plan for ${form.subject} - ${form.session_title}`,
+          metadata: {
+            subject: form.subject,
+            topic: form.session_title,
+            grade: form.grade
+          }
+        })).catch(() => {});
       }
     } catch (err) {
       console.error('Error generating AI content:', err);
@@ -286,46 +224,29 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
       setGeneratingAI(false);
     }
   };
-
-  // ============================================================
-  // Duplicate Plan
-  // ============================================================
-
   const duplicatePlan = () => {
     const duplicated = {
       ...form,
       session_title: `${form.session_title} (Copy)`,
       status: 'draft',
-      booking_id: null,
+      booking_id: null
     };
     setForm(duplicated);
     toast.info('Plan duplicated. Edit and save as new.');
   };
-
-  // ============================================================
-  // Clear Draft
-  // ============================================================
-
   const clearDraft = () => {
     const draftKey = getDraftKey(user?.email);
     localStorage.removeItem(draftKey);
     toast.info('Draft cleared');
     setDraftLoaded(true);
   };
-
-  // ============================================================
-  // Save Plan
-  // ============================================================
-
   const handleSave = async () => {
     if (!form.session_title || !form.student_email || !form.subject) {
       toast.error('Please fill in title, student, and subject.');
       return;
     }
-    
     setSaving(true);
     setError(null);
-    
     try {
       const payload = {
         tutor_email: user.email,
@@ -344,61 +265,42 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
         booking_id: form.booking_id || null,
         updated_at: new Date().toISOString()
       };
-
-      // Link to StudentProgress if exists
-      const { data: progRecords } = await supabase
-        .from('student_progress')
-        .select('id')
-        .eq('student_email', form.student_email)  // ✅ Fixed: student_email
-        .eq('subject', form.subject)
-        .maybeSingle();
-      
+      const {
+        data: progRecords
+      } = await supabase.from('study_progress').select('id').eq('user_email', form.student_email).eq('subject', form.subject).maybeSingle();
       if (progRecords) {
         payload.student_progress_id = progRecords.id;
       }
-
       if (isEditing) {
-        const { error: updateError } = await supabase
-          .from('lesson_plans')
-          .update(payload)
-          .eq('id', plan.id);
-        
+        const {
+          error: updateError
+        } = await supabase.from('lesson_plans').update(payload).eq('id', plan.id);
         if (updateError) throw updateError;
         toast.success('Lesson plan updated.');
       } else {
-        const { data, error: insertError } = await supabase
-          .from('lesson_plans')
-          .insert({
-            ...payload,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single();
-        
+        const {
+          data,
+          error: insertError
+        } = await supabase.from('lesson_plans').insert({
+          ...payload,
+          created_at: new Date().toISOString()
+        }).select().single();
         if (insertError) throw insertError;
-        
-        // Clear draft after successful save
         clearDraft();
         toast.success('Lesson plan created!');
-        
-        // Log activity
-        await supabase
-          .from('activity_log')
-          .insert({
-            event_type: 'lesson_plan_created',
-            user_email: user.email,
-            user_id: user.id || null,
-            description: `Created lesson plan for ${form.subject} - ${form.student_email}`,
-            metadata: {
-              plan_id: data?.id,
-              subject: form.subject,
-              student: form.student_email,
-              status: form.status
-            }
-          })
-          .catch(() => {});
+        await Promise.resolve(supabase.from('activity_log').insert({
+          event_type: 'lesson_plan_created',
+          user_email: user.email,
+          user_id: user.id || null,
+          description: `Created lesson plan for ${form.subject} - ${form.student_email}`,
+          metadata: {
+            plan_id: data?.id,
+            subject: form.subject,
+            student: form.student_email,
+            status: form.status
+          }
+        })).catch(() => {});
       }
-      
       onSaved?.();
     } catch (err) {
       console.error('Save error:', err);
@@ -408,11 +310,6 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
       setSaving(false);
     }
   };
-
-  // ============================================================
-  // Validation
-  // ============================================================
-
   const validation = {
     title: form.session_title.trim().length > 0,
     student: !!form.student_email,
@@ -420,20 +317,9 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
     objectives: form.objectives.length > 0
   };
   const isValid = validation.title && validation.student && validation.subject;
-
-  // ============================================================
-  // Available Templates
-  // ============================================================
-
   const availableTemplates = form.subject ? Object.keys(QUICK_TEMPLATES[form.subject] || {}) : [];
-
-  // ============================================================
-  // Preview Mode
-  // ============================================================
-
   if (previewMode) {
-    return (
-      <Card className="border-primary/20 shadow-md">
+    return <Card className="border-primary/20 shadow-md">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -443,11 +329,9 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
               <CardTitle className="text-base font-playfair">Lesson Plan Preview</CardTitle>
             </div>
             <div className="flex gap-2">
-              {!isEditing && (
-                <Button size="sm" variant="outline" onClick={clearDraft} className="text-xs">
+              {!isEditing && <Button size="sm" variant="outline" onClick={clearDraft} className="text-xs">
                   Clear Draft
-                </Button>
-              )}
+                </Button>}
               <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
                 <Shield className="w-3 h-3 text-green-500" /> Private
               </Badge>
@@ -467,28 +351,22 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
             </div>
 
             <h3 className="text-md font-semibold mt-4 mb-2">🎯 Learning Objectives</h3>
-            {form.objectives.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-1">
+            {form.objectives.length > 0 ? <ul className="list-disc pl-5 space-y-1">
                 {form.objectives.map((obj, i) => <li key={i}>{obj}</li>)}
-              </ul>
-            ) : <p className="text-muted-foreground italic">No objectives added yet.</p>}
+              </ul> : <p className="text-muted-foreground italic">No objectives added yet.</p>}
 
             <h3 className="text-md font-semibold mt-4 mb-2">📚 Resources / Materials</h3>
-            {form.resources_used.length > 0 ? (
-              <ul className="list-disc pl-5 space-y-1">
+            {form.resources_used.length > 0 ? <ul className="list-disc pl-5 space-y-1">
                 {form.resources_used.map((res, i) => <li key={i}>{res}</li>)}
-              </ul>
-            ) : <p className="text-muted-foreground italic">No resources listed.</p>}
+              </ul> : <p className="text-muted-foreground italic">No resources listed.</p>}
 
             <h3 className="text-md font-semibold mt-4 mb-2">✏️ Homework</h3>
             <p>{form.homework_assigned || 'No homework assigned'}</p>
 
-            {form.notes && (
-              <>
+            {form.notes && <>
                 <h3 className="text-md font-semibold mt-4 mb-2">📝 Private Notes</h3>
                 <p className="text-muted-foreground">{form.notes}</p>
-              </>
-            )}
+              </>}
           </div>
 
           <div className="flex gap-3 pt-4">
@@ -501,16 +379,9 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
             </Button>
           </div>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Main Render
-  // ============================================================
-
-  return (
-    <Card className="border-primary/20 shadow-md">
+  return <Card className="border-primary/20 shadow-md">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -531,20 +402,14 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
             <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => setPreviewMode(true)}>
               <Eye className="w-3.5 h-3.5" /> Preview
             </Button>
-            <Button 
-              size="sm" 
-              variant="outline" 
-              className="gap-1.5 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/20"
-              onClick={generateWithAI}
-              disabled={generatingAI || !form.session_title}
-            >
+            <Button size="sm" variant="outline" className="gap-1.5 text-xs border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-950/20" onClick={generateWithAI} disabled={generatingAI || !form.session_title}>
               <Sparkles className="w-3.5 h-3.5" />
               {generatingAI ? 'Generating...' : 'AI Generate'}
             </Button>
           </div>
         </div>
-        
-        {/* Validation Progress Indicators */}
+
+        {}
         <div className="flex gap-2 mt-2 flex-wrap">
           <Badge variant={validation.title ? "default" : "outline"} className="text-[10px]">
             {validation.title ? "✅" : "⬚"} Title
@@ -560,39 +425,32 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4 max-h-[70vh] overflow-y-auto">
-        
-        {/* Error Display */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 dark:bg-red-950/20 dark:border-red-800">
+
+        {}
+        {error && <div className="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2 dark:bg-red-950/20 dark:border-red-800">
             <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-red-700 dark:text-red-300">{error}</p>
-          </div>
-        )}
-        
-        {/* Link to Booking */}
-        {upcomingBookings.length > 0 && !isEditing && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 dark:bg-blue-950/20 dark:border-blue-800">
+          </div>}
+
+        {}
+        {upcomingBookings.length > 0 && !isEditing && <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 dark:bg-blue-950/20 dark:border-blue-800">
             <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2">📅 Link to an Upcoming Booking</p>
             <Select value={form.booking_id} onValueChange={selectBooking}>
               <SelectTrigger className="h-8 text-xs">
                 <SelectValue placeholder="Select a booking to auto-fill details..." />
               </SelectTrigger>
               <SelectContent>
-                {upcomingBookings.map(b => (
-                  <SelectItem key={b.id} value={b.id}>
+                {upcomingBookings.map(b => <SelectItem key={b.id} value={b.id}>
                     {b.date} - {b.subject} with {b.student_name || b.student_email}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
             </Select>
-          </div>
-        )}
-        
-        {/* Quick Template Selector */}
-        {availableTemplates.length > 0 && (
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 dark:bg-purple-950/20 dark:border-purple-800">
+          </div>}
+
+        {}
+        {availableTemplates.length > 0 && <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 dark:bg-purple-950/20 dark:border-purple-800">
             <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">📋 Quick Templates</p>
             <div className="flex gap-2">
               <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -600,27 +458,20 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
                   <SelectValue placeholder="Choose a topic template..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableTemplates.map(t => (
-                    <SelectItem key={t} value={`${form.subject}|${t}`}>{t}</SelectItem>
-                  ))}
+                  {availableTemplates.map(t => <SelectItem key={t} value={`${form.subject}|${t}`}>{t}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button size="sm" variant="outline" className="h-8 text-xs" onClick={applyTemplate} disabled={!selectedTemplate}>
                 Apply
               </Button>
             </div>
-          </div>
-        )}
+          </div>}
 
-        {/* Title & Student */}
+        {}
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label>Session Title *</Label>
-            <Input 
-              placeholder="e.g. Intro to Trigonometry" 
-              value={form.session_title} 
-              onChange={e => set('session_title', e.target.value)} 
-            />
+            <Input placeholder="e.g. Intro to Trigonometry" value={form.session_title} onChange={e => set('session_title', e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label>Student *</Label>
@@ -629,15 +480,13 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
                 <SelectValue placeholder="Select student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map(s => (
-                  <SelectItem key={s.email} value={s.email}>{s.name || s.email}</SelectItem>
-                ))}
+                {students.map(s => <SelectItem key={s.email} value={s.email}>{s.name || s.email}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
         </div>
 
-        {/* Subject, Grade, Date, Status */}
+        {}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-1.5">
             <Label>Subject *</Label>
@@ -678,85 +527,57 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
           </div>
         </div>
 
-        {/* Objectives */}
+        {}
         <div className="space-y-1.5">
           <Label>Learning Objectives</Label>
           <div className="flex gap-2">
-            <Input 
-              placeholder="e.g. Solve quadratic equations using the formula" 
-              value={objectiveInput} 
-              onChange={e => setObjectiveInput(e.target.value)} 
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addObjective())} 
-            />
+            <Input placeholder="e.g. Solve quadratic equations using the formula" value={objectiveInput} onChange={e => setObjectiveInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addObjective())} />
             <Button type="button" size="sm" variant="outline" onClick={addObjective}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-          {form.objectives.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {form.objectives.map((obj, i) => (
-                <Badge key={i} variant="secondary" className="gap-1 pr-1 text-xs">
+          {form.objectives.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">
+              {form.objectives.map((obj, i) => <Badge key={i} variant="secondary" className="gap-1 pr-1 text-xs">
                   {obj}
                   <button onClick={() => removeObjective(i)} className="ml-1 hover:text-destructive">
                     <X className="w-3 h-3" />
                   </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+                </Badge>)}
+            </div>}
         </div>
 
-        {/* Resources Used */}
+        {}
         <div className="space-y-1.5">
           <Label>Resources / Materials</Label>
           <div className="flex gap-2">
-            <Input 
-              placeholder="e.g. CAPS Textbook Ch.5, Practice Worksheet" 
-              value={resourceInput} 
-              onChange={e => setResourceInput(e.target.value)} 
-              onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addResource())} 
-            />
+            <Input placeholder="e.g. CAPS Textbook Ch.5, Practice Worksheet" value={resourceInput} onChange={e => setResourceInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addResource())} />
             <Button type="button" size="sm" variant="outline" onClick={addResource}>
               <Plus className="w-4 h-4" />
             </Button>
           </div>
-          {form.resources_used.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
-              {form.resources_used.map((res, i) => (
-                <Badge key={i} variant="outline" className="gap-1 pr-1 text-xs">
+          {form.resources_used.length > 0 && <div className="flex flex-wrap gap-1.5 mt-2">
+              {form.resources_used.map((res, i) => <Badge key={i} variant="outline" className="gap-1 pr-1 text-xs">
                   {res}
                   <button onClick={() => removeResource(i)} className="ml-1 hover:text-destructive">
                     <X className="w-3 h-3" />
                   </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+                </Badge>)}
+            </div>}
         </div>
 
-        {/* Homework */}
+        {}
         <div className="space-y-1.5">
           <Label>Homework Assigned</Label>
-          <Textarea 
-            placeholder="e.g. Complete exercises 5.1–5.6. Revise trig identities." 
-            value={form.homework_assigned} 
-            onChange={e => set('homework_assigned', e.target.value)} 
-            rows={2} 
-          />
+          <Textarea placeholder="e.g. Complete exercises 5.1–5.6. Revise trig identities." value={form.homework_assigned} onChange={e => set('homework_assigned', e.target.value)} rows={2} />
         </div>
 
-        {/* Notes */}
+        {}
         <div className="space-y-1.5">
           <Label>Session Notes (private)</Label>
-          <Textarea 
-            placeholder="e.g. Student struggled with sin/cos graphs — revisit next session." 
-            value={form.notes} 
-            onChange={e => set('notes', e.target.value)} 
-            rows={2} 
-          />
+          <Textarea placeholder="e.g. Student struggled with sin/cos graphs — revisit next session." value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} />
         </div>
 
-        {/* Actions */}
+        {}
         <div className="flex gap-3 pt-2">
           <Button onClick={handleSave} disabled={saving || !isValid} className="bg-primary gap-2 flex-1">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -765,6 +586,5 @@ export default function LessonPlanForm({ user, plan, students, upcomingBookings 
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

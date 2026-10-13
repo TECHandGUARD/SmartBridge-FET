@@ -1,31 +1,20 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - cron job can call without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     // Get current day and time (UTC+2 for SAST)
     const now = new Date();
     const sast = new Date(now.getTime() + 2 * 60 * 60 * 1000);
@@ -62,7 +51,7 @@ serve(async (req) => {
     }
 
     // Filter reminders whose time matches current hour:minute (within same minute)
-    const dueReminders = reminders.filter((r: any) => r.time === currentTime);
+    const dueReminders = reminders.filter((r: any) => r.time?.slice(0, 5) === currentTime && (!r.last_notified_at || new Date(new Date(r.last_notified_at).getTime() + 2 * 60 * 60 * 1000).toISOString().slice(0, 10) !== sast.toISOString().slice(0, 10)));
 
     if (!dueReminders || dueReminders.length === 0) {
       return new Response(
@@ -137,7 +126,7 @@ Keep up the great work! 🎓
   </div>
 </div>`;
 
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -150,10 +139,12 @@ Keep up the great work! 🎓
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           const emailResult = await resendResponse.json();
+          const {error: trackingError} = await supabase.from('study_reminders').update({last_notified_at:now.toISOString()}).eq('id',reminder.id);
+          if (trackingError) throw trackingError;
           sent++;
           results.push({
             student: reminder.student_email,
@@ -168,13 +159,13 @@ Keep up the great work! 🎓
               event_type: "notification_sent",
               user_email: reminder.student_email,
               description: `Study reminder sent for ${reminder.subject}`,
-              metadata: JSON.stringify({
+              metadata: {
                 reminder_id: reminder.id,
                 subject: reminder.subject,
                 day_of_week: reminder.day_of_week,
                 time: reminder.time,
                 email_id: emailResult.id
-              })
+              }
             });
         } else {
           const errorText = await resendResponse.text();
@@ -211,7 +202,7 @@ Keep up the great work! 🎓
     console.error("Error sending study reminders:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'send-study-reminders'));

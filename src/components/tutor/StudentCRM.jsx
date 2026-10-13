@@ -1,3 +1,4 @@
+import { Shield, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,28 +8,19 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Plus, ArrowLeft, Search, FileText, BookOpen, Smile, Save, Loader2, Shield, AlertCircle } from 'lucide-react';
+import { Users, Plus, ArrowLeft, Search, FileText, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Constants
-// ============================================================
-
 const MOOD_ICONS = {
-  Engaged: '🔥', Struggling: '😓', Distracted: '😶', Confident: '💪', Neutral: '😊',
+  Engaged: '🔥',
+  Struggling: '😓',
+  Distracted: '😶',
+  Confident: '💪',
+  Neutral: '😊'
 };
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function StudentCRM({ user }) {
+export default function StudentCRM({
+  user
+}) {
   const [bookings, setBookings] = useState([]);
   const [notes, setNotes] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -38,44 +30,38 @@ export default function StudentCRM({ user }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [noteForm, setNoteForm] = useState({
-    note: '', subject: '', session_date: '', strengths: '', areas_to_improve: '', next_steps: '', mood: 'Neutral',
+    note: '',
+    subject: '',
+    session_date: '',
+    strengths: '',
+    areas_to_improve: '',
+    next_steps: '',
+    mood: 'Neutral'
   });
-
-  // ============================================================
-  // Load Data
-  // ============================================================
-
   const loadData = useCallback(async () => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError(null);
-    
     try {
-      // Load tutor bookings
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('tutor_bookings')
-        .select('*')
-        .eq('tutor_email', user.email)
-        .order('date', { ascending: false });
-      
+      const {
+        data: bookingsData,
+        error: bookingsError
+      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('date', {
+        ascending: false
+      });
       if (bookingsError) throw bookingsError;
-      
-      // Load student notes
-      const { data: notesData, error: notesError } = await supabase
-        .from('student_notes')
-        .select('*')
-        .eq('tutor_email', user.email)
-        .order('created_at', { ascending: false });
-      
+      const {
+        data: notesData,
+        error: notesError
+      } = await supabase.from('student_notes').select('*').eq('tutor_email', user.email).order('created_at', {
+        ascending: false
+      });
       if (notesError) throw notesError;
-      
       setBookings(bookingsData || []);
       setNotes(notesData || []);
-      
     } catch (err) {
       console.error('Error loading CRM data:', err);
       setError('Failed to load student data');
@@ -84,107 +70,84 @@ export default function StudentCRM({ user }) {
       setLoading(false);
     }
   }, [user?.email]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
-  // ============================================================
-  // Build Student List
-  // ============================================================
-
   const students = useMemo(() => {
     const map = {};
     bookings.forEach(b => {
       if (!map[b.student_email]) {
-        map[b.student_email] = { 
-          email: b.student_email, 
-          sessions: 0, 
-          subjects: new Set(), 
-          lastSession: null, 
-          totalSpent: 0 
+        map[b.student_email] = {
+          email: b.student_email,
+          sessions: 0,
+          subjects: new Set(),
+          lastSession: null,
+          totalSpent: 0
         };
       }
       map[b.student_email].sessions++;
       map[b.student_email].subjects.add(b.subject);
-      map[b.student_email].totalSpent += (b.amount || 0);
+      map[b.student_email].totalSpent += b.amount || 0;
       if (!map[b.student_email].lastSession || b.date > map[b.student_email].lastSession) {
         map[b.student_email].lastSession = b.date;
       }
     });
-    return Object.values(map)
-      .map(s => ({ ...s, subjects: [...s.subjects] }))
-      .sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
+    return Object.values(map).map(s => ({
+      ...s,
+      subjects: [...s.subjects]
+    })).sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
   }, [bookings]);
-
-  const filteredStudents = students.filter(s =>
-    s.email.toLowerCase().includes(search.toLowerCase())
-  );
-
-  const studentNotes = selectedStudent
-    ? notes.filter(n => n.student_email === selectedStudent.email).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    : [];
-
-  // ============================================================
-  // Add Note
-  // ============================================================
-
+  const filteredStudents = students.filter(s => s.email.toLowerCase().includes(search.toLowerCase()));
+  const studentNotes = selectedStudent ? notes.filter(n => n.student_email === selectedStudent.email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
   const handleAddNote = async () => {
-    if (!noteForm.note.trim()) { 
-      toast.error('Please write a note.'); 
-      return; 
+    if (!noteForm.note.trim()) {
+      toast.error('Please write a note.');
+      return;
     }
-    
     setSaving(true);
     setError(null);
-    
     try {
-      const { data, error: insertError } = await supabase
-        .from('student_notes')
-        .insert({
-          tutor_email: user.email,
-          tutor_id: user.id || null,
-          student_email: selectedStudent.email,
-          student_name: selectedStudent.email,
-          note: noteForm.note.trim(),
-          subject: noteForm.subject || null,
-          session_date: noteForm.session_date || null,
-          strengths: noteForm.strengths || null,
-          areas_to_improve: noteForm.areas_to_improve || null,
-          next_steps: noteForm.next_steps || null,
-          mood: noteForm.mood || 'Neutral',
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
+      const {
+        data,
+        error: insertError
+      } = await supabase.from('student_notes').insert({
+        tutor_email: user.email,
+        tutor_id: user.id || null,
+        student_email: selectedStudent.email,
+        student_name: selectedStudent.email,
+        note: noteForm.note.trim(),
+        subject: noteForm.subject || null,
+        session_date: noteForm.session_date || null,
+        strengths: noteForm.strengths || null,
+        areas_to_improve: noteForm.areas_to_improve || null,
+        next_steps: noteForm.next_steps || null,
+        mood: noteForm.mood || 'Neutral',
+        created_at: new Date().toISOString()
+      }).select().single();
       if (insertError) throw insertError;
-      
       setNotes(prev => [data, ...prev]);
-      
-      // ✅ Added: Activity logging for POPIA compliance
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'student_note_added',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: `Added note for ${selectedStudent.email}`,
-          metadata: {
-            student: selectedStudent.email,
-            subject: noteForm.subject || null,
-            mood: noteForm.mood || 'Neutral'
-          }
-        })
-        .catch(() => {});
-      
-      setNoteForm({ 
-        note: '', subject: '', session_date: '', strengths: '', 
-        areas_to_improve: '', next_steps: '', mood: 'Neutral' 
+      await Promise.resolve(supabase.from('activity_log').insert({
+        event_type: 'student_note_added',
+        user_email: user.email,
+        user_id: user.id || null,
+        description: `Added note for ${selectedStudent.email}`,
+        metadata: {
+          student: selectedStudent.email,
+          subject: noteForm.subject || null,
+          mood: noteForm.mood || 'Neutral'
+        }
+      })).catch(() => {});
+      setNoteForm({
+        note: '',
+        subject: '',
+        session_date: '',
+        strengths: '',
+        areas_to_improve: '',
+        next_steps: '',
+        mood: 'Neutral'
       });
       setShowAddNote(false);
       toast.success('Session note saved!');
-      
     } catch (err) {
       console.error('Error adding note:', err);
       setError(err.message || 'Failed to save note');
@@ -193,14 +156,8 @@ export default function StudentCRM({ user }) {
       setSaving(false);
     }
   };
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-playfair flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" /> My Students
@@ -209,17 +166,10 @@ export default function StudentCRM({ user }) {
         <CardContent className="flex justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Error State
-  // ============================================================
-
   if (error) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg font-playfair flex items-center gap-2">
             <Users className="w-5 h-5 text-primary" /> My Students
@@ -230,16 +180,9 @@ export default function StudentCRM({ user }) {
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={loadData}>Retry</Button>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <Card className="border-border">
+  return <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-playfair flex items-center gap-2">
@@ -251,40 +194,23 @@ export default function StudentCRM({ user }) {
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent>
-        {!selectedStudent ? (
-          // Student list
-          <div className="space-y-3">
+        {!selectedStudent ? <div className="space-y-3">
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Search students..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 h-9 text-sm"
-              />
+              <Input placeholder="Search students..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9 text-sm" />
             </div>
-            
-            {filteredStudents.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
+
+            {filteredStudents.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                 <Users className="w-10 h-10 mx-auto mb-2 opacity-30" />
                 <p className="text-sm">
-                  {students.length === 0 
-                    ? 'No students yet. Students will appear here after they book sessions.' 
-                    : 'No results.'}
+                  {students.length === 0 ? 'No students yet. Students will appear here after they book sessions.' : 'No results.'}
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+              </div> : <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
                 {filteredStudents.map(s => {
-                  const noteCount = notes.filter(n => n.student_email === s.email).length;
-                  return (
-                    <button
-                      key={s.email}
-                      onClick={() => setSelectedStudent(s)}
-                      className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border"
-                    >
+            const noteCount = notes.filter(n => n.student_email === s.email).length;
+            return <button key={s.email} onClick={() => setSelectedStudent(s)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                         {s.email[0].toUpperCase()}
                       </div>
@@ -301,17 +227,15 @@ export default function StudentCRM({ user }) {
                         <p className="text-xs font-semibold text-primary">R{s.totalSpent.toLocaleString()}</p>
                         {s.lastSession && <p className="text-[10px] text-muted-foreground">{s.lastSession}</p>}
                       </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-        ) : (
-          // Student detail view
-          <div className="space-y-4">
+                    </button>;
+          })}
+              </div>}
+          </div> : <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setSelectedStudent(null); setShowAddNote(false); }}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
+            setSelectedStudent(null);
+            setShowAddNote(false);
+          }}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
@@ -328,7 +252,7 @@ export default function StudentCRM({ user }) {
               </Button>
             </div>
 
-            {/* Quick stats */}
+            {}
             <div className="grid grid-cols-3 gap-2">
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">{selectedStudent.sessions}</p>
@@ -344,117 +268,90 @@ export default function StudentCRM({ user }) {
               </div>
             </div>
 
-            {/* Add Note Form */}
-            {showAddNote && (
-              <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-primary/20 dark:bg-accent/10">
+            {}
+            {showAddNote && <div className="bg-accent/30 rounded-xl p-4 space-y-3 border border-primary/20 dark:bg-accent/10">
                 <p className="text-sm font-semibold flex items-center gap-1.5">
                   <FileText className="w-4 h-4 text-primary" /> New Session Note
                 </p>
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Subject</Label>
-                    <Input 
-                      className="h-8 text-sm" 
-                      placeholder="e.g. Mathematics" 
-                      value={noteForm.subject} 
-                      onChange={e => setNoteForm({ ...noteForm, subject: e.target.value })} 
-                    />
+                    <Input className="h-8 text-sm" placeholder="e.g. Mathematics" value={noteForm.subject} onChange={e => setNoteForm({
+                ...noteForm,
+                subject: e.target.value
+              })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Session Date</Label>
-                    <Input 
-                      type="date" 
-                      className="h-8 text-sm" 
-                      value={noteForm.session_date} 
-                      onChange={e => setNoteForm({ ...noteForm, session_date: e.target.value })} 
-                    />
+                    <Input type="date" className="h-8 text-sm" value={noteForm.session_date} onChange={e => setNoteForm({
+                ...noteForm,
+                session_date: e.target.value
+              })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Student Mood</Label>
-                    <Select value={noteForm.mood} onValueChange={v => setNoteForm({ ...noteForm, mood: v })}>
+                    <Select value={noteForm.mood} onValueChange={v => setNoteForm({
+                ...noteForm,
+                mood: v
+              })}>
                       <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {Object.entries(MOOD_ICONS).map(([mood, icon]) => (
-                          <SelectItem key={mood} value={mood}>{icon} {mood}</SelectItem>
-                        ))}
+                        {Object.entries(MOOD_ICONS).map(([mood, icon]) => <SelectItem key={mood} value={mood}>{icon} {mood}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Session Notes *</Label>
-                  <Textarea 
-                    className="text-sm min-h-[60px] resize-none" 
-                    placeholder="What was covered in this session..." 
-                    value={noteForm.note} 
-                    onChange={e => setNoteForm({ ...noteForm, note: e.target.value })} 
-                  />
+                  <Textarea className="text-sm min-h-[60px] resize-none" placeholder="What was covered in this session..." value={noteForm.note} onChange={e => setNoteForm({
+              ...noteForm,
+              note: e.target.value
+            })} />
                 </div>
                 <div className="grid sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Strengths</Label>
-                    <Input 
-                      className="h-8 text-sm" 
-                      placeholder="What they did well" 
-                      value={noteForm.strengths} 
-                      onChange={e => setNoteForm({ ...noteForm, strengths: e.target.value })} 
-                    />
+                    <Input className="h-8 text-sm" placeholder="What they did well" value={noteForm.strengths} onChange={e => setNoteForm({
+                ...noteForm,
+                strengths: e.target.value
+              })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Needs Improvement</Label>
-                    <Input 
-                      className="h-8 text-sm" 
-                      placeholder="Areas to work on" 
-                      value={noteForm.areas_to_improve} 
-                      onChange={e => setNoteForm({ ...noteForm, areas_to_improve: e.target.value })} 
-                    />
+                    <Input className="h-8 text-sm" placeholder="Areas to work on" value={noteForm.areas_to_improve} onChange={e => setNoteForm({
+                ...noteForm,
+                areas_to_improve: e.target.value
+              })} />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Next Steps</Label>
-                    <Input 
-                      className="h-8 text-sm" 
-                      placeholder="Homework or follow-up" 
-                      value={noteForm.next_steps} 
-                      onChange={e => setNoteForm({ ...noteForm, next_steps: e.target.value })} 
-                    />
+                    <Input className="h-8 text-sm" placeholder="Homework or follow-up" value={noteForm.next_steps} onChange={e => setNoteForm({
+                ...noteForm,
+                next_steps: e.target.value
+              })} />
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    className="bg-primary gap-1 h-7 text-xs" 
-                    onClick={handleAddNote} 
-                    disabled={saving}
-                  >
+                  <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={handleAddNote} disabled={saving}>
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                     {saving ? 'Saving...' : 'Save Note'}
                   </Button>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="h-7 text-xs" 
-                    onClick={() => setShowAddNote(false)}
-                  >
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowAddNote(false)}>
                     Cancel
                   </Button>
                 </div>
-              </div>
-            )}
+              </div>}
 
-            {/* Notes Timeline */}
+            {}
             <div>
               <p className="text-sm font-semibold mb-2 flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" /> Session Notes
                 <Badge variant="outline" className="text-[10px]">{studentNotes.length}</Badge>
               </p>
-              {studentNotes.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-6">
+              {studentNotes.length === 0 ? <p className="text-xs text-muted-foreground text-center py-6">
                   No notes yet. Add your first note after a session.
-                </p>
-              ) : (
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                  {studentNotes.map(n => (
-                    <div key={n.id} className="p-3 rounded-xl bg-muted/40 space-y-1.5 border-l-4 border-primary/30 dark:bg-muted/20">
+                </p> : <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {studentNotes.map(n => <div key={n.id} className="p-3 rounded-xl bg-muted/40 space-y-1.5 border-l-4 border-primary/30 dark:bg-muted/20">
                       <div className="flex items-center gap-2 flex-wrap">
                         {n.subject && <Badge className="bg-primary/10 text-primary text-[10px]">{n.subject}</Badge>}
                         {n.mood && <span className="text-xs">{MOOD_ICONS[n.mood]} {n.mood}</span>}
@@ -463,21 +360,15 @@ export default function StudentCRM({ user }) {
                         </span>
                       </div>
                       <p className="text-sm">{n.note}</p>
-                      {(n.strengths || n.areas_to_improve || n.next_steps) && (
-                        <div className="grid grid-cols-3 gap-2 text-[10px] pt-1">
+                      {(n.strengths || n.areas_to_improve || n.next_steps) && <div className="grid grid-cols-3 gap-2 text-[10px] pt-1">
                           {n.strengths && <div><span className="text-green-600 font-semibold">✅ Strengths:</span> {n.strengths}</div>}
                           {n.areas_to_improve && <div><span className="text-amber-600 font-semibold">⚠️ Improve:</span> {n.areas_to_improve}</div>}
                           {n.next_steps && <div><span className="text-blue-600 font-semibold">📋 Next:</span> {n.next_steps}</div>}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+                        </div>}
+                    </div>)}
+                </div>}
             </div>
-          </div>
-        )}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

@@ -1,0 +1,46 @@
+name: Application checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VITE_SUPABASE_URL: https://smartbridge-test.supabase.co
+      VITE_SUPABASE_PUBLISHABLE_KEY: sb_publishable_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run check:db
+      - run: npm run check:api
+      - run: npm run check:edge
+      - run: npm run prepare:edge -- /tmp/verified-edge
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:config
+      - run: npm run test:e2e:audit
+  supabase-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: npm ci --include=dev
+      - run: node tests/local-supabase-services.cjs

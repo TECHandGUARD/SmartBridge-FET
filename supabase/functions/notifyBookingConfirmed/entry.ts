@@ -1,31 +1,20 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize, webhookPayload } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - webhook can be called without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     const body = await req.json();
-    const { data, old_data } = body;
+    const { data, old_data } = webhookPayload(body);
 
     // Only fire when status changes TO "confirmed"
     if (!data || data.status !== "confirmed" || old_data?.status === "confirmed") {
@@ -47,10 +36,10 @@ serve(async (req) => {
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Email not sent.");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "RESEND_API_KEY not configured",
-          notified: studentEmail 
+          notified: studentEmail
         }),
         { headers: { "Content-Type": "application/json" } }
       );
@@ -84,7 +73,7 @@ serve(async (req) => {
       </div>
     `;
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const resendResponse = await emailFetch({
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -97,7 +86,7 @@ serve(async (req) => {
         html: emailHtml,
         text: `Hi there,\n\nGreat news! Your tutoring session has been confirmed.\n\n📚 Subject: ${data.subject}\n👨‍🏫 Tutor: ${data.tutor_name || "Your tutor"}\n📅 Date: ${data.date}\n⏰ Time: ${data.time}\n⏱ Duration: ${data.duration_hours || 1} hour(s)\n${data.session_link ? `\n🔗 Join link: ${data.session_link}\n` : ""}\n${data.message ? `\nNote from tutor: "${data.message}"\n` : ""}\nLog in to manage your bookings:\n${APP_URL}/bookings\n\nGood luck with your studies!\nThe SmartBridge FET Team`,
       }),
-    });
+    }, supabase);
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
@@ -113,7 +102,7 @@ serve(async (req) => {
         event_type: "notification_sent",
         user_email: studentEmail,
         description: `Booking confirmed notification sent for booking ${data.id}`,
-        metadata: JSON.stringify({ booking_id: data.id, email_id: emailResult.id })
+        metadata: { booking_id: data.id, email_id: emailResult.id }
       });
 
     return new Response(
@@ -124,7 +113,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'notify-booking-confirmed'));

@@ -1,13 +1,10 @@
 // src/pages/StudentOpportunities.jsx
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
 import {
   GraduationCap, BookOpen, Calendar, Download, Bot, Sparkles,
-  ClipboardList, Zap, GitCompareArrows, CalendarCheck, Loader2,
-  Award, Target, Clock, TrendingUp, Globe, Users,
-  FileText, CheckCircle, AlertCircle, RefreshCw,
-  ChevronRight, Star, Gift, Rocket, Brain, Compass
+  ClipboardList, Zap, GitCompareArrows, CalendarCheck, Loader2, AlertCircle, RefreshCw, Star
 } from 'lucide-react';
 import usePremiumAccess from '@/hooks/usePremiumAccess';
 import TrialBanner from '@/components/ui/TrialBanner';
@@ -269,7 +266,7 @@ export default function StudentOpportunities() {
                 </TabsContent>
 
                 <TabsContent value="nbt-planner">
-                  <NBTPrepPlanner userEmail={user?.email} />
+                  <NBTPrepPlanner userEmail={user?.email} userId={user?.id} />
                 </TabsContent>
 
                 <TabsContent value="prospectuses">
