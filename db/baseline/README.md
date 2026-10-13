@@ -1,5 +1,7 @@
 # Schema-only baseline
 
+Deployment update: the owner-approved 13 October rollout applied this baseline and all repairs to the existing Free project. All 13 history versions now match repository files; the original migration was preserved. See [rollout evidence](../../docs/staging-rollout.md). The captured-baseline description below records its earlier preparation checkpoint.
+
 The [focused MVP candidate](../../docs/mvp-release-candidate.md) adds later repairs;
 the current replay includes thirteen migrations and eight SQL suites. The captured
 baseline itself remains unchanged and still reproduces the original nine-migration checkpoint.

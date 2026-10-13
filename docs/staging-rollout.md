@@ -1,4 +1,17 @@
-# SmartBridge-FET staging rollout
+# SmartBridge-FET rollout
+
+## Approved production rollout — 13 October 2026
+
+The owner approved the focused MVP scope, PR #1 merge and deployment to the existing Supabase Free project and AWS Amplify. No paid upgrade or hosted staging branch was authorized or created.
+
+PR #1 merged as `c2062c27528bceb5beab065fc8eecdf3eb30d289`. Amplify main job 100 passed build/deploy/verify. Application origin: `https://main.d2pos7eidu5lbk.amplifyapp.com`. No custom domain is attached to this Amplify app. Branch public origin settings now use this hostname; developer/admin bypass and automatic approval controls are disabled. Existing support contact is retained.
+
+All 13 migrations are applied in `bbhrnidzjeccggununzq`, with original repository versions/names preserved. The baseline and eleven repairs were applied atomically after a successful rolled-back rehearsal; connector batch history was reconciled to the baseline entry only after successful application. The original migration was not replayed. All four existing accounts remain. All 38 reviewed Edge bundles are active with matching manifest JWT settings. All eight hosted SQL suites pass in a rolled-back transaction; catalogue count checks were scoped to the test markers to preserve existing published university rows. Zero public RLS tables lack policies. Payment gateways and scheduled jobs remain disabled.
+
+Hosted acceptance evidence and remaining public-onboarding settings are recorded in `mvp-release-candidate.md`. The sections below describe the earlier staging proposal and checkpoint, not a requirement to buy staging or repeat completed deployment.
+
+## Historical preparation and staging proposal
+
 
 ## Prepared and verified
 

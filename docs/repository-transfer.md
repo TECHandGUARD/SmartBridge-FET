@@ -2,6 +2,10 @@
 
 Updated 13 October 2026. Target: `TECHandGUARD/SmartBridge-FET`, based on main `59f8ea4dc66de5b93a6b2da6b03d32dfe5d1b9d0`. Repairs previously merged in `SmartBridge-correction` did not update this repository. The correct repository already connects to active Supabase project `bbhrnidzjeccggununzq`; reconnecting another repository is not the fix.
 
+## Current deployed status
+
+Owner-approved rollout merged PR #1 and deployed the existing Free Supabase project and Amplify main job 100. See [rollout evidence](staging-rollout.md) and [candidate acceptance](mvp-release-candidate.md). Historical statements below that production is unchanged or staging is blocked refer to earlier checkpoints; they do not describe the current deployment.
+
 ## Implemented repairs
 
 The [focused MVP candidate](mvp-release-candidate.md) completes local learning

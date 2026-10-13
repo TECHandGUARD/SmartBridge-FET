@@ -30,7 +30,7 @@ labelled as a personal checklist, not certified CAPS curriculum.
 Thirteen migrations/eight SQL suites, 49 unit/API tests, lint, full typechecking,
 production build, API mappings, Edge checks and 38 hashed bundles pass locally.
 New browser cases cover topic save/reload/undo, NBT failure/retry/reload/undo and
-the absence of requests to deferred tables. Their latest remote CI must pass.
+the absence of requests to deferred tables. Final candidate CI run 38472404384 passed both verify and real-service jobs.
 
 The `supabase-services` CI job creates a disposable Docker stack on the runner,
 using pinned CLI 2.120.0 and the actual migrations. It tests real Auth signup,
@@ -40,22 +40,22 @@ targets, never prints local keys, and stops afterward. Local email confirmation 
 disabled only in its copied test config. No production records or credentials are
 used. Startup/runtime failures cannot be skipped or treated as successful.
 
-Read-only preflight on 13 October still finds only the original recorded migration
-in `bbhrnidzjeccggununzq`. Repaired onboarding/progress/rooms/learning are absent;
-18 live tables lack policies. There are 21 older live functions versus 38 reviewed
-sources, and zero objects in the legacy resource bucket. No production schema,
-history, functions, plan, hosted branch or main merge has been changed.
+## Owner-approved deployed status (13 October 2026 UTC)
 
-Before public launch, review current schema/history and recovery/export readiness;
-preserve the already recorded original migration; authorize the rollout separately;
-apply the baseline guard and repairs in order; deploy matching function/JWT settings;
-configure actual hosting/Auth redirects and public connection settings; then run real
-deployed account, booking, consent, progress and file acceptance checks plus advisors.
-Do not mark unapplied migrations as applied or use production as an unreviewed staging
-substitute. Keep optional providers/jobs inactive. Docker CI does not establish
-production hostname, SMTP, institutional/content approval or hosting configuration.
+PR #1 merged as `c2062c27528bceb5beab065fc8eecdf3eb30d289`. Amplify production job 100 succeeded for that commit. The live app is `https://main.d2pos7eidu5lbk.amplifyapp.com`; no custom domain is attached. Main branch public origin settings use that hostname. Developer/admin bypass and automatic approval controls are disabled. Supabase organization remains Free; no hosted staging branch or paid upgrade was created.
 
-This is a testable candidate, not a claim that unchanged production is launch-ready.
+All 13 migration versions/names now match the repository. The baseline/repairs were applied atomically after a rolled-back production rehearsal. The original migration was preserved. All 38 reviewed functions are active with matching JWT settings. All eight SQL suites pass on hosted PostgreSQL in a rolled-back transaction; catalogue-count assertions were scoped to disposable fixture markers to allow existing published rows. No public RLS tables lack policies; payment gateways and jobs remain disabled.
+
+Actual hosted service checks pass for password login with dedicated confirmed test accounts, onboarding with protected metadata, booking retry/server price/ownership/confirmation, parent consent/progress/revocation, syllabus/NBT persistence/isolation, private binary upload/download/signed URL/replacement/deletion/cross-account denial, and Deno Edge queued study submission/retries. These confirmed test accounts do not prove real signup or reset email delivery. Storage deletion is verified through absent listings and refusal to issue a fresh signed URL; already downloaded or CDN-cached bytes cannot be recalled. All disposable accounts and their test records are removed after verification; four original accounts remain. HTTP checks confirm live assets use the correct project and deep links serve the SPA. Full role/browser audit remains the CI mock-backed check, not a claimed authenticated hosted browser run.
+
+## Remaining public-onboarding requirements
+
+Before inviting public learners, confirm Supabase Auth Site URL and redirect allow-list for the actual origin (`/auth/callback` and `/reset-password`) and verify real signup-confirmation/password-reset delivery with approved SMTP/sender configuration. Hosted Auth currently enables email and Google, disables anonymous signup, and requires email confirmation. No SMTP credential or Auth redirect change was made through the deployment connector. The existing support contact is `aneleq@techandguard.co.za`; the owner must confirm approved content/privacy terms and an identity-verified deletion/support process. A custom domain is optional for the pilot and requires its own verified DNS/HTTPS association before using it as an origin.
+
+Security advisor has no public missing-policy findings. It still flags legacy `pgjwt`/`pg_trgm` extensions in public and disabled leaked-password protection. Private operational tables intentionally deny browser roles and have RLS without browser policies; do not grant access to silence informational findings. References: https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public and https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection . These findings remain tracked; no paid feature was activated. Recovery currently has the captured schema and tested transactional rollout, not a claimed full managed data-backup/restore exercise.
+
+This is the deployed focused MVP candidate. Public onboarding is not certified until the remaining Auth/email and owner-controlled requirements above are satisfied. Keep optional providers/jobs inactive until separately accepted.
+
 The real-service gate identified missing invoker-helper privileges during a trusted
 tutor update. An incremental migration grants only `service_role` execution of the
 existing administrator/tutor helpers; SQL regression also exercises that update.
