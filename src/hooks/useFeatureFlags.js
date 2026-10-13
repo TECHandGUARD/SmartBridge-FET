@@ -15,8 +15,8 @@ import { supabase } from '@/lib/supabase';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 
 // ✅ Soft-coded TTL with environment variable
-const GLOBAL_CACHE_TTL = import.meta.env.VITE_FEATURE_FLAG_CACHE_TTL 
-  ? parseInt(import.meta.env.VITE_FEATURE_FLAG_CACHE_TTL, 10) 
+const GLOBAL_CACHE_TTL = import.meta.env.VITE_FEATURE_FLAG_CACHE_TTL
+  ? parseInt(import.meta.env.VITE_FEATURE_FLAG_CACHE_TTL, 10)
   : 300000; // Default: 5 minutes
 
 const SESSION_CACHE_KEY = 'smartbridge_feature_flags';
@@ -104,7 +104,7 @@ const fetchFeatureFlags = async (userEmail) => {
 
 /**
  * useFeatureFlags - Centralized feature flag management
- * 
+ *
  * @param {string} userEmail - Email of the current user
  * @returns {Object} Feature flag utilities
  */
@@ -113,7 +113,7 @@ export function useFeatureFlags(userEmail) {
   const [userOverrides, setUserOverrides] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // Version counter to trigger cache invalidation
   const [cacheVersion, setCacheVersion] = useState(0);
 
@@ -152,10 +152,10 @@ export function useFeatureFlags(userEmail) {
         if (isMountedRef.current) {
           setGlobalFlags(result.globalFlags);
           setUserOverrides(result.userOverrides);
-          
+
           // Activity logging for POPIA compliance
           if (userEmail) {
-            supabase
+            Promise.resolve(supabase
               .from('activity_log')
               .insert({
                 event_type: 'feature_flags_loaded',
@@ -165,17 +165,17 @@ export function useFeatureFlags(userEmail) {
                   global_flags_count: result.globalFlags.length,
                   user_overrides_count: result.userOverrides.length
                 }
-              })
+              }))
               .catch(() => {}); // Silent fail for logging
           }
         }
 
       } catch (err) {
         console.error('Critical failure synchronizing feature flags telemetry:', err);
-        
+
         if (isMountedRef.current) {
           setError(err instanceof Error ? err : new Error('Failed to load feature flags'));
-          
+
           // Fallback: use cached flags if available
           if (cachedGlobalFlags.length > 0) {
             setGlobalFlags(cachedGlobalFlags);
@@ -204,14 +204,14 @@ export function useFeatureFlags(userEmail) {
     // Clear memory cache
     cachedGlobalFlags = [];
     globalCacheTimestamp = 0;
-    
+
     // Clear session storage
     sessionStorage.removeItem(SESSION_CACHE_KEY);
-    
+
     // Clear local state
     setGlobalFlags([]);
     setUserOverrides([]);
-    
+
     // Increment version to trigger useEffect re-run
     setCacheVersion(prev => prev + 1);
   }, []);
@@ -270,7 +270,7 @@ export function useFeatureFlags(userEmail) {
   const getFeatureStatus = useCallback((featureKey) => {
     const globalToggle = globalFlagMap.get(featureKey);
     const userOverride = userOverrideMap.get(featureKey);
-    
+
     return {
       featureKey,
       globalEnabled: globalToggle?.is_enabled_globally !== false,
@@ -280,9 +280,9 @@ export function useFeatureFlags(userEmail) {
     };
   }, [globalFlagMap, userOverrideMap, isEnabled, getLockedMessage]);
 
-  return { 
-    isEnabled, 
-    getLockedMessage, 
+  return {
+    isEnabled,
+    getLockedMessage,
     hasUserOverride,
     getFeatureKeys,
     getFeatureStatus,

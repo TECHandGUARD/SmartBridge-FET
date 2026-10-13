@@ -1,30 +1,19 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings } from "../../shared/config.ts";
+import { withHttp, authorize, webhookPayload } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - webhook can be called without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
     const body = await req.json();
-    const { event, data, old_data } = body;
+    const { event, data, old_data } = webhookPayload(body);
 
     // Skip if not an update event
     if (event?.type !== "update") {
@@ -107,16 +96,16 @@ SmartBridge FET Team
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Email not sent.");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "RESEND_API_KEY not configured",
-          notified: tutor_email 
+          notified: tutor_email
         }),
         { headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const resendResponse = await emailFetch({
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -129,7 +118,7 @@ SmartBridge FET Team
         html: bodyHtml,
         text: bodyText,
       }),
-    });
+    }, supabase);
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
@@ -145,17 +134,17 @@ SmartBridge FET Team
         event_type: "notification_sent",
         user_email: tutor_email,
         description: `Payout status change notification sent for booking ${booking_reference}`,
-        metadata: JSON.stringify({ 
-          booking_reference, 
+        metadata: {
+          booking_reference,
           status,
           amount,
-          email_id: emailResult.id 
-        })
+          email_id: emailResult.id
+        }
       });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         notified: tutor_email,
         email_id: emailResult.id
       }),
@@ -166,7 +155,7 @@ SmartBridge FET Team
     console.error("Error sending payout notification:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'notify-payout-status-change'));

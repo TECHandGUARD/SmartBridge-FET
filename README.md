@@ -60,3 +60,7 @@ SmartBridge FET is an EdTech platform built for South African learners, parents,
 
 git clone [repository-url-provided-securely]
 cd smartbridge-fet
+
+## Reconciled repairs
+
+See [transfer report](docs/repository-transfer.md), [activation guide](docs/operational-integrations.md) and [environment settings](docs/environment-configuration.md). Backend sources are under `supabase/functions` and `supabase/shared`; deployment bundles use `supabase/deployment-map.json`. Repairs are staged for review, with live backend activation still outstanding.

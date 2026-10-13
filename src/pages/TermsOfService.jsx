@@ -5,10 +5,8 @@ import { useAuth } from '@/lib/AuthContext';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Loader2, AlertCircle, ShieldCheck, FileText, Download,
-  Printer, Save, Lock, Users, GraduationCap, Briefcase,
-  ChevronRight, CheckCircle, Clock, Eye, EyeOff,
-  Sparkles, Award, Building2, Scale, BookOpen
+  Loader2, AlertCircle, ShieldCheck, Download,
+  Printer, Save, Lock, Users, GraduationCap, Briefcase, Clock, Scale
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';

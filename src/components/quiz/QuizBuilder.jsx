@@ -31,8 +31,8 @@ function QuizTaker({ quiz, onClose, user }) {
   const [resultSaved, setResultSaved] = useState(false);
 
   // Handle questions - support both formats
-  const questions = Array.isArray(quiz.questions) 
-    ? quiz.questions 
+  const questions = Array.isArray(quiz.questions)
+    ? quiz.questions
     : (typeof quiz.questions === 'string' ? JSON.parse(quiz.questions) : []);
 
   const score = submitted
@@ -43,7 +43,7 @@ function QuizTaker({ quiz, onClose, user }) {
 
   const saveResult = async () => {
     if (resultSaved || !user?.email) return;
-    
+
     setSubmitting(true);
     try {
       const { error } = await supabase
@@ -58,7 +58,7 @@ function QuizTaker({ quiz, onClose, user }) {
           answers: answers,
           completed_at: new Date().toISOString()
         });
-      
+
       if (error) throw error;
       setResultSaved(true);
       toast.success('Quiz result saved!');
@@ -86,13 +86,13 @@ function QuizTaker({ quiz, onClose, user }) {
           <h3 className="font-playfair text-lg font-bold">{quiz.title}</h3>
           <Badge className="bg-primary/10 text-primary">{quiz.subject} · {quiz.grade}</Badge>
         </div>
-        
+
         <Card className="border-primary/30 bg-primary/5">
           <CardContent className="pt-4 pb-4 text-center">
             <p className="font-playfair text-3xl font-bold text-primary">{score}/{questions.length}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              {percentage >= 80 ? '🎉 Excellent! Mastered this topic!' : 
-               percentage >= 60 ? '👏 Good effort! A few more practices needed.' : 
+              {percentage >= 80 ? '🎉 Excellent! Mastered this topic!' :
+               percentage >= 60 ? '👏 Good effort! A few more practices needed.' :
                '📚 Keep studying! Review the explanations below.'}
             </p>
             <div className="w-full bg-muted rounded-full h-2 mt-3 mb-2">
@@ -102,7 +102,7 @@ function QuizTaker({ quiz, onClose, user }) {
             <Button variant="outline" size="sm" className="mt-3" onClick={onClose}>Close Quiz</Button>
           </CardContent>
         </Card>
-        
+
         {questions.map((q, i) => (
           <Card key={i} className={answers[i] === q.correct ? 'border-green-300' : 'border-red-300'}>
             <CardContent className="pt-4 pb-4">
@@ -114,7 +114,7 @@ function QuizTaker({ quiz, onClose, user }) {
                     ${answers[i] === j && j !== q.correct ? 'border-red-400 bg-red-50' : ''}
                   `}>
                     <div className={`w-4 h-4 rounded-full flex-shrink-0 ${
-                      j === q.correct ? 'bg-green-500' : 
+                      j === q.correct ? 'bg-green-500' :
                       answers[i] === j && j !== q.correct ? 'bg-red-500' : 'bg-muted'
                     }`} />
                     <span>{opt}</span>
@@ -163,9 +163,9 @@ function QuizTaker({ quiz, onClose, user }) {
           </CardContent>
         </Card>
       ))}
-      <Button 
-        onClick={handleSubmit} 
-        className="w-full bg-primary gap-2" 
+      <Button
+        onClick={handleSubmit}
+        className="w-full bg-primary gap-2"
         disabled={Object.keys(answers).length < questions.length}
       >
         <CheckCircle className="w-4 h-4" /> Submit Quiz
@@ -203,7 +203,7 @@ export default function QuizBuilder({ user }) {
         .eq('is_published', true)
         .order('created_at', { ascending: false })
         .limit(50);
-      
+
       if (queryError) throw queryError;
       setQuizzes(data || []);
     } catch (err) {
@@ -217,8 +217,8 @@ export default function QuizBuilder({ user }) {
 
   useEffect(() => { loadQuizzes(); }, [loadQuizzes]);
 
-  const canCreateQuiz = user?.role === 'sace_tutor' || 
-                        user?.role === 'student_tutor' || 
+  const canCreateQuiz = user?.role === 'sace_tutor' ||
+                        user?.role === 'student_tutor' ||
                         user?.role === 'admin';
 
   // Question operations
@@ -228,7 +228,7 @@ export default function QuizBuilder({ user }) {
       return;
     }
     setQuestions(prev => [
-      ...prev, 
+      ...prev,
       { question: '', options: ['', '', '', ''], correct: 0, explanation: '' }
     ]);
   };
@@ -246,9 +246,9 @@ export default function QuizBuilder({ user }) {
   };
 
   const updateOption = (qi, oi, value) => {
-    setQuestions(prev => prev.map((q, idx) => idx === qi ? { 
-      ...q, 
-      options: q.options.map((o, j) => j === oi ? value : o) 
+    setQuestions(prev => prev.map((q, idx) => idx === qi ? {
+      ...q,
+      options: q.options.map((o, j) => j === oi ? value : o)
     } : q));
   };
 
@@ -277,7 +277,7 @@ export default function QuizBuilder({ user }) {
         return;
       }
     }
-    
+
     setSaving(true);
     try {
       const { error: insertError } = await supabase
@@ -293,9 +293,9 @@ export default function QuizBuilder({ user }) {
           source: 'manual',
           created_at: new Date().toISOString()
         });
-      
+
       if (insertError) throw insertError;
-      
+
       toast.success('Quiz saved and published!');
       setMode('list');
       setTitle('');
@@ -305,7 +305,7 @@ export default function QuizBuilder({ user }) {
       loadQuizzes();
 
       // Log activity
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'quiz_created',
@@ -317,7 +317,7 @@ export default function QuizBuilder({ user }) {
             grade,
             question_count: questions.length,
           }
-        })
+        }))
         .catch(() => {});
 
     } catch (err) {
@@ -378,10 +378,10 @@ export default function QuizBuilder({ user }) {
           <div className="grid sm:grid-cols-3 gap-3">
             <div className="space-y-1">
               <Label className="text-sm">Quiz Title *</Label>
-              <Input 
-                value={title} 
-                onChange={e => setTitle(e.target.value)} 
-                placeholder="e.g. Algebra Basics" 
+              <Input
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Algebra Basics"
               />
             </div>
             <div className="space-y-1">
@@ -424,8 +424,8 @@ export default function QuizBuilder({ user }) {
                   <div className="flex items-center justify-between">
                     <Label className="text-sm font-semibold">Question {i + 1}</Label>
                     {questions.length > 1 && (
-                      <button 
-                        onClick={() => removeQuestion(i)} 
+                      <button
+                        onClick={() => removeQuestion(i)}
                         className="text-red-500 hover:text-red-700 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -471,17 +471,17 @@ export default function QuizBuilder({ user }) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button 
-              variant="outline" 
-              onClick={addQuestion} 
+            <Button
+              variant="outline"
+              onClick={addQuestion}
               className="gap-2 text-sm"
               disabled={questions.length >= MAX_QUESTIONS}
             >
               <Plus className="w-4 h-4" /> Add Question
             </Button>
-            <Button 
-              onClick={saveQuiz} 
-              disabled={saving || !title || !subject || !grade} 
+            <Button
+              onClick={saveQuiz}
+              disabled={saving || !title || !subject || !grade}
               className="gap-2 text-sm bg-primary"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
@@ -531,16 +531,16 @@ export default function QuizBuilder({ user }) {
           </CardTitle>
           {canCreateQuiz && (
             <div className="flex gap-1.5">
-              <Button 
-                size="sm" 
-                onClick={() => setMode('ai')} 
+              <Button
+                size="sm"
+                onClick={() => setMode('ai')}
                 className="gap-1.5 text-xs bg-amber-500 hover:bg-amber-600 text-white"
               >
                 <Sparkles className="w-3.5 h-3.5" /> AI Generate
               </Button>
-              <Button 
-                size="sm" 
-                onClick={() => setMode('build')} 
+              <Button
+                size="sm"
+                onClick={() => setMode('build')}
                 className="gap-1.5 text-xs bg-primary"
               >
                 <Plus className="w-3.5 h-3.5" /> Manual
@@ -566,8 +566,8 @@ export default function QuizBuilder({ user }) {
         ) : (
           <div className="space-y-2 max-h-[500px] overflow-y-auto">
             {quizzes.map(quiz => {
-              const qCount = Array.isArray(quiz.questions) 
-                ? quiz.questions.length 
+              const qCount = Array.isArray(quiz.questions)
+                ? quiz.questions.length
                 : (typeof quiz.questions === 'string' ? JSON.parse(quiz.questions).length : 0);
               return (
                 <div key={quiz.id} className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors group">
@@ -580,9 +580,9 @@ export default function QuizBuilder({ user }) {
                       {quiz.subject} · {quiz.grade} · {qCount} Questions
                     </p>
                   </div>
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => { setActiveQuiz(quiz); setMode('take'); }}
                     className="opacity-90 group-hover:opacity-100 group-hover:border-primary group-hover:text-primary transition-all text-xs gap-1"
                   >

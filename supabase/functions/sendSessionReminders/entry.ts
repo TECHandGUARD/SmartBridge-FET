@@ -1,10 +1,10 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
 /**
  * Sends session reminder emails to students for upcoming confirmed bookings.
@@ -14,25 +14,14 @@ const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
  *
  * Payload (optional): { window: "24h" | "1h" }  — if not provided, both windows are checked.
  */
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - cron job can call without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
-    let body = {};
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
+    let body: { window?: string } = {};
     try { body = await req.json(); } catch (_) {}
     const { window: reminderWindow } = body;
 
@@ -159,7 +148,7 @@ Good luck! 🎓
 </div>`;
 
       try {
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -172,7 +161,7 @@ Good luck! 🎓
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           const emailResult = await resendResponse.json();
@@ -183,10 +172,11 @@ Good luck! 🎓
           if (shouldSend1h) update.reminder_1h_sent = true;
           update.updated_at = new Date().toISOString();
 
-          await supabase
+          const {error: trackingError} = await supabase
             .from("tutor_bookings")
             .update(update)
             .eq("id", booking.id);
+          if (trackingError) throw trackingError;
 
           sent++;
           results.push({
@@ -202,11 +192,11 @@ Good luck! 🎓
               event_type: "notification_sent",
               user_email: booking.student_email,
               description: `${shouldSend1h ? "1-hour" : "24-hour"} session reminder sent for booking ${booking.id}`,
-              metadata: JSON.stringify({
+              metadata: {
                 booking_id: booking.id,
                 reminder_type: shouldSend1h ? "1h" : "24h",
                 email_id: emailResult.id
-              })
+              }
             });
         } else {
           const errorText = await resendResponse.text();
@@ -240,7 +230,7 @@ Good luck! 🎓
     console.error("Error sending session reminders:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'send-session-reminders'));

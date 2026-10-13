@@ -1,27 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  CheckCircle, XCircle, Clock, ExternalLink, Shield,
-  GraduationCap, RefreshCw, AlertTriangle, UserPlus, User, Loader2
-} from 'lucide-react';
-import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
-const ADMIN_EMAILS = ['aneleq@techandguard.co.za', 'aneleqamata95@gmail.com'];
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
 
 // ============================================================
 // Helper Functions
 // ============================================================
-
+import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { CheckCircle, XCircle, Clock, ExternalLink, Shield, GraduationCap, RefreshCw, AlertTriangle, UserPlus, User, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 function timeSince(dateStr) {
   if (!dateStr) return 'Just now';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -33,17 +23,14 @@ function timeSince(dateStr) {
   const days = Math.floor(hours / 24);
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
-
-// ============================================================
-// Email Function
-// ============================================================
-
-const sendTutorApprovalEmail = async (tutor) => {
+const sendTutorApprovalEmail = async tutor => {
   const isSACE = !!tutor.sace_number;
   const tutorType = isSACE ? 'SACE Registered Tutor' : 'Student Tutor';
-  
   try {
-    const { data, error } = await supabase.functions.invoke('send-email', {
+    const {
+      data,
+      error
+    } = await supabase.functions.invoke('send-email', {
       body: {
         to: tutor.user_email,
         subject: `✅ Your ${appName} Tutor Profile is Verified!`,
@@ -55,14 +42,14 @@ const sendTutorApprovalEmail = async (tutor) => {
             <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
               <p>Dear <strong>${tutor.full_name}</strong>,</p>
               <p>Great news! Your tutor profile on ${appName} has been <strong style="color: #16a34a;">verified and approved</strong> by our admin team.</p>
-              
+
               <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0F766E;">
                 <h3 style="margin-top: 0; color: #166534;">✅ Verification Details</h3>
                 <p style="margin: 5px 0;">• Account Type: <strong>${tutorType}</strong></p>
                 ${isSACE ? `<p style="margin: 5px 0;">• SACE Number: <strong>${tutor.sace_number}</strong></p>` : ''}
                 <p style="margin: 5px 0;">• Verification Date: ${new Date().toLocaleDateString()}</p>
               </div>
-              
+
               <h3>🎓 What You Can Do Now:</h3>
               <ul style="padding-left: 20px;">
                 <li>Accept booking requests from students</li>
@@ -71,38 +58,37 @@ const sendTutorApprovalEmail = async (tutor) => {
                 <li>Earn through tutoring sessions</li>
                 <li>Get featured in the tutor directory</li>
               </ul>
-              
+
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/tutor-dashboard" 
+                <a href="${appUrl}/tutor-dashboard"
                    style="background-color: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
                   🚀 Go to Your Dashboard
                 </a>
               </div>
-              
+
               <hr style="margin: 20px 0; border-color: #e5e7eb;">
-              
+
               <p style="font-size: 11px; color: #999; text-align: center;">
                 — ${appName} / Tech &amp; GUARD Pty Ltd<br>
                 <a href="${appUrl}" style="color: #0F766E;">${appUrl}</a>
               </p>
             </div>
           </div>
-        `,
-      },
+        `
+      }
     });
-    
     if (error) throw error;
-    return { success: true };
+    return {
+      success: true
+    };
   } catch (error) {
     console.error('Failed to send tutor approval email:', error);
-    return { success: false, error };
+    return {
+      success: false,
+      error
+    };
   }
 };
-
-// ============================================================
-// Main Component
-// ============================================================
-
 export default function TutorVerificationHub() {
   const [pendingProfiles, setPendingProfiles] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -113,37 +99,26 @@ export default function TutorVerificationHub() {
   const [manualName, setManualName] = useState('');
   const [manualCreds, setManualCreds] = useState('');
   const [creating, setCreating] = useState(false);
-
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      // Fetch all tutor profiles
-      const { data: allProfiles, error: profilesError } = await supabase
-        .from('tutor_profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const {
+        data: allProfiles,
+        error: profilesError
+      } = await supabase.from('tutor_profiles').select('*').order('created_at', {
+        ascending: false
+      });
       if (profilesError) throw profilesError;
-
-      // Fetch all users
-      const { data: allUsers, error: usersError } = await supabase
-        .from('users')
-        .select('*')
-        .order('created_at', { ascending: false });
-
+      const {
+        data: allUsers,
+        error: usersError
+      } = await supabase.from('users').select('*').order('created_at', {
+        ascending: false
+      });
       if (usersError) throw usersError;
-
-      // Filter unverified profiles
       const unverifiedProfiles = (allProfiles || []).filter(t => !t.is_verified);
-      
-      // Get emails that have tutor profiles
       const profileEmails = new Set((allProfiles || []).map(p => p.user_email));
-      
-      // Find users stuck as tutor_pending without a profile
-      const orphanedPending = (allUsers || []).filter(
-        u => u.role === 'tutor_pending' && !profileEmails.has(u.email)
-      );
-
+      const orphanedPending = (allUsers || []).filter(u => u.role === 'tutor_pending' && !profileEmails.has(u.email));
       setPendingProfiles(unverifiedProfiles);
       setPendingUsers(orphanedPending);
       setLastRefresh(new Date());
@@ -154,59 +129,39 @@ export default function TutorVerificationHub() {
       setLoading(false);
     }
   }, []);
-
   useEffect(() => {
     loadData();
     const interval = setInterval(loadData, 30000);
     return () => clearInterval(interval);
   }, [loadData]);
-
-  const handleVerify = async (tutor) => {
+  const handleVerify = async tutor => {
     setProcessing(tutor.id);
     try {
-      // Update tutor profile to verified
-      const { error: updateError } = await supabase
-        .from('tutor_profiles')
-        .update({ 
-          is_verified: true,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', tutor.id);
-      
+      const {
+        error: updateError
+      } = await supabase.from('tutor_profiles').update({
+        is_verified: true,
+        updated_at: new Date().toISOString()
+      }).eq('id', tutor.id);
       if (updateError) throw updateError;
-
-      // Determine tutor type
       const tutorType = tutor.sace_number ? 'sace_tutor' : 'student_tutor';
-      
-      // Update user role
-      const { error: userError } = await supabase
-        .from('users')
-        .update({ 
-          role: tutorType,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', tutor.user_email);
-      
+      const {
+        error: userError
+      } = await supabase.from('users').update({
+        role: tutorType
+      }).eq('email', tutor.user_email);
       if (userError) console.error('Error updating user role:', userError);
-
-      // Log activity
       await supabase.from('activity_log').insert({
         event_type: 'tutor_verified',
         user_email: tutor.user_email,
-        description: `Admin verified tutor: ${tutor.full_name}`,
-        created_at: new Date().toISOString(),
-      }).catch(() => {});
-
-      // Send approval email to tutor
+        description: `Admin verified tutor: ${tutor.full_name}`
+      });
       const emailResult = await sendTutorApprovalEmail(tutor);
-      
       if (emailResult.success) {
         toast.success(`✅ ${tutor.full_name} verified. Approval email sent.`);
       } else {
         toast.success(`✅ ${tutor.full_name} verified. Email failed to send.`);
       }
-      
-      // Remove from pending list
       setPendingProfiles(prev => prev.filter(t => t.id !== tutor.id));
     } catch (error) {
       console.error('Verification error:', error);
@@ -215,18 +170,14 @@ export default function TutorVerificationHub() {
       setProcessing(null);
     }
   };
-
-  const handleReject = async (tutor) => {
+  const handleReject = async tutor => {
     setProcessing(tutor.id);
     try {
-      // Log rejection
       await supabase.from('activity_log').insert({
         event_type: 'tutor_rejected',
         user_email: tutor.user_email,
-        description: `Admin rejected tutor: ${tutor.full_name}`,
-        created_at: new Date().toISOString(),
-      }).catch(() => {});
-
+        description: `Admin rejected tutor: ${tutor.full_name}`
+      });
       setPendingProfiles(prev => prev.filter(t => t.id !== tutor.id));
       toast.success(`❌ ${tutor.full_name} rejected.`);
     } catch (error) {
@@ -236,41 +187,40 @@ export default function TutorVerificationHub() {
       setProcessing(null);
     }
   };
-
   const handleManualCreate = async () => {
-    if (!manualEmail.trim()) { toast.error('Email is required'); return; }
+    if (!manualEmail.trim()) {
+      toast.error('Email is required');
+      return;
+    }
     setCreating(true);
     try {
-      const { data: existing, error: checkError } = await supabase
-        .from('tutor_profiles')
-        .select('*')
-        .eq('user_email', manualEmail.trim())
-        .maybeSingle();
-      
+      const {
+        data: existing,
+        error: checkError
+      } = await supabase.from('tutor_profiles').select('*').eq('user_email', manualEmail.trim()).maybeSingle();
       if (existing) {
         toast.info('Profile already exists — click Refresh to see it.');
         setCreating(false);
         return;
       }
-
-      const { error: createError } = await supabase
-        .from('tutor_profiles')
-        .insert({
-          user_email: manualEmail.trim(),
-          full_name: manualName.trim() || manualEmail.trim(),
-          qualifications: [manualCreds.trim() || 'Manually added by admin'],
-          sace_number: null,
-          institution: null,
-          study_field: null,
-          is_verified: false,
-          is_premium: false,
-          hourly_rate: 0,
-          created_at: new Date().toISOString(),
-        });
-      
+      const {
+        error: createError
+      } = await supabase.from('tutor_profiles').insert({
+        user_email: manualEmail.trim(),
+        full_name: manualName.trim() || manualEmail.trim(),
+        qualifications: [manualCreds.trim() || 'Manually added by admin'],
+        sace_number: null,
+        institution: null,
+        study_field: null,
+        is_verified: false,
+        is_premium: false,
+        hourly_rate: 0,
+        created_at: new Date().toISOString()
+      });
       if (createError) throw createError;
-      
-      setManualEmail(''); setManualName(''); setManualCreds('');
+      setManualEmail('');
+      setManualName('');
+      setManualCreds('');
       toast.success('Profile created — refreshing queue…');
       loadData();
     } catch (error) {
@@ -280,27 +230,18 @@ export default function TutorVerificationHub() {
       setCreating(false);
     }
   };
-
   const totalPending = pendingProfiles.length + pendingUsers.length;
-
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-16">
+    return <div className="flex items-center justify-center py-16">
         <Loader2 className="w-7 h-7 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
+  return <div className="space-y-4">
 
-  return (
-    <div className="space-y-4">
-
-      {/* Summary banner */}
+      {}
       <div className={`rounded-xl p-4 border-2 flex items-center gap-4 ${totalPending > 0 ? 'bg-red-50 border-red-200' : 'bg-green-50 border-green-200'}`}>
         <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${totalPending > 0 ? 'bg-red-100' : 'bg-green-100'}`}>
-          {totalPending > 0
-            ? <AlertTriangle className="w-6 h-6 text-red-600" />
-            : <CheckCircle className="w-6 h-6 text-green-600" />
-          }
+          {totalPending > 0 ? <AlertTriangle className="w-6 h-6 text-red-600" /> : <CheckCircle className="w-6 h-6 text-green-600" />}
         </div>
         <div className="flex-1">
           <p className={`font-semibold ${totalPending > 0 ? 'text-red-800' : 'text-green-800'}`}>
@@ -317,9 +258,8 @@ export default function TutorVerificationHub() {
         </Button>
       </div>
 
-      {/* Orphaned tutor_pending users (no profile) */}
-      {pendingUsers.length > 0 && (
-        <Card className="border-orange-200">
+      {}
+      {pendingUsers.length > 0 && <Card className="border-orange-200">
           <CardHeader className="pb-3">
             <CardTitle className="font-playfair text-base flex items-center gap-2">
               <User className="w-4 h-4 text-orange-600" />
@@ -330,8 +270,7 @@ export default function TutorVerificationHub() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {pendingUsers.map(u => (
-                <div key={u.id} className="flex items-center gap-3 p-3 rounded-xl border border-orange-200 bg-orange-50/40">
+              {pendingUsers.map(u => <div key={u.id} className="flex items-center gap-3 p-3 rounded-xl border border-orange-200 bg-orange-50/40">
                   <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-700 font-bold text-base flex-shrink-0">
                     {u.full_name?.[0] || '?'}
                   </div>
@@ -343,18 +282,18 @@ export default function TutorVerificationHub() {
                     <Badge variant="outline" className="text-xs border-orange-300 text-orange-700">tutor_pending</Badge>
                     <p className="text-xs text-muted-foreground mt-0.5">{timeSince(u.created_at)}</p>
                   </div>
-                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 flex-shrink-0"
-                    onClick={() => { setManualEmail(u.email); setManualName(u.full_name || ''); }}>
+                  <Button size="sm" variant="outline" className="text-xs h-7 px-2 flex-shrink-0" onClick={() => {
+              setManualEmail(u.email);
+              setManualName(u.full_name || '');
+            }}>
                     Pre-fill ↓
                   </Button>
-                </div>
-              ))}
+                </div>)}
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {/* Main pending profiles queue */}
+      {}
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
@@ -373,7 +312,7 @@ export default function TutorVerificationHub() {
         </CardHeader>
         <CardContent>
 
-          {/* Emergency manual entry */}
+          {}
           <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4">
             <p className="text-xs font-semibold text-amber-800 flex items-center gap-1.5 mb-1">
               <AlertTriangle className="w-3.5 h-3.5" /> Add / Fix Missing Tutor Profile
@@ -389,22 +328,16 @@ export default function TutorVerificationHub() {
             </Button>
           </div>
 
-          {loading && pendingProfiles.length === 0 ? (
-            <div className="py-10 flex justify-center">
+          {loading && pendingProfiles.length === 0 ? <div className="py-10 flex justify-center">
               <Loader2 className="w-6 h-6 animate-spin text-primary" />
-            </div>
-          ) : pendingProfiles.length === 0 ? (
-            <div className="text-center py-8">
+            </div> : pendingProfiles.length === 0 ? <div className="text-center py-8">
               <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
               <p className="font-medium text-sm">No profiles awaiting verification.</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
+            </div> : <div className="space-y-3">
               {pendingProfiles.map(tutor => {
-                const isSACE = !!tutor.sace_number;
-                const isLoading = processing === tutor.id;
-                return (
-                  <div key={tutor.id} className="border-2 border-amber-200 bg-amber-50/40 rounded-xl p-4">
+            const isSACE = !!tutor.sace_number;
+            const isLoading = processing === tutor.id;
+            return <div key={tutor.id} className="border-2 border-amber-200 bg-amber-50/40 rounded-xl p-4">
                     <div className="flex items-start gap-3">
                       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg flex-shrink-0">
                         {tutor.full_name?.[0] || 'T'}
@@ -413,29 +346,22 @@ export default function TutorVerificationHub() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <p className="font-semibold text-sm">{tutor.full_name || '(No name)'}</p>
                           <Badge variant="outline" className={`text-xs ${isSACE ? 'border-primary/30 text-primary bg-primary/5' : 'border-purple-300 text-purple-700 bg-purple-50'}`}>
-                            {isSACE
-                              ? <><Shield className="w-3 h-3 mr-1 inline" />SACE Tutor</>
-                              : <><GraduationCap className="w-3 h-3 mr-1 inline" />Student Tutor</>}
+                            {isSACE ? <><Shield className="w-3 h-3 mr-1 inline" />SACE Tutor</> : <><GraduationCap className="w-3 h-3 mr-1 inline" />Student Tutor</>}
                           </Badge>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{tutor.user_email}</p>
                         <div className="mt-2 space-y-1.5">
-                          {isSACE && (
-                            <div className="flex items-center gap-2 flex-wrap">
+                          {isSACE && <div className="flex items-center gap-2 flex-wrap">
                               <span className="text-xs font-medium">SACE No:</span>
                               <span className="text-xs font-mono bg-white border border-border px-2 py-0.5 rounded">{tutor.sace_number}</span>
-                              <a href="https://www.sace.org.za/find-an-educator" target="_blank" rel="noopener noreferrer"
-                                className="text-xs text-primary underline flex items-center gap-0.5 hover:text-primary/80">
+                              <a href="https://www.sace.org.za/find-an-educator" target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline flex items-center gap-0.5 hover:text-primary/80">
                                 Verify on SACE <ExternalLink className="w-3 h-3" />
                               </a>
-                            </div>
-                          )}
-                          {tutor.qualifications && Array.isArray(tutor.qualifications) && (
-                            <div className="flex items-start gap-2">
+                            </div>}
+                          {tutor.qualifications && Array.isArray(tutor.qualifications) && <div className="flex items-start gap-2">
                               <span className="text-xs font-medium flex-shrink-0">Credentials:</span>
                               <span className="text-xs text-muted-foreground">{tutor.qualifications.join(', ')}</span>
-                            </div>
-                          )}
+                            </div>}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
                             Registered: {timeSince(tutor.created_at)}
@@ -444,28 +370,19 @@ export default function TutorVerificationHub() {
                       </div>
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="outline"
-                        className="flex-1 text-xs gap-1 text-red-700 border-red-200 hover:bg-red-50"
-                        disabled={!!processing}
-                        onClick={() => handleReject(tutor)}>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs gap-1 text-red-700 border-red-200 hover:bg-red-50" disabled={!!processing} onClick={() => handleReject(tutor)}>
                         {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                         Reject
                       </Button>
-                      <Button size="sm"
-                        className="flex-1 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white"
-                        disabled={!!processing}
-                        onClick={() => handleVerify(tutor)}>
+                      <Button size="sm" className="flex-1 text-xs gap-1 bg-green-600 hover:bg-green-700 text-white" disabled={!!processing} onClick={() => handleVerify(tutor)}>
                         {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                         Verify &amp; Notify
                       </Button>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+                  </div>;
+          })}
+            </div>}
         </CardContent>
       </Card>
-    </div>
-  );
+    </div>;
 }

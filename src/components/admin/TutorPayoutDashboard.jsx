@@ -1,22 +1,11 @@
+import { appConfig } from '@/lib/config';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { DollarSign, CheckCircle, Clock, Send, Download, Loader2 } from 'lucide-react';
+import { DollarSign, CheckCircle, Clock, Send, Download } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const currency = import.meta.env.VITE_CURRENCY || 'ZAR';
-const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
-
-// ============================================================
-// Main Component
-// ============================================================
 
 export default function TutorPayoutDashboard() {
   const [bookings, setBookings] = useState([]);
@@ -35,7 +24,7 @@ export default function TutorPayoutDashboard() {
         supabase.from('tutor_bookings').select('*').order('created_at', { ascending: false }),
         supabase.from('tutor_profiles').select('*').order('created_at', { ascending: false }),
       ]);
-      
+
       setBookings(b.data || []);
       setTutors(t.data || []);
     } catch (error) {
@@ -49,78 +38,62 @@ export default function TutorPayoutDashboard() {
   const completedBookings = bookings.filter(b => b.status === 'completed' || b.status === 'confirmed');
 
   // Group by tutor and calculate earnings
-  const payoutRows = tutors
-    .map(tutor => {
-      const tutorBookings = completedBookings.filter(b => b.tutor_email === tutor.user_email);
-      const grossRevenue = tutorBookings.reduce((s, b) => s + (b.amount || b.total_amount || 0), 0);
-      const isPro = tutor.is_premium;
-      const commission = isPro ? 0 : (grossRevenue * 0.10 + tutorBookings.length * 20);
-      const netPayout = Math.max(0, grossRevenue - commission);
-      return { ...tutor, bookingCount: tutorBookings.length, grossRevenue, commission, netPayout, isPro };
-    })
-    .filter(t => t.bookingCount > 0)
-    .sort((a, b) => b.netPayout - a.netPayout);
+  const payoutRows = tutors.map(tutor => {
+    const tutorBookings = completedBookings.filter(b => b.tutor_email === tutor.user_email);
+    const grossRevenue = tutorBookings.reduce((s, b) => s + (b.total_amount || 0), 0);
+    const isPro = tutor.is_premium;
+    const commission = isPro ? 0 : (grossRevenue * 0.10 + tutorBookings.length * 20);
+    const netPayout = grossRevenue - commission;
+    return { ...tutor, bookingCount: tutorBookings.length, grossRevenue, commission, netPayout, isPro };
+  }).filter(t => t.bookingCount > 0).sort((a, b) => b.netPayout - a.netPayout);
 
   const totalGross = payoutRows.reduce((s, t) => s + t.grossRevenue, 0);
   const totalCommission = payoutRows.reduce((s, t) => s + t.commission, 0);
   const totalPayout = payoutRows.reduce((s, t) => s + t.netPayout, 0);
 
   const sendPayoutEmail = async (tutor) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('send-email', {
-        body: {
-          to: tutor.user_email,
-          subject: `💰 ${appName} — Payout Notification (Thursday)`,
-          html: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #0F766E, #0d9488); padding: 20px; border-radius: 10px 10px 0 0; color: white;">
-                <h2 style="margin: 0;">💰 Payout Notification</h2>
-              </div>
-              <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
-                <p>Hi <strong>${tutor.full_name}</strong>,</p>
-                <p>Your payout for this week's sessions is scheduled for Thursday.</p>
-                
-                <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0F766E;">
-                  <h3 style="margin-top: 0; color: #166534;">📊 Summary</h3>
-                  <p style="margin: 5px 0;">• Confirmed sessions: <strong>${tutor.bookingCount}</strong></p>
-                  <p style="margin: 5px 0;">• Gross earnings: <strong>${currency} ${tutor.grossRevenue}</strong></p>
-                  <p style="margin: 5px 0;">• Platform fee: <strong>${currency} ${tutor.commission.toFixed(2)}</strong></p>
-                  <p style="margin: 10px 0 0 0; font-size: 18px;"><strong>✅ Net payout: ${currency} ${tutor.netPayout.toFixed(2)}</strong></p>
-                </div>
-                
-                <p>Payments are processed every Thursday to your registered banking details.</p>
-                
-                <p>If you have not yet submitted your banking details, please contact <a href="mailto:aneleq@techandguard.co.za" style="color: #0F766E;">aneleq@techandguard.co.za</a> urgently.</p>
-                
-                <hr style="margin: 20px 0; border-color: #e5e7eb;">
-                
-                <p style="font-size: 11px; color: #999; text-align: center;">
-                  — ${appName} / Tech &amp; GUARD Pty Ltd<br>
-                  <a href="${appUrl}" style="color: #0F766E;">${appUrl}</a>
-                </p>
-              </div>
+    const { data, error } = await supabase.functions.invoke('send-email', {
+      body: {
+        to: tutor.user_email,
+        subject: '💰 EduConnect FET — Payout Notification (Thursday)',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #0F766E;">💰 Payout Notification</h2>
+            <p>Hi <strong>${tutor.full_name}</strong>,</p>
+            <p>Your payout for this week's sessions is scheduled for Thursday.</p>
+
+            <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0;">
+              <h3 style="margin-top: 0; color: #166534;">📊 Summary</h3>
+              <p>• Confirmed sessions: <strong>${tutor.bookingCount}</strong></p>
+              <p>• Gross earnings: <strong>R${tutor.grossRevenue}</strong></p>
+              <p>• Platform fee: <strong>R${tutor.commission.toFixed(2)}</strong></p>
+              <p style="font-size: 18px;"><strong>✅ Net payout: R${tutor.netPayout.toFixed(2)}</strong></p>
             </div>
-          `,
-        },
-      });
-      
-      if (error) throw error;
-      return { success: true };
-    } catch (error) {
-      console.error('Error sending payout email:', error);
-      return { success: false, error };
-    }
+
+            <p>Payments are processed every Thursday to your registered banking details.</p>
+
+            <p>If you have not yet submitted your banking details, please contact <a href="mailto:${appConfig.company.supportEmail}">${appConfig.company.supportEmail}</a> urgently.</p>
+
+            <hr style="margin: 20px 0; border-color: #e5e7eb;">
+
+            <p style="font-size: 11px; color: #999; text-align: center;">
+              — EduConnect FET / Tech &amp; GUARD Pty Ltd<br>
+              <a href="${window.location.origin}" style="color: #0F766E;">${window.location.origin}</a>
+            </p>
+          </div>
+        `,
+      },
+    });
+
+    if (error) throw error;
+    return { success: true };
   };
 
   const handleNotifyPayout = async (tutor) => {
     setPaying(tutor.id);
     try {
-      const result = await sendPayoutEmail(tutor);
-      if (result.success) {
-        toast.success(`Payout notification sent to ${tutor.full_name}`);
-      } else {
-        throw new Error('Email sending failed');
-      }
+      await sendPayoutEmail(tutor);
+      toast.success(`Payout notification sent to ${tutor.full_name}`);
     } catch (error) {
       console.error('Error sending payout email:', error);
       toast.error(`Failed to send email to ${tutor.full_name}`);
@@ -135,12 +108,8 @@ export default function TutorPayoutDashboard() {
     for (const tutor of payoutRows) {
       setPaying(tutor.id);
       try {
-        const result = await sendPayoutEmail(tutor);
-        if (result.success) {
-          successCount++;
-        } else {
-          failCount++;
-        }
+        await sendPayoutEmail(tutor);
+        successCount++;
       } catch (error) {
         console.error('Error sending payout email:', error);
         failCount++;
@@ -158,13 +127,13 @@ export default function TutorPayoutDashboard() {
     const csv = [
       ['Tutor Name', 'Email', 'Plan', 'Sessions', 'Gross (R)', 'Commission (R)', 'Net Payout (R)'].join(','),
       ...payoutRows.map(t => [
-        t.full_name, t.user_email, t.isPro ? 'Pro' : 'Standard', 
+        t.full_name, t.user_email, t.isPro ? 'Pro' : 'Standard',
         t.bookingCount, t.grossRevenue, t.commission.toFixed(2), t.netPayout.toFixed(2)
       ].join(','))
     ].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `payouts-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = 'tutor-payouts.csv'; a.click();
     URL.revokeObjectURL(url);
   };
 
@@ -176,7 +145,7 @@ export default function TutorPayoutDashboard() {
     return d.toLocaleDateString('en-ZA', { weekday: 'long', day: 'numeric', month: 'long' });
   })();
 
-  if (loading) return <div className="py-10 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>;
+  if (loading) return <div className="py-10 flex justify-center"><div className="w-6 h-6 border-2 border-primary/20 border-t-primary rounded-full animate-spin" /></div>;
 
   return (
     <div className="space-y-4">
@@ -198,9 +167,9 @@ export default function TutorPayoutDashboard() {
       {/* Summary */}
       <div className="grid sm:grid-cols-3 gap-4">
         {[
-          { label: 'Total Gross Revenue', value: `${currency} ${totalGross}`, color: 'bg-blue-100 text-blue-700' },
-          { label: 'Platform Commission', value: `${currency} ${totalCommission.toFixed(2)}`, color: 'bg-amber-100 text-amber-700' },
-          { label: 'Total Tutor Payouts', value: `${currency} ${totalPayout.toFixed(2)}`, color: 'bg-green-100 text-green-700' },
+          { label: 'Total Gross Revenue', value: `R${totalGross}`, color: 'bg-blue-100 text-blue-700' },
+          { label: 'Platform Commission', value: `R${totalCommission.toFixed(2)}`, color: 'bg-amber-100 text-amber-700' },
+          { label: 'Total Tutor Payouts', value: `R${totalPayout.toFixed(2)}`, color: 'bg-green-100 text-green-700' },
         ].map(({ label, value, color }) => (
           <Card key={label}>
             <CardContent className="pt-4 pb-4">
@@ -224,7 +193,7 @@ export default function TutorPayoutDashboard() {
               <Button size="sm" variant="outline" className="h-7 px-2 gap-1 text-xs" onClick={exportPayoutCSV}>
                 <Download className="w-3 h-3" /> Export CSV
               </Button>
-              <Button size="sm" className="h-7 px-3 gap-1 text-xs bg-primary" onClick={notifyAllTutors} disabled={payoutRows.length === 0}>
+              <Button size="sm" className="h-7 px-3 gap-1 text-xs bg-primary" onClick={notifyAllTutors}>
                 <Send className="w-3 h-3" /> Notify All
               </Button>
             </div>
@@ -247,19 +216,17 @@ export default function TutorPayoutDashboard() {
                         {tutor.isPro ? 'Pro (0%)' : 'Standard (10%+R20)'}
                       </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {tutor.bookingCount} sessions · Gross: {currency} {tutor.grossRevenue} · Fee: {currency} {tutor.commission.toFixed(0)}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{tutor.bookingCount} sessions · Gross: R{tutor.grossRevenue} · Fee: R{tutor.commission.toFixed(0)}</p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="font-bold text-green-700 text-sm">{currency} {tutor.netPayout.toFixed(2)}</p>
+                    <p className="font-bold text-green-700 text-sm">R{tutor.netPayout.toFixed(2)}</p>
                     <p className="text-xs text-muted-foreground">net payout</p>
                   </div>
                   <Button size="sm" variant="outline"
                     className="h-7 px-2 gap-1 text-xs flex-shrink-0"
                     disabled={paying === tutor.id}
                     onClick={() => handleNotifyPayout(tutor)}>
-                    {paying === tutor.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
+                    {paying === tutor.id ? <span className="w-3 h-3 border border-primary/40 border-t-primary rounded-full animate-spin" /> : <Send className="w-3 h-3" />}
                     Notify
                   </Button>
                 </div>

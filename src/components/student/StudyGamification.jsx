@@ -1,121 +1,95 @@
+import { Badge } from '@/components/ui/badge';
+import { Shield } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Trophy, Flame, Loader2, AlertCircle, Award, Target, Star, Shield } from 'lucide-react';
+import { Trophy, Flame, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// PropTypes
-// ============================================================
-
 const UserProps = {
   email: PropTypes.string.isRequired,
-  id: PropTypes.string,
+  id: PropTypes.string
 };
-
 const propTypes = {
-  user: PropTypes.shape(UserProps).isRequired,
+  user: PropTypes.shape(UserProps).isRequired
 };
-
-// ============================================================
-// Badge Definitions
-// ============================================================
-
-const BADGES = [
-  { id: 'first_quiz', label: 'First Quiz', icon: '🎯', desc: 'Completed your first quiz', colorClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800' },
-  { id: 'streak_3', label: '3-Day Streak', icon: '🔥', desc: 'Studied 3 days in a row', colorClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800' },
-  { id: 'streak_7', label: 'Week Warrior', icon: '⚡', desc: 'Studied 7 days in a row', colorClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800' },
-  { id: 'quiz_master', label: 'Quiz Master', icon: '🏆', desc: 'Scored 80%+ on 5 quizzes', colorClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800' },
-  { id: 'top_scorer', label: 'Top Scorer', icon: '⭐', desc: 'Scored 100% on any quiz', colorClass: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800' },
-  { id: 'bookworm', label: 'Bookworm', icon: '📚', desc: 'Accessed 10+ resources', colorClass: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800' },
-];
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function StudyGamification({ user }) {
+const BADGES = [{
+  id: 'first_quiz',
+  label: 'First Quiz',
+  icon: '🎯',
+  desc: 'Completed your first quiz',
+  colorClass: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800'
+}, {
+  id: 'streak_3',
+  label: '3-Day Streak',
+  icon: '🔥',
+  desc: 'Studied 3 days in a row',
+  colorClass: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-300 dark:border-orange-800'
+}, {
+  id: 'streak_7',
+  label: 'Week Warrior',
+  icon: '⚡',
+  desc: 'Studied 7 days in a row',
+  colorClass: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/30 dark:text-purple-300 dark:border-purple-800'
+}, {
+  id: 'quiz_master',
+  label: 'Quiz Master',
+  icon: '🏆',
+  desc: 'Scored 80%+ on 5 quizzes',
+  colorClass: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
+}, {
+  id: 'top_scorer',
+  label: 'Top Scorer',
+  icon: '⭐',
+  desc: 'Scored 100% on any quiz',
+  colorClass: 'bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-950/30 dark:text-yellow-300 dark:border-yellow-800'
+}, {
+  id: 'bookworm',
+  label: 'Bookworm',
+  icon: '📚',
+  desc: 'Accessed 10+ resources',
+  colorClass: 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800'
+}];
+export default function StudyGamification({
+  user
+}) {
   const [quizResults, setQuizResults] = useState([]);
   const [earnedBadges, setEarnedBadges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // ============================================================
-  // Fetch and Process Gamification Metrics
-  // ============================================================
-
   useEffect(() => {
     if (!user?.email) return;
     fetchAndProcessGamificationMetrics();
   }, [user?.email]);
-
   const fetchAndProcessGamificationMetrics = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      // ✅ Fixed: student_email
-      const [quizQuery, progressQuery] = await Promise.all([
-        supabase
-          .from('quiz_results')
-          .select('percentage, score')
-          .eq('student_email', user.email),  // ✅ Fixed field name
-        
-        supabase
-          .from('student_progress')
-          .select('resources_accessed, last_accessed')  // ✅ Fixed field names
-          .eq('student_email', user.email)  // ✅ Fixed field name
-      ]);
-
+      const [quizQuery, progressQuery] = await Promise.all([supabase.from('quiz_results').select('percentage, score').eq('student_email', user.email), supabase.from('study_progress').select('study_sessions, last_access').eq('user_email', user.email)]);
       if (quizQuery.error) throw quizQuery.error;
       if (progressQuery.error) throw progressQuery.error;
-
       const qr = quizQuery.data || [];
       const prog = progressQuery.data || [];
-
       setQuizResults(qr);
-
-      // Calculate earned badges
       const badges = [];
-      
-      // Quiz badges
       if (qr.length >= 1) badges.push('first_quiz');
       if (qr.some(q => q.percentage >= 100)) badges.push('top_scorer');
       if (qr.filter(q => q.percentage >= 80).length >= 5) badges.push('quiz_master');
-      
-      // ✅ Fixed: resources_accessed
       const totalAccess = prog.reduce((s, p) => s + (p.resources_accessed || 0), 0);
       if (totalAccess >= 10) badges.push('bookworm');
-
-      // Streak calculation - ✅ Fixed: last_accessed
-      const rawDates = prog
-        .filter(p => p.last_accessed)
-        .map(p => p.last_accessed.split('T')[0]);
-      
-      const uniqueSortedDates = [...new Set(rawDates)].sort(
-        (a, b) => new Date(b).getTime() - new Date(a).getTime()
-      );
-
+      const rawDates = prog.filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+      const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
       let streak = 0;
       if (uniqueSortedDates.length > 0) {
         const todayStr = new Date().toISOString().split('T')[0];
         const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
         if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
           streak = 1;
           for (let i = 1; i < uniqueSortedDates.length; i++) {
             const prevTime = new Date(uniqueSortedDates[i - 1]).getTime();
             const currTime = new Date(uniqueSortedDates[i]).getTime();
             const dayDifference = (prevTime - currTime) / 86400000;
-
             if (dayDifference === 1) {
               streak++;
             } else if (dayDifference > 1) {
@@ -124,28 +98,20 @@ export default function StudyGamification({ user }) {
           }
         }
       }
-
       if (streak >= 3) badges.push('streak_3');
       if (streak >= 7) badges.push('streak_7');
-
       setEarnedBadges(badges);
-
-      // Log activity for POPIA compliance
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'gamification_viewed',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: 'Viewed gamification dashboard',
-          metadata: {
-            total_quizzes: qr.length,
-            total_badges: badges.length,
-            streak: streak
-          }
-        })
-        .catch(() => {});
-
+      await Promise.resolve(supabase.from('activity_log').insert({
+        event_type: 'gamification_viewed',
+        user_email: user.email,
+        user_id: user.id || null,
+        description: 'Viewed gamification dashboard',
+        metadata: {
+          total_quizzes: qr.length,
+          total_badges: badges.length,
+          streak: streak
+        }
+      })).catch(() => {});
     } catch (err) {
       console.error('Gamification tracking failure:', err);
       setError(err.message || 'Failed to pull player reward data.');
@@ -154,36 +120,18 @@ export default function StudyGamification({ user }) {
       setLoading(false);
     }
   };
-
-  // Calculate points - using score from quiz_results
-  const totalPoints = (quizResults.length * 10) +
-    (quizResults.reduce((s, q) => s + (q.score || 0), 0)) +
-    (earnedBadges.length * 50);
-
+  const totalPoints = quizResults.length * 10 + quizResults.reduce((s, q) => s + (q.score || 0), 0) + earnedBadges.length * 50;
   const level = Math.floor(totalPoints / 100) + 1;
   const progressToNext = totalPoints % 100;
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardContent className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground text-xs">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
           <span>Loading achievements...</span>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <Card className="border-border shadow-md max-w-sm mx-auto bg-card">
+  return <Card className="border-border shadow-md max-w-sm mx-auto bg-card">
       <CardHeader className="pb-3 border-b bg-muted/30">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -194,17 +142,15 @@ export default function StudyGamification({ user }) {
           </Badge>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-4 pt-4">
-        {/* Error Display */}
-        {error && (
-          <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[11px] font-medium flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
+        {}
+        {error && <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[11px] font-medium flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{error}</span>
-          </div>
-        )}
+          </div>}
 
-        {/* Level + Points */}
+        {}
         <div className="bg-gradient-to-r from-primary/5 to-amber-500/10 border border-border rounded-xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div>
@@ -218,40 +164,32 @@ export default function StudyGamification({ user }) {
               <span className="font-extrabold text-xs text-foreground">{quizResults.length} Quizzes</span>
             </div>
           </div>
-          
+
           <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
-            <div className="bg-primary rounded-full h-2 transition-all duration-500" style={{ width: `${progressToNext}%` }} />
+            <div className="bg-primary rounded-full h-2 transition-all duration-500" style={{
+            width: `${progressToNext}%`
+          }} />
           </div>
           <p className="text-[10px] font-semibold text-muted-foreground mt-1.5">
             {100 - progressToNext} XP to Level {level + 1}
           </p>
         </div>
 
-        {/* Badges Grid */}
+        {}
         <div>
           <p className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider mb-2">Unlocked Badges</p>
           <div className="grid grid-cols-3 gap-2">
             {BADGES.map(badge => {
-              const earned = earnedBadges.includes(badge.id);
-              return (
-                <div
-                  key={badge.id}
-                  title={badge.desc}
-                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all duration-300 ${
-                    earned 
-                      ? `${badge.colorClass} shadow-sm` 
-                      : 'bg-muted/30 border-border opacity-40 grayscale'
-                  }`}
-                >
+            const earned = earnedBadges.includes(badge.id);
+            return <div key={badge.id} title={badge.desc} className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition-all duration-300 ${earned ? `${badge.colorClass} shadow-sm` : 'bg-muted/30 border-border opacity-40 grayscale'}`}>
                   <span className="text-xl mb-1 select-none">{badge.icon}</span>
                   <p className="text-[9px] font-bold leading-tight uppercase tracking-tight truncate w-full">{badge.label}</p>
-                </div>
-              );
-            })}
+                </div>;
+          })}
           </div>
         </div>
 
-        {/* Stats Footer */}
+        {}
         <div className="grid grid-cols-3 gap-2 text-center pt-2.5 border-t border-border">
           <div className="bg-muted/30 rounded-xl p-2">
             <p className="font-black text-foreground text-sm">{quizResults.length}</p>
@@ -267,9 +205,6 @@ export default function StudyGamification({ user }) {
           </div>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
-
-// Add PropTypes to the component
 StudyGamification.propTypes = propTypes;

@@ -26,7 +26,7 @@ const toggleVariants = cva(
   }
 )
 
-const Toggle = React.forwardRef(({ className, variant, size, ...props }, ref) => (
+const Toggle = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof TogglePrimitive.Root>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof TogglePrimitive.Root>>} ref */ ({ className, variant, size, ...props }, ref) => (
   <TogglePrimitive.Root
     ref={ref}
     className={cn(toggleVariants({ variant, size, className }))}

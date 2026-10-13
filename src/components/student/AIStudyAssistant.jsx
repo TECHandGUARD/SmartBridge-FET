@@ -8,35 +8,35 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Bot, Send, Loader2, Sparkles, BookOpen, FileText, Lightbulb, RotateCcw, Shield, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { SUBJECTS } from '@/lib/subjects';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Fallback Prompts
-// ============================================================
-
-const FALLBACK_PROMPTS = [
-  { label: 'Explain a concept', icon: 'Lightbulb', prompt: 'Explain the following CAPS concept in simple terms: ' },
-  { label: 'Summarise notes', icon: 'FileText', prompt: 'Summarise the following study notes in bullet points: ' },
-  { label: 'Practice questions', icon: 'BookOpen', prompt: 'Give me 5 practice exam questions (with answers) for CAPS on: ' },
-  { label: 'Study tips', icon: 'Sparkles', prompt: 'Give me top study tips and exam strategies for CAPS: ' },
-];
-
-const ICON_MAP = { Lightbulb, FileText, BookOpen, Sparkles };
-
+const FALLBACK_PROMPTS = [{
+  label: 'Explain a concept',
+  icon: 'Lightbulb',
+  prompt: 'Explain the following CAPS concept in simple terms: '
+}, {
+  label: 'Summarise notes',
+  icon: 'FileText',
+  prompt: 'Summarise the following study notes in bullet points: '
+}, {
+  label: 'Practice questions',
+  icon: 'BookOpen',
+  prompt: 'Give me 5 practice exam questions (with answers) for CAPS on: '
+}, {
+  label: 'Study tips',
+  icon: 'Sparkles',
+  prompt: 'Give me top study tips and exam strategies for CAPS: '
+}];
+const ICON_MAP = {
+  Lightbulb,
+  FileText,
+  BookOpen,
+  Sparkles
+};
 const FALLBACK_WELCOME = "Hi! 👋 I'm your AI Study Assistant. I can help you explain CAPS concepts, summarise notes, generate practice questions, and give study tips.\n\nWhat would you like help with today?";
-
 const GRADES = ['Grade 10', 'Grade 11', 'Grade 12'];
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function AIStudyAssistant({ user }) {
+export default function AIStudyAssistant({
+  user
+}) {
   const [quickPrompts, setQuickPrompts] = useState(FALLBACK_PROMPTS);
   const [messages, setMessages] = useState(null);
   const [input, setInput] = useState('');
@@ -47,43 +47,31 @@ export default function AIStudyAssistant({ user }) {
   const [selectedResource, setSelectedResource] = useState('');
   const [error, setError] = useState(null);
   const bottomRef = useRef(null);
-
-  // ============================================================
-  // Load Chatbot Configuration
-  // ============================================================
-
   const loadConfig = useCallback(async () => {
     try {
-      const { data: configData, error: configError } = await supabase
-        .functions.invoke('get-chatbot-configuration', { body: {} });
-      
+      const {
+        data: configData,
+        error: configError
+      } = await supabase.functions.invoke('get-chatbot-configuration', {
+        body: {}
+      });
       if (configError) throw configError;
-      
       if (configData?.studyAssistantPrompts?.length) {
         setQuickPrompts(configData.studyAssistantPrompts);
       }
     } catch (err) {
       console.error('Error loading config:', err);
-      // Use fallback prompts
       setQuickPrompts(FALLBACK_PROMPTS);
     }
   }, []);
-
-  // ============================================================
-  // Load Resources (Unified Resources)
-  // ============================================================
-
   const loadResources = useCallback(async () => {
     try {
-      // Load from unified_resources table (includes both admin and tutor resources)
-      const { data, error } = await supabase
-        .from('unified_resources')
-        .select('*')
-        .eq('is_active', true)
-        .eq('is_approved', true)  // Only show approved resources
-        .order('created_at', { ascending: false })
-        .limit(20);
-      
+      const {
+        data,
+        error
+      } = await supabase.from('resources').select('*').eq('is_approved', true).order('created_at', {
+        ascending: false
+      }).limit(20);
       if (error) throw error;
       setResources(data || []);
     } catch (err) {
@@ -92,66 +80,46 @@ export default function AIStudyAssistant({ user }) {
       setResources([]);
     }
   }, []);
-
-  // ============================================================
-  // Initialize
-  // ============================================================
-
   useEffect(() => {
     Promise.all([loadConfig(), loadResources()]).catch(() => {});
-    setMessages([{ role: 'assistant', content: FALLBACK_WELCOME }]);
-
-    // Log activity
+    setMessages([{
+      role: 'assistant',
+      content: FALLBACK_WELCOME
+    }]);
     if (user?.email) {
-      supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'ai_assistant_started',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: 'Started AI Study Assistant session'
-        })
-        .catch(() => {});
+      Promise.resolve(supabase.from('activity_log').insert({
+        event_type: 'ai_assistant_started',
+        user_email: user.email,
+        user_id: user.id || null,
+        description: 'Started AI Study Assistant session'
+      })).catch(() => {});
     }
   }, [loadConfig, loadResources, user]);
-
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({
+      behavior: 'smooth'
+    });
   }, [messages, loading]);
-
-  // ============================================================
-  // Send Message to LLM
-  // ============================================================
-
-  const sendMessage = async (text) => {
+  const sendMessage = async text => {
     const userText = (text || input).trim();
     if (!userText || !messages) return;
-    
     setInput('');
     setError(null);
-
     const resource = resources.find(r => r.id === selectedResource);
-    const contextNote = resource
-      ? `\n\n[Context: The student is referring to "${resource.title}" (${resource.subject}, ${resource.grade}).]`
-      : '';
+    const contextNote = resource ? `\n\n[Context: The student is referring to "${resource.title}" (${resource.subject}, ${resource.grade}).]` : '';
     const subjectNote = subject ? `\n\n[Student is studying: ${subject}]` : '';
     const gradeNote = grade ? `\n\n[Student is in: ${grade}]` : '';
-
-    setMessages(prev => [...prev, { role: 'user', content: userText }]);
+    setMessages(prev => [...prev, {
+      role: 'user',
+      content: userText
+    }]);
     setLoading(true);
-
-    // Security: Prevent prompt injection
-    const sanitizedInput = userText
-      .replace(/<script/g, '&lt;script')
-      .replace(/<\/script>/g, '&lt;/script&gt;')
-      .slice(0, 2000); // Limit input length
-
-    const baseGuardrail = `You are a strict South African CAPS curriculum tutor for Grades 10-12. 
-Only provide educationally appropriate content aligned with CAPS. 
+    const sanitizedInput = userText.replace(/<script/g, '&lt;script').replace(/<\/script>/g, '&lt;/script&gt;').slice(0, 2000);
+    const baseGuardrail = `You are a strict South African CAPS curriculum tutor for Grades 10-12.
+Only provide educationally appropriate content aligned with CAPS.
 Politely decline off-topic, harmful, or non-educational requests.
 Never share personal information or tutor contracts.
 Do not provide answers to assessment questions without teaching the concept first.`;
-
     const systemContext = `${baseGuardrail}
 
 You help students understand difficult concepts, summarise notes, and prepare for exams.
@@ -160,94 +128,75 @@ Structure your answers with bullet points and bold headings where helpful.
 Reference CAPS topics and exam tips when relevant.${subjectNote}${gradeNote}${contextNote}
 
 Important: If the student asks about tutor contracts, Terms of Service, or other confidential information, politely decline and redirect to the support team.`;
-
     try {
-      const { data, error: invokeError } = await supabase.functions.invoke('invoke-llm', {
+      const {
+        data,
+        error: invokeError
+      } = await supabase.functions.invoke('invoke-llm', {
         body: {
-          prompt: `${systemContext}\n\nStudent question: ${sanitizedInput}`,
-          model: 'claude-3-sonnet-20241022',
-          user_email: user?.email || 'anonymous',
+          prompt: `${systemContext}\n\nStudent question: ${userText}`,
+          task: 'study-assistant',
+          user_email: user?.email,
           subject: subject || null,
           grade: grade || null,
           user_id: user?.id || null
         }
       });
-      
       if (invokeError) throw invokeError;
-      
       const response = data?.response || 'Sorry, I could not generate a response. Please try again.';
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-
-      // Log activity for POPIA compliance
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: response
+      }]);
       if (user?.email) {
-        await supabase
-          .from('activity_log')
-          .insert({
-            event_type: 'ai_assistant_query',
-            user_email: user.email,
-            user_id: user.id || null,
-            description: `AI Assistant query: ${sanitizedInput.slice(0, 100)}${sanitizedInput.length > 100 ? '...' : ''}`,
-            metadata: {
-              subject: subject || null,
-              grade: grade || null,
-              resource_id: selectedResource || null,
-              message_length: sanitizedInput.length
-            }
-          })
-          .catch(() => {});
+        await Promise.resolve(supabase.from('activity_log').insert({
+          event_type: 'ai_assistant_query',
+          user_email: user.email,
+          user_id: user.id || null,
+          description: `AI Assistant query: ${sanitizedInput.slice(0, 100)}${sanitizedInput.length > 100 ? '...' : ''}`,
+          metadata: {
+            subject: subject || null,
+            grade: grade || null,
+            resource_id: selectedResource || null,
+            message_length: sanitizedInput.length
+          }
+        })).catch(() => {});
       }
-
     } catch (err) {
       console.error('LLM error:', err);
       setError('Failed to get response. Please try again.');
       toast.error('Failed to get response. Please try again.');
-      setMessages(prev => [...prev, { 
-        role: 'assistant', 
-        content: 'Sorry, something went wrong. Please try again in a moment.' 
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: 'Sorry, something went wrong. Please try again in a moment.'
       }]);
     } finally {
       setLoading(false);
     }
   };
-
   const reset = () => {
-    setMessages([{ role: 'assistant', content: FALLBACK_WELCOME }]);
+    setMessages([{
+      role: 'assistant',
+      content: FALLBACK_WELCOME
+    }]);
     setError(null);
-    
-    // Log reset
     if (user?.email) {
-      supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'ai_assistant_reset',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: 'Reset AI Study Assistant chat'
-        })
-        .catch(() => {});
+      Promise.resolve(supabase.from('activity_log').insert({
+        event_type: 'ai_assistant_reset',
+        user_email: user.email,
+        user_id: user.id || null,
+        description: 'Reset AI Study Assistant chat'
+      })).catch(() => {});
     }
   };
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (!messages) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardContent className="flex items-center justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <Card className="border-border">
+  return <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="font-playfair text-lg flex items-center gap-2">
@@ -267,7 +216,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
           </div>
         </div>
 
-        {/* Filters */}
+        {}
         <div className="flex gap-2 flex-wrap mt-2">
           <Select value={subject} onValueChange={setSubject}>
             <SelectTrigger className="h-8 text-xs w-44">
@@ -278,7 +227,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
               {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.icon} {s.name}</SelectItem>)}
             </SelectContent>
           </Select>
-          
+
           <Select value={grade} onValueChange={setGrade}>
             <SelectTrigger className="h-8 text-xs w-36">
               <SelectValue placeholder="Filter by grade…" />
@@ -288,107 +237,81 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
               {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
             </SelectContent>
           </Select>
-          
-          {resources.length > 0 && (
-            <Select value={selectedResource} onValueChange={setSelectedResource}>
+
+          {resources.length > 0 && <Select value={selectedResource} onValueChange={setSelectedResource}>
               <SelectTrigger className="h-8 text-xs w-52">
                 <SelectValue placeholder="Ask about a resource…" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="">No resource selected</SelectItem>
-                {resources.slice(0, 15).map(r => (
-                  <SelectItem key={r.id} value={r.id}>
+                {resources.slice(0, 15).map(r => <SelectItem key={r.id} value={r.id}>
                     {r.source_type === 'tutor' ? '👨‍🏫 ' : '📚 '}
                     {r.title.substring(0, 34)}{r.title.length > 34 ? '…' : ''}
-                  </SelectItem>
-                ))}
+                  </SelectItem>)}
               </SelectContent>
-            </Select>
-          )}
+            </Select>}
         </div>
 
-        {/* Quick Prompts */}
+        {}
         <div className="flex gap-2 flex-wrap mt-1">
-          {quickPrompts.map(({ label, icon, prompt }) => {
-            const Icon = ICON_MAP[icon] || Lightbulb;
-            return (
-              <button 
-                key={label} 
-                onClick={() => setInput(prompt)}
-                className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-muted hover:bg-primary/10 hover:text-primary transition-colors border border-border"
-                disabled={loading}
-              >
+          {quickPrompts.map(({
+          label,
+          icon,
+          prompt
+        }) => {
+          const Icon = ICON_MAP[icon] || Lightbulb;
+          return <button key={label} onClick={() => setInput(prompt)} className="flex items-center gap-1 text-xs px-2.5 py-1 rounded-full bg-muted hover:bg-primary/10 hover:text-primary transition-colors border border-border" disabled={loading}>
                 <Icon className="w-3 h-3" /> {label}
-              </button>
-            );
-          })}
+              </button>;
+        })}
         </div>
       </CardHeader>
 
       <CardContent className="p-0">
-        {/* Error Display */}
-        {error && (
-          <div className="px-4 pt-2">
+        {}
+        {error && <div className="px-4 pt-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-2 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
               <p className="text-xs text-red-700">{error}</p>
             </div>
-          </div>
-        )}
+          </div>}
 
-        {/* Messages */}
+        {}
         <div className="h-80 overflow-y-auto px-4 py-2 space-y-4">
-          {messages.map((msg, i) => (
-            <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              {msg.role === 'assistant' && (
-                <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
+          {messages.map((msg, i) => <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+              {msg.role === 'assistant' && <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Bot className="w-3.5 h-3.5 text-primary-foreground" />
-                </div>
-              )}
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
-                msg.role === 'user'
-                  ? 'bg-primary text-primary-foreground rounded-tr-sm'
-                  : 'bg-muted text-foreground rounded-tl-sm'
-              }`}>
+                </div>}
+              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'}`}>
                 {msg.content}
               </div>
-            </div>
-          ))}
-          {loading && (
-            <div className="flex gap-2.5">
+            </div>)}
+          {loading && <div className="flex gap-2.5">
               <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
                 <Bot className="w-3.5 h-3.5 text-primary-foreground" />
               </div>
               <div className="bg-muted rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" /> Thinking…
               </div>
-            </div>
-          )}
+            </div>}
           <div ref={bottomRef} />
         </div>
 
-        {/* Input */}
+        {}
         <div className="border-t border-border px-4 py-3 flex gap-2">
-          <Input
-            placeholder="Ask about a CAPS concept, request a summary, or get practice questions…"
-            value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-            disabled={loading}
-            className="text-sm"
-            maxLength={2000}
-          />
-          <Button 
-            onClick={() => sendMessage()} 
-            disabled={loading || !input.trim()} 
-            className="bg-primary gap-1.5 flex-shrink-0"
-          >
+          <Input placeholder="Ask about a CAPS concept, request a summary, or get practice questions…" value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+          }
+        }} disabled={loading} className="text-sm" maxLength={2000} />
+          <Button onClick={() => sendMessage()} disabled={loading || !input.trim()} className="bg-primary gap-1.5 flex-shrink-0">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             Send
           </Button>
         </div>
 
-        {/* Privacy Note */}
+        {}
         <div className="px-4 py-1.5 border-t border-border/50">
           <p className="text-[9px] text-muted-foreground text-center">
             🔒 Your conversations are private and used only for educational purposes.
@@ -396,6 +319,5 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
           </p>
         </div>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

@@ -3,45 +3,28 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TrendingUp, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import PropTypes from 'prop-types';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
 const STAGE_COLORS = {
-  Saved:        '#94a3b8',
-  Started:      '#60a5fa',
-  Submitted:    '#a78bfa',
-  'Pending NBT':'#fbbf24',
-  Accepted:     '#22c55e',
-  Rejected:     '#f87171',
-  Waitlisted:   '#fb923c',
+  Saved: '#94a3b8',
+  Started: '#60a5fa',
+  Submitted: '#a78bfa',
+  'Pending NBT': '#fbbf24',
+  Accepted: '#22c55e',
+  Rejected: '#f87171',
+  Waitlisted: '#fb923c'
 };
-
 const TERMINAL_STAGES = ['Submitted', 'Accepted', 'Rejected', 'Waitlisted'];
-
-// ============================================================
-// PropTypes
-// ============================================================
-
 const propTypes = {
-  applications: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.string,
-      stage: PropTypes.string,
-      deadline: PropTypes.string,
-      university_name: PropTypes.string,
-    })
-  ).isRequired,
+  applications: PropTypes.arrayOf(PropTypes.shape({
+    id: PropTypes.string,
+    stage: PropTypes.string,
+    deadline: PropTypes.string,
+    university_name: PropTypes.string
+  })).isRequired
 };
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function ApplicationAnalytics({ applications = [] }) {
+export default function ApplicationAnalytics({
+  applications = []
+}) {
   const stats = useMemo(() => {
     if (!applications || applications.length === 0) {
       return {
@@ -49,10 +32,9 @@ export default function ApplicationAnalytics({ applications = [] }) {
         stageData: [],
         byStage: {},
         upcoming: [],
-        overdue: [],
+        overdue: []
       };
     }
-
     const now = new Date();
     const total = applications.length;
     const byStage = applications.reduce((acc, a) => {
@@ -60,58 +42,60 @@ export default function ApplicationAnalytics({ applications = [] }) {
       acc[stage] = (acc[stage] || 0) + 1;
       return acc;
     }, {});
-
-    const stageData = Object.entries(byStage).map(([stage, count]) => ({ stage, count }));
-
-    const upcoming = applications
-      .filter(a => a.deadline && new Date(a.deadline) > now)
-      .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-      .slice(0, 4);
-
-    const overdue = applications.filter(a => 
-      a.deadline && 
-      new Date(a.deadline) < now && 
-      !TERMINAL_STAGES.includes(a.stage || '')
-    );
-
-    return { total, stageData, byStage, upcoming, overdue };
+    const stageData = Object.entries(byStage).map(([stage, count]) => ({
+      stage,
+      count
+    }));
+    const upcoming = applications.filter(a => a.deadline && new Date(a.deadline) > new Date()).sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()).slice(0, 4);
+    const overdue = applications.filter(a => a.deadline && new Date(a.deadline) < new Date() && !['Submitted', 'Accepted', 'Rejected', 'Waitlisted'].includes(a.stage));
+    return {
+      total,
+      stageData,
+      byStage,
+      upcoming,
+      overdue
+    };
   }, [applications]);
-
-  // Empty state
   if (applications.length === 0) {
     return null;
   }
-
   const accepted = stats.byStage['Accepted'] || 0;
-  const submitted = (stats.byStage['Submitted'] || 0) + 
-                   (stats.byStage['Pending NBT'] || 0) + 
-                   accepted + 
-                   (stats.byStage['Waitlisted'] || 0);
-  const successRate = submitted > 0 ? Math.round((accepted / submitted) * 100) : 0;
-
-  return (
-    <div className="space-y-4">
-      {/* KPI row */}
+  const submitted = (stats.byStage['Submitted'] || 0) + (stats.byStage['Pending NBT'] || 0) + accepted + (stats.byStage['Waitlisted'] || 0);
+  const successRate = submitted > 0 ? Math.round(accepted / submitted * 100) : 0;
+  return <div className="space-y-4">
+      {}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {[
-          { label: "Tracked", value: stats.total, icon: <TrendingUp className="w-4 h-4 text-primary" />, color: "bg-primary/5" },
-          { label: "Submitted", value: submitted, icon: <Clock className="w-4 h-4 text-purple-500" />, color: "bg-purple-50" },
-          { label: "Accepted", value: accepted, icon: <CheckCircle2 className="w-4 h-4 text-green-500" />, color: "bg-green-50" },
-          { label: "Success Rate", value: `${successRate}%`, icon: <TrendingUp className="w-4 h-4 text-amber-500" />, color: "bg-amber-50" },
-        ].map(k => (
-          <div key={k.label} className={`${k.color} rounded-xl p-3 flex items-center gap-2`}>
+        {[{
+        label: "Tracked",
+        value: stats.total,
+        icon: <TrendingUp className="w-4 h-4 text-primary" />,
+        color: "bg-primary/5"
+      }, {
+        label: "Submitted",
+        value: submitted,
+        icon: <Clock className="w-4 h-4 text-purple-500" />,
+        color: "bg-purple-50"
+      }, {
+        label: "Accepted",
+        value: accepted,
+        icon: <CheckCircle2 className="w-4 h-4 text-green-500" />,
+        color: "bg-green-50"
+      }, {
+        label: "Success Rate",
+        value: `${successRate}%`,
+        icon: <TrendingUp className="w-4 h-4 text-amber-500" />,
+        color: "bg-amber-50"
+      }].map(k => <div key={k.label} className={`${k.color} rounded-xl p-3 flex items-center gap-2`}>
             {k.icon}
             <div>
               <div className="text-lg font-bold text-foreground leading-none">{k.value}</div>
               <div className="text-xs text-muted-foreground">{k.label}</div>
             </div>
-          </div>
-        ))}
+          </div>)}
       </div>
 
-      {/* Stage bar chart */}
-      {stats.stageData.length > 0 && (
-        <Card className="border-border">
+      {}
+      {stats.stageData.length > 0 && <Card className="border-border">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
               Applications by Stage
@@ -119,48 +103,35 @@ export default function ApplicationAnalytics({ applications = [] }) {
           </CardHeader>
           <CardContent className="pt-0">
             <ResponsiveContainer width="100%" height={140}>
-              <BarChart 
-                data={stats.stageData} 
-                margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
-              >
-                <XAxis 
-                  dataKey="stage" 
-                  tick={{ fontSize: 10 }} 
-                  tickLine={false} 
-                  axisLine={false} 
-                />
-                <YAxis 
-                  tick={{ fontSize: 10 }} 
-                  tickLine={false} 
-                  axisLine={false} 
-                  allowDecimals={false} 
-                />
-                <Tooltip
-                  contentStyle={{ 
-                    fontSize: 12, 
-                    borderRadius: 8, 
-                    border: '1px solid hsl(var(--border))' 
-                  }}
-                  cursor={{ fill: 'hsl(var(--muted))' }}
-                  formatter={(value, name) => [`${value} applications`, name]}
-                />
+              <BarChart data={stats.stageData} margin={{
+            top: 4,
+            right: 4,
+            left: -20,
+            bottom: 0
+          }}>
+                <XAxis dataKey="stage" tick={{
+              fontSize: 10
+            }} tickLine={false} axisLine={false} />
+                <YAxis tick={{
+              fontSize: 10
+            }} tickLine={false} axisLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={{
+              fontSize: 12,
+              borderRadius: 8,
+              border: '1px solid hsl(var(--border))'
+            }} cursor={{
+              fill: 'hsl(var(--muted))'
+            }} formatter={(value, name) => [`${value} applications`, name]} />
                 <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                  {stats.stageData.map((entry) => (
-                    <Cell 
-                      key={entry.stage} 
-                      fill={STAGE_COLORS[entry.stage] || '#94a3b8'} 
-                    />
-                  ))}
+                  {stats.stageData.map(entry => <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] || '#94a3b8'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {/* Overdue alert */}
-      {stats.overdue.length > 0 && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+      {}
+      {stats.overdue.length > 0 && <div className="bg-red-50 border border-red-200 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1.5">
             <AlertCircle className="w-4 h-4 text-red-500" />
             <span className="text-sm font-semibold text-red-700">
@@ -170,20 +141,16 @@ export default function ApplicationAnalytics({ applications = [] }) {
           <p className="text-[10px] text-red-600 mb-2">
             These applications have passed their deadline. Please take action.
           </p>
-          {stats.overdue.map(a => (
-            <div key={a.id} className="flex items-center justify-between text-xs py-0.5">
+          {stats.overdue.map(a => <div key={a.id} className="flex items-center justify-between text-xs py-0.5">
               <span className="font-medium text-red-800">{a.university_name}</span>
               <span className="text-red-600">
                 {new Date(a.deadline).toLocaleDateString('en-ZA')}
               </span>
-            </div>
-          ))}
-        </div>
-      )}
+            </div>)}
+        </div>}
 
-      {/* Upcoming deadlines */}
-      {stats.upcoming.length > 0 && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+      {}
+      {stats.upcoming.length > 0 && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
           <div className="flex items-center gap-1.5 mb-1.5">
             <Clock className="w-4 h-4 text-amber-500" />
             <span className="text-sm font-semibold text-amber-800">
@@ -194,24 +161,15 @@ export default function ApplicationAnalytics({ applications = [] }) {
             Make sure you're prepared for these upcoming deadlines.
           </p>
           {stats.upcoming.map(a => {
-            const daysLeft = Math.ceil((new Date(a.deadline) - new Date()) / 86400000);
-            return (
-              <div key={a.id} className="flex items-center justify-between text-xs py-0.5">
+        const daysLeft = Math.ceil((new Date(a.deadline).getTime() - new Date().getTime()) / 86400000);
+        return <div key={a.id} className="flex items-center justify-between text-xs py-0.5">
                 <span className="font-medium text-amber-900">{a.university_name}</span>
                 <span className={`font-semibold ${daysLeft <= 7 ? 'text-red-600' : 'text-amber-700'}`}>
                   {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
                 </span>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  );
+              </div>;
+      })}
+        </div>}
+    </div>;
 }
-
-// ============================================================
-// PropTypes
-// ============================================================
-
 ApplicationAnalytics.propTypes = propTypes;

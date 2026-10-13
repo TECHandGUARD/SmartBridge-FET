@@ -59,12 +59,12 @@ export default function SimulationLab({ isTutor = false, user = null }) {
       const { data, error: dbError } = await query;
 
       if (dbError) throw dbError;
-      
+
       setSimulations(data || []);
-      
+
       // Log activity (non-PII)
       if (user?.email) {
-        await supabase
+        await Promise.resolve(supabase
           .from('activity_log')
           .insert({
             event_type: 'simulation_lab_viewed',
@@ -75,7 +75,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
               simulation_count: data?.length || 0,
               is_tutor: isTutor
             }
-          })
+          }))
           .catch(() => {}); // Silent fail for logging
       }
 
@@ -125,7 +125,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
       toast.error('This simulation has no URL configured.');
       return;
     }
-    
+
     // Basic URL safety check
     try {
       const url = new URL(sim.simulation_url);
@@ -142,11 +142,11 @@ export default function SimulationLab({ isTutor = false, user = null }) {
         'youtu.be',
         'www.youtube.com'
       ];
-      
-      const isSafe = approvedDomains.some(domain => 
+
+      const isSafe = approvedDomains.some(domain =>
         url.hostname === domain || url.hostname.endsWith(`.${domain}`)
       );
-      
+
       if (!isSafe && !isTutor) {
         toast.error('This simulation content is not from an approved educational source.');
         return;
@@ -169,7 +169,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-4 p-1">
-      
+
       {/* Simulation Overlay Player */}
       {activeSim && (
         <SimulationPlayer
@@ -183,7 +183,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
       <Card className="border-border shadow-xl bg-card">
         <CardHeader className="pb-4 border-b bg-muted/30">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            
+
             <CardTitle className="text-lg font-playfair flex items-center gap-2">
               <FlaskConical className="w-5 h-5 text-primary" /> Science Simulation Lab
               {isTutor && (
@@ -200,7 +200,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
 
             {/* Filter Buttons */}
             <div className="flex items-center gap-2.5 flex-wrap">
-              
+
               {/* Subject Filters */}
               <div className="flex rounded-xl overflow-hidden border border-border bg-card p-0.5 shadow-sm">
                 {SUBJECT_OPTIONS.map(s => (
@@ -240,9 +240,9 @@ export default function SimulationLab({ isTutor = false, user = null }) {
               </div>
 
               {/* Refresh Button */}
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8"
                 onClick={handleRetry}
                 disabled={loading}
@@ -252,7 +252,7 @@ export default function SimulationLab({ isTutor = false, user = null }) {
               </Button>
             </div>
           </div>
-          
+
           {/* Simulation Count */}
           {!loading && !error && (
             <div className="text-[11px] text-muted-foreground mt-1">
@@ -262,9 +262,9 @@ export default function SimulationLab({ isTutor = false, user = null }) {
             </div>
           )}
         </CardHeader>
-        
+
         <CardContent className="pt-6">
-          
+
           {/* Error Banner */}
           {error && (
             <div className="p-3 mb-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold flex items-center justify-between">
@@ -272,8 +272,8 @@ export default function SimulationLab({ isTutor = false, user = null }) {
                 <AlertCircle className="w-4 h-4 text-red-500" />
                 <span>Error: {error}</span>
               </div>
-              <button 
-                onClick={handleRetry} 
+              <button
+                onClick={handleRetry}
                 className="text-primary hover:underline flex items-center gap-1 font-medium"
               >
                 <RefreshCw className="w-3 h-3" /> Retry
@@ -292,9 +292,9 @@ export default function SimulationLab({ isTutor = false, user = null }) {
               {/* Simulations Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {filteredSims.map(sim => (
-                  <SimulationCard 
-                    key={sim.id} 
-                    simulation={sim} 
+                  <SimulationCard
+                    key={sim.id}
+                    simulation={sim}
                     onPlay={handlePlay}
                     showApprovalStatus={isTutor}
                   />
@@ -335,8 +335,8 @@ export default function SimulationLab({ isTutor = false, user = null }) {
                       </Badge>
                     </div>
                   </div>
-                  <QuizSync 
-                    simulation={filteredSims[0]} 
+                  <QuizSync
+                    simulation={filteredSims[0]}
                     isAdmin={isTutor}
                     user={user}
                   />

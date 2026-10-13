@@ -5,62 +5,40 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { BarChart2, Search, TrendingUp, BookOpen, Bell, Loader2 } from 'lucide-react';
+import { BarChart2, Search, TrendingUp, Bell, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Main Component
-// ============================================================
-
 export default function ParentSummaryReport() {
   const [email, setEmail] = useState('');
   const [searched, setSearched] = useState('');
   const [progress, setProgress] = useState([]);
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const search = async () => {
     if (!email.trim()) {
       toast.error('Please enter a student email');
       return;
     }
-    
-    // Basic email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email.trim())) {
       toast.error('Please enter a valid email address.');
       return;
     }
-    
     setLoading(true);
     try {
-      // Load student progress
-      const { data: prog, error: progError } = await supabase
-        .from('student_progress')
-        .select('*')
-        .eq('student_email', email.trim());
-      
+      const {
+        data: prog,
+        error: progError
+      } = await supabase.from('study_progress').select('*').eq('student_email', email.trim());
       if (progError) throw progError;
-      
-      // Load study reminders
-      const { data: rems, error: remsError } = await supabase
-        .from('study_reminders')
-        .select('*')
-        .eq('student_email', email.trim())
-        .eq('is_active', true);
-      
+      const {
+        data: rems,
+        error: remsError
+      } = await supabase.from('study_reminders').select('*').eq('student_email', email.trim()).eq('is_active', true);
       if (remsError) throw remsError;
-      
       setProgress(prog || []);
       setReminders(rems || []);
       setSearched(email.trim());
-      
       if ((prog || []).length === 0) {
         toast.info('No progress data found for this student');
       }
@@ -71,12 +49,9 @@ export default function ParentSummaryReport() {
       setLoading(false);
     }
   };
-
   const totalSessions = progress.reduce((s, p) => s + (p.resources_accessed || 0), 0);
   const topSubject = [...progress].sort((a, b) => (b.resources_accessed || 0) - (a.resources_accessed || 0))[0];
-
-  return (
-    <Card className="border-border">
+  return <Card className="border-border">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg font-playfair flex items-center gap-2">
           <BarChart2 className="w-5 h-5 text-primary" /> Child Progress Report
@@ -84,24 +59,14 @@ export default function ParentSummaryReport() {
       </CardHeader>
       <CardContent>
         <div className="flex gap-2 mb-4">
-          <Input
-            placeholder="Enter child's email address..."
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && search()}
-            disabled={loading}
-          />
+          <Input placeholder="Enter child's email address..." value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} disabled={loading} />
           <Button onClick={search} disabled={loading} className="bg-primary shrink-0">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
           </Button>
         </div>
 
-        {searched && !loading && (
-          progress.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">No progress data found for this student yet.</p>
-          ) : (
-            <div className="space-y-4">
-              {/* Summary stats */}
+        {searched && !loading && (progress.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No progress data found for this student yet.</p> : <div className="space-y-4">
+              {}
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-primary/5 rounded-xl p-3 text-center">
                   <p className="font-playfair text-2xl font-bold text-primary">{progress.length}</p>
@@ -117,27 +82,24 @@ export default function ParentSummaryReport() {
                 </div>
               </div>
 
-              {/* Top subject highlight */}
-              {topSubject && (
-                <div className="bg-green-50 border border-green-200 rounded-xl p-3">
+              {}
+              {topSubject && <div className="bg-green-50 border border-green-200 rounded-xl p-3">
                   <p className="text-xs font-semibold text-green-700 flex items-center gap-1">
                     <TrendingUp className="w-3 h-3" /> Most Studied Subject
                   </p>
                   <p className="text-sm font-medium mt-1">
                     {topSubject.subject} — {topSubject.resources_accessed} sessions
                   </p>
-                </div>
-              )}
+                </div>}
 
-              {/* Per subject */}
+              {}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Subject Activity</p>
                 <div className="space-y-2">
                   {progress.map(p => {
-                    const sub = SUBJECTS.find(s => s.name === p.subject);
-                    const pct = Math.min(100, (p.resources_accessed || 0) * 10);
-                    return (
-                      <div key={p.id} className="space-y-1">
+              const sub = SUBJECTS.find(s => s.name === p.subject);
+              const pct = Math.min(100, (p.resources_accessed || 0) * 10);
+              return <div key={p.id} className="space-y-1">
                         <div className="flex items-center justify-between text-sm">
                           <span className="flex items-center gap-1.5">
                             {sub?.icon || '📚'} <span className="font-medium">{p.subject}</span>
@@ -148,36 +110,28 @@ export default function ParentSummaryReport() {
                           </div>
                         </div>
                         <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${pct}%` }} />
+                          <div className="h-full bg-primary rounded-full" style={{
+                    width: `${pct}%`
+                  }} />
                         </div>
-                        {p.last_accessed && (
-                          <p className="text-xs text-muted-foreground">Last studied: {p.last_accessed}</p>
-                        )}
-                      </div>
-                    );
-                  })}
+                        {p.last_accessed && <p className="text-xs text-muted-foreground">Last studied: {p.last_accessed}</p>}
+                      </div>;
+            })}
                 </div>
               </div>
 
-              {/* Reminders */}
-              {reminders.length > 0 && (
-                <div>
+              {}
+              {reminders.length > 0 && <div>
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
                     <Bell className="w-3 h-3" /> Active Study Reminders
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {reminders.map(r => (
-                      <Badge key={r.id} variant="secondary" className="text-xs gap-1">
+                    {reminders.map(r => <Badge key={r.id} variant="secondary" className="text-xs gap-1">
                         {SUBJECTS.find(s => s.name === r.subject)?.icon} {r.subject} — {r.day_of_week} {r.time}
-                      </Badge>
-                    ))}
+                      </Badge>)}
                   </div>
-                </div>
-              )}
-            </div>
-          )
-        )}
+                </div>}
+            </div>)}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

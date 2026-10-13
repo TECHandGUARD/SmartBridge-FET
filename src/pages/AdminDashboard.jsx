@@ -1,3 +1,8 @@
+import OperationsPanel from '@/components/admin/OperationsPanel';
+import PaymentGatewayPanel from '@/components/admin/PaymentGatewayPanel';
+import UniversityDirectoryAdmin from '@/components/admin/UniversityDirectoryAdmin';
+import {getAdminNotificationEmails} from '@/lib/admin-notifications';
+import {createClientReporter} from '@/lib/monitoring';
 // src/pages/AdminDashboard.jsx
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -11,7 +16,7 @@ import {
   Users, FileText, DollarSign, Activity, Shield, TrendingUp,
   BookOpen, Mail, Send, Loader2, RefreshCw, Star, Megaphone, Database, Cpu,
   BarChart2, Trophy, UserCheck, GraduationCap, ToggleLeft, ShieldCheck,
-  Settings, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight
+  Settings, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -21,25 +26,21 @@ import { toast } from 'sonner';
 
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-  
-  ADMIN_EMAILS: (import.meta.env.VITE_ADMIN_EMAILS || 'aneleqamata95@gmail.com,aneleq@techandguard.co.za')
-    .split(',')
-    .map(email => email.trim()),
-  
-  // ✅ PAGINATION CONFIGURATION FOR 200,000+ USERS
+
+// ✅ PAGINATION CONFIGURATION FOR 200,000+ USERS
   PAGINATION: {
     DEFAULT_PAGE_SIZE: Number(import.meta.env.VITE_ADMIN_PAGE_SIZE) || 50,
     MAX_PAGE_SIZE: Number(import.meta.env.VITE_ADMIN_MAX_PAGE_SIZE) || 100,
     ENABLE_VIRTUAL_SCROLL: import.meta.env.VITE_ENABLE_VIRTUAL_SCROLL !== 'false',
   },
-  
+
   // ✅ DATA LOADING STRATEGY
   DATA_LOADING: {
     INITIAL_LOAD: Number(import.meta.env.VITE_ADMIN_INITIAL_LOAD) || 50,
     BATCH_SIZE: Number(import.meta.env.VITE_ADMIN_BATCH_SIZE) || 100,
     MAX_TOTAL: Number(import.meta.env.VITE_ADMIN_MAX_TOTAL) || 10000,
   },
-  
+
   MESSAGES: {
     LOADING: import.meta.env.VITE_ADMIN_LOADING_MSG || 'Loading dashboard...',
     ACCESS_DENIED: import.meta.env.VITE_ADMIN_ACCESS_DENIED_MSG || 'Access Denied',
@@ -52,7 +53,7 @@ const CONFIG = {
     LOADING_MORE: import.meta.env.VITE_ADMIN_LOADING_MORE || 'Loading more...',
     NO_MORE: import.meta.env.VITE_ADMIN_NO_MORE || 'No more records to load.',
   },
-  
+
   FEATURES: {
     ENABLE_REAL_TIME: import.meta.env.VITE_ADMIN_ENABLE_REAL_TIME !== 'false',
     ENABLE_POLLING: import.meta.env.VITE_ADMIN_ENABLE_POLLING !== 'false',
@@ -60,12 +61,12 @@ const CONFIG = {
     ENABLE_EXPORT: import.meta.env.VITE_ADMIN_ENABLE_EXPORT !== 'false',
     ENABLE_PAGINATION: import.meta.env.VITE_ADMIN_ENABLE_PAGINATION !== 'false',
   },
-  
+
   REALTIME: {
     DEBOUNCE_DELAY: Number(import.meta.env.VITE_ADMIN_DEBOUNCE_DELAY) || 3000,
     POLLING_INTERVAL: Number(import.meta.env.VITE_ADMIN_POLLING_INTERVAL) || 300000,
   },
-  
+
   CURRENCY: import.meta.env.VITE_PREMIUM_CURRENCY || 'R',
 };
 
@@ -73,44 +74,14 @@ const CONFIG = {
 // 🛡️ Error Boundary for Subcomponents
 // ============================================================
 
-function SubComponentErrorBoundary({ children, fallback }) {
-  const [hasError, setHasError] = useState(false);
-  const [error, setError] = useState(null);
-
-  const handleReset = () => {
-    setHasError(false);
-    setError(null);
-  };
-
-  if (hasError) {
-    return (
-      <Card className="border-destructive/20 bg-destructive/5">
-        <CardContent className="pt-6 pb-6">
-          <div className="flex items-center gap-3 text-destructive">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <p className="text-sm font-medium">{CONFIG.MESSAGES.COMPONENT_ERROR}</p>
-              {import.meta.env.DEV && error && (
-                <pre className="text-xs mt-2 bg-muted p-2 rounded overflow-auto max-h-32">
-                  {error.message || 'Unknown error'}
-                </pre>
-              )}
-              <Button 
-                size="sm" 
-                variant="outline" 
-                className="mt-2 text-xs"
-                onClick={handleReset}
-              >
-                <RefreshCw className="w-3 h-3 mr-1" /> Retry
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
+class SubComponentErrorBoundary extends React.Component {
+  state={failed:false};
+  static getDerivedStateFromError(){return {failed:true};}
+  componentDidCatch(){createClientReporter(supabase)('render_error');}
+  render(){
+    if(this.state.failed) return <Card role="alert"><CardContent className="py-6"><p>{CONFIG.MESSAGES.COMPONENT_ERROR}</p><Button type="button" onClick={()=>this.setState({failed:false})}>Retry</Button></CardContent></Card>;
+    return this.props.children;
   }
-
-  return children;
 }
 
 function SafeSubComponent({ children }) {
@@ -127,10 +98,10 @@ function SafeSubComponent({ children }) {
 
 function PaginatedUsersTable({ users, totalCount, loading, onLoadMore, hasMore }) {
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const filteredUsers = useMemo(() => {
     if (!searchTerm.trim()) return users;
-    return users.filter(u => 
+    return users.filter(u =>
       u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -187,12 +158,12 @@ function PaginatedUsersTable({ users, totalCount, loading, onLoadMore, hasMore }
                 </tr>
               ))}
               {filteredUsers.length === 0 && (
-                <tr><td colSpan="4" className="text-center py-8 text-muted-foreground">{CONFIG.MESSAGES.NO_DATA}</td></tr>
+                <tr><td colSpan={4} className="text-center py-8 text-muted-foreground">{CONFIG.MESSAGES.NO_DATA}</td></tr>
               )}
             </tbody>
           </table>
         </div>
-        
+
         {/* Load More Button */}
         {hasMore && !searchTerm && (
           <div className="mt-4 flex justify-center">
@@ -248,14 +219,14 @@ import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 // ============================================================
 
 export default function AdminDashboard() {
-  const { user } = useAuth();
-  
+  const { user, isAdmin } = useAuth();
+
   // ---------- State ----------
   const [users, setUsers] = useState([]);
   const [totalUserCount, setTotalUserCount] = useState(0);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [usersPage, setUsersPage] = useState(0);
-  
+
   const [tutors, setTutors] = useState([]);
   const [resources, setResources] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -265,7 +236,7 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   // Email test state
   const [testEmailTarget, setTestEmailTarget] = useState('');
   const [testEmailSending, setTestEmailSending] = useState(false);
@@ -283,7 +254,7 @@ export default function AdminDashboard() {
       const { count, error } = await supabase
         .from('users')
         .select('*', { count: 'exact', head: true });
-      
+
       if (error) throw error;
       if (isMountedRef.current) {
         setTotalUserCount(count || 0);
@@ -296,10 +267,10 @@ export default function AdminDashboard() {
   // ---------- Load Dashboard Data (Paginated) ----------
   const loadDashboardData = useCallback(async (isManualRefresh = false) => {
     if (!user?.email) return;
-    
+
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
-    
+
     if (isManualRefresh) {
       setRefreshing(true);
     }
@@ -323,9 +294,9 @@ export default function AdminDashboard() {
         .select('*')
         .order('created_at', { ascending: false })
         .range(0, PAGE_SIZE - 1);
-      
+
       if (usersError) throw usersError;
-      
+
       setUsers(usersData || []);
       setHasMoreUsers((usersData?.length || 0) >= PAGE_SIZE);
       setUsersPage(1);
@@ -373,7 +344,7 @@ export default function AdminDashboard() {
   // ---------- Load More Users (Pagination) ----------
   const loadMoreUsers = useCallback(async () => {
     if (loadingMore || !hasMoreUsers) return;
-    
+
     setLoadingMore(true);
     const PAGE_SIZE = CONFIG.PAGINATION.DEFAULT_PAGE_SIZE;
     const start = users.length;
@@ -385,9 +356,9 @@ export default function AdminDashboard() {
         .select('*')
         .order('created_at', { ascending: false })
         .range(start, end);
-      
+
       if (error) throw error;
-      
+
       if (isMountedRef.current) {
         setUsers(prev => [...prev, ...(data || [])]);
         setHasMoreUsers((data?.length || 0) >= PAGE_SIZE);
@@ -417,12 +388,12 @@ export default function AdminDashboard() {
 
     const handleRealtimeUpdate = () => {
       if (!CONFIG.FEATURES.ENABLE_REAL_TIME) return;
-      
+
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-      
+
       debounceTimerRef.current = setTimeout(() => {
         if (isMountedRef.current && !isFetchingRef.current) {
           loadDashboardData(false);
@@ -436,12 +407,12 @@ export default function AdminDashboard() {
         .channel('admin-resources')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'resources' }, handleRealtimeUpdate)
         .subscribe(),
-      
+
       supabase
         .channel('admin-bookings')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_bookings' }, handleRealtimeUpdate)
         .subscribe(),
-      
+
       supabase
         .channel('admin-users')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'users' }, handleRealtimeUpdate)
@@ -459,21 +430,21 @@ export default function AdminDashboard() {
 
     return () => {
       isMountedRef.current = false;
-      
+
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
-      
+
       if (fallbackInterval) {
         clearInterval(fallbackInterval);
       }
-      
+
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
         abortControllerRef.current = null;
       }
-      
+
       channels.forEach(channel => {
         try {
           supabase.removeChannel(channel);
@@ -487,8 +458,8 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('resources')
-        .update({ 
-          is_approved: true, 
+        .update({
+          is_approved: true,
           is_rejected: false,
           approved_at: new Date().toISOString(),
           approved_by: user?.email
@@ -505,10 +476,10 @@ export default function AdminDashboard() {
           description: `Approved: "${resource.title}" by ${user?.email}`
         });
 
-      setResources(prev => 
+      setResources(prev =>
         prev.map(r => r.id === resource.id ? { ...r, is_approved: true, is_rejected: false } : r)
       );
-      
+
       toast.success(`✅ "${resource.title}" approved`);
     } catch (err) {
       console.error('Error approving resource:', err);
@@ -523,8 +494,8 @@ export default function AdminDashboard() {
     try {
       const { error } = await supabase
         .from('resources')
-        .update({ 
-          is_approved: false, 
+        .update({
+          is_approved: false,
           is_rejected: true,
           rejected_at: new Date().toISOString(),
           rejected_by: user?.email,
@@ -542,10 +513,10 @@ export default function AdminDashboard() {
           description: `Rejected: "${resource.title}" by ${user?.email}`
         });
 
-      setResources(prev => 
+      setResources(prev =>
         prev.map(r => r.id === resource.id ? { ...r, is_approved: false, is_rejected: true } : r)
       );
-      
+
       toast.warning(`❌ "${resource.title}" rejected`);
     } catch (err) {
       console.error('Error rejecting resource:', err);
@@ -559,17 +530,17 @@ export default function AdminDashboard() {
       toast.info('Email testing is disabled.');
       return;
     }
-    
+
     if (!testEmailTarget.trim()) {
       toast.error('Enter an email address.');
       return;
     }
-    
+
     setTestEmailSending(true);
-    const logEntry = { 
-      to: testEmailTarget, 
-      time: new Date().toLocaleTimeString('en-ZA'), 
-      status: 'sending' 
+    const logEntry = {
+      to: testEmailTarget,
+      time: new Date().toLocaleTimeString('en-ZA'),
+      status: 'sending'
     };
     setEmailLogs(prev => [logEntry, ...prev]);
 
@@ -584,15 +555,15 @@ export default function AdminDashboard() {
       });
 
       if (error) throw error;
-      
-      setEmailLogs(prev => prev.map((e, i) => 
+
+      setEmailLogs(prev => prev.map((e, i) =>
         i === 0 ? { ...e, status: 'sent ✅' } : e
       ));
-      
+
       toast.success(`Test email sent to ${testEmailTarget}`);
       setTestEmailTarget('');
     } catch (err) {
-      setEmailLogs(prev => prev.map((e, i) => 
+      setEmailLogs(prev => prev.map((e, i) =>
         i === 0 ? { ...e, status: `failed ❌: ${err.message}` } : e
       ));
       toast.error(`Failed: ${err.message}`);
@@ -606,23 +577,25 @@ export default function AdminDashboard() {
       toast.info('Email testing is disabled.');
       return;
     }
-    
+
     setTestEmailSending(true);
     try {
-      await Promise.all(CONFIG.ADMIN_EMAILS.map(email =>
-        supabase.functions.invoke('send-email', {
+      const adminEmails = await getAdminNotificationEmails(supabase);
+      await Promise.all(adminEmails.map(async email => {
+        const {error} = await supabase.functions.invoke('send-email', {
           body: {
             to: email,
             subject: `🔔 ${CONFIG.APP_NAME} — Admin Notification Test`,
             text: `This is a test of the admin notification system.\n\nYou are receiving this because you are a Super Admin on ${CONFIG.APP_NAME}.\n\nSystem: ONLINE ✅\nTime: ${new Date().toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' })} SAST\n\n— ${CONFIG.APP_NAME} Admin System`,
             from_name: CONFIG.APP_NAME
           }
-        })
-      ));
-      
+        });
+        if(error) throw error;
+      }));
+
       toast.success('Test emails sent to all admin addresses!');
       setEmailLogs(prev => [
-        { to: CONFIG.ADMIN_EMAILS.join(' & '), time: new Date().toLocaleTimeString('en-ZA'), status: 'sent ✅' },
+        { to: adminEmails.join(' & '), time: new Date().toLocaleTimeString('en-ZA'), status: 'sent ✅' },
         ...prev
       ]);
     } catch (err) {
@@ -638,9 +611,9 @@ export default function AdminDashboard() {
       toast.info('Export is disabled.');
       return;
     }
-    
+
     const confirmed = bookings.filter(b => b.status === 'confirmed' || b.status === 'completed');
-    
+
     if (confirmed.length === 0) {
       toast.info('No confirmed bookings to export');
       return;
@@ -666,7 +639,7 @@ export default function AdminDashboard() {
     a.download = `bookings-export-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-    
+
     toast.success(`Exported ${confirmed.length} bookings`);
   };
 
@@ -688,8 +661,8 @@ export default function AdminDashboard() {
   })).sort((a, b) => (b.uploads + b.bookingCount) - (a.uploads + a.bookingCount));
 
   // ---------- Access Control Check ----------
-  const isSuperAdmin = CONFIG.ADMIN_EMAILS.includes(user?.email) || user?.is_super_admin === true;
-  
+  const isSuperAdmin = user?.is_super_admin === true;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -701,7 +674,7 @@ export default function AdminDashboard() {
     );
   }
 
-  if (!isSuperAdmin && user?.role !== 'admin') {
+  if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center max-w-sm">
@@ -726,14 +699,14 @@ export default function AdminDashboard() {
             <h1 className="font-playfair text-3xl font-bold">{CONFIG.APP_NAME}</h1>
             <p className="text-muted-foreground text-sm">Owner Control Panel — {totalUserCount.toLocaleString()} users</p>
           </div>
-          <Button 
-            size="sm" 
-            variant="outline" 
+          <Button
+            size="sm"
+            variant="outline"
             className="ml-auto gap-1.5"
             onClick={() => loadDashboardData(true)}
             disabled={refreshing}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} /> 
+            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? CONFIG.MESSAGES.REFRESHING : CONFIG.MESSAGES.REFRESH}
           </Button>
         </div>
@@ -771,6 +744,9 @@ export default function AdminDashboard() {
             <TabsTrigger value="leaderboard" className="gap-1.5"><Trophy className="w-3.5 h-3.5" /> Leaderboard</TabsTrigger>
             <TabsTrigger value="reports" className="gap-1.5"><Mail className="w-3.5 h-3.5" /> Parent Reports</TabsTrigger>
             <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
+            <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
+            <TabsTrigger value="operations">Operations</TabsTrigger>
+            <TabsTrigger value="university-directory">Universities</TabsTrigger>
             <TabsTrigger value="financial" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Financial</TabsTrigger>
             <TabsTrigger value="activity" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
             <TabsTrigger value="ratings" className="gap-1.5"><Star className="w-3.5 h-3.5" /> Ratings</TabsTrigger>
@@ -828,9 +804,9 @@ export default function AdminDashboard() {
                       {tutorLeaderboard.map((t, i) => (
                         <div key={t.id} className="flex items-center gap-4 p-3 rounded-xl bg-muted/50">
                           <span className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
-                            i === 0 ? 'bg-amber-400 text-white' : 
-                            i === 1 ? 'bg-gray-300 text-gray-700' : 
-                            i === 2 ? 'bg-orange-300 text-white' : 
+                            i === 0 ? 'bg-amber-400 text-white' :
+                            i === 1 ? 'bg-gray-300 text-gray-700' :
+                            i === 2 ? 'bg-orange-300 text-white' :
                             'bg-muted text-muted-foreground'
                           }`}>
                             {i + 1}
@@ -864,7 +840,7 @@ export default function AdminDashboard() {
             <SafeSubComponent>
               <div className="space-y-4">
                 <TutorEarningsTable tutors={tutors} bookings={bookings} />
-                
+
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="font-playfair text-base flex items-center justify-between">
@@ -937,18 +913,18 @@ export default function AdminDashboard() {
                           )}
                         </div>
                         <div className="flex gap-1.5 flex-shrink-0">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="h-7 px-2 gap-1 text-xs text-green-700 border-green-200 hover:bg-green-50"
                             onClick={() => handleApproveResource(r)}
                             disabled={r.is_approved}
                           >
                             <CheckCircle className="w-3 h-3" /> Approve
                           </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
+                          <Button
+                            size="sm"
+                            variant="outline"
                             className="h-7 px-2 gap-1 text-xs text-red-700 border-red-200 hover:bg-red-50"
                             onClick={() => handleRejectResource(r)}
                             disabled={r.is_rejected}
@@ -967,6 +943,9 @@ export default function AdminDashboard() {
             </SafeSubComponent>
           </TabsContent>
 
+          <TabsContent value="payment-gateways"><SafeSubComponent><PaymentGatewayPanel /></SafeSubComponent></TabsContent>
+          <TabsContent value="operations"><SafeSubComponent><OperationsPanel /></SafeSubComponent></TabsContent>
+          <TabsContent value="university-directory"><SafeSubComponent><UniversityDirectoryAdmin /></SafeSubComponent></TabsContent>
           <TabsContent value="financial">
             <SafeSubComponent>
               <div className="grid sm:grid-cols-2 gap-6">
@@ -1003,8 +982,8 @@ export default function AdminDashboard() {
                         <div key={b.id} className="flex items-center justify-between text-sm">
                           <span className="text-muted-foreground text-xs truncate">{b.student_email} → {b.tutor_email}</span>
                           <Badge className={`text-xs ${
-                            b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 
-                            b.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                            b.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                            b.status === 'pending' ? 'bg-amber-100 text-amber-700' :
                             'bg-muted text-muted-foreground'
                           }`}>
                             {b.status}
@@ -1032,9 +1011,9 @@ export default function AdminDashboard() {
                       {logs.map(log => (
                         <div key={log.id} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
                           <span className="text-xl flex-shrink-0">
-                            {log.event_type === 'user_joined' ? '🧑‍🎓' : 
-                             log.event_type === 'payment_made' ? '💳' : 
-                             log.event_type === 'resource_uploaded' ? '📄' : 
+                            {log.event_type === 'user_joined' ? '🧑‍🎓' :
+                             log.event_type === 'payment_made' ? '💳' :
+                             log.event_type === 'resource_uploaded' ? '📄' :
                              log.event_type === 'resource_approved' ? '✅' :
                              log.event_type === 'resource_rejected' ? '❌' : '📌'}
                           </span>
@@ -1127,16 +1106,16 @@ export default function AdminDashboard() {
             <SafeSubComponent>
               <div className="space-y-6">
                 <SystemConfigPanel />
-                
+
                 <Card>
                   <CardHeader>
                     <CardTitle className="font-playfair">Email Gateway Integration</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex gap-2">
-                      <Input 
-                        placeholder="test@example.com" 
-                        value={testEmailTarget} 
+                      <Input
+                        placeholder="test@example.com"
+                        value={testEmailTarget}
                         onChange={(e) => setTestEmailTarget(e.target.value)}
                         className="max-w-xs"
                       />

@@ -1,12 +1,11 @@
+import {Briefcase} from 'lucide-react';
+import {Badge} from '@/components/ui/badge';
 // src/components/ui/calendar.jsx
 import * as React from "react";
-import { 
-  ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
-  Sparkles, Zap, Target, Clock, Trophy, Award,
-  GraduationCap, Users, BookOpen, TrendingUp,
-  Heart, Star, Flame, Crown, Gift, Rocket,
-  CheckCircle, AlertCircle, Bell, Coffee, Moon,
-  Sun, Cloud, CloudRain, Thermometer
+import {
+  ChevronLeft, ChevronRight,
+  Sparkles, Target, Clock, Trophy, BookOpen,
+  CheckCircle
 } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
@@ -59,8 +58,8 @@ function StreakDisplay({ streak = 0 }) {
   return (
     <div className={cn(
       "flex items-center gap-2 px-3 py-1.5 rounded-full",
-      isOnStreak 
-        ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-200/50" 
+      isOnStreak
+        ? "bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-200/50"
         : "bg-muted/30 border border-border/50"
     )}>
       <span className="text-lg">{isOnStreak ? emoji : '⏸️'}</span>
@@ -91,7 +90,7 @@ function GoalCard({ icon: Icon, label, current, target, color }) {
       </div>
       <div className="flex items-center gap-2">
         <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-          <div 
+          <div
             className={cn(
               "h-full rounded-full transition-all duration-500",
               isComplete ? "bg-green-500" : "bg-primary"
@@ -166,7 +165,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, color }) {
 
 /**
  * Enhanced Calendar – An engaging, feature-rich calendar for students and tutors.
- * 
+ *
  * @param {Object} props
  * @param {string} props.userType - 'student' | 'tutor' | 'parent'
  * @param {number} props.studyStreak - Current study streak in days
@@ -200,8 +199,8 @@ function Calendar({
 
   const renderHeader = () => {
     const title = isTutor ? CONFIG.MESSAGES.TUTOR_TITLE : CONFIG.MESSAGES.STUDENT_TITLE;
-    const subtitle = isTutor 
-      ? `💰 R${earnings.toFixed(2)} this month · ${sessions.length} sessions` 
+    const subtitle = isTutor
+      ? `💰 R${earnings.toFixed(2)} this month · ${sessions.length} sessions`
       : `${studyStreak} day streak · ${dailyGoals.filter(g => g.current >= g.target).length}/${dailyGoals.length} goals met`;
 
     return (

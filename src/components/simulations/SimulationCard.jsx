@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Download, Play, BookOpen, Clock, Shield, AlertCircle } from 'lucide-react';
+import { Download, Play, BookOpen, Clock, Shield } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -92,11 +92,11 @@ const isUrlSafe = (url) => {
 // Main Component
 // ============================================================
 
-export default function SimulationCard({ 
-  simulation, 
-  onPlay, 
+export default function SimulationCard({
+  simulation,
+  onPlay,
   isLoading = false,
-  showApprovalStatus = false 
+  showApprovalStatus = false
 }) {
   // Validate simulation URL safety
   const isSafe = isUrlSafe(simulation.simulation_url);
@@ -113,7 +113,7 @@ export default function SimulationCard({
 
   return (
     <Card className="bg-card border-border rounded-2xl overflow-hidden hover:shadow-lg transition-all duration-300 group shadow-sm flex flex-col h-full">
-      
+
       {/* Thumbnail Section */}
       <div className="relative h-36 w-full overflow-hidden bg-muted shrink-0">
         <img
@@ -125,31 +125,31 @@ export default function SimulationCard({
             e.currentTarget.src = FALLBACK_THUMBNAIL;
           }}
         />
-        
+
         {/* Hover Overlay */}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center backdrop-blur-[2px]">
-          <Button 
+          <Button
             type="button"
-            size="sm" 
+            size="sm"
             onClick={handleLaunch}
             disabled={isLoading || !isSafe}
             className="bg-white text-slate-900 hover:bg-slate-100 font-bold gap-1.5 shadow-xl transition-transform transform scale-95 group-hover:scale-100 duration-300"
           >
-            <Play className="w-3.5 h-3.5 fill-current" /> 
+            <Play className="w-3.5 h-3.5 fill-current" />
             {isLoading ? 'Loading...' : 'Launch Lab'}
           </Button>
         </div>
-        
+
         {/* Subject Badge */}
         <div className="absolute top-2.5 left-2.5">
-          <Badge 
-            variant="outline" 
+          <Badge
+            variant="outline"
             className={`text-[10px] font-bold py-0.5 px-2.5 shadow-sm ${SUBJECT_COLORS[simulation.subject] || 'bg-muted text-muted-foreground'}`}
           >
             {simulation.subject}
           </Badge>
         </div>
-        
+
         {/* Grade Badge */}
         <div className="absolute top-2.5 right-2.5">
           <Badge variant="secondary" className="text-[10px] font-extrabold bg-white/95 text-slate-700 border border-slate-100 shadow-sm px-2">
@@ -178,8 +178,8 @@ export default function SimulationCard({
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">
-                    {simulation.is_approved 
-                      ? 'This simulation has been approved for use.' 
+                    {simulation.is_approved
+                      ? 'This simulation has been approved for use.'
                       : 'This simulation is pending approval.'}
                   </p>
                 </TooltipContent>
@@ -188,7 +188,7 @@ export default function SimulationCard({
           </div>
         )}
       </div>
-      
+
       {/* Content Section */}
       <CardContent className="p-3.5 flex flex-col flex-1 justify-between">
         <div>
@@ -203,11 +203,11 @@ export default function SimulationCard({
               </div>
             )}
           </div>
-          
+
           <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed mb-3 min-h-[32px]">
             {simulation.description}
           </p>
-          
+
           {/* CAPS Topic */}
           <div className="flex items-center gap-1.5 mb-2">
             <BookOpen className="w-3 h-3 text-primary/70" />
@@ -226,7 +226,7 @@ export default function SimulationCard({
             </div>
           )}
         </div>
-        
+
         {/* Action Buttons */}
         <div className="flex items-center justify-between gap-3 pt-2.5 border-t border-border mt-auto">
           <div className="flex-1 min-w-0">
@@ -238,34 +238,34 @@ export default function SimulationCard({
               </div>
             )}
           </div>
-          
+
           <div className="flex gap-1.5 shrink-0">
             {simulation.worksheet_url && worksheetSafe && (
               <a href={simulation.worksheet_url} target="_blank" rel="noopener noreferrer" className="inline-block">
-                <Button 
+                <Button
                   type="button"
-                  size="sm" 
-                  variant="outline" 
+                  size="sm"
+                  variant="outline"
                   className="h-7 text-[11px] font-bold gap-1 px-2.5"
                 >
                   <Download className="w-3 h-3" /> Sheet
                 </Button>
               </a>
             )}
-            <Button 
+            <Button
               type="button"
-              size="sm" 
+              size="sm"
               onClick={handleLaunch}
               disabled={isLoading || !isSafe}
               className="h-7 text-[11px] font-bold gap-1 px-2.5 bg-primary hover:bg-primary/90"
             >
-              <Play className="w-3 h-3 fill-current" /> 
+              <Play className="w-3 h-3 fill-current" />
               {isLoading ? 'Loading...' : 'Open'}
             </Button>
           </div>
         </div>
       </CardContent>
-      
+
     </Card>
   );
 }

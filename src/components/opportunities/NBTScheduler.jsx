@@ -1,37 +1,29 @@
+import { uploadPrivate } from '@/lib/private-storage';
+import FileLink from '@/components/operations/FileLink';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import {
-  Calendar, MapPin, Clock, CheckCircle2, Upload, FileText,
-  ChevronDown, ChevronUp, Plus, AlertCircle, Trophy, Loader2
-} from 'lucide-react';
+import { Calendar, MapPin, Clock, CheckCircle2, Upload, FileText, ChevronDown, ChevronUp, Plus, AlertCircle, Trophy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
 const TESTS = ['AQL', 'MAT', 'QL'];
 const BAND_COLORS = {
   Proficient: 'bg-green-100 text-green-700',
   Intermediate: 'bg-yellow-100 text-yellow-700',
-  Basic: 'bg-red-100 text-red-700',
+  Basic: 'bg-red-100 text-red-700'
 };
-
 const ALLOWED_FILE_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
 const STORAGE_BUCKET = import.meta.env.VITE_STORAGE_BUCKET || 'nbt_results';
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// TestDateCard Component
-// ============================================================
-
-function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
+function TestDateCard({
+  testDate,
+  registration,
+  onRefresh,
+  userEmail
+}) {
   const [expanded, setExpanded] = useState(false);
   const [selectedTests, setSelectedTests] = useState(TESTS);
   const [registering, setRegistering] = useState(false);
@@ -41,46 +33,40 @@ function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
   const [qlScore, setQlScore] = useState(registration?.ql_score ?? '');
   const [band, setBand] = useState(registration?.overall_band ?? '');
   const [savingResults, setSavingResults] = useState(false);
-
-  const daysUntil = Math.ceil((new Date(testDate.test_date) - new Date()) / 86400000);
-  const regDeadlineDays = testDate.registration_deadline
-    ? Math.ceil((new Date(testDate.registration_deadline) - new Date()) / 86400000)
-    : null;
+  const daysUntil = Math.ceil((new Date(testDate.test_date).getTime() - new Date().getTime()) / 86400000);
+  const regDeadlineDays = testDate.registration_deadline ? Math.ceil((new Date(testDate.registration_deadline).getTime() - new Date().getTime()) / 86400000) : null;
   const isPast = daysUntil < 0;
   const isRegistered = !!registration;
-
-  const toggleTest = (t) => {
+  const toggleTest = t => {
     setSelectedTests(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
-
   const handleRegister = async () => {
     if (!userEmail) {
       toast.error('Please sign in to register');
       return;
     }
-    
     setRegistering(true);
     try {
-      // Get current user profile
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const {
+        data: userData,
+        error: userError
+      } = await supabase.auth.getUser();
       if (userError) throw userError;
-      
-      const { error } = await supabase
-        .from('nbt_registrations')
-        .insert({
-          student_email: userEmail,
-          student_name: userData.user?.user_metadata?.full_name || userEmail,
-          nbt_test_date_id: testDate.id,
-          test_date: testDate.test_date,
-          venue: testDate.venue,
-          city: testDate.city,
-          tests_registered: selectedTests,
-          status: 'registered',
-          created_at: new Date().toISOString(),
-        });
-      
+      const {
+        error
+      } = await supabase.from('nbt_registrations').insert({
+        student_id: userData.user.id,
+        student_email: userData.user.email,
+        student_name: userData.user?.user_metadata?.full_name || userEmail,
+        nbt_test_date_id: testDate.id,
+        test_date: testDate.test_date,
+        venue: testDate.venue,
+        city: testDate.city,
+        tests_registered: selectedTests,
+        status: 'registered',
+        created_at: new Date().toISOString()
+      });
       if (error) throw error;
-      
       toast.success('Registration successful!');
       onRefresh();
     } catch (err) {
@@ -90,54 +76,30 @@ function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
       setRegistering(false);
     }
   };
-
-  const handleResultsUpload = async (e) => {
+  const handleResultsUpload = async e => {
     const file = e.target.files[0];
     if (!file || !registration) return;
-    
-    // Validate file
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       toast.error('Please upload PDF, JPG, or PNG files only');
       return;
     }
-    
     if (file.size > MAX_FILE_SIZE) {
       toast.error('File too large. Maximum size is 5MB');
       return;
     }
-    
     setUploading(true);
     try {
-      // Upload to Supabase Storage
-      const sanitizedName = file.name.replace(/[^a-zA-Z0-9.\-]/g, '_');
-      const fileExt = sanitizedName.split('.').pop();
-      const fileName = `nbt_results/${Date.now()}_${registration.id}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKET)
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false,
-        });
-      
-      if (uploadError) throw uploadError;
-      
-      const { data: { publicUrl } } = supabase.storage
-        .from(STORAGE_BUCKET)
-        .getPublicUrl(fileName);
-      
-      const { error: updateError } = await supabase
-        .from('nbt_registrations')
-        .update({
-          results_uploaded: true,
-          results_file_url: publicUrl,
-          status: 'completed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', registration.id);
-      
+      const uploaded = await uploadPrivate(supabase, 'nbt_results', file);
+      const publicUrl = uploaded.reference;
+      const {
+        error: updateError
+      } = await supabase.from('nbt_registrations').update({
+        results_uploaded: true,
+        results_file_url: publicUrl,
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      }).eq('id', registration.id);
       if (updateError) throw updateError;
-      
       toast.success('Results uploaded successfully!');
       onRefresh();
     } catch (err) {
@@ -147,26 +109,21 @@ function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
       setUploading(false);
     }
   };
-
   const handleSaveResults = async () => {
     if (!registration) return;
-    
     setSavingResults(true);
     try {
-      const { error } = await supabase
-        .from('nbt_registrations')
-        .update({
-          aql_score: aqlScore !== '' ? Number(aqlScore) : null,
-          mat_score: matScore !== '' ? Number(matScore) : null,
-          ql_score: qlScore !== '' ? Number(qlScore) : null,
-          overall_band: band || null,
-          status: 'completed',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', registration.id);
-      
+      const {
+        error
+      } = await supabase.from('nbt_registrations').update({
+        aql_score: aqlScore !== '' ? Number(aqlScore) : null,
+        mat_score: matScore !== '' ? Number(matScore) : null,
+        ql_score: qlScore !== '' ? Number(qlScore) : null,
+        overall_band: band || null,
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      }).eq('id', registration.id);
       if (error) throw error;
-      
       toast.success('Results saved!');
       onRefresh();
     } catch (err) {
@@ -176,78 +133,54 @@ function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
       setSavingResults(false);
     }
   };
-
-  return (
-    <Card className={`border-border overflow-hidden ${isPast ? 'opacity-60' : ''}`}>
+  return <Card className={`border-border overflow-hidden ${isPast ? 'opacity-60' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-1">
               <p className="font-semibold text-sm">
-                {new Date(testDate.test_date).toLocaleDateString('en-ZA', { 
-                  weekday: 'short', 
-                  day: 'numeric', 
-                  month: 'long', 
-                  year: 'numeric' 
-                })}
+                {new Date(testDate.test_date).toLocaleDateString('en-ZA', {
+                weekday: 'short',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })}
               </p>
-              {isRegistered && (
-                <Badge className="text-[10px] bg-primary/10 text-primary px-1.5 py-0 flex items-center gap-0.5">
+              {isRegistered && <Badge className="text-[10px] bg-primary/10 text-primary px-1.5 py-0 flex items-center gap-0.5">
                   <CheckCircle2 className="w-2.5 h-2.5" /> Registered
-                </Badge>
-              )}
-              {isPast && (
-                <Badge className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0">Past</Badge>
-              )}
-              {!isPast && daysUntil <= 7 && (
-                <Badge className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0 flex items-center gap-0.5">
+                </Badge>}
+              {isPast && <Badge className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0">Past</Badge>}
+              {!isPast && daysUntil <= 7 && <Badge className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0 flex items-center gap-0.5">
                   <AlertCircle className="w-2.5 h-2.5" /> {daysUntil}d away
-                </Badge>
-              )}
+                </Badge>}
             </div>
 
             <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3 h-3" /> {testDate.venue}, {testDate.city}
               </span>
-              {testDate.test_time && (
-                <span className="flex items-center gap-1">
+              {testDate.test_time && <span className="flex items-center gap-1">
                   <Clock className="w-3 h-3" /> {testDate.test_time}
-                </span>
-              )}
+                </span>}
             </div>
 
             <div className="flex flex-wrap gap-1 mt-2">
-              {(testDate.tests_available || TESTS).map(t => (
-                <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>
-              ))}
+              {(testDate.tests_available || TESTS).map(t => <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>)}
             </div>
 
-            {regDeadlineDays !== null && !isPast && (
-              <p className={`text-[11px] mt-1 ${regDeadlineDays <= 3 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}`}>
+            {regDeadlineDays !== null && !isPast && <p className={`text-[11px] mt-1 ${regDeadlineDays <= 3 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}`}>
                 Registration deadline: {regDeadlineDays < 0 ? 'Closed' : `${regDeadlineDays}d left`}
-              </p>
-            )}
+              </p>}
 
-            {/* Registered scores */}
-            {isRegistered && registration.results_uploaded && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {registration.aql_score != null && (
-                  <Badge className="text-[10px] bg-blue-50 text-blue-700">AQL: {registration.aql_score}%</Badge>
-                )}
-                {registration.mat_score != null && (
-                  <Badge className="text-[10px] bg-purple-50 text-purple-700">MAT: {registration.mat_score}%</Badge>
-                )}
-                {registration.ql_score != null && (
-                  <Badge className="text-[10px] bg-green-50 text-green-700">QL: {registration.ql_score}%</Badge>
-                )}
-                {registration.overall_band && (
-                  <Badge className={`text-[10px] ${BAND_COLORS[registration.overall_band] || 'bg-muted text-muted-foreground'}`}>
+            {}
+            {isRegistered && registration.results_uploaded && <div className="mt-2 flex flex-wrap gap-2">
+                {registration.aql_score != null && <Badge className="text-[10px] bg-blue-50 text-blue-700">AQL: {registration.aql_score}%</Badge>}
+                {registration.mat_score != null && <Badge className="text-[10px] bg-purple-50 text-purple-700">MAT: {registration.mat_score}%</Badge>}
+                {registration.ql_score != null && <Badge className="text-[10px] bg-green-50 text-green-700">QL: {registration.ql_score}%</Badge>}
+                {registration.overall_band && <Badge className={`text-[10px] ${BAND_COLORS[registration.overall_band] || 'bg-muted text-muted-foreground'}`}>
                     <Trophy className="w-2.5 h-2.5 mr-0.5" />{registration.overall_band}
-                  </Badge>
-                )}
-              </div>
-            )}
+                  </Badge>}
+              </div>}
           </div>
 
           <button onClick={() => setExpanded(e => !e)}>
@@ -255,203 +188,114 @@ function TestDateCard({ testDate, registration, onRefresh, userEmail }) {
           </button>
         </div>
 
-        {expanded && (
-          <div className="mt-3 pt-3 border-t space-y-3">
-            {!isRegistered && !isPast && (
-              <div>
+        {expanded && <div className="mt-3 pt-3 border-t space-y-3">
+            {!isRegistered && !isPast && <div>
                 <p className="text-xs font-semibold mb-2">Select tests to register for:</p>
                 <div className="flex gap-2 mb-3">
-                  {TESTS.map(t => (
-                    <button
-                      key={t}
-                      onClick={() => toggleTest(t)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                        selectedTests.includes(t) 
-                          ? 'bg-primary text-white border-primary' 
-                          : 'bg-background border-border text-muted-foreground'
-                      }`}
-                    >
+                  {TESTS.map(t => <button key={t} onClick={() => toggleTest(t)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedTests.includes(t) ? 'bg-primary text-white border-primary' : 'bg-background border-border text-muted-foreground'}`}>
                       {t}
-                    </button>
-                  ))}
+                    </button>)}
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    className="flex-1 h-8 text-xs" 
-                    disabled={registering || selectedTests.length === 0} 
-                    onClick={handleRegister}
-                  >
+                  <Button size="sm" className="flex-1 h-8 text-xs" disabled={registering || selectedTests.length === 0} onClick={handleRegister}>
                     {registering ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
                     {registering ? 'Registering...' : 'Register Now'}
                   </Button>
-                  {testDate.registration_link && (
-                    <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer">
+                  {testDate.registration_link && <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer">
                       <Button size="sm" variant="outline" className="h-8 text-xs">Official Site</Button>
-                    </a>
-                  )}
+                    </a>}
                 </div>
-              </div>
-            )}
+              </div>}
 
-            {isRegistered && isPast && (
-              <div className="space-y-2">
+            {isRegistered && isPast && <div className="space-y-2">
                 <p className="text-xs font-semibold">Upload & Record Results</p>
                 <div className="grid grid-cols-3 gap-2">
                   <div>
                     <label className="text-[10px] text-muted-foreground">AQL %</label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      max="100" 
-                      placeholder="—" 
-                      value={aqlScore} 
-                      onChange={e => setAqlScore(e.target.value)} 
-                      className="h-7 text-xs" 
-                    />
+                    <Input type="number" min="0" max="100" placeholder="—" value={aqlScore} onChange={e => setAqlScore(e.target.value)} className="h-7 text-xs" />
                   </div>
                   <div>
                     <label className="text-[10px] text-muted-foreground">MAT %</label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      max="100" 
-                      placeholder="—" 
-                      value={matScore} 
-                      onChange={e => setMatScore(e.target.value)} 
-                      className="h-7 text-xs" 
-                    />
+                    <Input type="number" min="0" max="100" placeholder="—" value={matScore} onChange={e => setMatScore(e.target.value)} className="h-7 text-xs" />
                   </div>
                   <div>
                     <label className="text-[10px] text-muted-foreground">QL %</label>
-                    <Input 
-                      type="number" 
-                      min="0" 
-                      max="100" 
-                      placeholder="—" 
-                      value={qlScore} 
-                      onChange={e => setQlScore(e.target.value)} 
-                      className="h-7 text-xs" 
-                    />
+                    <Input type="number" min="0" max="100" placeholder="—" value={qlScore} onChange={e => setQlScore(e.target.value)} className="h-7 text-xs" />
                   </div>
                 </div>
-                <select
-                  value={band}
-                  onChange={e => setBand(e.target.value)}
-                  className="w-full h-8 rounded-md border border-input bg-background text-xs px-2 focus:outline-none focus:ring-1 focus:ring-ring"
-                >
+                <select value={band} onChange={e => setBand(e.target.value)} className="w-full h-8 rounded-md border border-input bg-background text-xs px-2 focus:outline-none focus:ring-1 focus:ring-ring">
                   <option value="">Select overall band...</option>
-                  {['Proficient', 'Intermediate', 'Basic'].map(b => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
+                  {['Proficient', 'Intermediate', 'Basic'].map(b => <option key={b} value={b}>{b}</option>)}
                 </select>
                 <div className="flex gap-2">
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
-                    className="flex-1 h-8 text-xs" 
-                    disabled={savingResults} 
-                    onClick={handleSaveResults}
-                  >
+                  <Button size="sm" variant="outline" className="flex-1 h-8 text-xs" disabled={savingResults} onClick={handleSaveResults}>
                     {savingResults ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
                     {savingResults ? 'Saving...' : 'Save Scores'}
                   </Button>
                   <label className="flex-1">
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="w-full h-8 text-xs gap-1 cursor-pointer" 
-                      disabled={uploading} 
-                      asChild
-                    >
+                    <Button size="sm" variant="outline" className="w-full h-8 text-xs gap-1 cursor-pointer" disabled={uploading} asChild>
                       <span>
                         {uploading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Upload className="w-3 h-3" />}
                         {uploading ? 'Uploading...' : 'Upload PDF'}
                       </span>
                     </Button>
-                    <input 
-                      type="file" 
-                      accept=".pdf,.jpg,.jpeg,.png" 
-                      className="hidden" 
-                      onChange={handleResultsUpload} 
-                    />
+                    <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleResultsUpload} />
                   </label>
                 </div>
-                {registration.results_file_url && (
-                  <a 
-                    href={registration.results_file_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-[10px] text-primary hover:underline flex items-center gap-1"
-                  >
+                {registration.results_file_url && <FileLink reference={registration.results_file_url} className="text-[10px] text-primary hover:underline flex items-center gap-1">
                     <FileText className="w-3 h-3" /> View uploaded results
-                  </a>
-                )}
-              </div>
-            )}
+                  </FileLink>}
+              </div>}
 
-            {isRegistered && !isPast && (
-              <div className="text-xs text-muted-foreground space-y-1">
+            {isRegistered && !isPast && <div className="text-xs text-muted-foreground space-y-1">
                 <p className="flex items-center gap-1 text-primary font-medium">
                   <CheckCircle2 className="w-3.5 h-3.5" /> You're registered for: {registration.tests_registered?.join(', ')}
                 </p>
                 <p>Results can be uploaded here after your test date.</p>
-                {testDate.registration_link && (
-                  <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                {testDate.registration_link && <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                     View official confirmation →
-                  </a>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+                  </a>}
+              </div>}
+          </div>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function NBTScheduler({ userEmail, isAdmin }) {
+export default function NBTScheduler({
+  userEmail,
+  isAdmin
+}) {
   const [testDates, setTestDates] = useState([]);
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDate, setNewDate] = useState({ 
-    test_date: '', 
-    test_time: '', 
-    venue: '', 
-    city: '', 
-    province: '', 
-    registration_deadline: '', 
-    registration_link: '', 
-    available_slots: '' 
+  const [newDate, setNewDate] = useState({
+    test_date: '',
+    test_time: '',
+    venue: '',
+    city: '',
+    province: '',
+    registration_deadline: '',
+    registration_link: '',
+    available_slots: ''
   });
   const [saving, setSaving] = useState(false);
   const [filter, setFilter] = useState('upcoming');
-
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // Load test dates
-      const { data: dates, error: datesError } = await supabase
-        .from('nbt_test_dates')
-        .select('*')
-        .eq('is_active', true)
-        .order('test_date', { ascending: true });
-      
+      const {
+        data: dates,
+        error: datesError
+      } = await supabase.from('nbt_test_dates').select('*').eq('is_active', true).order('test_date', {
+        ascending: true
+      });
       if (datesError) throw datesError;
       setTestDates(dates || []);
-      
-      // Load registrations if user is logged in
       if (userEmail) {
-        const { data: regs, error: regsError } = await supabase
-          .from('nbt_registrations')
-          .select('*')
-          .eq('student_email', userEmail);
-        
+        const {
+          data: regs,
+          error: regsError
+        } = await supabase.from('nbt_registrations').select('*').eq('student_email', userEmail);
         if (regsError) throw regsError;
         setRegistrations(regs || []);
       }
@@ -462,46 +306,43 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
       setLoading(false);
     }
   }, [userEmail]);
-
-  useEffect(() => { load(); }, [load]);
-
+  useEffect(() => {
+    load();
+  }, [load]);
   const handleAddDate = async () => {
     if (!newDate.test_date || !newDate.venue || !newDate.city) {
       toast.error('Test date, venue, and city are required');
       return;
     }
-    
     setSaving(true);
     try {
-      const { error } = await supabase
-        .from('nbt_test_dates')
-        .insert({
-          test_date: newDate.test_date,
-          test_time: newDate.test_time || null,
-          venue: newDate.venue,
-          city: newDate.city,
-          province: newDate.province || null,
-          registration_deadline: newDate.registration_deadline || null,
-          registration_link: newDate.registration_link || null,
-          available_slots: newDate.available_slots ? Number(newDate.available_slots) : null,
-          tests_available: ['AQL', 'MAT', 'QL'],
-          is_active: true,
-          created_at: new Date().toISOString(),
-        });
-      
+      const {
+        error
+      } = await supabase.from('nbt_test_dates').insert({
+        test_date: newDate.test_date,
+        test_time: newDate.test_time || null,
+        venue: newDate.venue,
+        city: newDate.city,
+        province: newDate.province || null,
+        registration_deadline: newDate.registration_deadline || null,
+        registration_link: newDate.registration_link || null,
+        available_slots: newDate.available_slots ? Number(newDate.available_slots) : null,
+        tests_available: ['AQL', 'MAT', 'QL'],
+        is_active: true,
+        created_at: new Date().toISOString()
+      });
       if (error) throw error;
-      
       toast.success('Test date added successfully');
       setShowAddForm(false);
-      setNewDate({ 
-        test_date: '', 
-        test_time: '', 
-        venue: '', 
-        city: '', 
-        province: '', 
-        registration_deadline: '', 
-        registration_link: '', 
-        available_slots: '' 
+      setNewDate({
+        test_date: '',
+        test_time: '',
+        venue: '',
+        city: '',
+        province: '',
+        registration_deadline: '',
+        registration_link: '',
+        available_slots: ''
       });
       load();
     } catch (err) {
@@ -511,7 +352,6 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
       setSaving(false);
     }
   };
-
   const now = new Date();
   const displayed = testDates.filter(d => {
     const isPast = new Date(d.test_date) < now;
@@ -519,17 +359,12 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
     if (filter === 'past') return isPast;
     return true;
   });
-
   if (loading) {
-    return (
-      <div className="flex justify-center py-8">
+    return <div className="flex justify-center py-8">
         <Loader2 className="w-5 h-5 animate-spin text-primary" />
-      </div>
-    );
+      </div>;
   }
-
-  return (
-    <div className="space-y-4">
+  return <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h3 className="font-playfair font-semibold text-base flex items-center gap-2">
@@ -537,31 +372,20 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
           </h3>
           <p className="text-xs text-muted-foreground">View upcoming test dates, register, and upload your results</p>
         </div>
-        {isAdmin && (
-          <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowAddForm(s => !s)}>
+        {isAdmin && <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowAddForm(s => !s)}>
             <Plus className="w-3.5 h-3.5" /> Add Test Date
-          </Button>
-        )}
+          </Button>}
       </div>
 
-      {/* Filter */}
+      {}
       <div className="flex gap-1.5">
-        {['upcoming', 'past', 'all'].map(f => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-all capitalize ${
-              filter === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/70'
-            }`}
-          >
+        {['upcoming', 'past', 'all'].map(f => <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1 rounded-full text-xs font-medium transition-all capitalize ${filter === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
             {f}
-          </button>
-        ))}
+          </button>)}
       </div>
 
-      {/* Admin Add Form */}
-      {isAdmin && showAddForm && (
-        <Card className="border-primary/20 bg-primary/5">
+      {}
+      {isAdmin && showAddForm && <Card className="border-primary/20 bg-primary/5">
           <CardHeader className="pb-2 pt-4">
             <CardTitle className="text-sm">Add New NBT Test Date</CardTitle>
           </CardHeader>
@@ -569,76 +393,56 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="text-[10px] text-muted-foreground">Test Date *</label>
-                <Input 
-                  type="date" 
-                  value={newDate.test_date} 
-                  onChange={e => setNewDate(p => ({ ...p, test_date: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input type="date" value={newDate.test_date} onChange={e => setNewDate(p => ({
+              ...p,
+              test_date: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground">Test Time</label>
-                <Input 
-                  placeholder="08:00" 
-                  value={newDate.test_time} 
-                  onChange={e => setNewDate(p => ({ ...p, test_time: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input placeholder="08:00" value={newDate.test_time} onChange={e => setNewDate(p => ({
+              ...p,
+              test_time: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground">Venue *</label>
-                <Input 
-                  placeholder="e.g. UCT Upper Campus" 
-                  value={newDate.venue} 
-                  onChange={e => setNewDate(p => ({ ...p, venue: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input placeholder="e.g. UCT Upper Campus" value={newDate.venue} onChange={e => setNewDate(p => ({
+              ...p,
+              venue: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground">City *</label>
-                <Input 
-                  placeholder="e.g. Cape Town" 
-                  value={newDate.city} 
-                  onChange={e => setNewDate(p => ({ ...p, city: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input placeholder="e.g. Cape Town" value={newDate.city} onChange={e => setNewDate(p => ({
+              ...p,
+              city: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground">Registration Deadline</label>
-                <Input 
-                  type="date" 
-                  value={newDate.registration_deadline} 
-                  onChange={e => setNewDate(p => ({ ...p, registration_deadline: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input type="date" value={newDate.registration_deadline} onChange={e => setNewDate(p => ({
+              ...p,
+              registration_deadline: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
               <div>
                 <label className="text-[10px] text-muted-foreground">Available Slots</label>
-                <Input 
-                  type="number" 
-                  placeholder="e.g. 200" 
-                  value={newDate.available_slots} 
-                  onChange={e => setNewDate(p => ({ ...p, available_slots: e.target.value }))} 
-                  className="h-8 text-xs" 
-                />
+                <Input type="number" placeholder="e.g. 200" value={newDate.available_slots} onChange={e => setNewDate(p => ({
+              ...p,
+              available_slots: e.target.value
+            }))} className="h-8 text-xs" />
               </div>
             </div>
             <div>
               <label className="text-[10px] text-muted-foreground">Registration Link</label>
-              <Input 
-                placeholder="https://nbt.ac.za/..." 
-                value={newDate.registration_link} 
-                onChange={e => setNewDate(p => ({ ...p, registration_link: e.target.value }))} 
-                className="h-8 text-xs" 
-              />
+              <Input placeholder="https://nbt.ac.za/..." value={newDate.registration_link} onChange={e => setNewDate(p => ({
+            ...p,
+            registration_link: e.target.value
+          }))} className="h-8 text-xs" />
             </div>
             <div className="flex gap-2">
-              <Button 
-                size="sm" 
-                className="flex-1 h-8 text-xs" 
-                disabled={!newDate.test_date || !newDate.venue || !newDate.city || saving} 
-                onClick={handleAddDate}
-              >
+              <Button size="sm" className="flex-1 h-8 text-xs" disabled={!newDate.test_date || !newDate.venue || !newDate.city || saving} onClick={handleAddDate}>
                 {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
                 {saving ? 'Adding...' : 'Add Date'}
               </Button>
@@ -647,28 +451,14 @@ export default function NBTScheduler({ userEmail, isAdmin }) {
               </Button>
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {displayed.length === 0 ? (
-        <div className="text-center py-10 border rounded-xl text-muted-foreground">
+      {displayed.length === 0 ? <div className="text-center py-10 border rounded-xl text-muted-foreground">
           <Calendar className="w-8 h-8 mx-auto mb-2 opacity-30" />
           <p className="text-sm">{filter === 'upcoming' ? 'No upcoming NBT test dates available.' : 'No test dates found.'}</p>
           {isAdmin && <p className="text-xs mt-1">Click "Add Test Date" to add one.</p>}
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {displayed.map(td => (
-            <TestDateCard
-              key={td.id}
-              testDate={td}
-              registration={registrations.find(r => r.nbt_test_date_id === td.id) || null}
-              onRefresh={load}
-              userEmail={userEmail}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
+        </div> : <div className="space-y-3">
+          {displayed.map(td => <TestDateCard key={td.id} testDate={td} registration={registrations.find(r => r.nbt_test_date_id === td.id) || null} onRefresh={load} userEmail={userEmail} />)}
+        </div>}
+    </div>;
 }

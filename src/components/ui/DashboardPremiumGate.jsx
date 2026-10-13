@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Lock, Crown, Sparkles, AlertCircle } from 'lucide-react';
+import { Lock, Crown, Sparkles } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 // ============================================================
@@ -142,6 +142,7 @@ export default function DashboardPremiumGate({
   const icon = isTrialActive ? Sparkles : Lock;
   const iconColor = isTrialActive ? 'text-blue-600' : 'text-amber-600';
   const iconBg = isTrialActive ? 'bg-blue-100' : 'bg-amber-100';
+  const Icon = icon;
   const borderColor = isTrialActive ? 'border-blue-200' : 'border-amber-200';
   const bgColor = isTrialActive ? 'bg-blue-50/50' : 'bg-amber-50/50';
 
@@ -153,7 +154,7 @@ export default function DashboardPremiumGate({
     <Card className={`${borderColor} ${bgColor} border`}>
       <CardContent className={`${sizeClasses[size]} text-center`}>
         <div className={`${iconContainerSizes[size]} ${iconBg} rounded-2xl flex items-center justify-center mx-auto mb-3`}>
-          <icon className={`${iconSizes[size]} ${iconColor}`} />
+          <Icon className={`${iconSizes[size]} ${iconColor}`} />
         </div>
 
         <h3 className={`font-playfair font-bold ${titleSizes[size]} mb-1`}>

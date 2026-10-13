@@ -1,31 +1,20 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize, webhookPayload } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header (optional - webhook can be called without auth)
-    const authHeader = req.headers.get("Authorization");
-    let user = null;
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data: { user: authUser }, error: userError } = await supabase.auth.getUser(token);
-      if (!userError && authUser) {
-        user = authUser;
-      }
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'job');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     const body = await req.json();
-    const { data } = body;
+    const { data } = webhookPayload(body);
 
     if (!data) {
       return new Response(
@@ -64,8 +53,8 @@ serve(async (req) => {
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Email not sent.");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "RESEND_API_KEY not configured",
           notified: 0,
           total_recipients: users.length
@@ -111,7 +100,7 @@ The SmartBridge FET Team`;
   </p>
 </div>`;
 
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -124,7 +113,7 @@ The SmartBridge FET Team`;
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           sent++;
@@ -144,16 +133,16 @@ The SmartBridge FET Team`;
         event_type: "notification_sent",
         user_email: "system",
         description: `New resource notification sent to ${sent} users`,
-        metadata: JSON.stringify({ 
+        metadata: {
           resource_id: data.id,
           resource_title: resourceTitle,
           recipients: sent
-        })
+        }
       });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         notified: sent,
         total_recipients: users.length
       }),
@@ -163,7 +152,7 @@ The SmartBridge FET Team`;
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'notify-new-resource'));

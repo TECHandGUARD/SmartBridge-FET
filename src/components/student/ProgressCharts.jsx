@@ -5,87 +5,44 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { BarChart2, Loader2, AlertCircle, TrendingUp, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import StudyStreakTracker from './StudyStreakTracker';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Chart Colors
-// ============================================================
-
-const COLORS = [
-  '#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', 
-  '#db2777', '#059669', '#4f46e5', '#0891b2', '#e11d48'
-];
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function ProgressCharts({ user }) {
+const COLORS = ['#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', '#db2777', '#059669', '#4f46e5', '#0891b2', '#e11d48'];
+export default function ProgressCharts({
+  user
+}) {
   const [chartData, setChartData] = useState([]);
   const [streak, setStreak] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  // ============================================================
-  // Fetch Analytics Data
-  // ============================================================
-
   const fetchAnalyticsTelemetry = useCallback(async () => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
-
-      // Fetch from Supabase using correct field names
-      const { data, error: dbError } = await supabase
-        .from('student_progress')
-        .select('subject, resources_accessed, last_accessed')  // ✅ Fixed field names
-        .eq('student_email', user.email);  // ✅ Fixed field name
-
+      const {
+        data,
+        error: dbError
+      } = await supabase.from('study_progress').select('subject, study_sessions, last_access').eq('user_email', user.email);
       if (dbError) throw dbError;
-
       const progressData = (data || []).map(item => ({
         ...item,
         resources_accessed: item.resources_accessed || 0
       }));
-
-      // ============================================
-      // STREAK CALCULATION
-      // Forgiving policy: preserves streak until day ends
-      // ============================================
-      const rawDates = progressData
-        .filter(p => p.last_accessed)
-        .map(p => p.last_accessed.split('T')[0]);
-      
-      // Deduplicate dates (multiple sessions on same day count as 1)
-      const uniqueSortedDates = [...new Set(rawDates)].sort(
-        (a, b) => new Date(b).getTime() - new Date(a).getTime()
-      );
-
+      const rawDates = progressData.filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+      const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
       let calculatedStreak = 0;
-      
       if (uniqueSortedDates.length > 0) {
         const todayStr = new Date().toISOString().split('T')[0];
         const yesterdayStr = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-
-        // FORGIVING POLICY: Check if active today OR yesterday
         if (uniqueSortedDates[0] === todayStr || uniqueSortedDates[0] === yesterdayStr) {
           calculatedStreak = 1;
-          
           for (let i = 1; i < uniqueSortedDates.length; i++) {
             const prevTime = new Date(uniqueSortedDates[i - 1]).getTime();
             const currTime = new Date(uniqueSortedDates[i]).getTime();
             const dayDifference = (prevTime - currTime) / 86400000;
-
             if (dayDifference === 1) {
               calculatedStreak++;
             } else if (dayDifference > 1) {
@@ -95,44 +52,27 @@ export default function ProgressCharts({ user }) {
         }
       }
       setStreak(calculatedStreak);
-
-      // ============================================
-      // TRANSFORM FOR RECHARTS
-      // ============================================
-      const formattedChartData = progressData
-        .filter(p => (p.resources_accessed || 0) > 0)
-        .map((p, i) => {
-          const shortSubjectName = p.subject.length > 10 
-            ? p.subject.slice(0, 10) + '…' 
-            : p.subject;
-          
-          return {
-            name: shortSubjectName,
-            sessions: p.resources_accessed || 0,
-            fill: COLORS[i % COLORS.length],
-            fullName: p.subject
-          };
-        })
-        .sort((a, b) => b.sessions - a.sessions);
-
+      const formattedChartData = progressData.filter(p => (p.resources_accessed || 0) > 0).map((p, i) => {
+        const shortSubjectName = p.subject.length > 10 ? p.subject.slice(0, 10) + '…' : p.subject;
+        return {
+          name: shortSubjectName,
+          sessions: p.resources_accessed || 0,
+          fill: COLORS[i % COLORS.length],
+          fullName: p.subject
+        };
+      }).sort((a, b) => b.sessions - a.sessions);
       setChartData(formattedChartData);
-
-      // Log activity for POPIA compliance
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'progress_charts_viewed',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: 'Viewed progress charts dashboard',
-          metadata: {
-            total_sessions: formattedChartData.reduce((sum, item) => sum + item.sessions, 0),
-            active_subjects: formattedChartData.length,
-            streak: calculatedStreak
-          }
-        })
-        .catch(() => {});
-      
+      await Promise.resolve(supabase.from('activity_log').insert({
+        event_type: 'progress_charts_viewed',
+        user_email: user.email,
+        user_id: user.id || null,
+        description: 'Viewed progress charts dashboard',
+        metadata: {
+          total_sessions: formattedChartData.reduce((sum, item) => sum + item.sessions, 0),
+          active_subjects: formattedChartData.length,
+          streak: calculatedStreak
+        }
+      })).catch(() => {});
     } catch (err) {
       console.error('Error fetching progress:', err);
       setError(err.message || 'Failed to load progress data');
@@ -141,64 +81,42 @@ export default function ProgressCharts({ user }) {
       setLoading(false);
     }
   }, [user]);
-
   useEffect(() => {
     fetchAnalyticsTelemetry();
   }, [fetchAnalyticsTelemetry]);
-
-  // Calculate total study time for summary
   const totalSessions = chartData.reduce((sum, item) => sum + item.sessions, 0);
   const activeSubjects = chartData.length;
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardContent className="flex flex-col items-center justify-center py-12 gap-2">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
           <span className="text-xs text-muted-foreground">Loading your progress data...</span>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
+  return <div className="space-y-4 w-full">
 
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <div className="space-y-4 w-full">
-      
-      {/* Streak Tracker Component */}
+      {}
       <StudyStreakTracker streak={streak} />
 
-      {/* Error Banner */}
-      {error && (
-        <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
+      {}
+      {error && <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs font-semibold flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
           <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
           <span>{error}</span>
-          <button 
-            onClick={fetchAnalyticsTelemetry}
-            className="ml-auto text-primary hover:underline font-medium"
-          >
+          <button onClick={fetchAnalyticsTelemetry} className="ml-auto text-primary hover:underline font-medium">
             Retry
           </button>
-        </div>
-      )}
+        </div>}
 
-      {/* Security Badge */}
+      {}
       <div className="flex items-center justify-end">
         <span className="text-[9px] text-muted-foreground flex items-center gap-1">
           <Shield className="w-3 h-3 text-green-500" /> Your data is private and secure
         </span>
       </div>
 
-      {/* Summary Stats */}
-      {!error && chartData.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
+      {}
+      {!error && chartData.length > 0 && <div className="grid grid-cols-2 gap-3">
           <Card className="border-border bg-muted/20">
             <CardContent className="pt-4 pb-3 text-center">
               <p className="text-2xl font-bold text-primary">{totalSessions}</p>
@@ -211,62 +129,59 @@ export default function ProgressCharts({ user }) {
               <p className="text-xs text-muted-foreground">Subjects Studied</p>
             </CardContent>
           </Card>
-        </div>
-      )}
+        </div>}
 
-      {/* Bar Chart */}
-      {chartData.length > 0 && !error && (
-        <Card className="border-border shadow-sm">
+      {}
+      {chartData.length > 0 && !error && <Card className="border-border shadow-sm">
           <CardHeader className="pb-2 border-b bg-muted/30">
             <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-primary" /> 
+              <BarChart2 className="w-4 h-4 text-primary" />
               Study Sessions by Subject
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="w-full h-56">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                  <XAxis 
-                    dataKey="name" 
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                    axisLine={{ stroke: 'hsl(var(--border))' }}
-                    tickLine={false}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} 
-                    allowDecimals={false} 
-                    axisLine={{ stroke: 'hsl(var(--border))' }}
-                    tickLine={false}
-                  />
-                  <Tooltip
-                    formatter={(value, name, props) => {
-                      return [`${value} sessions`, props?.payload?.fullName || 'Study Time'];
-                    }}
-                    contentStyle={{ 
-                      fontSize: 11, 
-                      borderRadius: 8, 
-                      backgroundColor: 'hsl(var(--card))',
-                      borderColor: 'hsl(var(--border))',
-                      color: 'hsl(var(--foreground))'
-                    }}
-                    labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
-                  />
+                <BarChart data={chartData} margin={{
+              top: 5,
+              right: 5,
+              left: -20,
+              bottom: 5
+            }}>
+                  <XAxis dataKey="name" tick={{
+                fontSize: 10,
+                fill: 'hsl(var(--muted-foreground))'
+              }} axisLine={{
+                stroke: 'hsl(var(--border))'
+              }} tickLine={false} />
+                  <YAxis tick={{
+                fontSize: 10,
+                fill: 'hsl(var(--muted-foreground))'
+              }} allowDecimals={false} axisLine={{
+                stroke: 'hsl(var(--border))'
+              }} tickLine={false} />
+                  <Tooltip formatter={(value, name, props) => {
+                return [`${value} sessions`, props?.payload?.fullName || 'Study Time'];
+              }} contentStyle={{
+                fontSize: 11,
+                borderRadius: 8,
+                backgroundColor: 'hsl(var(--card))',
+                borderColor: 'hsl(var(--border))',
+                color: 'hsl(var(--foreground))'
+              }} labelStyle={{
+                color: 'hsl(var(--muted-foreground))'
+              }} />
                   <Bar dataKey="sessions" radius={[6, 6, 0, 0]} maxBarSize={40}>
-                    {chartData.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={entry.fill} />
-                    ))}
+                    {chartData.map((entry, idx) => <Cell key={`cell-${idx}`} fill={entry.fill} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
-        </Card>
-      )}
+        </Card>}
 
-      {/* Empty State */}
-      {chartData.length === 0 && !error && !loading && (
-        <Card className="border-border">
+      {}
+      {chartData.length === 0 && !error && !loading && <Card className="border-border">
           <CardContent className="text-center py-12 text-muted-foreground">
             <TrendingUp className="w-10 h-10 mx-auto mb-2 opacity-30" />
             <p className="text-sm font-medium">No study data yet</p>
@@ -274,8 +189,6 @@ export default function ProgressCharts({ user }) {
               Start logging study sessions to see your progress!
             </p>
           </CardContent>
-        </Card>
-      )}
-    </div>
-  );
+        </Card>}
+    </div>;
 }

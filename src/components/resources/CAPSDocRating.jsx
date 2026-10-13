@@ -30,10 +30,10 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
 
   const fetchRatings = useCallback(async () => {
     if (!docId) return;
-    
+
     setLoading(true);
     setError(null);
-    
+
     try {
       const { data, error: queryError } = await supabase
         .from('resource_ratings')
@@ -42,9 +42,9 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
         .order('created_at', { ascending: false });
 
       if (queryError) throw queryError;
-      
+
       setRatings(data || []);
-      
+
       // Check if current user has rated
       if (userEmail) {
         const mine = data?.find(r => r.user_email === userEmail);
@@ -78,7 +78,7 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
       toast.error('Please log in to rate documents.');
       return;
     }
-    
+
     if (!selected) {
       toast.error('Please select a star rating.');
       return;
@@ -89,7 +89,7 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
 
     try {
       const existing = ratings.find(r => r.user_email === userEmail);
-      
+
       const payload = {
         rating: selected,
         comment: comment.trim() || null,
@@ -122,7 +122,7 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
       }
 
       // Log activity for POPIA compliance
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'resource_rated',
@@ -134,12 +134,12 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
             rating: selected,
             has_comment: !!comment.trim()
           }
-        })
+        }))
         .catch(() => {}); // Silent fail for logging
 
       // Refresh ratings
       await fetchRatings();
-      
+
       // Notify parent if callback provided
       if (onRatingUpdate) onRatingUpdate();
 
@@ -193,7 +193,7 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
               Rate this document
               {userEmail && <span className="text-muted-foreground font-normal ml-1">as {userEmail}</span>}
             </p>
-            
+
             <div className="flex items-center gap-2">
               <div className="flex gap-1">
                 {STARS.map(n => (
@@ -232,10 +232,10 @@ export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
             />
 
             <div className="flex items-center gap-2">
-              <Button 
-                size="sm" 
-                className="h-7 text-xs bg-primary gap-1" 
-                onClick={handleSubmit} 
+              <Button
+                size="sm"
+                className="h-7 text-xs bg-primary gap-1"
+                onClick={handleSubmit}
                 disabled={submitting || !selected}
               >
                 {submitting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}

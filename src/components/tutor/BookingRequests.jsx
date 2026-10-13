@@ -1,3 +1,6 @@
+import { Shield } from 'lucide-react';
+const PLATFORM_FEE_PERCENT = 0.10;
+const VAT_PERCENT = 0.15;
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -5,41 +8,37 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CalendarDays, Clock, CheckCircle, XCircle, User, BookOpen, ExternalLink, Search, Loader2, AlertCircle, DollarSign, Bell, Shield } from 'lucide-react';
+import { CalendarDays, Clock, CheckCircle, XCircle, User, BookOpen, ExternalLink, Search, Loader2, AlertCircle, Bell } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, parseISO } from 'date-fns';
-
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const PLATFORM_FEE_PERCENT = 0.10;
-const VAT_PERCENT = 0.15;
-const CONFLICT_BUFFER_MINUTES = 15;
-
-// ============================================================
-// Constants
-// ============================================================
-
+import { format } from 'date-fns';
 const STATUS_STYLES = {
   pending: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
   confirmed: 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300',
   cancelled: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300',
-  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300',
+  completed: 'bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300'
 };
-
 const ATTENDANCE_STATUS = {
-  attended: { label: 'Attended', color: 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300', icon: CheckCircle },
-  no_show_student: { label: 'Student No-Show', color: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300', icon: XCircle },
-  no_show_tutor: { label: 'Tutor No-Show', color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300', icon: AlertCircle },
-  late: { label: 'Late', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-300', icon: Clock },
+  attended: {
+    label: 'Attended',
+    color: 'bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300',
+    icon: CheckCircle
+  },
+  no_show_student: {
+    label: 'Student No-Show',
+    color: 'bg-red-100 text-red-700 dark:bg-red-950/30 dark:text-red-300',
+    icon: XCircle
+  },
+  no_show_tutor: {
+    label: 'Tutor No-Show',
+    color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300',
+    icon: AlertCircle
+  },
+  late: {
+    label: 'Late',
+    color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-300',
+    icon: Clock
+  }
 };
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
 const formatDateTime = (dateStr, timeStr) => {
   if (!dateStr || !timeStr) return 'Date TBD';
   try {
@@ -49,29 +48,24 @@ const formatDateTime = (dateStr, timeStr) => {
     return `${dateStr} at ${timeStr}`;
   }
 };
-
-const getNetEarnings = (amount) => {
+const getNetEarnings = amount => {
   if (!amount) return 0;
   const fee = amount * PLATFORM_FEE_PERCENT;
   const vatAmount = fee * VAT_PERCENT;
   return amount - fee - vatAmount;
 };
-
 const hasOverlap = (booking1, booking2) => {
   const start1 = new Date(`${booking1.date}T${booking1.time}`);
-  const end1 = new Date(start1.getTime() + (booking1.duration_hours * 60 * 60 * 1000));
+  const end1 = new Date(start1.getTime() + booking1.duration_hours * 60 * 60 * 1000);
   const start2 = new Date(`${booking2.date}T${booking2.time}`);
-  const end2 = new Date(start2.getTime() + (booking2.duration_hours * 60 * 60 * 1000));
-  
-  const buffer = CONFLICT_BUFFER_MINUTES * 60 * 1000;
-  return (start1 < end2 + buffer && end1 > start2 - buffer);
+  const end2 = new Date(start2.getTime() + booking2.duration_hours * 60 * 60 * 1000);
+  const buffer = 15 * 60 * 1000;
+  return start1.getTime() < end2.getTime() + buffer && end1.getTime() > start2.getTime() - buffer;
 };
-
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function BookingRequests({ user, onBookingUpdate }) {
+export default function BookingRequests({
+  user,
+  onBookingUpdate = undefined
+}) {
   const [bookings, setBookings] = useState([]);
   const [tutorProfile, setTutorProfile] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -81,56 +75,38 @@ export default function BookingRequests({ user, onBookingUpdate }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedBookings, setSelectedBookings] = useState(new Set());
   const [rescheduleRequests, setRescheduleRequests] = useState({});
-
-  // ============================================================
-  // Load Data
-  // ============================================================
-
   const loadData = useCallback(async () => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-    
     setLoading(true);
     setError(null);
-    
     try {
-      // Load bookings
-      const { data: bookingsData, error: bookingsError } = await supabase
-        .from('tutor_bookings')
-        .select('*')
-        .eq('tutor_email', user.email)
-        .order('created_at', { ascending: false })
-        .limit(50);
-      
+      const {
+        data: bookingsData,
+        error: bookingsError
+      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('created_at', {
+        ascending: false
+      }).limit(50);
       if (bookingsError) throw bookingsError;
-      
-      // Load tutor profile for session links
-      const { data: profileData, error: profileError } = await supabase
-        .from('tutor_profiles')
-        .select('zoom_link, teams_link')
-        .eq('user_email', user.email)
-        .maybeSingle();
-      
+      const {
+        data: profileData,
+        error: profileError
+      } = await supabase.from('users').select('zoom_link, teams_link').eq('id', user.id).maybeSingle();
       if (profileError) throw profileError;
-      
       setBookings(bookingsData || []);
       setTutorProfile(profileData);
-      
-      // Load reschedule requests
-      const { data: rescheduleData } = await supabase
-        .from('booking_reschedule_requests')
-        .select('*')
-        .eq('tutor_email', user.email)
-        .eq('status', 'pending');
-      
+      const {
+        data: rescheduleData
+      } = await supabase.from('booking_reschedule_requests').select('*').eq('tutor_email', user.email).eq('status', 'pending');
       if (rescheduleData) {
         const requestMap = {};
-        rescheduleData.forEach(r => { requestMap[r.booking_id] = r; });
+        rescheduleData.forEach(r => {
+          requestMap[r.booking_id] = r;
+        });
         setRescheduleRequests(requestMap);
       }
-      
     } catch (err) {
       console.error('Error loading bookings:', err);
       setError('Failed to load booking requests');
@@ -139,62 +115,34 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setLoading(false);
     }
   }, [user?.email]);
-
-  // ============================================================
-  // Real-time Subscription
-  // ============================================================
-
   useEffect(() => {
     loadData();
-    
     if (!user?.email) return;
-    
-    const channel = supabase
-      .channel('tutor_booking_requests')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'tutor_bookings',
-          filter: `tutor_email=eq.${user.email}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            setBookings(prev => [payload.new, ...prev]);
-            toast.info(`New booking request from ${payload.new.student_email}`);
-          } else if (payload.eventType === 'UPDATE') {
-            setBookings(prev => prev.map(b => b.id === payload.new.id ? payload.new : b));
-          }
-        }
-      )
-      .subscribe();
-    
+    const channel = supabase.channel('tutor_booking_requests').on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'tutor_bookings',
+      filter: `tutor_email=eq.${user.email}`
+    }, payload => {
+      if (payload.eventType === 'INSERT') {
+        setBookings(prev => [payload.new, ...prev]);
+        toast.info(`New booking request from ${payload.new.student_email}`);
+      } else if (payload.eventType === 'UPDATE') {
+        setBookings(prev => prev.map(b => b.id === payload.new.id ? payload.new : b));
+      }
+    }).subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
   }, [user?.email, loadData]);
-
-  // ============================================================
-  // Send Email Notification
-  // ============================================================
-
-  const sendEmailNotification = async (booking, action, customMessage = null) => {
+  const sendEmailNotification = async booking => {
     try {
-      const { error } = await supabase.functions.invoke('send-email', {
+      const {
+        error
+      } = await supabase.functions.invoke('send-email', {
         body: {
-          to: booking.student_email,
-          subject: action === 'confirmed' 
-            ? `✅ Session Confirmed — ${booking.subject} with ${user.full_name}`
-            : action === 'cancelled'
-            ? `❌ Session Cancelled — ${booking.subject}`
-            : `📝 Session Update — ${booking.subject}`,
-          body: customMessage || (
-            action === 'confirmed'
-              ? `Hi,\n\nYour tutoring session has been confirmed!\n\n📚 Subject: ${booking.subject}\n📅 Date: ${formatDateTime(booking.date, booking.time)}\n⏱ Duration: ${booking.duration_hours}h\n\nYour tutor will share the session link before the session.\n\n— ${appName} / Tech & GUARD Pty Ltd`
-              : `Hi,\n\nYour tutoring session has been cancelled.\n\n📚 Subject: ${booking.subject}\n📅 Date: ${formatDateTime(booking.date, booking.time)}\n\nPlease book another time.\n\n— ${appName} / Tech & GUARD Pty Ltd`
-          ),
-          from_name: appName
+          kind: 'booking-status',
+          booking_id: booking.id
         }
       });
       if (error) console.error('Email notification error:', error);
@@ -202,44 +150,31 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       console.error('Failed to send email:', err);
     }
   };
-
-  // ============================================================
-  // Accept Booking
-  // ============================================================
-
-  const accept = async (booking) => {
+  const accept = async booking => {
     setProcessing(booking.id);
     const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || '';
-    
-    // Check for overlap with existing confirmed bookings
     const overlapping = checkOverlap(booking);
     if (overlapping) {
       toast.error(`This time overlaps with another session (${overlapping.time} - ${overlapping.subject})`);
       setProcessing(null);
       return;
     }
-    
     try {
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({ 
-          status: 'confirmed', 
-          session_link: sessionLink,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-      
+      const {
+        error
+      } = await supabase.from('tutor_bookings').update({
+        status: 'confirmed',
+        session_link: sessionLink,
+        updated_at: new Date().toISOString()
+      }).eq('id', booking.id);
       if (error) throw error;
-      
-      setBookings(prev => prev.map(b => 
-        b.id === booking.id ? { ...b, status: 'confirmed', session_link: sessionLink } : b
-      ));
-      
-      // Log activity
-      await logActivity('booking_accepted', booking);
-      
-      await sendEmailNotification(booking, 'confirmed');
-      toast.success('Booking confirmed! Student notified.');
+      setBookings(prev => prev.map(b => b.id === booking.id ? {
+        ...b,
+        status: 'confirmed',
+        session_link: sessionLink
+      } : b));
+      await sendEmailNotification(booking);
+      toast.success('Booking confirmed.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
       console.error('Error accepting booking:', err);
@@ -248,38 +183,23 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
-  // ============================================================
-  // Decline Booking
-  // ============================================================
-
   const decline = async (booking, reason = null) => {
     setProcessing(booking.id);
-    
     try {
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({ 
-          status: 'cancelled',
-          cancellation_reason: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-      
+      const {
+        error
+      } = await supabase.from('tutor_bookings').update({
+        status: 'cancelled',
+        cancellation_reason: reason,
+        updated_at: new Date().toISOString()
+      }).eq('id', booking.id);
       if (error) throw error;
-      
-      setBookings(prev => prev.map(b => 
-        b.id === booking.id ? { ...b, status: 'cancelled', cancellation_reason: reason } : b
-      ));
-      
-      // Log activity
-      await logActivity('booking_declined', booking);
-      
-      const customMessage = reason 
-        ? `Hi,\n\nYour tutoring session has been cancelled.\n\n📚 Subject: ${booking.subject}\n📅 Date: ${formatDateTime(booking.date, booking.time)}\n\nReason: ${reason}\n\nPlease book another time.\n\n— ${appName} / Tech & GUARD Pty Ltd`
-        : null;
-      
-      await sendEmailNotification(booking, 'cancelled', customMessage);
+      setBookings(prev => prev.map(b => b.id === booking.id ? {
+        ...b,
+        status: 'cancelled',
+        cancellation_reason: reason
+      } : b));
+      await sendEmailNotification(booking);
       toast.info('Booking declined.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -289,32 +209,21 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
-  // ============================================================
-  // Mark Complete
-  // ============================================================
-
-  const markComplete = async (booking) => {
+  const markComplete = async booking => {
     setProcessing(booking.id);
-    
     try {
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({ 
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-      
+      const {
+        error
+      } = await supabase.from('tutor_bookings').update({
+        status: 'completed',
+        updated_at: new Date().toISOString()
+      }).eq('id', booking.id);
       if (error) throw error;
-      
-      setBookings(prev => prev.map(b => 
-        b.id === booking.id ? { ...b, status: 'completed' } : b
-      ));
-      
-      // Log activity
+      setBookings(prev => prev.map(b => b.id === booking.id ? {
+        ...b,
+        status: 'completed'
+      } : b));
       await logActivity('session_completed', booking);
-      
       toast.success('Session marked as completed.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -324,32 +233,23 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
-  // ============================================================
-  // Mark Attendance
-  // ============================================================
-
   const markAttendance = async (booking, attendance) => {
     setProcessing(booking.id);
-    
     try {
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({ 
-          attendance_status: attendance,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-      
+      const {
+        error
+      } = await supabase.from('tutor_bookings').update({
+        attendance_status: attendance,
+        updated_at: new Date().toISOString()
+      }).eq('id', booking.id);
       if (error) throw error;
-      
-      setBookings(prev => prev.map(b => 
-        b.id === booking.id ? { ...b, attendance_status: attendance } : b
-      ));
-      
-      // Log activity
-      await logActivity('attendance_marked', booking, { attendance });
-      
+      setBookings(prev => prev.map(b => b.id === booking.id ? {
+        ...b,
+        attendance_status: attendance
+      } : b));
+      await logActivity('attendance_marked', booking, {
+        attendance
+      });
       toast.success(`Marked as ${ATTENDANCE_STATUS[attendance]?.label}`);
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -359,45 +259,28 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
-  // ============================================================
-  // Activity Logging
-  // ============================================================
-
   const logActivity = async (eventType, booking, metadata = {}) => {
     try {
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: eventType,
-          user_email: user.email,
-          user_id: user.id || null,
-          description: `${eventType.replace(/_/g, ' ')}: ${booking.subject} with ${booking.student_email}`,
-          metadata: {
-            booking_id: booking.id,
-            student_email: booking.student_email,
-            subject: booking.subject,
-            date: booking.date,
-            time: booking.time,
-            ...metadata
-          }
-        });
+      await supabase.from('activity_log').insert({
+        event_type: eventType,
+        user_email: user.email,
+        user_id: user.id || null,
+        description: `${eventType.replace(/_/g, ' ')}: ${booking.subject} with ${booking.student_email}`,
+        metadata: {
+          booking_id: booking.id,
+          student_email: booking.student_email,
+          subject: booking.subject,
+          date: booking.date,
+          time: booking.time,
+          ...metadata
+        }
+      });
     } catch (err) {
       console.warn('Activity log error:', err);
     }
   };
-
-  // ============================================================
-  // Check Overlap
-  // ============================================================
-
-  const checkOverlap = (newBooking) => {
-    const otherBookings = bookings.filter(b => 
-      b.id !== newBooking.id && 
-      b.status === 'confirmed' && 
-      b.date === newBooking.date
-    );
-    
+  const checkOverlap = newBooking => {
+    const otherBookings = bookings.filter(b => b.id !== newBooking.id && b.status === 'confirmed' && b.date === newBooking.date);
     for (const existing of otherBookings) {
       if (hasOverlap(newBooking, existing)) {
         return existing;
@@ -405,24 +288,14 @@ export default function BookingRequests({ user, onBookingUpdate }) {
     }
     return null;
   };
-
-  // ============================================================
-  // Batch Accept
-  // ============================================================
-
   const batchAccept = async () => {
-    const pendingSelected = Array.from(selectedBookings).filter(id => 
-      bookings.find(b => b.id === id && b.status === 'pending')
-    );
-    
+    const pendingSelected = Array.from(selectedBookings).filter(id => bookings.find(b => b.id === id && b.status === 'pending'));
     if (pendingSelected.length === 0) {
       toast.error('No pending bookings selected');
       return;
     }
-    
     let accepted = 0;
     let failed = 0;
-    
     for (const id of pendingSelected) {
       const booking = bookings.find(b => b.id === id);
       if (booking) {
@@ -434,55 +307,41 @@ export default function BookingRequests({ user, onBookingUpdate }) {
         }
       }
     }
-    
     setSelectedBookings(new Set());
     toast.success(`${accepted} bookings accepted${failed > 0 ? `, ${failed} failed` : ''}`);
   };
-
-  // ============================================================
-  // Reschedule Handling
-  // ============================================================
-
   const acceptReschedule = async (booking, request) => {
     setProcessing(booking.id);
-    
     try {
-      // Update booking with new date/time
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({
-          date: request.requested_date,
-          time: request.requested_time,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-      
+      const {
+        error
+      } = await supabase.from('tutor_bookings').update({
+        date: request.requested_date,
+        time: request.requested_time,
+        updated_at: new Date().toISOString()
+      }).eq('id', booking.id);
       if (error) throw error;
-      
-      // Update reschedule request status
-      await supabase
-        .from('booking_reschedule_requests')
-        .update({ status: 'accepted' })
-        .eq('id', request.id);
-      
-      setBookings(prev => prev.map(b => 
-        b.id === booking.id ? { ...b, date: request.requested_date, time: request.requested_time } : b
-      ));
-      
+      await supabase.from('booking_reschedule_requests').update({
+        status: 'accepted'
+      }).eq('id', request.id);
+      setBookings(prev => prev.map(b => b.id === booking.id ? {
+        ...b,
+        date: request.requested_date,
+        time: request.requested_time
+      } : b));
       setRescheduleRequests(prev => {
-        const newMap = { ...prev };
+        const newMap = {
+          ...prev
+        };
         delete newMap[booking.id];
         return newMap;
       });
-      
-      // Log activity
       await logActivity('reschedule_accepted', booking, {
         old_date: booking.date,
         old_time: booking.time,
         new_date: request.requested_date,
         new_time: request.requested_time
       });
-      
       toast.success('Reschedule accepted!');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -492,22 +351,19 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
   const declineReschedule = async (booking, request) => {
     setProcessing(booking.id);
-    
     try {
-      await supabase
-        .from('booking_reschedule_requests')
-        .update({ status: 'declined' })
-        .eq('id', request.id);
-      
+      await supabase.from('booking_reschedule_requests').update({
+        status: 'declined'
+      }).eq('id', request.id);
       setRescheduleRequests(prev => {
-        const newMap = { ...prev };
+        const newMap = {
+          ...prev
+        };
         delete newMap[booking.id];
         return newMap;
       });
-      
       toast.info('Reschedule declined.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -517,49 +373,25 @@ export default function BookingRequests({ user, onBookingUpdate }) {
       setProcessing(null);
     }
   };
-
-  // ============================================================
-  // Toggle Select
-  // ============================================================
-
-  const toggleSelect = (id) => {
+  const toggleSelect = id => {
     const newSet = new Set(selectedBookings);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
+    if (newSet.has(id)) newSet.delete(id);else newSet.add(id);
     setSelectedBookings(newSet);
   };
-
-  // ============================================================
-  // Filtered Bookings
-  // ============================================================
-
   const filteredBookings = useMemo(() => {
     let filtered = bookings;
-    
     if (filter !== 'all') {
       filtered = filtered.filter(b => b.status === filter);
     }
-    
     if (searchTerm) {
-      filtered = filtered.filter(b => 
-        b.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        b.subject.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      filtered = filtered.filter(b => b.student_email.toLowerCase().includes(searchTerm.toLowerCase()) || b.subject.toLowerCase().includes(searchTerm.toLowerCase()));
     }
-    
     return filtered;
   }, [bookings, filter, searchTerm]);
-
   const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || null;
   const pendingCount = bookings.filter(b => b.status === 'pending').length;
-
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="font-playfair text-lg flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-primary" /> Booking Requests
@@ -568,17 +400,10 @@ export default function BookingRequests({ user, onBookingUpdate }) {
         <CardContent className="flex justify-center py-8">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Error State
-  // ============================================================
-
   if (error) {
-    return (
-      <Card className="border-border">
+    return <Card className="border-border">
         <CardHeader className="pb-3">
           <CardTitle className="font-playfair text-lg flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-primary" /> Booking Requests
@@ -589,32 +414,23 @@ export default function BookingRequests({ user, onBookingUpdate }) {
           <p className="text-sm text-muted-foreground">{error}</p>
           <Button variant="outline" size="sm" className="mt-3" onClick={loadData}>Retry</Button>
         </CardContent>
-      </Card>
-    );
+      </Card>;
   }
-
-  // ============================================================
-  // Render
-  // ============================================================
-
-  return (
-    <Card className="border-border">
+  return <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-playfair text-lg flex items-center gap-2">
             <CalendarDays className="w-5 h-5 text-primary" /> Booking Requests
-            {pendingCount > 0 && (
-              <Badge className="bg-red-100 text-red-700 animate-pulse text-xs ml-1 dark:bg-red-950/30 dark:text-red-300">
+            {pendingCount > 0 && <Badge className="bg-red-100 text-red-700 animate-pulse text-xs ml-1 dark:bg-red-950/30 dark:text-red-300">
                 {pendingCount} pending
-              </Badge>
-            )}
+              </Badge>}
           </CardTitle>
           <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
             <Shield className="w-3 h-3 text-green-500" /> Private
           </Badge>
         </div>
-        
-        {/* Filters */}
+
+        {}
         <div className="flex gap-2 mt-2">
           <Select value={filter} onValueChange={setFilter}>
             <SelectTrigger className="w-32 h-8 text-xs">
@@ -628,29 +444,18 @@ export default function BookingRequests({ user, onBookingUpdate }) {
               <SelectItem value="cancelled">Cancelled</SelectItem>
             </SelectContent>
           </Select>
-          
+
           <div className="relative flex-1">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input 
-              placeholder="Search student or subject..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="pl-7 h-8 text-xs"
-            />
+            <Input placeholder="Search student or subject..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-7 h-8 text-xs" />
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent>
-        {bookings.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No booking requests yet. Students will appear here when they book you.</p>
-        ) : filteredBookings.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-6">No bookings match your filters.</p>
-        ) : (
-          <>
-            {/* Batch Action Bar */}
-            {selectedBookings.size > 0 && (
-              <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-primary text-white rounded-lg px-4 py-2 shadow-lg flex gap-2 z-50">
+        {bookings.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No booking requests yet. Students will appear here when they book you.</p> : filteredBookings.length === 0 ? <p className="text-sm text-muted-foreground text-center py-6">No bookings match your filters.</p> : <>
+            {}
+            {selectedBookings.size > 0 && <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-primary text-white rounded-lg px-4 py-2 shadow-lg flex gap-2 z-50">
                 <span className="text-sm">{selectedBookings.size} selected</span>
                 <Button size="sm" className="bg-white text-primary hover:bg-gray-100" onClick={batchAccept}>
                   Accept All
@@ -658,143 +463,95 @@ export default function BookingRequests({ user, onBookingUpdate }) {
                 <Button size="sm" variant="outline" className="border-white text-white hover:bg-white/20" onClick={() => setSelectedBookings(new Set())}>
                   Clear
                 </Button>
-              </div>
-            )}
-            
+              </div>}
+
             <div className="space-y-3">
               {filteredBookings.map(b => {
-                const isProcessing = processing === b.id;
-                const isPast = new Date(b.date) < new Date();
-                const isToday = new Date(b.date).toDateString() === new Date().toDateString();
-                const hasRescheduleRequest = rescheduleRequests[b.id];
-                const AttendanceIcon = ATTENDANCE_STATUS[b.attendance_status]?.icon || null;
-                
-                return (
-                  <div key={b.id} className={`p-4 rounded-xl border ${
-                    b.status === 'pending' ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : 
-                    b.status === 'confirmed' && isToday ? 'border-green-300 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20' :
-                    'border-border bg-muted/30'
-                  }`}>
+            const isProcessing = processing === b.id;
+            const isPast = new Date(b.date) < new Date();
+            const isToday = new Date(b.date).toDateString() === new Date().toDateString();
+            const hasRescheduleRequest = rescheduleRequests[b.id];
+            const AttendanceIcon = ATTENDANCE_STATUS[b.attendance_status]?.icon || null;
+            return <div key={b.id} className={`p-4 rounded-xl border ${b.status === 'pending' ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' : b.status === 'confirmed' && isToday ? 'border-green-300 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20' : 'border-border bg-muted/30'}`}>
                     <div className="flex items-start gap-3">
-                      {/* Checkbox for batch actions */}
-                      <input 
-                        type="checkbox"
-                        checked={selectedBookings.has(b.id)}
-                        onChange={() => toggleSelect(b.id)}
-                        className="mt-1 w-4 h-4 rounded border-gray-300"
-                        disabled={b.status !== 'pending'}
-                      />
-                      
+                      {}
+                      <input type="checkbox" checked={selectedBookings.has(b.id)} onChange={() => toggleSelect(b.id)} className="mt-1 w-4 h-4 rounded border-gray-300" disabled={b.status !== 'pending'} />
+
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
                         <User className="w-4 h-4" />
                       </div>
-                      
+
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
                           <p className="font-semibold text-sm">{b.student_email}</p>
                           <Badge className={`text-xs ${STATUS_STYLES[b.status]}`}>{b.status}</Badge>
-                          {hasRescheduleRequest && (
-                            <Badge className="bg-purple-100 text-purple-700 text-xs dark:bg-purple-950/30 dark:text-purple-300">Reschedule requested</Badge>
-                          )}
-                          {isPast && b.status !== 'completed' && b.status !== 'cancelled' && (
-                            <Badge className="bg-gray-100 text-gray-600 text-xs dark:bg-gray-800 dark:text-gray-400">Past</Badge>
-                          )}
-                          {isToday && b.status === 'confirmed' && (
-                            <Badge className="bg-green-100 text-green-700 text-xs animate-pulse dark:bg-green-950/30 dark:text-green-300">Today</Badge>
-                          )}
-                          {b.attendance_status && AttendanceIcon && (
-                            <Badge className={`text-xs ${ATTENDANCE_STATUS[b.attendance_status]?.color}`}>
+                          {hasRescheduleRequest && <Badge className="bg-purple-100 text-purple-700 text-xs dark:bg-purple-950/30 dark:text-purple-300">Reschedule requested</Badge>}
+                          {isPast && b.status !== 'completed' && b.status !== 'cancelled' && <Badge className="bg-gray-100 text-gray-600 text-xs dark:bg-gray-800 dark:text-gray-400">Past</Badge>}
+                          {isToday && b.status === 'confirmed' && <Badge className="bg-green-100 text-green-700 text-xs animate-pulse dark:bg-green-950/30 dark:text-green-300">Today</Badge>}
+                          {b.attendance_status && AttendanceIcon && <Badge className={`text-xs ${ATTENDANCE_STATUS[b.attendance_status]?.color}`}>
                               <AttendanceIcon className="w-3 h-3 inline mr-0.5" />
                               {ATTENDANCE_STATUS[b.attendance_status]?.label}
-                            </Badge>
-                          )}
+                            </Badge>}
                         </div>
-                        
+
                         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{b.subject}</span>
                           <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{formatDateTime(b.date, b.time)}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.duration_hours}h</span>
                         </div>
-                        
-                        {b.amount > 0 && (
-                          <div className="flex items-center gap-2 mt-1">
+
+                        {b.amount > 0 && <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs font-medium text-primary">R{b.amount}</span>
                             <span className="text-[10px] text-muted-foreground">
                               (net: R{getNetEarnings(b.amount).toFixed(0)})
                             </span>
-                          </div>
-                        )}
-                        
+                          </div>}
+
                         {b.message && <p className="text-xs text-muted-foreground mt-1 italic">"{b.message}"</p>}
-                        {b.cancellation_reason && (
-                          <p className="text-xs text-red-600 mt-1 dark:text-red-400">Cancelled: {b.cancellation_reason}</p>
-                        )}
-                        
-                        {/* Reschedule request details */}
-                        {hasRescheduleRequest && (
-                          <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg dark:bg-purple-950/20 dark:border-purple-800">
+                        {b.cancellation_reason && <p className="text-xs text-red-600 mt-1 dark:text-red-400">Cancelled: {b.cancellation_reason}</p>}
+
+                        {}
+                        {hasRescheduleRequest && <div className="mt-2 p-2 bg-purple-50 border border-purple-200 rounded-lg dark:bg-purple-950/20 dark:border-purple-800">
                             <p className="text-[10px] text-purple-700 dark:text-purple-300">
-                              Student requests reschedule to: {formatDateTime(
-                                hasRescheduleRequest.requested_date, 
-                                hasRescheduleRequest.requested_time
-                              )}
+                              Student requests reschedule to: {formatDateTime(hasRescheduleRequest.requested_date, hasRescheduleRequest.requested_time)}
                             </p>
                             <div className="flex gap-2 mt-1">
-                              <Button 
-                                size="sm" 
-                                className="h-6 text-[10px] bg-purple-600 hover:bg-purple-700" 
-                                onClick={() => acceptReschedule(b, hasRescheduleRequest)}
-                                disabled={isProcessing}
-                              >
+                              <Button size="sm" className="h-6 text-[10px] bg-purple-600 hover:bg-purple-700" onClick={() => acceptReschedule(b, hasRescheduleRequest)} disabled={isProcessing}>
                                 {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Accept'}
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline" 
-                                className="h-6 text-[10px]" 
-                                onClick={() => declineReschedule(b, hasRescheduleRequest)}
-                                disabled={isProcessing}
-                              >
+                              <Button size="sm" variant="outline" className="h-6 text-[10px]" onClick={() => declineReschedule(b, hasRescheduleRequest)} disabled={isProcessing}>
                                 Decline
                               </Button>
                             </div>
-                          </div>
-                        )}
+                          </div>}
                       </div>
 
                       <div className="flex gap-2 flex-wrap">
-                        {/* Join Session Button */}
-                        {b.status === 'confirmed' && sessionLink && (!isPast || isToday) && (
-                          <a href={sessionLink} target="_blank" rel="noopener noreferrer">
+                        {}
+                        {b.status === 'confirmed' && sessionLink && (!isPast || isToday) && <a href={sessionLink} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-green-600 hover:bg-green-700 text-white">
                               <ExternalLink className="w-3.5 h-3.5" /> Join Session
                             </Button>
-                          </a>
-                        )}
-                        
-                        {/* Mark Complete */}
-                        {b.status === 'confirmed' && isPast && (
-                          <Button size="sm" variant="outline" className="text-xs gap-1 h-8" disabled={isProcessing} onClick={() => markComplete(b)}>
+                          </a>}
+
+                        {}
+                        {b.status === 'confirmed' && isPast && <Button size="sm" variant="outline" className="text-xs gap-1 h-8" disabled={isProcessing} onClick={() => markComplete(b)}>
                             {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             Complete
-                          </Button>
-                        )}
-                        
-                        {/* Attendance buttons for completed sessions */}
-                        {b.status === 'completed' && !b.attendance_status && (
-                          <div className="flex gap-1">
+                          </Button>}
+
+                        {}
+                        {b.status === 'completed' && !b.attendance_status && <div className="flex gap-1">
                             <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => markAttendance(b, 'attended')}>
                               Attended
                             </Button>
                             <Button size="sm" variant="outline" className="text-xs h-7 text-red-600" onClick={() => markAttendance(b, 'no_show_student')}>
                               No-Show
                             </Button>
-                          </div>
-                        )}
-                        
-                        {/* Pending actions */}
-                        {b.status === 'pending' && (
-                          <>
+                          </div>}
+
+                        {}
+                        {b.status === 'pending' && <>
                             <Button size="sm" variant="outline" className="text-xs gap-1 h-8 text-red-700 border-red-200 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20" disabled={isProcessing} onClick={() => decline(b)}>
                               {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                               Decline
@@ -803,35 +560,27 @@ export default function BookingRequests({ user, onBookingUpdate }) {
                               {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                               Accept
                             </Button>
-                          </>
-                        )}
+                          </>}
                       </div>
                     </div>
-                    
-                    {/* Warning for pending sessions */}
-                    {b.status === 'pending' && !isPast && (
-                      <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800">
+
+                    {}
+                    {b.status === 'pending' && !isPast && <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800">
                         <p className="text-[10px] text-amber-600 dark:text-amber-400 flex items-center gap-1">
                           <Bell className="w-3 h-3" /> Respond within 24 hours to confirm this session.
                         </p>
-                      </div>
-                    )}
-                    
-                    {/* Reminder to complete attendance */}
-                    {b.status === 'completed' && !b.attendance_status && (
-                      <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                      </div>}
+
+                    {}
+                    {b.status === 'completed' && !b.attendance_status && <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" /> Please mark student attendance for this session.
                         </p>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      </div>}
+                  </div>;
+          })}
             </div>
-          </>
-        )}
+          </>}
       </CardContent>
-    </Card>
-  );
+    </Card>;
 }

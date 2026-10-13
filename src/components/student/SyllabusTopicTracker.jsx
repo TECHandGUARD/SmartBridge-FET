@@ -161,7 +161,7 @@ export default function SyllabusTopicTracker({ user }) {
 
     const isCompleted = completedTopics.includes(topicId);
     setSaving(true);
-    
+
     try {
       if (isCompleted) {
         // Remove completion
@@ -173,7 +173,7 @@ export default function SyllabusTopicTracker({ user }) {
           .eq('topic_id', topicId);
 
         if (deleteError) throw deleteError;
-        
+
         setCompletedTopics(prev => prev.filter(id => id !== topicId));
         toast.success('Topic marked as incomplete');
       } else {
@@ -191,12 +191,12 @@ export default function SyllabusTopicTracker({ user }) {
           ]);
 
         if (insertError) throw insertError;
-        
+
         setCompletedTopics(prev => [...prev, topicId]);
         toast.success('Topic marked as complete! 🎉');
-        
+
         // Log activity for POPIA compliance
-        await supabase
+        await Promise.resolve(supabase
           .from('activity_log')
           .insert({
             event_type: 'syllabus_topic_completed',
@@ -207,7 +207,7 @@ export default function SyllabusTopicTracker({ user }) {
               subject: selectedSubject,
               topic_id: topicId
             }
-          })
+          }))
           .catch(() => {});
       }
     } catch (err) {
@@ -275,7 +275,7 @@ export default function SyllabusTopicTracker({ user }) {
           <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-[11px] font-medium flex items-center gap-2 dark:bg-red-950/20 dark:border-red-800 dark:text-red-300">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <span>{error}</span>
-            <button 
+            <button
               onClick={fetchCompletedTopics}
               className="ml-auto text-primary hover:underline font-medium text-xs"
             >
@@ -318,13 +318,13 @@ export default function SyllabusTopicTracker({ user }) {
           ) : (
             currentTopics.map(topic => {
               const isCompleted = completedTopics.includes(topic.id);
-              
+
               return (
                 <div
                   key={topic.id}
                   className={`rounded-lg border p-3 transition-all cursor-pointer hover:shadow-sm ${
-                    isCompleted 
-                      ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800' 
+                    isCompleted
+                      ? 'bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800'
                       : 'bg-card border-border hover:border-primary/30'
                   }`}
                   onClick={() => toggleTopic(topic.id)}
@@ -357,7 +357,7 @@ export default function SyllabusTopicTracker({ user }) {
                       )}
                     </Button>
                   </div>
-                  
+
                   {expanded[topic.id] && (
                     <div className="mt-2 pt-2 border-t border-border text-xs text-muted-foreground">
                       <p>Click to {isCompleted ? 'mark as incomplete' : 'mark as complete'}</p>

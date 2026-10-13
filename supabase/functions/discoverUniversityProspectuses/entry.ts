@@ -1,48 +1,15 @@
+import {consumeQuota,readJson} from '../../shared/api.ts';
+import { serverConnection, geminiSettings } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData || userData.role !== "admin") {
-      return new Response(
-        JSON.stringify({ error: "Forbidden - Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // ============================================================
-    // SOFTCODED: Fetch universities from database
-    // ============================================================
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'admin');
+    await consumeQuota(supabase,user.id,'ai');
     const { data: universities, error: uniError } = await supabase
       .from("universities")
       .select("*")
@@ -50,8 +17,8 @@ serve(async (req) => {
 
     if (uniError || !universities || universities.length === 0) {
       return new Response(
-        JSON.stringify({ 
-          error: "No universities found in database. Please run the universities migration SQL." 
+        JSON.stringify({
+          error: "No universities found in database. Please run the universities migration SQL."
         }),
         { status: 404, headers: { "Content-Type": "application/json" } }
       );
@@ -60,7 +27,7 @@ serve(async (req) => {
     const currentYear = new Date().getFullYear();
     const targetYear = currentYear + 1;
 
-    const universityList = universities.map((u: any) => 
+    const universityList = universities.map((u: any) =>
       `- ${u.name} (website: ${u.website})`
     ).join('\n');
 
@@ -84,19 +51,14 @@ serve(async (req) => {
       Return ONLY valid JSON, no other text.
     `;
 
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!geminiApiKey) {
-      return new Response(
-        JSON.stringify({ error: "GEMINI_API_KEY not configured" }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    const { url: geminiUrl, apiKey: geminiApiKey } = geminiSettings();
 
     const geminiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${geminiApiKey}`,
+      geminiUrl,
       {
+        signal: AbortSignal.timeout(25000),
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
         body: JSON.stringify({
           contents: [{
             parts: [{ text: prompt }]
@@ -124,20 +86,20 @@ serve(async (req) => {
 
     let prospectuses = [];
     try {
-      const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/) || 
+      const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/) ||
                         textResponse.match(/\{\s*"prospectuses"\s*:\s*\[[\s\S]*\]\s*\}/);
       const jsonString = jsonMatch ? jsonMatch[1] || jsonMatch[0] : textResponse;
       const parsed = JSON.parse(jsonString);
       prospectuses = parsed.prospectuses || [];
-      
+
       if (!Array.isArray(prospectuses)) {
         prospectuses = [];
       }
     } catch (parseError) {
       return new Response(
-        JSON.stringify({ 
-          error: "Failed to parse Gemini response", 
-          raw_response: textResponse 
+        JSON.stringify({
+          error: "Failed to parse Gemini response",
+          raw_response: textResponse
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -203,10 +165,10 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        added, 
-        skipped, 
+      JSON.stringify({
+        success: true,
+        added,
+        skipped,
         total: prospectuses.length,
         universities_found: universities.length
       }),
@@ -216,7 +178,7 @@ serve(async (req) => {
   } catch (error) {
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'discover-university-prospectuses'));

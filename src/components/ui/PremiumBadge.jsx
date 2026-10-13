@@ -1,6 +1,6 @@
 // src/components/ui/PremiumBadge.jsx
 import { Link } from 'react-router-dom';
-import { Star, Lock, Sparkles, Crown } from 'lucide-react';
+import { Star, Lock, Sparkles } from 'lucide-react';
 import PropTypes from 'prop-types';
 
 // ============================================================
@@ -84,7 +84,7 @@ const LockVariant = ({ label, icon: Icon, className = '', size = 'sm' }) => {
 
 /**
  * PremiumBadge — visual indicator for premium-locked content.
- * 
+ *
  * @param {Object} props
  * @param {'badge'|'overlay'|'lock'|'trial'} props.variant - Display variant
  * @param {string} props.className - Additional CSS classes
@@ -94,7 +94,7 @@ const LockVariant = ({ label, icon: Icon, className = '', size = 'sm' }) => {
  * @param {string} props.size - Size for lock variant ('sm' | 'md' | 'lg')
  * @param {function} props.onUpgrade - Callback when upgrade button is clicked
  * @param {boolean} props.showIcon - Whether to show the icon
- * 
+ *
  * @example
  * <PremiumBadge variant="badge" />
  * <PremiumBadge variant="overlay" label="PREMIUM" buttonText="Unlock Now" />

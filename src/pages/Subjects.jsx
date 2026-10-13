@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Search, BookOpen, Filter, X, Grid3x3, List,
-  TrendingUp, Clock, Award, Users, Sparkles,
+  TrendingUp, Award, Users, Sparkles,
   ChevronRight, GraduationCap, Star
 } from 'lucide-react';
 

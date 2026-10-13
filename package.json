@@ -6,12 +6,21 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "lint": "eslint src --ext .js,.jsx --quiet",
-    "lint:fix": "eslint src --ext .js,.jsx --fix",
+    "lint": "eslint src --quiet",
+    "lint:fix": "eslint src --fix",
     "typecheck": "tsc -p ./jsconfig.json",
     "preview": "vite preview",
     "format": "prettier --write src",
-    "test": "vitest"
+    "test": "node --test tests/*.test.js",
+    "test:e2e": "node tests/browser-core-flows.cjs",
+    "test:e2e:audit": "node tests/browser-core-flows.cjs --all-pages",
+    "check:env": "node scripts/check-env.js",
+    "test:e2e:config": "node tests/browser-config.cjs",
+    "check:edge": "node scripts/check-edge.js",
+    "check:api": "node scripts/check-api-contracts.js",
+    "prepare:edge": "node scripts/prepare-edge-deployment.js",
+    "configure:auth-email": "node scripts/configure-auth-email.js",
+    "test:vitest": "vitest"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
@@ -78,7 +87,8 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.171.0",
     "vaul": "^1.1.2",
-    "zod": "^3.24.2"
+    "zod": "^3.24.2",
+    "prop-types": "^15.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.19.0",
@@ -102,6 +112,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
     "vite": "^6.1.0",
-    "vitest": "^3.1.0"
+    "vitest": "^3.1.0",
+    "playwright": "^1.64.0"
   }
 }

@@ -6,61 +6,67 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings, Save, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
-
-// ============================================================
-// Configuration (Soft-coded for future flexibility)
-// ============================================================
-
-const DEFAULT_CONFIGS = [
-  { key: 'ai_guardrails', label: 'AI Guardrails', description: 'Rules that constrain AI assistant responses', value: '{\n  "guardrails": [\n    "Do not provide exam answers directly",\n    "Encourage critical thinking",\n    "Do not discuss inappropriate topics"\n  ]\n}', is_active: true },
-  { key: 'ai_welcome_message', label: 'AI Welcome Message', description: 'Intro message for the AI Study Assistant', value: '{\n  "message": "Hi! 👋 I am your AI Study Assistant. I can help you explain concepts, summarise notes, and generate practice questions. What would you like help with today?"\n}', is_active: true },
-  { key: 'ai_suggestions', label: 'AI Suggestions', description: 'Suggested questions for AI chat', value: '{\n  "suggestions": [\n    "Explain Newtons Second Law",\n    "Help me with calculus derivatives",\n    "Give me study tips for exams"\n  ]\n}', is_active: true },
-  { key: 'exam_term_dates', label: 'Exam Term Dates', description: 'Current academic term dates used for study planning', value: '{\n  "term_start": "2026-01-15",\n  "mid_term_break": "2026-03-20",\n  "term_end": "2026-06-10",\n  "exams_start": "2026-05-20",\n  "exams_end": "2026-06-05"\n}', is_active: true },
-];
-
+const DEFAULT_CONFIGS = [{
+  key: 'ai_guardrails',
+  label: 'AI Guardrails',
+  description: 'Rules that constrain AI assistant responses',
+  value: '{\n  "guardrails": [\n    "Do not provide exam answers directly",\n    "Encourage critical thinking",\n    "Do not discuss inappropriate topics"\n  ]\n}',
+  is_active: true
+}, {
+  key: 'ai_welcome_message',
+  label: 'AI Welcome Message',
+  description: 'Intro message for the AI Study Assistant',
+  value: '{\n  "message": "Hi! 👋 I am your AI Study Assistant. I can help you explain concepts, summarise notes, and generate practice questions. What would you like help with today?"\n}',
+  is_active: true
+}, {
+  key: 'ai_suggestions',
+  label: 'AI Suggestions',
+  description: 'Suggested questions for AI chat',
+  value: '{\n  "suggestions": [\n    "Explain Newtons Second Law",\n    "Help me with calculus derivatives",\n    "Give me study tips for exams"\n  ]\n}',
+  is_active: true
+}, {
+  key: 'exam_term_dates',
+  label: 'Exam Term Dates',
+  description: 'Current academic term dates used for study planning',
+  value: '{\n  "term_start": "2026-01-15",\n  "mid_term_break": "2026-03-20",\n  "term_end": "2026-06-10",\n  "exams_start": "2026-05-20",\n  "exams_end": "2026-06-05"\n}',
+  is_active: true
+}];
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-
-// ============================================================
-// Main Component
-// ============================================================
-
 export default function SystemConfigPanel() {
   const [configs, setConfigs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
   const [expanded, setExpanded] = useState({});
   const [edits, setEdits] = useState({});
-
   useEffect(() => {
     loadConfigs();
   }, []);
-
   const loadConfigs = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('system_configuration')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
+      const {
+        data,
+        error
+      } = await supabase.from('system_configuration').select('*').order('created_at', {
+        ascending: false
+      });
       if (error) throw error;
-      
       let configData = data || [];
-      
-      // If no configs exist, seed defaults
       if (configData.length === 0) {
-        const { data: seededData, error: seedError } = await supabase
-          .from('system_configuration')
-          .insert(DEFAULT_CONFIGS)
-          .select();
-        
+        const {
+          data: seededData,
+          error: seedError
+        } = await supabase.from('system_configuration').upsert(DEFAULT_CONFIGS.map(config => ({
+          ...config,
+          value: JSON.parse(config.value)
+        })), {
+          onConflict: "key",
+          ignoreDuplicates: true
+        }).select();
         if (seedError) throw seedError;
         configData = seededData || [];
       }
-      
       setConfigs(configData);
-      
-      // Initialize edit values
       const initEdits = {};
       configData.forEach(c => {
         let valueStr = '';
@@ -79,8 +85,7 @@ export default function SystemConfigPanel() {
       setLoading(false);
     }
   };
-
-  const saveConfig = async (config) => {
+  const saveConfig = async config => {
     let parsed;
     try {
       parsed = JSON.parse(edits[config.id]);
@@ -90,19 +95,16 @@ export default function SystemConfigPanel() {
     }
     setSaving(config.id);
     try {
-      const { error } = await supabase
-        .from('system_configuration')
-        .update({ 
-          value: parsed,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', config.id);
-      
+      const {
+        error
+      } = await supabase.from('system_configuration').update({
+        value: parsed
+      }).eq('id', config.id);
       if (error) throw error;
-      
-      setConfigs(prev => prev.map(c => 
-        c.id === config.id ? { ...c, value: parsed } : c
-      ));
+      setConfigs(prev => prev.map(c => c.id === config.id ? {
+        ...c,
+        value: parsed
+      } : c));
       toast.success(`"${config.label || config.key}" saved.`);
     } catch (err) {
       console.error('Failed to save configuration:', err);
@@ -111,34 +113,27 @@ export default function SystemConfigPanel() {
       setSaving(null);
     }
   };
-
-  const toggleActive = async (config) => {
+  const toggleActive = async config => {
     try {
       const newStatus = !config.is_active;
-      const { error } = await supabase
-        .from('system_configuration')
-        .update({ 
-          is_active: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', config.id);
-      
+      const {
+        error
+      } = await supabase.from('system_configuration').update({
+        is_active: newStatus
+      }).eq('id', config.id);
       if (error) throw error;
-      
-      setConfigs(prev => prev.map(c => 
-        c.id === config.id ? { ...c, is_active: newStatus } : c
-      ));
+      setConfigs(prev => prev.map(c => c.id === config.id ? {
+        ...c,
+        is_active: newStatus
+      } : c));
       toast.success(`${config.label || config.key} ${newStatus ? 'enabled' : 'disabled'}.`);
     } catch (err) {
       console.error('Failed to toggle configuration:', err);
       toast.error(`Failed to update: ${err.message}`);
     }
   };
-
   if (loading) return <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
-
-  return (
-    <div className="space-y-3">
+  return <div className="space-y-3">
       <div className="flex items-center gap-2 mb-4">
         <Settings className="w-5 h-5 text-primary" />
         <div>
@@ -149,8 +144,7 @@ export default function SystemConfigPanel() {
         </div>
       </div>
 
-      {configs.map(config => (
-        <Card key={config.id} className="border-border">
+      {configs.map(config => <Card key={config.id} className="border-border">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div className="flex items-center gap-2">
@@ -164,42 +158,28 @@ export default function SystemConfigPanel() {
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => toggleActive(config)}>
                   {config.is_active ? 'Disable' : 'Enable'}
                 </Button>
-                <Button 
-                  size="sm" 
-                  variant="ghost" 
-                  className="h-7 w-7 p-0" 
-                  onClick={() => setExpanded(prev => ({ ...prev, [config.id]: !prev[config.id] }))}
-                >
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => setExpanded(prev => ({
+              ...prev,
+              [config.id]: !prev[config.id]
+            }))}>
                   {expanded[config.id] ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                 </Button>
               </div>
             </div>
             {config.description && <p className="text-xs text-muted-foreground">{config.description}</p>}
           </CardHeader>
-          {expanded[config.id] && (
-            <CardContent className="pt-0 space-y-2">
-              <Textarea
-                className="font-mono text-xs min-h-[120px]"
-                value={edits[config.id] || ''}
-                onChange={e => setEdits(prev => ({ ...prev, [config.id]: e.target.value }))}
-              />
-              <Button 
-                size="sm" 
-                className="bg-primary gap-1.5 text-xs h-8" 
-                onClick={() => saveConfig(config)} 
-                disabled={saving === config.id}
-              >
+          {expanded[config.id] && <CardContent className="pt-0 space-y-2">
+              <Textarea className="font-mono text-xs min-h-[120px]" value={edits[config.id] || ''} onChange={e => setEdits(prev => ({
+          ...prev,
+          [config.id]: e.target.value
+        }))} />
+              <Button size="sm" className="bg-primary gap-1.5 text-xs h-8" onClick={() => saveConfig(config)} disabled={saving === config.id}>
                 {saving === config.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                 Save Changes
               </Button>
-            </CardContent>
-          )}
-        </Card>
-      ))}
+            </CardContent>}
+        </Card>)}
 
-      {configs.length === 0 && (
-        <p className="text-center text-muted-foreground text-sm py-8">No configuration records found.</p>
-      )}
-    </div>
-  );
+      {configs.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">No configuration records found.</p>}
+    </div>;
 }

@@ -1,51 +1,18 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if user is admin or counselor
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData || (userData.role !== "admin" && userData.role !== "counselor")) {
-      return new Response(
-        JSON.stringify({ error: "Forbidden - Admin or Counselor access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'admin');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     const { students } = await req.json();
     // students: [{ email, name, university_name, deadline, school_name }]
 
@@ -59,8 +26,8 @@ serve(async (req) => {
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Email not sent.");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "RESEND_API_KEY not configured",
           results: students.map((s: any) => ({ email: s.email, sent: false, error: "RESEND_API_KEY not configured" }))
         }),
@@ -128,7 +95,7 @@ SmartBridge FET Team`;
   </p>
 </div>`;
 
-        const resendResponse = await fetch("https://api.resend.com/emails", {
+        const resendResponse = await emailFetch({
           method: "POST",
           headers: {
             "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -141,14 +108,14 @@ SmartBridge FET Team`;
             html: bodyHtml,
             text: bodyText,
           }),
-        });
+        }, supabase);
 
         if (resendResponse.ok) {
           const emailResult = await resendResponse.json();
-          results.push({ 
-            email: student.email, 
+          results.push({
+            email: student.email,
             sent: true,
-            email_id: emailResult.id 
+            email_id: emailResult.id
           });
 
           // Log in audit log
@@ -158,36 +125,36 @@ SmartBridge FET Team`;
               event_type: "notification_sent",
               user_email: student.email,
               description: `Counselor reminder sent for ${student.university_name}`,
-              metadata: JSON.stringify({ 
+              metadata: {
                 university: student.university_name,
                 deadline: student.deadline,
-                email_id: emailResult.id 
-              })
+                email_id: emailResult.id
+              }
             });
         } else {
           const errorText = await resendResponse.text();
           console.error(`Failed to send email to ${student.email}:`, errorText);
-          results.push({ 
-            email: student.email, 
-            sent: false, 
-            error: errorText 
+          results.push({
+            email: student.email,
+            sent: false,
+            error: errorText
           });
         }
       } catch (emailError) {
         console.error(`Error sending email to ${student.email}:`, emailError.message);
-        results.push({ 
-          email: student.email, 
-          sent: false, 
-          error: emailError.message 
+        results.push({
+          email: student.email,
+          sent: false,
+          error: emailError.message
         });
       }
     }
 
     return new Response(
-      JSON.stringify({ 
-        sent: results.filter((r: any) => r.sent).length, 
+      JSON.stringify({
+        sent: results.filter((r: any) => r.sent).length,
         total: results.length,
-        results 
+        results
       }),
       { headers: { "Content-Type": "application/json" } }
     );
@@ -196,7 +163,7 @@ SmartBridge FET Team`;
     console.error("Error sending counselor reminders:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'send-counselor-reminders'));

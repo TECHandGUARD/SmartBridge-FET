@@ -1,6 +1,6 @@
 // src/components/ui/TrialBanner.jsx
 import { Link } from 'react-router-dom';
-import { Sparkles, X, Clock, Crown, Zap } from 'lucide-react';
+import { Sparkles, X, Clock, Zap } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 

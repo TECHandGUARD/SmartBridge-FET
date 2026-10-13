@@ -1,5 +1,7 @@
 # 🐛 SmartBridge FET - Bugs & UI/UX Issues Report
 
+> Original report retained for reference. Current transfer evidence and unresolved checks are in [docs/repository-transfer.md](docs/repository-transfer.md).
+
 **Report Date:** October 2026  
 **Repository:** TECHandGUARD/SmartBridge-FET  
 **Severity Levels:** 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low

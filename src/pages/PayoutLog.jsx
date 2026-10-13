@@ -1,5 +1,5 @@
 // src/pages/PayoutLog.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,17 +17,14 @@ import {
   Search,
   Loader2,
   Download,
-  Calendar,
   TrendingUp,
   TrendingDown,
-  Users,
   FileText,
   Filter,
   RefreshCw,
   AlertCircle,
   ChevronDown,
   ChevronUp,
-  ExternalLink,
   Clock,
   CheckCircle,
   XCircle,

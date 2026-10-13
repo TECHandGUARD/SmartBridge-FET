@@ -7,10 +7,10 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Plus, MessageSquare, StickyNote, ChevronDown, ChevronUp, Send, Loader2, Trash2, 
-  Shield, AlertTriangle, Flag, XCircle, CheckCircle, Eye, EyeOff, 
-  ThumbsUp, Heart, Star, Search, RefreshCw, Filter, MoreVertical
+import {
+  Plus, MessageSquare, StickyNote, ChevronDown, ChevronUp, Send, Loader2, Trash2,
+  Shield, AlertTriangle, Flag, XCircle, Eye, EyeOff,
+  ThumbsUp, Heart, Star, Search, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -73,7 +73,7 @@ export default function StudyRoomBoard({ room, user }) {
   const [likes, setLikes] = useState({});
   const [isModerator, setIsModerator] = useState(false);
   const [viewingHidden, setViewingHidden] = useState(false);
-  
+
   // --- Refs for Infinite Scroll ---
   const observerRef = useRef();
   const lastPostRef = useCallback((node) => {
@@ -100,7 +100,7 @@ export default function StudyRoomBoard({ room, user }) {
           .select('role')
           .eq('id', user.id)
           .single();
-        
+
         if (error) throw error;
         setIsModerator(['admin', 'moderator', 'school_counselor'].includes(data?.role));
       } catch (err) {
@@ -123,7 +123,7 @@ export default function StudyRoomBoard({ room, user }) {
           limits: RATE_LIMITS[action]
         }
       });
-      
+
       if (error) throw error;
       return data.allowed;
     } catch (err) {
@@ -183,7 +183,7 @@ export default function StudyRoomBoard({ room, user }) {
       }
 
       setHasMore((data || []).length === POSTS_PER_PAGE);
-      
+
       // Load likes for these posts
       if (data?.length > 0) {
         const postIds = data.map(p => p.id);
@@ -192,7 +192,7 @@ export default function StudyRoomBoard({ room, user }) {
           .select('post_id, type')
           .in('post_id', postIds)
           .eq('user_id', user?.id);
-        
+
         const likesMap = {};
         likesData?.forEach(l => {
           likesMap[l.post_id] = likesMap[l.post_id] || [];
@@ -319,8 +319,7 @@ export default function StudyRoomBoard({ room, user }) {
           type: form.type,
           title: form.title.trim() || null,
           body: form.body.trim(),
-          user_agent: navigator.userAgent,
-          ip_address: await fetch('https://api.ipify.org?format=json').then(r => r.json()).then(d => d.ip).catch(() => null)
+          user_agent: navigator.userAgent
         }
       });
 
@@ -339,7 +338,7 @@ export default function StudyRoomBoard({ room, user }) {
       setForm({ type: 'Note', title: '', body: '' });
       setShowForm(false);
       toast.success('Post added to the board!');
-      
+
       // Reload to ensure consistency
       loadPosts(true);
 
@@ -415,7 +414,7 @@ export default function StudyRoomBoard({ room, user }) {
       if (insertError) throw insertError;
 
       setReplyText(prev => ({ ...prev, [post.id]: '' }));
-      
+
       // Increment reply count on post
       await supabase
         .from('study_room_posts')
@@ -423,12 +422,12 @@ export default function StudyRoomBoard({ room, user }) {
         .eq('id', post.id);
 
       // Update local state
-      setPosts(prev => prev.map(p => 
+      setPosts(prev => prev.map(p =>
         p.id === post.id ? { ...p, reply_count: (p.reply_count || 0) + 1 } : p
       ));
 
       // Log activity
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'study_room_reply_added',
@@ -436,7 +435,7 @@ export default function StudyRoomBoard({ room, user }) {
           user_id: user.id || null,
           description: `Replied to post in room: ${room.name}`,
           metadata: { room_id: room.id, post_id: post.id }
-        })
+        }))
         .catch(() => {});
 
       toast.success('Reply added!');
@@ -461,8 +460,8 @@ export default function StudyRoomBoard({ room, user }) {
         .limit(50);
 
       if (error) throw error;
-      
-      setPosts(prev => prev.map(p => 
+
+      setPosts(prev => prev.map(p =>
         p.id === postId ? { ...p, replies: data || [] } : p
       ));
     } catch (err) {
@@ -521,11 +520,11 @@ export default function StudyRoomBoard({ room, user }) {
       setReportedPosts(prev => new Set(prev).add(post.id));
       setShowReportModal(null);
       setReportReason('');
-      
+
       toast.success('Post reported to moderators for review.');
-      
+
       // Log report
-      await supabase
+      await Promise.resolve(supabase
         .from('activity_log')
         .insert({
           event_type: 'study_room_post_reported',
@@ -533,7 +532,7 @@ export default function StudyRoomBoard({ room, user }) {
           user_id: user.id || null,
           description: `Reported post in room: ${room.name}`,
           metadata: { room_id: room.id, post_id: post.id, reason: reportReason }
-        })
+        }))
         .catch(() => {});
 
     } catch (err) {
@@ -548,6 +547,16 @@ export default function StudyRoomBoard({ room, user }) {
   // Add Reaction (Like/Heart/Star)
   // ============================================================
 
+  const handleDeletePost = async (postId) => {
+    if(!user?.id) return;
+    try {
+      const {error}=await supabase.from('study_room_posts').delete().eq('id',postId).eq('author_id',user.id);
+      if(error) throw error;
+      setPosts(previous=>previous.filter(post=>post.id!==postId));
+      toast.success('Post deleted');
+    }catch(error){toast.error('Could not delete the post');}
+  };
+
   const handleReaction = async (postId, type) => {
     if (!user?.email) {
       toast.error('You must be logged in to react');
@@ -556,7 +565,7 @@ export default function StudyRoomBoard({ room, user }) {
 
     try {
       const existing = (likes[postId] || []).includes(type);
-      
+
       if (existing) {
         // Remove reaction
         await supabase
@@ -565,7 +574,7 @@ export default function StudyRoomBoard({ room, user }) {
           .eq('post_id', postId)
           .eq('user_id', user.id)
           .eq('type', type);
-        
+
         setLikes(prev => ({
           ...prev,
           [postId]: (prev[postId] || []).filter(t => t !== type)
@@ -580,7 +589,7 @@ export default function StudyRoomBoard({ room, user }) {
             type: type,
             created_at: new Date().toISOString()
           });
-        
+
         setLikes(prev => ({
           ...prev,
           [postId]: [...(prev[postId] || []), type]
@@ -610,7 +619,7 @@ export default function StudyRoomBoard({ room, user }) {
         .eq('id', post.id);
 
       if (error) throw error;
-      
+
       toast.success(`Post ${post.is_visible ? 'hidden' : 'shown'}`);
       loadPosts(true);
     } catch (err) {
@@ -735,7 +744,7 @@ export default function StudyRoomBoard({ room, user }) {
                 <XCircle className="w-5 h-5 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
-            
+
             <p className="text-sm text-muted-foreground">
               Help keep {appName} safe. Select a reason for reporting this post.
             </p>
@@ -858,7 +867,7 @@ export default function StudyRoomBoard({ room, user }) {
             <StickyNote className="w-10 h-10 mx-auto mb-2 opacity-20" />
             <p className="font-medium text-sm">No posts found</p>
             <p className="text-xs">
-              {searchTerm || filterType !== 'all' 
+              {searchTerm || filterType !== 'all'
                 ? 'Try adjusting your search or filters'
                 : 'Share notes or ask a question to get started!'}
             </p>
@@ -867,15 +876,15 @@ export default function StudyRoomBoard({ room, user }) {
           posts.map((post, index) => {
             const isLast = index === posts.length - 1;
             const userReactions = likes[post.id] || [];
-            
+
             return (
               <Card
                 key={post.id}
                 ref={isLast ? lastPostRef : null}
                 className={`border ${
-                  post.type === 'Question' 
-                    ? 'border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-800' 
-                    : post.is_pinned 
+                  post.type === 'Question'
+                    ? 'border-amber-200 bg-amber-50/40 dark:bg-amber-950/20 dark:border-amber-800'
+                    : post.is_pinned
                       ? 'border-blue-200 bg-blue-50/40 dark:bg-blue-950/20 dark:border-blue-800'
                       : 'border-border'
                 } ${!post.is_visible ? 'opacity-60' : ''}`}
@@ -884,8 +893,8 @@ export default function StudyRoomBoard({ room, user }) {
                   {/* Post Header */}
                   <div className="flex items-start gap-2 mb-2">
                     <Badge className={`text-xs flex-shrink-0 ${
-                      post.type === 'Question' 
-                        ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800' 
+                      post.type === 'Question'
+                        ? 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800'
                         : post.is_pinned
                           ? 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800'
                           : 'bg-accent text-accent-foreground'
@@ -1011,14 +1020,14 @@ export default function StudyRoomBoard({ room, user }) {
             );
           })
         )}
-        
+
         {/* Loading more indicator */}
         {loading && posts.length > 0 && (
           <div className="flex justify-center py-4">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
         )}
-        
+
         {/* End of posts */}
         {!hasMore && posts.length > 0 && (
           <p className="text-center text-xs text-muted-foreground py-4">

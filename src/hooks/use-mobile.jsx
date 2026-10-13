@@ -5,7 +5,6 @@
  * COMPLIANCE PROTECTION: OPTIMIZED RESIZE HANDLERS FOR MOBILE COMPATIBILITY
  * ====================================================================
  */
-import * as React from "react";
 import { useSyncExternalStore } from "react";
 
 // ============================================================
@@ -13,8 +12,8 @@ import { useSyncExternalStore } from "react";
 // ============================================================
 
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const MOBILE_BREAKPOINT = import.meta.env.VITE_MOBILE_BREAKPOINT 
-  ? parseInt(import.meta.env.VITE_MOBILE_BREAKPOINT, 10) 
+const MOBILE_BREAKPOINT = import.meta.env.VITE_MOBILE_BREAKPOINT
+  ? parseInt(import.meta.env.VITE_MOBILE_BREAKPOINT, 10)
   : 768;
 
 // ============================================================
@@ -37,13 +36,13 @@ const subscribe = (callback) => {
   }
 
   const mediaQueryList = window.matchMedia(MOBILE_MEDIA_QUERY);
-  
+
   const handleChange = (event) => {
     callback();
   };
 
   mediaQueryList.addEventListener("change", handleChange);
-  
+
   return () => {
     mediaQueryList.removeEventListener("change", handleChange);
   };

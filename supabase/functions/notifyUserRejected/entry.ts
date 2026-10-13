@@ -1,51 +1,18 @@
+import { emailFetch } from "../../shared/email.ts";
+import { serverConnection, emailSettings, appUrl } from "../../shared/config.ts";
+import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Resend Email API configuration
-const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
-const FROM_EMAIL = Deno.env.get("FROM_EMAIL") || "noreply@yourdomain.com";
-const APP_URL = Deno.env.get("APP_URL") || "https://smartbridgefet.com";
 
-serve(async (req) => {
+serve(withHttp(async (req) => {
   try {
-    const supabase = createClient(
-      Deno.env.get("DB_URL")!,
-      Deno.env.get("SERVICE_ROLE_KEY")!
-    );
-
-    // Get user from auth header
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Missing authorization header" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const token = authHeader.replace("Bearer ", "");
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    // Check if user is admin
-    const { data: userData } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (!userData || userData.role !== "admin") {
-      return new Response(
-        JSON.stringify({ error: "Forbidden - Admin access required" }),
-        { status: 403, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
+    const connection = serverConnection();
+    const supabase = createClient(connection.url, connection.key, {auth:{persistSession:false, autoRefreshToken:false}});
+    const user = await authorize(req, supabase, 'admin');
+    const { apiKey: RESEND_API_KEY, from: FROM_EMAIL } = emailSettings();
+    const APP_URL = appUrl().replace(/\/$/, '');
     const { email, full_name, reason } = await req.json();
 
     if (!email) {
@@ -109,16 +76,16 @@ We apologise for any inconvenience and hope to welcome you to SmartBridge FET so
     if (!RESEND_API_KEY) {
       console.warn("RESEND_API_KEY not configured. Email not sent.");
       return new Response(
-        JSON.stringify({ 
-          success: false, 
+        JSON.stringify({
+          success: false,
           error: "RESEND_API_KEY not configured",
-          sent_to: email 
+          sent_to: email
         }),
         { headers: { "Content-Type": "application/json" } }
       );
     }
 
-    const resendResponse = await fetch("https://api.resend.com/emails", {
+    const resendResponse = await emailFetch({
       method: "POST",
       headers: {
         "Authorization": `Bearer ${RESEND_API_KEY}`,
@@ -131,7 +98,7 @@ We apologise for any inconvenience and hope to welcome you to SmartBridge FET so
         html: bodyHtml,
         text: bodyText,
       }),
-    });
+    }, supabase);
 
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
@@ -147,14 +114,14 @@ We apologise for any inconvenience and hope to welcome you to SmartBridge FET so
         event_type: "notification_sent",
         user_email: email,
         description: `User rejection notification sent`,
-        metadata: JSON.stringify({ 
-          email_id: emailResult.id 
-        })
+        metadata: {
+          email_id: emailResult.id
+        }
       });
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         sent_to: email,
         email_id: emailResult.id
       }),
@@ -165,7 +132,7 @@ We apologise for any inconvenience and hope to welcome you to SmartBridge FET so
     console.error("Error sending user rejection notification:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: error.status || 500, headers: { "Content-Type": "application/json" } }
     );
   }
-});
+}, 'notify-user-rejected'));

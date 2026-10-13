@@ -1,11 +1,16 @@
 import react from '@vitejs/plugin-react';
 import { defineConfig, loadEnv } from 'vite';
 import path from 'path';
+import {readPublicConfig} from './src/lib/config-values.js';
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   // Load environment variables
   const env = loadEnv(mode, process.cwd(), '');
+  if (command === 'build') {
+    const {errors}=readPublicConfig(env);
+    if(errors.length) throw new Error(`Invalid public configuration:\n${errors.join('\n')}`);
+  }
 
   return {
     // ============================================================

@@ -16,14 +16,10 @@ const CONFIG = {
   // Files to lint
   FILES: [
     "src/**/*.{js,mjs,cjs,jsx}",
-    "!src/lib/**/*",
-    "!src/components/ui/**/*",
   ],
 
   // Files to ignore
   IGNORES: [
-    "src/lib/**/*",
-    "src/components/ui/**/*",
     "dist/**/*",
     "node_modules/**/*",
     "**/*.test.js",
@@ -142,6 +138,7 @@ export default [
       "react/prop-types": "off", // ✅ Not using PropTypes
       "react/jsx-uses-react": "error",
       "react/jsx-uses-vars": "error",
+      "react/jsx-no-undef": "error",
       "react/jsx-no-bind": ["warn", { allowArrowFunctions: true }],
       "react/self-closing-comp": "warn",
       "react/jsx-curly-brace-presence": ["warn", { props: "never", children: "never" }],
@@ -185,7 +182,7 @@ export default [
         },
       ],
       "import/no-duplicates": "warn",
-      "import/no-cycle": ["warn", { maxDepth: 10 }],
+      "import/no-cycle": ["warn", { maxDepth: 1 }],
       "import/no-unresolved": "off", // ✅ Handled by Vite
 
       // ============================================================

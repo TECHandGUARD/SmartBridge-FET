@@ -146,41 +146,16 @@
     text-decoration: none;
   }
 
-  /* ===== FOCUS RING ===== */
-  :focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-
-  /* ===== SELECTION ===== */
-  ::selection {
-    @apply bg-primary/20 text-foreground;
-  }
-
-  /* ===== SCROLLBAR ===== */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  ::-webkit-scrollbar-track {
-    background: var(--scrollbar-track);
-    border-radius: 4px;
-  }
-
-  ::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb);
-    border-radius: 4px;
-    transition: background 0.2s;
-  }
-
-  ::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover);
-  }
-
-  /* Firefox scrollbar */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  /* Better touch targets on mobile */
+  @media (max-width: 768px) {
+    button:not([role="checkbox"]),
+    a,
+    [role="button"],
+    input:not([type="radio"]):not([type="checkbox"]),
+    select,
+    textarea {
+      min-height: 44px;
+    }
   }
 }
 
@@ -514,116 +489,6 @@
   @apply bg-black/40 border-white/5;
 }
 
-.dark .skeleton {
-  @apply bg-muted/50;
-}
-
-.dark .skeleton-text {
-  @apply bg-muted/50;
-}
-
-/* ============================================================
-   RESPONSIVE UTILITIES
-   ============================================================ */
-
-@screen sm {
-  .container-safe {
-    padding-left: calc(var(--safe-area-inset-left) + 1.5rem);
-    padding-right: calc(var(--safe-area-inset-right) + 1.5rem);
-  }
-}
-
-@screen lg {
-  .container-safe {
-    padding-left: calc(var(--safe-area-inset-left) + 2rem);
-    padding-right: calc(var(--safe-area-inset-right) + 2rem);
-  }
-}
-
-/* ============================================================
-   ACCESSIBILITY
-   ============================================================ */
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  html {
-    scroll-behavior: auto !important;
-  }
-}
-
-/* ============================================================
-   FOCUS VISIBLE (Accessibility)
-   ============================================================ */
-
-:focus-visible {
-  outline: 2px solid hsl(var(--ring));
-  outline-offset: 2px;
-}
-
-/* ============================================================
-   SCROLL MARGIN (For anchor navigation)
-   ============================================================ */
-
-* {
-  scroll-margin-top: 80px;
-}
-
-/* ============================================================
-   LOADING SHIMMER
-   ============================================================ */
-
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 25%,
-    hsl(var(--muted) / 0.7) 50%,
-    hsl(var(--muted)) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* ============================================================
-   CUSTOM SCROLL CONTAINERS
-   ============================================================ */
-
-.scroll-container {
-  @apply overflow-y-auto;
-  scroll-behavior: smooth;
-}
-
-.scroll-container::-webkit-scrollbar {
-  width: 4px;
-}
-
-.scroll-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scroll-container::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
-  border-radius: 4px;
-}
-
-.scroll-container::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
-}
-
-/* ============================================================
-   SELF-HEALING: Prevents layout shifts during loading
-   ============================================================ */
-
-.aspect-auto {
-  aspect-ratio: auto;
-}
-
-/* ============================================================
-   END OF STYLES
-   ============================================================ */
+/* Reserve fixed mobile navigation and device safe areas. */
+.app-main { padding-top: calc(3.5rem + env(safe-area-inset-top)); padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
+@media (min-width: 1024px) { .app-main { padding-top: 0; padding-bottom: 0; } }

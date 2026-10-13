@@ -1,33 +1,23 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-  Users, AlertTriangle, TrendingUp, BookOpen, Download, 
-  Mail, Calendar, TrendingDown, TrendingUp as TrendUp, 
-  Loader2, FileText, Bell, User, GraduationCap, Shield
+import {
+  Users, TrendingUp, BookOpen, Download,
+  Mail, TrendingDown, TrendingUp as TrendUp,
+  Loader2, Bell
 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
-  BarChart, Bar, XAxis, YAxis, Tooltip, Cell,
-  LineChart, Line, CartesianGrid
+  BarChart, Bar, XAxis, YAxis, Tooltip, Cell
 } from 'recharts';
 import { toast } from 'sonner';
-import PropTypes from 'prop-types';
 
-// ============================================================
-// Configuration (Soft-coded for admin control)
-// ============================================================
-
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
+// Subjects that score below this threshold are flagged as needing focus
 const FOCUS_THRESHOLD = 3;
 const INACTIVE_THRESHOLD_DAYS = 14;
-
-// ============================================================
-// Time Frames (Soft-coded for admin control)
-// ============================================================
 
 const TIME_FRAMES = {
   'current': { label: 'Current Term', days: 90 },
@@ -43,43 +33,19 @@ const SUBJECT_COLORS = [
   '#dc2626', '#ca8a04', '#0d9488', '#7c3aed', '#db2777',
 ];
 
-// ============================================================
-// PropTypes
-// ============================================================
-
-const propTypes = {
-  user: PropTypes.shape({
-    email: PropTypes.string.isRequired,
-    id: PropTypes.string,
-    full_name: PropTypes.string,
-  }).isRequired,
-  onContactParent: PropTypes.func,
-  schoolContext: PropTypes.shape({
-    schoolId: PropTypes.string,
-    schoolName: PropTypes.string,
-  }),
-};
-
-// ============================================================
-// Helper Functions
-// ============================================================
-
+// Helper to get date filter
 const getDateFilter = (timeFrame) => {
   const frame = TIME_FRAMES[timeFrame];
-  if (frame?.start && frame?.end) {
+  if (frame.start && frame.end) {
     return { gte: frame.start, lte: frame.end };
   }
-  const days = frame?.days || 90;
+  const days = frame.days || 90;
   const date = new Date();
   date.setDate(date.getDate() - days);
   return { gte: date.toISOString().split('T')[0] };
 };
 
-// ============================================================
-// Main Component
-// ============================================================
-
-export default function TutorStudentProgressChart({ user, onContactParent, schoolContext }) {
+export default function TutorStudentProgressChart({ user, onContactParent = undefined, schoolContext = null }) {
   const [progress, setProgress] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState({});
@@ -88,74 +54,20 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
   const [gradeFilter, setGradeFilter] = useState('all');
   const [schoolAverages, setSchoolAverages] = useState(null);
   const [exporting, setExporting] = useState(false);
+  const [alerts, setAlerts] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [trendData, setTrendData] = useState({});
-
-  // ============================================================
-  // ✅ FIXED: Calculate Trends with explicit data parameter
-  // ============================================================
-
-  const calculateTrends = useCallback(async (studentEmails, currentProgressData) => {
-    try {
-      const currentFilter = getDateFilter(timeFrame);
-      if (!currentFilter.gte) return {};
-
-      const prevStart = new Date(currentFilter.gte);
-      prevStart.setDate(prevStart.getDate() - 90);
-      const prevEnd = new Date(currentFilter.gte);
-      prevEnd.setDate(prevEnd.getDate() - 1);
-
-      const { data: prevData } = await supabase
-        .from('student_progress')
-        .select('*')
-        .in('student_email', studentEmails)
-        .gte('last_accessed', prevStart.toISOString().split('T')[0])
-        .lte('last_accessed', prevEnd.toISOString().split('T')[0]);
-
-      const trends = {};
-      if (prevData) {
-        prevData.forEach(p => {
-          const key = `${p.student_email}_${p.subject}`;
-          trends[key] = p.resources_accessed || 0;
-        });
-      }
-
-      // ✅ Use the passed-in currentProgressData instead of state
-      const currentTrends = {};
-      currentProgressData.forEach(p => {
-        const key = `${p.student_email}_${p.subject}`;
-        currentTrends[key] = p.resources_accessed || 0;
-      });
-
-      const changes = {};
-      Object.keys(currentTrends).forEach(key => {
-        const prev = trends[key] || 0;
-        const current = currentTrends[key];
-        changes[key] = current - prev;
-      });
-
-      setTrendData(changes);
-      return changes;
-    } catch (err) {
-      console.error('Error calculating trends:', err);
-      return {};
-    }
-  }, [timeFrame]);
-
-  // ============================================================
-  // Load Data
-  // ============================================================
 
   const loadData = useCallback(async () => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-    
+
     setLoading(true);
     try {
       const dateFilter = getDateFilter(timeFrame);
-      
+
       // Load tutor's completed bookings
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('tutor_bookings')
@@ -164,52 +76,50 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
         .eq('status', 'completed')
         .order('date', { ascending: false })
         .limit(100);
-      
+
       if (bookingsError) throw bookingsError;
-      
+
       const studentEmails = [...new Set((bookingsData || []).map(b => b.student_email).filter(Boolean))];
       setBookings(bookingsData || []);
-      
+
       if (studentEmails.length === 0) {
         setProgress([]);
         setStudentProfiles({});
-        setTrendData({});
         setLoading(false);
         return;
       }
-      
-      // Fetch student progress
+
+      // Load student progress with date filter
       let progressQuery = supabase
-        .from('student_progress')
+        .from('study_progress')
         .select('*')
-        .in('student_email', studentEmails);
-      
+        .in('user_email', studentEmails);
+
       if (dateFilter.gte) {
-        progressQuery = progressQuery.gte('last_accessed', dateFilter.gte);
+        progressQuery = progressQuery.gte('last_access', dateFilter.gte);
       }
       if (dateFilter.lte) {
-        progressQuery = progressQuery.lte('last_accessed', dateFilter.lte);
+        progressQuery = progressQuery.lte('last_access', dateFilter.lte);
       }
-      
+
       const { data: progressData, error: progressError } = await progressQuery;
       if (progressError) throw progressError;
-      
-      // ✅ Store the fetched data for later use
-      const fetchedProgress = progressData || [];
-      
-      // Load student profiles
+
+      // Load student profiles (names, grades, parent emails)
       const { data: profilesData, error: profilesError } = await supabase
         .from('users')
-        .select('id, email, full_name, grade, parent_email, phone')
+        .select('email, full_name, grade, parent_email, phone')
         .in('email', studentEmails);
-      
+
       if (profilesError) throw profilesError;
-      
+
       const profilesMap = {};
       (profilesData || []).forEach(p => {
         profilesMap[p.email] = p;
       });
-      
+      setStudentProfiles(profilesMap);
+      setProgress(progressData || []);
+
       // Load school averages if available
       if (schoolContext?.schoolId) {
         const { data: avgData } = await supabase
@@ -222,82 +132,76 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
           setSchoolAverages(avgMap);
         }
       }
-      
-      // ✅ Update state with fetched data
-      setStudentProfiles(profilesMap);
-      setProgress(fetchedProgress);
-      
-      // ✅ Calculate trends using the fetched data directly
-      await calculateTrends(studentEmails, fetchedProgress);
-      
-      // Log activity for POPIA compliance
-      await supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'student_progress_chart_viewed',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: 'Viewed student progress chart',
-          metadata: {
-            time_frame: timeFrame,
-            student_count: studentEmails.length,
-            school_id: schoolContext?.schoolId
-          }
-        })
-        .catch(() => {});
-      
+
+      // Calculate trends (compare to previous period)
+      await calculateTrends(studentEmails);
+
     } catch (err) {
       console.error('Error loading student progress:', err);
       toast.error('Failed to load student progress data');
     } finally {
       setLoading(false);
     }
-  }, [user?.email, timeFrame, schoolContext, calculateTrends]);
+  }, [user?.email, timeFrame, schoolContext]);
 
-  // ============================================================
-  // Real-time Subscription
-  // ============================================================
+  const calculateTrends = async (studentEmails) => {
+    try {
+      const currentFilter = getDateFilter(timeFrame);
+      const prevDate = new Date();
+      if (currentFilter.gte) {
+        const prevStart = new Date(currentFilter.gte);
+        prevStart.setDate(prevStart.getDate() - 90);
+        const prevEnd = new Date(currentFilter.gte);
+        prevEnd.setDate(prevEnd.getDate() - 1);
 
-  useEffect(() => {
-    if (!user?.email) return;
-    
-    const channel = supabase
-      .channel('tutor_student_progress')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'student_progress',
-        },
-        () => {
-          loadData();
+        const { data: prevData } = await supabase
+          .from('study_progress')
+          .select('*')
+          .in('user_email', studentEmails)
+          .gte('last_access', prevStart.toISOString().split('T')[0])
+          .lte('last_access', prevEnd.toISOString().split('T')[0]);
+
+        if (prevData) {
+          const trends = {};
+          prevData.forEach(p => {
+            const key = `${p.user_email}_${p.subject}`;
+            trends[key] = p.study_sessions || 0;
+          });
+
+          const currentTrends = {};
+          progress.forEach(p => {
+            const key = `${p.user_email}_${p.subject}`;
+            currentTrends[key] = p.study_sessions || 0;
+          });
+
+          const changes = {};
+          Object.keys(currentTrends).forEach(key => {
+            const prev = trends[key] || 0;
+            const current = currentTrends[key];
+            changes[key] = current - prev;
+          });
+          setTrendData(changes);
         }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.email, loadData]);
+      }
+    } catch (err) {
+      console.error('Error calculating trends:', err);
+    }
+  };
 
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // ============================================================
-  // ✅ FIXED: Memoized Calculations (Alerts included)
-  // ============================================================
-
-  // ✅ Fixed: resources_accessed
+  // Calculate alerts
+  // Aggregate: average study_sessions per subject across all students
   const subjectStats = useMemo(() => {
     const map = {};
     progress.forEach(p => {
       if (!p.subject) return;
       if (!map[p.subject]) map[p.subject] = { total: 0, count: 0, students: new Set() };
-      map[p.subject].total += (p.resources_accessed || 0);
+      map[p.subject].total += (p.study_sessions || 0);
       map[p.subject].count++;
-      map[p.subject].students.add(p.student_email);
+      map[p.subject].students.add(p.user_email);
     });
     return Object.entries(map)
       .map(([subject, data]) => ({
@@ -306,60 +210,22 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
         avgSessions: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
         studentCount: data.students.size,
         needsFocus: (data.total / data.count) < FOCUS_THRESHOLD,
-        vsSchoolAvg: schoolAverages ? 
-          ((data.total / data.count) - (schoolAverages[subject] || 0)).toFixed(1) : null
+        vsSchoolAvg: schoolAverages ?
+          Number(((data.total / data.count) - (schoolAverages[subject] || 0)).toFixed(1)) : null
       }))
       .sort((a, b) => b.avgSessions - a.avgSessions);
   }, [progress, schoolAverages]);
 
-  // ✅ Fixed: student_email and resources_accessed
-  const studentStats = useMemo(() => {
-    const map = {};
-    progress.forEach(p => {
-      if (!map[p.student_email]) map[p.student_email] = { subjects: 0, sessions: 0, lastAccess: null };
-      map[p.student_email].subjects++;
-      map[p.student_email].sessions += (p.resources_accessed || 0);
-      if (p.last_accessed && (!map[p.student_email].lastAccess || p.last_accessed > map[p.student_email].lastAccess)) {
-        map[p.student_email].lastAccess = p.last_accessed;
-      }
-    });
-    return Object.entries(map)
-      .map(([email, data]) => {
-        const profile = studentProfiles[email];
-        const lastAccessDays = data.lastAccess ? 
-          Math.ceil((new Date() - new Date(data.lastAccess)) / (1000 * 60 * 60 * 24)) : null;
-        return {
-          email,
-          name: profile?.full_name || email.split('@')[0],
-          grade: profile?.grade || 'Not set',
-          parentEmail: profile?.parent_email,
-          phone: profile?.phone,
-          subjects: data.subjects,
-          sessions: data.sessions,
-          lastAccessDays,
-          isInactive: lastAccessDays > INACTIVE_THRESHOLD_DAYS,
-          trend: trendData[`${email}_${data.subjects}`] || 0
-        };
-      })
-      .filter(s => gradeFilter === 'all' || s.grade === gradeFilter)
-      .sort((a, b) => {
-        if (a.isInactive && !b.isInactive) return -1;
-        if (!a.isInactive && b.isInactive) return 1;
-        return b.sessions - a.sessions;
-      });
-  }, [progress, studentProfiles, gradeFilter, trendData]);
-
-  // ✅ FIXED: Alerts computed with useMemo
-  const alerts = useMemo(() => {
+  useEffect(() => {
     const newAlerts = [];
-    
-    if (Object.keys(studentProfiles).length === 0 && progress.length === 0) {
-      return newAlerts;
-    }
-    
-    const activeStudents = new Set(progress.map(p => p.student_email));
+
+    // Inactive students alert
+    const inactiveCutoff = new Date();
+    inactiveCutoff.setDate(inactiveCutoff.getDate() - INACTIVE_THRESHOLD_DAYS);
+
+    const activeStudents = new Set(progress.map(p => p.user_email));
     const allStudents = Object.keys(studentProfiles);
-    
+
     allStudents.forEach(email => {
       if (!activeStudents.has(email)) {
         const profile = studentProfiles[email];
@@ -373,7 +239,8 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
         });
       }
     });
-    
+
+    // Struggling subjects alert
     subjectStats.forEach(subject => {
       if (subject.needsFocus) {
         newAlerts.push({
@@ -385,56 +252,97 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
         });
       }
     });
-    
-    return newAlerts;
+
+    setAlerts(newAlerts);
   }, [progress, studentProfiles, subjectStats]);
+
+
+
+  // Per-student engagement with full names and grades
+  const studentStats = useMemo(() => {
+    const map = {};
+    progress.forEach(p => {
+      if (!map[p.user_email]) map[p.user_email] = { subjects: 0, sessions: 0, lastAccess: null };
+      map[p.user_email].subjects++;
+      map[p.user_email].sessions += (p.study_sessions || 0);
+      if (p.last_access && (!map[p.user_email].lastAccess || p.last_access > map[p.user_email].lastAccess)) {
+        map[p.user_email].lastAccess = p.last_access;
+      }
+    });
+    return Object.entries(map)
+      .map(([email, data]) => {
+        const profile = studentProfiles[email];
+        const lastAccessDays = data.lastAccess ?
+          Math.ceil(((new Date()).getTime() - (new Date(data.lastAccess)).getTime()) / (1000 * 60 * 60 * 24)) : null;
+        return {
+          email,
+          name: profile?.full_name || email.split('@')[0],
+          grade: profile?.grade || 'Not set',
+          parentEmail: profile?.parent_email,
+          phone: profile?.phone,
+          subjects: data.subjects,
+          sessions: data.sessions,
+          lastAccessDays,
+          isInactive: lastAccessDays > INACTIVE_THRESHOLD_DAYS,
+          trend: trendData[email] || 0
+        };
+      })
+      .filter(s => gradeFilter === 'all' || s.grade === gradeFilter)
+      .sort((a, b) => {
+        if (a.isInactive && !b.isInactive) return -1;
+        if (!a.isInactive && b.isInactive) return 1;
+        return b.sessions - a.sessions;
+      });
+  }, [progress, studentProfiles, gradeFilter, trendData]);
 
   const needsFocusSubjects = subjectStats.filter(s => s.needsFocus);
   const inactiveStudents = studentStats.filter(s => s.isInactive);
-  
+
   const radarData = subjectStats.slice(0, 8).map(s => ({
     subject: s.subject,
     engagement: s.avgSessions,
   }));
 
-  // ============================================================
-  // Handle Contact Parent
-  // ============================================================
-
   const handleContactParent = (student) => {
     if (student.parentEmail) {
-      window.location.href = `mailto:${student.parentEmail}?subject=Academic%20Progress%20Update%20for%20${encodeURIComponent(student.name)}`;
+      window.location.href = `mailto:${student.parentEmail}?subject=Academic%20Progress%20Update%20for%20${student.name}`;
     } else {
       toast.error(`No parent email on file for ${student.name}`);
     }
     if (onContactParent) onContactParent(student);
   };
 
-  // ============================================================
-  // Handle Export Report
-  // ============================================================
-
   const handleExportReport = async () => {
     setExporting(true);
     try {
+      const reportData = {
+        tutor: user.full_name,
+        date: new Date().toISOString(),
+        timeFrame: TIME_FRAMES[timeFrame].label,
+        students: studentStats,
+        strugglingSubjects: needsFocusSubjects,
+        alerts: alerts
+      };
+
+      // Generate CSV
       const csvRows = [
         ['Student Name', 'Grade', 'Subjects Studied', 'Total Sessions', 'Status', 'Parent Email'],
         ...studentStats.map(s => [
-          s.name, s.grade, s.subjects, s.sessions, 
+          s.name, s.grade, s.subjects, s.sessions,
           s.isInactive ? 'Inactive' : 'Active',
           s.parentEmail || 'Not provided'
         ])
       ];
-      
+
       const csv = csvRows.map(row => row.join(',')).join('\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `student-progress-report-${new Date().toISOString().split('T')[0]}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      
+
       toast.success('Report exported successfully');
     } catch (err) {
       console.error('Export error:', err);
@@ -444,15 +352,11 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
     }
   };
 
-  // ============================================================
-  // Custom Tooltip
-  // ============================================================
-
-  const CustomTooltip = ({ active, payload, label }) => {
+  const CustomTooltip = ({ active = false, payload = [], label = null }) => {
     if (!active || !payload?.length) return null;
     const stat = subjectStats.find(s => s.subject === label || s.fullSubject === label);
     return (
-      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow text-xs dark:bg-slate-900">
+      <div className="bg-card border border-border rounded-lg px-3 py-2 shadow text-xs">
         <p className="font-semibold mb-0.5">{stat?.fullSubject || label}</p>
         <p className="text-primary">Avg sessions: {payload[0]?.value}</p>
         <p className="text-muted-foreground">{stat?.studentCount || 0} student(s)</p>
@@ -466,10 +370,6 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
     );
   };
 
-  // ============================================================
-  // Loading State
-  // ============================================================
-
   if (loading) {
     return (
       <Card className="border-border mb-6">
@@ -479,10 +379,6 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
       </Card>
     );
   }
-
-  // ============================================================
-  // Empty State
-  // ============================================================
 
   if (progress.length === 0 && studentStats.length === 0) {
     return (
@@ -496,22 +392,13 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
     );
   }
 
-  // ============================================================
-  // Render
-  // ============================================================
-
   return (
     <Card className="border-border mb-6">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <CardTitle className="text-base font-playfair flex items-center gap-2">
-              <Users className="w-4 h-4 text-primary" /> Student Progress Overview
-            </CardTitle>
-            <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3 text-green-500" /> Private
-            </Badge>
-          </div>
+          <CardTitle className="text-base font-playfair flex items-center gap-2">
+            <Users className="w-4 h-4 text-primary" /> Student Progress Overview
+          </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={timeFrame} onValueChange={setTimeFrame}>
               <SelectTrigger className="h-7 text-xs w-32">
@@ -541,25 +428,25 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-5">
         {/* Alerts Banner */}
         {alerts.length > 0 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 dark:bg-amber-950/20 dark:border-amber-800">
-            <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-2 flex items-center gap-1.5">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3">
+            <p className="text-xs font-semibold text-amber-700 mb-2 flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5" /> Action Required ({alerts.length})
             </p>
             <div className="space-y-1.5">
               {alerts.slice(0, 3).map((alert, i) => (
                 <div key={i} className="flex items-center justify-between text-xs">
-                  <span className="text-amber-800 dark:text-amber-300">{alert.message}</span>
-                  <Badge className="bg-amber-100 text-amber-700 text-[10px] dark:bg-amber-950/30 dark:text-amber-300">
+                  <span className="text-amber-800">{alert.message}</span>
+                  <Badge className="bg-amber-100 text-amber-700 text-[10px]">
                     {alert.recommendedAction}
                   </Badge>
                 </div>
               ))}
               {alerts.length > 3 && (
-                <p className="text-xs text-amber-600 dark:text-amber-400">+{alerts.length - 3} more alerts</p>
+                <p className="text-xs text-amber-600">+{alerts.length - 3} more alerts</p>
               )}
             </div>
           </div>
@@ -567,16 +454,16 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
 
         {/* Needs Focus Subjects */}
         {needsFocusSubjects.length > 0 && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 dark:bg-blue-950/20 dark:border-blue-800">
-            <p className="text-xs font-semibold text-blue-700 dark:text-blue-300 mb-2 flex items-center gap-1.5">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
+            <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" /> Subjects Needing Attention
             </p>
             <div className="flex flex-wrap gap-1.5">
               {needsFocusSubjects.map(s => (
-                <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+                <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
                   {s.fullSubject} — avg {s.avgSessions} sessions
                   {s.vsSchoolAvg !== null && s.vsSchoolAvg < 0 && (
-                    <span className="ml-1 text-red-500 dark:text-red-400">({s.vsSchoolAvg} below avg)</span>
+                    <span className="ml-1 text-red-500">({s.vsSchoolAvg} below avg)</span>
                   )}
                 </Badge>
               ))}
@@ -585,7 +472,7 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
         )}
 
         <div className="grid sm:grid-cols-2 gap-6">
-          {/* Bar chart */}
+          {/* Bar chart: avg sessions per subject */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" /> Average Study Sessions per Subject
@@ -648,12 +535,12 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
           <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5" /> Students ({studentStats.length})
             {inactiveStudents.length > 0 && (
-              <Badge className="bg-red-100 text-red-700 text-[10px] dark:bg-red-950/30 dark:text-red-300">
+              <Badge className="bg-red-100 text-red-700 text-[10px]">
                 {inactiveStudents.length} inactive
               </Badge>
             )}
           </p>
-          
+
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -668,7 +555,7 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
               </thead>
               <tbody>
                 {studentStats.slice(0, 10).map((student) => (
-                  <tr key={student.email} className="border-b border-border/50 hover:bg-muted/30 dark:hover:bg-muted/10">
+                  <tr key={student.email} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
@@ -693,16 +580,15 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
                     </td>
                     <td className="py-2 px-2 text-center">
                       {student.isInactive ? (
-                        <Badge className="bg-red-100 text-red-700 text-[10px] dark:bg-red-950/30 dark:text-red-300">Inactive</Badge>
+                        <Badge className="bg-red-100 text-red-700 text-[10px]">Inactive</Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700 text-[10px] dark:bg-green-950/30 dark:text-green-300">Active</Badge>
+                        <Badge className="bg-green-100 text-green-700 text-[10px]">Active</Badge>
                       )}
                     </td>
                     <td className="py-2 px-2 text-center">
-                      <Button 
-                        type="button"
-                        size="sm" 
-                        variant="ghost" 
+                      <Button
+                        size="sm"
+                        variant="ghost"
                         className="h-6 w-6 p-0"
                         onClick={() => handleContactParent(student)}
                         title="Contact Parent"
@@ -715,7 +601,7 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
               </tbody>
             </table>
           </div>
-          
+
           {studentStats.length > 10 && (
             <p className="text-xs text-muted-foreground text-center mt-2">
               +{studentStats.length - 10} more students
@@ -725,11 +611,11 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
 
         {/* Parent Contact Reminder */}
         {inactiveStudents.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-3 dark:bg-red-950/20 dark:border-red-800">
-            <p className="text-xs font-semibold text-red-700 dark:text-red-300 mb-1 flex items-center gap-1.5">
+          <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+            <p className="text-xs font-semibold text-red-700 mb-1 flex items-center gap-1.5">
               <Mail className="w-3.5 h-3.5" /> Parent Contact Required
             </p>
-            <p className="text-xs text-red-600 dark:text-red-400">
+            <p className="text-xs text-red-600">
               {inactiveStudents.length} student(s) have been inactive for {INACTIVE_THRESHOLD_DAYS}+ days.
               Click the email icon next to their name to contact parents.
             </p>
@@ -739,6 +625,3 @@ export default function TutorStudentProgressChart({ user, onContactParent, schoo
     </Card>
   );
 }
-
-// Add PropTypes
-TutorStudentProgressChart.propTypes = propTypes;
