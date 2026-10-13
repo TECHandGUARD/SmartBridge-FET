@@ -1077,5 +1077,16 @@
       ]
     }
   ],
-  "updated_date": "2026-10-13"
+  "updated_date": "2026-10-13",
+  "ordered_migrations": [
+    "supabase/migrations/20260822153131_create_tech_guard_website_tables.sql",
+    "supabase/migrations/20260822153132_capture_live_schema_baseline.sql",
+    "supabase/migrations/20261011153804_repair_core_flows.sql",
+    "supabase/migrations/20261011161203_booking_and_parent_permissions.sql",
+    "supabase/migrations/20261011162032_study_progress_contract.sql",
+    "supabase/migrations/20261013093805_api_integrations.sql",
+    "supabase/migrations/20261013103838_payment_gateway_settings.sql",
+    "supabase/migrations/20261013123603_operational_integrations.sql",
+    "supabase/migrations/20261013143001_study_room_moderation.sql"
+  ]
 }

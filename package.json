@@ -20,7 +20,8 @@
     "check:api": "node scripts/check-api-contracts.js",
     "prepare:edge": "node scripts/prepare-edge-deployment.js",
     "configure:auth-email": "node scripts/configure-auth-email.js",
-    "test:vitest": "vitest"
+    "test:vitest": "vitest",
+    "check:db": "node scripts/check-db-baseline.cjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
@@ -91,6 +92,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.3.14",
     "@eslint/js": "^9.19.0",
     "@types/node": "^22.13.5",
     "@types/punycode": "2.1.4",

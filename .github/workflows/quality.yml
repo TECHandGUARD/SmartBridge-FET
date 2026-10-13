@@ -22,6 +22,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run check:db
       - run: npm run check:api
       - run: npm run check:edge
       - run: npm run prepare:edge -- /tmp/verified-edge
