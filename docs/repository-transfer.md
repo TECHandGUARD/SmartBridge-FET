@@ -12,7 +12,7 @@ The missing `check-rate-limit`, `moderate-post`, `moderate-reply` and `report-co
 
 Amplify's failed preview build incorrectly rejected the public settings `VITE_RESET_PASSWORD_ROUTE` and `VITE_MIN_PASSWORD_LENGTH` as secrets. The validator now narrowly allows the three public password-form settings while continuing to reject server credentials. The existing Amplify app is `d2pos7eidu5lbk`, region `eu-west-1`, linked to the correct repository. Its hosting SPA rewrite is already configured. No AWS environment value or hosting setting was changed.
 
-The Subjects category controls now wrap at narrow screen widths. Browser regression tests cover study-room membership, quota-service failure preventing writes, retry request IDs, queued content, reports and withdrawal. Browser failure output records the route and visible page text. A GitHub Actions workflow runs lint, broad typechecking, unit/API checks, Edge source/hash checks, build and mocked browser regression for PRs and main.
+The Subjects category controls now wrap at narrow screen widths. Buttons used as links/labels now pass their child through Radix Slottable, preserving icon/loading support and preventing the runtime single-child error; disabled delegated controls prevent activation. Browser regression tests cover study-room membership, quota-service failure preventing writes, retry request IDs, queued content, reports and withdrawal. Browser failure output records the route and visible page text. A GitHub Actions workflow runs lint, broad typechecking, unit/API checks, Edge source/hash checks, build and mocked browser regression for PRs and main.
 
 ## Verification and limits
 

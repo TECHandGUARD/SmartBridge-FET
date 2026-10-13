@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -103,10 +103,14 @@ const Button = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'butt
     variant,
     size,
     fullWidth
-  }), className)} ref={ref} disabled={isDisabled} {...props}>
+  }), className)} ref={ref} disabled={isDisabled} {...props}
+      {...(asChild && isDisabled ? {
+        'aria-disabled': true,
+        onClickCapture: event => { event.preventDefault(); event.stopPropagation(); }
+      } : {})}>
       {CONFIG.ENABLE_LOADING && loading && <Loader2 className={cn("animate-spin", spinnerSize)} aria-hidden="true" />}
       {!loading && CONFIG.ENABLE_ICONS && leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-      {content}
+      {asChild ? <Slottable>{children}</Slottable> : content}
       {!loading && CONFIG.ENABLE_ICONS && rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
     </Comp>;
 });
