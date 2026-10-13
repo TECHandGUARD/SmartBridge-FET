@@ -1,4 +1,5 @@
 import { appConfig } from '@/lib/config';
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import ParentChildLink from '@/components/parent/ParentChildLink';
 import { useAuth } from '@/lib/AuthContext';
@@ -445,6 +446,7 @@ export default function StudentDashboard() {
             )}
 
             {/* Account Deletion */}
+            <ReleaseGate feature="accountDeletion">
             <div className="border border-destructive/20 rounded-2xl p-5">
               <p className="text-sm font-semibold text-destructive flex items-center gap-1.5 mb-1">
                 <AlertTriangle className="w-4 h-4" /> Danger Zone
@@ -475,6 +477,7 @@ export default function StudentDashboard() {
                 </AlertDialogContent>
               </AlertDialog>
             </div>
+            </ReleaseGate>
           </div>
         )}
       </div>

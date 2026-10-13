@@ -16,6 +16,7 @@ export const RELEASE_FEATURES = Object.freeze({
   externalEmail: false,
   lessonPlanning: false,
   quizAuthoring: false,
+  accountDeletion: false,
 });
 export const isReleaseFeatureEnabled = key => RELEASE_FEATURES[key] === true;
 export function isDashboardSectionEnabled(role, key) {

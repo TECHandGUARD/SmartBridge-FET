@@ -1,7 +1,7 @@
 # Focused MVP candidate
 
 Continues from PR #1 checkpoint `7ca815c`; completed repairs are retained. Current
-fresh replay includes twelve migrations and eight SQL security/workflow suites.
+fresh replay includes thirteen migrations and eight SQL security/workflow suites.
 
 | Included in the candidate | Deferred from the first release |
 | --- | --- |
@@ -27,7 +27,7 @@ labelled as a personal checklist, not certified CAPS curriculum.
 
 ## Evidence and gates
 
-Twelve migrations/eight SQL suites, 49 unit/API tests, lint, full typechecking,
+Thirteen migrations/eight SQL suites, 49 unit/API tests, lint, full typechecking,
 production build, API mappings, Edge checks and 38 hashed bundles pass locally.
 New browser cases cover topic save/reload/undo, NBT failure/retry/reload/undo and
 the absence of requests to deferred tables. Their latest remote CI must pass.
@@ -64,3 +64,7 @@ test imports. The active test runner remains Node's test runner. The dependency
 audit now has zero critical advisories; nine noncritical build/router advisories
 remain tracked rather than forcing major framework upgrades into this repair.
 See `staging-rollout.md` and `mvp-backend-access.md` for rollout requirements.
+
+Inactive tutor accounts lose directory visibility and tutor eligibility immediately; existing booking validation also rejects new bookings with them. SQL and real service checks cover revocation.
+
+Self-service account deletion is deferred: the previous controls did not perform verified erasure. Before public launch, provide an approved support contact and a documented identity-verified deletion process covering Auth, database records and stored files. No deletion or POPIA compliance certification is claimed.

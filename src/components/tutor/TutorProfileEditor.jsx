@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Linkedin, Twitter, Shield, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -825,6 +826,7 @@ export default function TutorProfileEditor({
 
         {}
         <div className="pt-6 border-t border-border mt-8">
+          <ReleaseGate feature="accountDeletion">
           <div className="p-4 rounded-xl border border-destructive/20 bg-destructive/5 space-y-4">
             <div>
               <p className="text-sm font-semibold text-destructive flex items-center gap-1.5">
@@ -857,6 +859,7 @@ export default function TutorProfileEditor({
               </AlertDialogContent>
             </AlertDialog>
           </div>
+          </ReleaseGate>
         </div>
 
         {}

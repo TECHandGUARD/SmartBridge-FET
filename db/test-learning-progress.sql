@@ -54,3 +54,18 @@ do $$ begin
  if not exists(select 1 from public.tutor_profiles where user_id='00000000-0000-4000-8000-000000000102' and bio='Service update fixture') then raise exception 'Trusted service tutor update failed'; end if;
 end $$;
 reset role;
+select set_config('request.jwt.claims','{}',true);
+update public.tutor_profiles set is_verified=true,is_active=true where user_id='00000000-0000-4000-8000-000000000102';
+update public.users set is_active=false where id='00000000-0000-4000-8000-000000000102';
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000102","role":"authenticated"}',true);
+do $$ begin
+ if public.is_tutor(auth.uid()) then raise exception 'Inactive tutor eligibility retained'; end if;
+ begin perform * from public.tutor_directory; raise exception 'Inactive account read directory';
+  exception when raise_exception then if sqlerrm='Inactive account read directory' then raise; end if; end;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000902","role":"authenticated"}',true);
+do $$ begin
+ if exists(select 1 from public.tutor_directory where user_id='00000000-0000-4000-8000-000000000102') then raise exception 'Inactive tutor discoverable'; end if;
+end $$;
+reset role;

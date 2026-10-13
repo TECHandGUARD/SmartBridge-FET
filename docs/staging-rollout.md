@@ -3,11 +3,11 @@
 ## Prepared and verified
 
 Local development continues on Free with no hosted branch or billing authorization.
-The [focused MVP candidate](mvp-release-candidate.md) includes twelve migrations
+The [focused MVP candidate](mvp-release-candidate.md) includes thirteen migrations
 and eight SQL suites, plus a disposable real-services CI gate. Include the catalogue
 review migration before deploying its atomic review handler.
 
-The schema-only baseline and original migration history are reconstructed in the repository. `npm run check:db` tests a fresh PostgreSQL 17 replay of all twelve migrations and the eight SQL workflow/security suites. The existing live-schema guard passes without changing production. All 38 Edge Function source bundles can be prepared with `npm run prepare:edge -- /tmp/staging-functions`; custom entrypoints and JWT settings are declared in `supabase/config.toml`.
+The schema-only baseline and original migration history are reconstructed in the repository. `npm run check:db` tests a fresh PostgreSQL 17 replay of all thirteen migrations and the eight SQL workflow/security suites. The existing live-schema guard passes without changing production. All 38 Edge Function source bundles can be prepared with `npm run prepare:edge -- /tmp/staging-functions`; custom entrypoints and JWT settings are declared in `supabase/config.toml`.
 
 ## Hosted staging gate
 

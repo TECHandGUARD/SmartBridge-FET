@@ -37,6 +37,11 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
  console.log('PASS: real booking retries, server price, ownership and tutor confirmation');
+ ok(await admin.from('users').update({is_active:false}).eq('id',tutor.id));
+ assert.deepEqual(ok(await student.client.from('tutor_directory').select('id').eq('user_id',tutor.id)),[]);
+ assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),false);
+ assert.ok((await student.client.rpc('create_booking',{...bookingArgs,chosen_time:'12:00',request_id:randomUUID()})).error);
+ console.log('PASS: inactive tutors lose eligibility/discovery immediately and cannot receive new bookings');
  ok(await parent.client.rpc('request_parent_link',{learner_email:student.email}));
  const links=ok(await student.client.rpc('get_parent_links'));const link=links.find(row=>row.parent_id===parent.id);assert.ok(link);
  ok(await student.client.rpc('respond_parent_link',{link_id:link.id,decision:'approved'}));

@@ -354,6 +354,7 @@ const assert=require('node:assert/strict');
  }
  assert.deepEqual(errors,[]);
  assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
+ assert.equal(await page.getByRole('button',{name:/Delete (My|Tutor) Account/}).count(),0,'Unimplemented permanent deletion must not be offered');
  } catch(error) {
   const debugPage=browser?.contexts()[0]?.pages()[0];
   if(debugPage){console.error('PAGE URL:',debugPage.url());console.error('PAGE TEXT:',(await debugPage.locator('body').innerText()).slice(0,5000));await debugPage.screenshot({path:'/tmp/fet-browser-failure.png'});}
