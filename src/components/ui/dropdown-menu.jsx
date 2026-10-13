@@ -40,7 +40,8 @@ const DropdownMenuGroup = DropdownMenuPrimitive.Group;
 const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
-const DropdownMenuSubTrigger = React.forwardRef(({
+const DropdownMenuSubTrigger = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubTrigger> & {inset?: any; icon?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -52,12 +53,14 @@ const DropdownMenuSubTrigger = React.forwardRef(({
       <ChevronRight className="ml-auto" />
     </DropdownMenuPrimitive.SubTrigger>);
 DropdownMenuSubTrigger.displayName = DropdownMenuPrimitive.SubTrigger.displayName;
-const DropdownMenuSubContent = React.forwardRef(({
+const DropdownMenuSubContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.SubContent>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DropdownMenuPrimitive.SubContent ref={ref} className={cn(CONFIG.SUB_CONTENT_STYLES, className)} {...props} />);
 DropdownMenuSubContent.displayName = DropdownMenuPrimitive.SubContent.displayName;
-const DropdownMenuContent = React.forwardRef(({
+const DropdownMenuContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Content> & {sideOffset?: number; portal?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   sideOffset = 4,
   portal = true,
@@ -70,7 +73,8 @@ const DropdownMenuContent = React.forwardRef(({
       </Content>;
 });
 DropdownMenuContent.displayName = DropdownMenuPrimitive.Content.displayName;
-const DropdownMenuItem = React.forwardRef(({
+const DropdownMenuItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item> & {inset?: any; icon?: React.ReactNode; rightIcon?: React.ReactNode; shortcut?: any; variant?: "default"|"destructive"|"success"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -88,7 +92,8 @@ const DropdownMenuItem = React.forwardRef(({
       {CONFIG.ENABLE_ICONS && rightIcon && <span className="ml-auto flex-shrink-0">{rightIcon}</span>}
     </DropdownMenuPrimitive.Item>);
 DropdownMenuItem.displayName = DropdownMenuPrimitive.Item.displayName;
-const DropdownMenuCheckboxItem = React.forwardRef(({
+const DropdownMenuCheckboxItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.CheckboxItem>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   checked,
@@ -102,7 +107,8 @@ const DropdownMenuCheckboxItem = React.forwardRef(({
       {children}
     </DropdownMenuPrimitive.CheckboxItem>);
 DropdownMenuCheckboxItem.displayName = DropdownMenuPrimitive.CheckboxItem.displayName;
-const DropdownMenuRadioItem = React.forwardRef(({
+const DropdownMenuRadioItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.RadioItem>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   ...props
@@ -115,7 +121,8 @@ const DropdownMenuRadioItem = React.forwardRef(({
       {children}
     </DropdownMenuPrimitive.RadioItem>);
 DropdownMenuRadioItem.displayName = DropdownMenuPrimitive.RadioItem.displayName;
-const DropdownMenuLabel = React.forwardRef(({
+const DropdownMenuLabel = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Label> & {inset?: any; icon?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -126,12 +133,14 @@ const DropdownMenuLabel = React.forwardRef(({
       {children}
     </DropdownMenuPrimitive.Label>);
 DropdownMenuLabel.displayName = DropdownMenuPrimitive.Label.displayName;
-const DropdownMenuSeparator = React.forwardRef(({
+const DropdownMenuSeparator = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DropdownMenuPrimitive.Separator ref={ref} className={cn(CONFIG.SEPARATOR_STYLES, className)} {...props} />);
 DropdownMenuSeparator.displayName = DropdownMenuPrimitive.Separator.displayName;
-const DropdownMenuShortcut = ({
+const DropdownMenuShortcut = /** @param {React.ComponentPropsWithoutRef<'span'>} props */
+({
   className,
   ...props
 }) => {

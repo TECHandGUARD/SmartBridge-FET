@@ -214,7 +214,7 @@ export default function Subjects() {
             )}
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 bg-muted/30 rounded-lg p-0.5">
+            <div className="flex flex-wrap items-center gap-1 bg-muted/30 rounded-lg p-0.5 min-w-0">
               {CONFIG.CATEGORIES.map((cat) => (
                 <CategoryButton
                   key={cat}

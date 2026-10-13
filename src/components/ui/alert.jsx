@@ -29,7 +29,8 @@ const alertVariants = cva(CONFIG.BASE_STYLES, {
     variant: "default"
   }
 });
-const Alert = React.forwardRef(({
+const Alert = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {variant?: "default"|"destructive"|"success"|"warning"|"info"|null; icon?: React.ElementType; onDismiss?: (...args: any[]) => any; dismissible?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant,
   icon: Icon,
@@ -57,12 +58,14 @@ const Alert = React.forwardRef(({
     </div>;
 });
 Alert.displayName = "Alert";
-const AlertTitle = React.forwardRef(({
+const AlertTitle = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'h5'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <h5 ref={ref} className={cn(CONFIG.TITLE_STYLES, className)} {...props} />);
 AlertTitle.displayName = "AlertTitle";
-const AlertDescription = React.forwardRef(({
+const AlertDescription = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <div ref={ref} className={cn(CONFIG.DESC_STYLES, className)} {...props} />);

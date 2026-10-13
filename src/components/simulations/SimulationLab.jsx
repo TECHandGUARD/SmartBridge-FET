@@ -338,7 +338,6 @@ export default function SimulationLab({ isTutor = false, user = null }) {
                   <QuizSync
                     simulation={filteredSims[0]}
                     isAdmin={isTutor}
-                    user={user}
                   />
                 </div>
               )}

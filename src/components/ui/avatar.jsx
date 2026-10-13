@@ -54,7 +54,8 @@ const avatarVariants = cva("relative flex shrink-0 overflow-hidden", {
     shape: "circle"
   }
 });
-const Avatar = React.forwardRef(({
+const Avatar = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: "sm"|"default"|"lg"|"xl"|"xxl"|null; shape?: "circle"|"square"|"rounded"|null; status?: any; statusPosition?: string}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   size = "default",
   shape = "circle",
@@ -95,12 +96,14 @@ const Avatar = React.forwardRef(({
     </div>;
 });
 Avatar.displayName = AvatarPrimitive.Root.displayName;
-const AvatarImage = React.forwardRef(({
+const AvatarImage = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <AvatarPrimitive.Image ref={ref} className={cn("aspect-square h-full w-full object-cover", className)} {...props} />);
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
-const AvatarFallback = React.forwardRef(({
+const AvatarFallback = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Fallback> & {colorIndex?: number}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   colorIndex = 0,
   ...props
@@ -110,7 +113,8 @@ const AvatarFallback = React.forwardRef(({
   return <AvatarPrimitive.Fallback ref={ref} className={cn("flex h-full w-full items-center justify-center font-medium uppercase", fallbackColor, className)} {...props} />;
 });
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
-const AvatarGroup = React.forwardRef(({
+const AvatarGroup = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: "sm"|"default"|"lg"|"xl"|"xxl"|null; moreIndicator?: any; spacing?: number; max?: number}} props @param {React.ForwardedRef<any>} ref */
+({
   children,
   max = 5,
   size = "default",

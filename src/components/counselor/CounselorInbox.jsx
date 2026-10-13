@@ -71,7 +71,7 @@ export default function CounselorInbox({
     threadsByStudent[studentEmail].push(msg);
   }
   const allStudentEmails = [...new Set([...Object.keys(threadsByStudent), ...studentEmails])];
-  const activeThread = activeStudent ? (threadsByStudent[activeStudent] || []).sort((a, b) => new Date(a.created_at) - new Date(b.created_at)) : [];
+  const activeThread = activeStudent ? (threadsByStudent[activeStudent] || []).sort((a, b) => (new Date(a.created_at)).getTime() - (new Date(b.created_at)).getTime()) : [];
   const unreadCounts = {};
   for (const [email, msgs] of Object.entries(threadsByStudent)) {
     unreadCounts[email] = msgs.filter(m => m.sender_email !== counselorEmail && !m.is_read).length;

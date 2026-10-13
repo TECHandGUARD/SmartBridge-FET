@@ -5,12 +5,13 @@ import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"
 import { cn } from "@/lib/utils"
 import { toggleVariants } from "@/components/ui/toggle"
 
-const ToggleGroupContext = React.createContext({
+const ToggleGroupContext = React.createContext(/** @type {{size?: Parameters<typeof toggleVariants>[0]['size']; variant?: Parameters<typeof toggleVariants>[0]['variant']}} */ ({
   size: "default",
   variant: "default",
-})
+}))
 
-const ToggleGroup = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof ToggleGroupPrimitive.Root>>} ref */ ({ className, variant, size, children, ...props }, ref) => (
+const ToggleGroup = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root> & {variant?: Parameters<typeof toggleVariants>[0]['variant']; size?: Parameters<typeof toggleVariants>[0]['size']}} props @param {React.ForwardedRef<any>} ref */
+({ className, variant, size, children, ...props }, ref) => (
   <ToggleGroupPrimitive.Root
     ref={ref}
     className={cn("flex items-center justify-center gap-1", className)}
@@ -23,7 +24,8 @@ const ToggleGroup = React.forwardRef(/** @param {import('react').ComponentPropsW
 
 ToggleGroup.displayName = ToggleGroupPrimitive.Root.displayName
 
-const ToggleGroupItem = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof ToggleGroupPrimitive.Item>>} ref */ ({ className, children, variant, size, ...props }, ref) => {
+const ToggleGroupItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item> & {variant?: Parameters<typeof toggleVariants>[0]['variant']; size?: Parameters<typeof toggleVariants>[0]['size']}} props @param {React.ForwardedRef<any>} ref */
+({ className, children, variant, size, ...props }, ref) => {
   const context = React.useContext(ToggleGroupContext)
 
   return (

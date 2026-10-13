@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 function exportCSV(progress, user) {
   const headers = ['Subject', 'Grade Level', 'Study Sessions', 'Last Access', 'Notes'];
-  const rows = progress.map(p => [p.subject || '', `Grade ${p.grade_level}`, p.resources_accessed || 0, p.last_accessed || '', (p.notes || '').replace(/,/g, ';')]);
+  const rows = progress.map(p => [p.subject || '', `Grade ${p.grade_level}`, p.study_sessions || 0, p.last_access || '', (p.notes || '').replace(/,/g, ';')]);
   const csvContent = [headers, ...rows].map(r => r.join(',')).join('\n');
   const blob = new Blob([csvContent], {
     type: 'text/csv;charset=utf-8;'
@@ -69,7 +69,7 @@ export default function StudentProgressDashboard({
         description: 'Viewed progress dashboard',
         metadata: {
           total_subjects: data?.length || 0,
-          total_sessions: data?.reduce((sum, p) => sum + (p.resources_accessed || 0), 0) || 0
+          total_sessions: data?.reduce((sum, p) => sum + (p.study_sessions || 0), 0) || 0
         }
       })).catch(() => {});
     } catch (err) {
@@ -111,10 +111,10 @@ export default function StudentProgressDashboard({
         </CardContent>
       </Card>;
   }
-  const totalSessions = progress.reduce((a, p) => a + (p.resources_accessed || 0), 0);
-  const topSubject = [...progress].sort((a, b) => (b.resources_accessed || 0) - (a.resources_accessed || 0))[0];
-  const activeSubjects = progress.filter(p => (p.resources_accessed || 0) > 0).length;
-  const rawDates = progress.filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+  const totalSessions = progress.reduce((a, p) => a + (p.study_sessions || 0), 0);
+  const topSubject = [...progress].sort((a, b) => (b.study_sessions || 0) - (a.study_sessions || 0))[0];
+  const activeSubjects = progress.filter(p => (p.study_sessions || 0) > 0).length;
+  const rawDates = progress.filter(p => p.last_access).map(p => p.last_access.split('T')[0]);
   const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
   let streak = 0;
   if (uniqueSortedDates.length > 0) {
@@ -129,20 +129,20 @@ export default function StudentProgressDashboard({
       }
     }
   }
-  const barData = progress.filter(p => (p.resources_accessed || 0) > 0).map((p, i) => ({
+  const barData = progress.filter(p => (p.study_sessions || 0) > 0).map((p, i) => ({
     name: SHORT(p.subject),
     fullName: p.subject,
-    sessions: p.resources_accessed || 0,
+    sessions: p.study_sessions || 0,
     fill: COLORS[i % COLORS.length]
   })).sort((a, b) => b.sessions - a.sessions);
   const radarData = progress.map((p, i) => ({
     subject: SHORT(p.subject),
-    sessions: p.resources_accessed || 0
+    sessions: p.study_sessions || 0
   }));
   const gradeMap = {};
   progress.forEach(p => {
     const gradeKey = p.grade_level ? `Grade ${p.grade_level}` : 'Unknown';
-    gradeMap[gradeKey] = (gradeMap[gradeKey] || 0) + (p.resources_accessed || 0);
+    gradeMap[gradeKey] = (gradeMap[gradeKey] || 0) + (p.study_sessions || 0);
   });
   const pieData = Object.entries(gradeMap).map(([name, value], i) => ({
     name,
@@ -158,8 +158,8 @@ export default function StudentProgressDashboard({
   });
   const dailyCounts = {};
   progress.forEach(p => {
-    if (p.last_accessed) {
-      const dateKey = p.last_accessed.split('T')[0];
+    if (p.last_access) {
+      const dateKey = p.last_access.split('T')[0];
       dailyCounts[dateKey] = (dailyCounts[dateKey] || 0) + 1;
     }
   });
@@ -193,7 +193,7 @@ export default function StudentProgressDashboard({
         <StatCard icon={BookOpen} label="Total Sessions" value={totalSessions} color="bg-primary/10 text-primary" />
         <StatCard icon={Target} label="Active Subjects" value={activeSubjects} color="bg-blue-100 text-blue-700" />
         <StatCard icon={Flame} label="Day Streak" value={streak} sub={streak >= 3 ? '🔥 On fire!' : streak === 1 ? 'Started today' : null} color="bg-orange-100 text-orange-600" />
-        <StatCard icon={BarChart2} label="Top Subject" value={topSubject?.resources_accessed || 0} sub={topSubject?.subject || '—'} color="bg-green-100 text-green-700" />
+        <StatCard icon={BarChart2} label="Top Subject" value={topSubject?.study_sessions || 0} sub={topSubject?.subject || '—'} color="bg-green-100 text-green-700" />
       </div>
 
       {}

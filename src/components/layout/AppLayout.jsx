@@ -40,7 +40,7 @@ export default function AppLayout() {
   if (user && !isAdmin && TUTOR_ROLES.includes(user.role)) {
     if (tutorError) return <main className="mx-auto max-w-lg p-8 text-center space-y-4" role="alert"><p>Could not check tutor verification. Please retry.</p><button className="rounded-lg border px-4 py-3" onClick={fetchUser}>Retry</button><button className="rounded-lg border px-4 py-3" onClick={signOut}>Sign out</button></main>;
     if (tutorVerified === null) return <div className="p-8 text-center" role="status">Checking tutor verification…</div>;
-    if (!tutorVerified) return <TutorPendingScreen user={user} onRefresh={fetchUser} />;
+    if (!tutorVerified) return <TutorPendingScreen onRefresh={fetchUser} />;
   }
   return <div className="min-h-screen bg-background flex flex-col">
     <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:p-3 focus:text-primary-foreground">Skip to content</a>

@@ -76,9 +76,9 @@ export default function StudyGamification({
       if (qr.length >= 1) badges.push('first_quiz');
       if (qr.some(q => q.percentage >= 100)) badges.push('top_scorer');
       if (qr.filter(q => q.percentage >= 80).length >= 5) badges.push('quiz_master');
-      const totalAccess = prog.reduce((s, p) => s + (p.resources_accessed || 0), 0);
+      const totalAccess = prog.reduce((s, p) => s + (p.study_sessions || 0), 0);
       if (totalAccess >= 10) badges.push('bookworm');
-      const rawDates = prog.filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+      const rawDates = prog.filter(p => p.last_access).map(p => p.last_access.split('T')[0]);
       const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
       let streak = 0;
       if (uniqueSortedDates.length > 0) {

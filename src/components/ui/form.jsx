@@ -46,7 +46,8 @@ function useFormField() {
   };
 }
 const Form = FormProvider;
-const FormField = ({
+const FormField = /** @param {React.ComponentProps<typeof Controller>} props */
+({
   ...props
 }) => {
   return <FormFieldContext.Provider value={{
@@ -55,7 +56,8 @@ const FormField = ({
       <Controller {...props} />
     </FormFieldContext.Provider>;
 };
-const FormItem = React.forwardRef(({
+const FormItem = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {
@@ -67,7 +69,8 @@ const FormItem = React.forwardRef(({
     </FormItemContext.Provider>;
 });
 FormItem.displayName = "FormItem";
-const FormLabel = React.forwardRef(({
+const FormLabel = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof Label> & {required?: boolean; optional?: boolean; hideAsterisk?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   required = false,
@@ -92,7 +95,8 @@ const FormLabel = React.forwardRef(({
       </Label>;
 });
 FormLabel.displayName = "FormLabel";
-const FormControl = React.forwardRef(({
+const FormControl = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   asChild = true,
   ...props
 }, ref) => {
@@ -106,7 +110,8 @@ const FormControl = React.forwardRef(({
   return <Comp ref={ref} id={formItemId} aria-describedby={!error ? formDescriptionId || undefined : `${formDescriptionId || ""} ${formMessageId}`.trim() || undefined} aria-invalid={!!error} {...props} />;
 });
 FormControl.displayName = "FormControl";
-const FormDescription = React.forwardRef(({
+const FormDescription = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'p'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {
@@ -116,7 +121,8 @@ const FormDescription = React.forwardRef(({
   return <p ref={ref} id={formDescriptionId} className={cn(CONFIG.DESCRIPTION_STYLES, className)} {...props} />;
 });
 FormDescription.displayName = "FormDescription";
-const FormMessage = React.forwardRef(({
+const FormMessage = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'p'> & {prefix?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   prefix = CONFIG.ERROR_PREFIX,

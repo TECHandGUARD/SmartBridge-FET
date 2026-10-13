@@ -16,7 +16,7 @@ const STARS = [1, 2, 3, 4, 5];
 // Main Component
 // ============================================================
 
-export default function CAPSDocRating({ docId, user, onRatingUpdate }) {
+export default function CAPSDocRating({ docId, user, onRatingUpdate = undefined }) {
   const [ratings, setRatings] = useState([]);
   const [showPanel, setShowPanel] = useState(false);
   const [hovered, setHovered] = useState(0);

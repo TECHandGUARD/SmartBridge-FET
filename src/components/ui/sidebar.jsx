@@ -35,7 +35,8 @@ function useSidebar() {
   return context
 }
 
-const SidebarProvider = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ (
+const SidebarProvider = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {defaultOpen?: boolean; open?: any; onOpenChange?: (...args: any[]) => any}} props @param {React.ForwardedRef<any>} ref */
+(
   {
     defaultOpen = true,
     open: openProp,
@@ -128,7 +129,8 @@ const SidebarProvider = React.forwardRef(/** @param {import('react').ComponentPr
 })
 SidebarProvider.displayName = "SidebarProvider"
 
-const Sidebar = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ (
+const Sidebar = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {side?: 'left'|'right'; variant?: 'sidebar'|'floating'|'inset'; collapsible?: 'offcanvas'|'icon'|'none'}} props @param {React.ForwardedRef<any>} ref */
+(
   {
     side = "left",
     variant = "sidebar",
@@ -216,7 +218,8 @@ const Sidebar = React.forwardRef(/** @param {import('react').ComponentPropsWitho
 })
 Sidebar.displayName = "Sidebar"
 
-const SidebarTrigger = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Button>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Button>>} ref */ ({ className, onClick, asChild = false, ...props }, ref) => {
+const SidebarTrigger = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ className, onClick, asChild = false, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -245,7 +248,8 @@ const SidebarTrigger = React.forwardRef(/** @param {import('react').ComponentPro
 })
 SidebarTrigger.displayName = "SidebarTrigger"
 
-const SidebarRail = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"button">} props @param {import('react').ForwardedRef<import('react').ElementRef<"button">>} ref */ ({ className, ...props }, ref) => {
+const SidebarRail = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'button'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -270,7 +274,8 @@ const SidebarRail = React.forwardRef(/** @param {import('react').ComponentPropsW
 })
 SidebarRail.displayName = "SidebarRail"
 
-const SidebarInset = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"main">} props @param {import('react').ForwardedRef<import('react').ElementRef<"main">>} ref */ ({ className, ...props }, ref) => {
+const SidebarInset = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'main'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<main
       ref={ref}
@@ -284,7 +289,8 @@ const SidebarInset = React.forwardRef(/** @param {import('react').ComponentProps
 })
 SidebarInset.displayName = "SidebarInset"
 
-const SidebarInput = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Input>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Input>>} ref */ ({ className, ...props }, ref) => {
+const SidebarInput = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<Input
       ref={ref}
@@ -298,7 +304,8 @@ const SidebarInput = React.forwardRef(/** @param {import('react').ComponentProps
 })
 SidebarInput.displayName = "SidebarInput"
 
-const SidebarHeader = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => {
+const SidebarHeader = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<div
       ref={ref}
@@ -309,7 +316,8 @@ const SidebarHeader = React.forwardRef(/** @param {import('react').ComponentProp
 })
 SidebarHeader.displayName = "SidebarHeader"
 
-const SidebarFooter = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => {
+const SidebarFooter = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<div
       ref={ref}
@@ -320,7 +328,8 @@ const SidebarFooter = React.forwardRef(/** @param {import('react').ComponentProp
 })
 SidebarFooter.displayName = "SidebarFooter"
 
-const SidebarSeparator = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Separator>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Separator>>} ref */ ({ className, ...props }, ref) => {
+const SidebarSeparator = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<Separator
       ref={ref}
@@ -331,7 +340,8 @@ const SidebarSeparator = React.forwardRef(/** @param {import('react').ComponentP
 })
 SidebarSeparator.displayName = "SidebarSeparator"
 
-const SidebarContent = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => {
+const SidebarContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<div
       ref={ref}
@@ -345,7 +355,8 @@ const SidebarContent = React.forwardRef(/** @param {import('react').ComponentPro
 })
 SidebarContent.displayName = "SidebarContent"
 
-const SidebarGroup = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => {
+const SidebarGroup = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => {
   return (
     (<div
       ref={ref}
@@ -356,7 +367,8 @@ const SidebarGroup = React.forwardRef(/** @param {import('react').ComponentProps
 })
 SidebarGroup.displayName = "SidebarGroup"
 
-const SidebarGroupLabel = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Comp>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Comp>>} ref */ ({ className, asChild = false, ...props }, ref) => {
+const SidebarGroupLabel = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "div"
 
   return (
@@ -373,7 +385,8 @@ const SidebarGroupLabel = React.forwardRef(/** @param {import('react').Component
 })
 SidebarGroupLabel.displayName = "SidebarGroupLabel"
 
-const SidebarGroupAction = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Comp>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Comp>>} ref */ ({ className, asChild = false, ...props }, ref) => {
+const SidebarGroupAction = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ className, asChild = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
   return (
@@ -392,7 +405,8 @@ const SidebarGroupAction = React.forwardRef(/** @param {import('react').Componen
 })
 SidebarGroupAction.displayName = "SidebarGroupAction"
 
-const SidebarGroupContent = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => (
+const SidebarGroupContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => (
   <div
     ref={ref}
     data-sidebar="group-content"
@@ -401,7 +415,8 @@ const SidebarGroupContent = React.forwardRef(/** @param {import('react').Compone
 ))
 SidebarGroupContent.displayName = "SidebarGroupContent"
 
-const SidebarMenu = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"ul">} props @param {import('react').ForwardedRef<import('react').ElementRef<"ul">>} ref */ ({ className, ...props }, ref) => (
+const SidebarMenu = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'ul'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => (
   <ul
     ref={ref}
     data-sidebar="menu"
@@ -410,7 +425,8 @@ const SidebarMenu = React.forwardRef(/** @param {import('react').ComponentPropsW
 ))
 SidebarMenu.displayName = "SidebarMenu"
 
-const SidebarMenuItem = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"li">} props @param {import('react').ForwardedRef<import('react').ElementRef<"li">>} ref */ ({ className, ...props }, ref) => (
+const SidebarMenuItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'li'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => (
   <li
     ref={ref}
     data-sidebar="menu-item"
@@ -441,7 +457,8 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
-const SidebarMenuButton = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Comp>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Comp>>} ref */ (
+const SidebarMenuButton = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean; isActive?: boolean; variant?: "default"|"outline"|null; size?: 'default'|'sm'|'lg'; tooltip?: any}} props @param {React.ForwardedRef<any>} ref */
+(
   {
     asChild = false,
     isActive = false,
@@ -489,7 +506,8 @@ const SidebarMenuButton = React.forwardRef(/** @param {import('react').Component
 })
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
-const SidebarMenuAction = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof Comp>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Comp>>} ref */ ({ className, asChild = false, showOnHover = false, ...props }, ref) => {
+const SidebarMenuAction = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean; showOnHover?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ className, asChild = false, showOnHover = false, ...props }, ref) => {
   const Comp = asChild ? Slot : "button"
 
   return (
@@ -513,7 +531,8 @@ const SidebarMenuAction = React.forwardRef(/** @param {import('react').Component
 })
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
-const SidebarMenuBadge = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, ...props }, ref) => (
+const SidebarMenuBadge = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => (
   <div
     ref={ref}
     data-sidebar="menu-badge"
@@ -530,7 +549,8 @@ const SidebarMenuBadge = React.forwardRef(/** @param {import('react').ComponentP
 ))
 SidebarMenuBadge.displayName = "SidebarMenuBadge"
 
-const SidebarMenuSkeleton = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"div">} props @param {import('react').ForwardedRef<import('react').ElementRef<"div">>} ref */ ({ className, showIcon = false, ...props }, ref) => {
+const SidebarMenuSkeleton = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {showIcon?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ className, showIcon = false, ...props }, ref) => {
   // Random width between 50 to 90%.
   const width = React.useMemo(() => {
     return `${Math.floor(Math.random() * 40) + 50}%`;
@@ -558,7 +578,8 @@ const SidebarMenuSkeleton = React.forwardRef(/** @param {import('react').Compone
 })
 SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton"
 
-const SidebarMenuSub = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"ul">} props @param {import('react').ForwardedRef<import('react').ElementRef<"ul">>} ref */ ({ className, ...props }, ref) => (
+const SidebarMenuSub = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'ul'>} props @param {React.ForwardedRef<any>} ref */
+({ className, ...props }, ref) => (
   <ul
     ref={ref}
     data-sidebar="menu-sub"
@@ -571,11 +592,13 @@ const SidebarMenuSub = React.forwardRef(/** @param {import('react').ComponentPro
 ))
 SidebarMenuSub.displayName = "SidebarMenuSub"
 
-const SidebarMenuSubItem = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"li">} props @param {import('react').ForwardedRef<import('react').ElementRef<"li">>} ref */ ({ ...props }, ref) => <li ref={ref} {...props} />)
+const SidebarMenuSubItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'li'>} props @param {React.ForwardedRef<any>} ref */
+({ ...props }, ref) => <li ref={ref} {...props} />)
 SidebarMenuSubItem.displayName = "SidebarMenuSubItem"
 
 const SidebarMenuSubButton = React.forwardRef(
-  /** @param {import('react').ComponentPropsWithoutRef<typeof Comp>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof Comp>>} ref */ ({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
+  /** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean; size?: 'sm'|'md'|'lg'; isActive?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({ asChild = false, size = "md", isActive, className, ...props }, ref) => {
     const Comp = asChild ? Slot : "a"
 
     return (

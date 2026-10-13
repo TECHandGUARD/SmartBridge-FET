@@ -13,12 +13,14 @@ const CONFIG = {
   }
 };
 const Accordion = AccordionPrimitive.Root;
-const AccordionItem = React.forwardRef(({
+const AccordionItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Item>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <AccordionPrimitive.Item ref={ref} className={cn(CONFIG.STYLES.ITEM, className)} {...props} />);
 AccordionItem.displayName = "AccordionItem";
-const AccordionTrigger = React.forwardRef(({
+const AccordionTrigger = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Trigger> & {hideIcon?: boolean; iconSize?: any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   hideIcon = false,
@@ -31,7 +33,8 @@ const AccordionTrigger = React.forwardRef(({
     </AccordionPrimitive.Trigger>
   </AccordionPrimitive.Header>);
 AccordionTrigger.displayName = AccordionPrimitive.Trigger.displayName;
-const AccordionContent = React.forwardRef(({
+const AccordionContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AccordionPrimitive.Content>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   ...props

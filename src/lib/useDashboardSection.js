@@ -4,6 +4,7 @@ const SECTIONS = {
   parent: ['child', 'progress', 'subjects', 'tutors', 'reports', 'premium'],
   tutor: ['upload', 'availability', 'students', 'earnings', 'messages', 'bookings', 'reviews', 'sessions'],
 };
+/** @returns {[string|null, (key:string)=>void]} */
 export function useDashboardSection(role) {
   const [params, setParams] = useSearchParams();
   const value = params.get('section');

@@ -31,36 +31,37 @@ const CONFIG = {
 
 /**
  * AspectRatio – Maintains a consistent width-to-height ratio.
- * 
+ *
  * @param {Object} props
  * @param {number} props.ratio - Width/height ratio (e.g., 16/9, 4/3, 1/1)
  * @param {React.ReactNode} props.children - Content inside the aspect ratio container
  * @param {string} props.className - Additional CSS classes
  * @param {boolean} props.responsive - Enable responsive ratios
  * @param {Object} props.responsiveRatios - Custom responsive ratios
- * 
+ *
  * @example
  * <AspectRatio ratio={16/9}>
  *   <img src="image.jpg" alt="Hero" className="object-cover" />
  * </AspectRatio>
- * 
+ *
  * @example
  * <AspectRatio ratio={4/3} className="rounded-lg overflow-hidden">
  *   <video src="video.mp4" controls />
  * </AspectRatio>
- * 
+ *
  * @example
  * <AspectRatio responsive responsiveRatios={{ sm: '16/9', md: '4/3', lg: '1/1' }}>
  *   <img src="responsive.jpg" className="object-cover" />
  * </AspectRatio>
  */
-const AspectRatio = React.forwardRef(({ 
+const AspectRatio = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof AspectRatioPrimitive.Root> & {ratio?: any; responsive?: any; responsiveRatios?: any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   ratio = parseFloat(CONFIG.DEFAULT_RATIO) || 16/9,
   responsive = CONFIG.ENABLE_RESPONSIVE,
   responsiveRatios = CONFIG.RESPONSIVE_RATIOS,
-  ...props 
+  ...props
 }, ref) => {
   // Build responsive classes if enabled
   let responsiveClasses = "";

@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils"
 
+/** @param {React.ComponentPropsWithoutRef<'div'>} props */
 function Skeleton({
   className,
   ...props

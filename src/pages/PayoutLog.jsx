@@ -94,7 +94,7 @@ const CONFIG = {
 // Sub-Components
 // ============================================================
 
-function StatCard({ label, value, icon: Icon, color, subtitle, trend }) {
+function StatCard({ label, value, icon: Icon, color, subtitle, trend = undefined }) {
   return (
     <Card className="border-border hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
       <CardContent className="pt-5 pb-4">
@@ -601,7 +601,7 @@ export default function PayoutLog() {
                           </tr>
                           {isExpanded && (
                             <tr>
-                              <td colSpan="8" className="px-4 py-3 bg-muted/20 border-b border-border/50">
+                              <td colSpan={8} className="px-4 py-3 bg-muted/20 border-b border-border/50">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                                   <div>
                                     <p className="text-muted-foreground">Payout Reference</p>

@@ -9,7 +9,8 @@ const HoverCard = HoverCardPrimitive.Root
 
 const HoverCardTrigger = HoverCardPrimitive.Trigger
 
-const HoverCardContent = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content>} props @param {import('react').ForwardedRef<import('react').ElementRef<typeof HoverCardPrimitive.Content>>} ref */ ({ className, align = "center", sideOffset = 4, ...props }, ref) => (
+const HoverCardContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof HoverCardPrimitive.Content> & {align?: string; sideOffset?: number}} props @param {React.ForwardedRef<any>} ref */
+({ className, align = "center", sideOffset = 4, ...props }, ref) => (
   <HoverCardPrimitive.Content
     ref={ref}
     align={align}

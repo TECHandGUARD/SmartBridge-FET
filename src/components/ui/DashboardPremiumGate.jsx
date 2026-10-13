@@ -56,7 +56,8 @@ const CONFIG = {
  *   <AIStudyPlanner user={user} />
  * </DashboardPremiumGate>
  */
-export default function DashboardPremiumGate({
+export default /** @param {React.ComponentPropsWithoutRef<'div'> & {isPremium?: boolean; isLoading?: boolean; featureName?: any; isOnTrial?: boolean; trialDaysLeft?: number; customTitle?: any; customDescription?: any; customButtonText?: any; size?: string}} props */
+function DashboardPremiumGate({
   isPremium,
   isLoading,
   featureName,

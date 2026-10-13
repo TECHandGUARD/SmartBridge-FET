@@ -113,7 +113,7 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
             <tbody>
               {earnings.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center text-muted-foreground py-8 text-sm">
+                  <td colSpan={6} className="text-center text-muted-foreground py-8 text-sm">
                     No tutor bookings recorded yet.
                   </td>
                 </tr>

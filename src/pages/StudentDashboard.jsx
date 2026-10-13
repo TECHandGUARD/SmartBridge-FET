@@ -287,7 +287,7 @@ export default function StudentDashboard() {
               <AIStudyAssistant user={user} />
             </DashboardPremiumGate>
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Interactive Flashcards">
-              <InteractiveFlashcards studentEmail={user.email} />
+              <InteractiveFlashcards user={user} />
             </DashboardPremiumGate>
           </div>
         )}

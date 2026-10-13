@@ -25,8 +25,9 @@ export function readPublicConfig(env = {}, currentOrigin = '') {
     } catch { /* An invalid or privileged key must never initialize the browser client. */ }
   }
   if (supabaseKey && !publicKey) errors.push('Use a Supabase publishable key or legacy anon key; server secrets are forbidden.');
+  const publicPasswordSettings = new Set(['VITE_RESET_PASSWORD_ROUTE', 'VITE_FORGOT_PASSWORD_ROUTE', 'VITE_MIN_PASSWORD_LENGTH']);
   for (const key of Object.keys(env)) {
-    if (/^VITE_.*(SECRET|SERVICE_ROLE|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|GEMINI_API_KEY|RESEND_API_KEY|YOCO_API_KEY)/i.test(key)) errors.push(`${key} is server-only and must not have a VITE_ prefix.`);
+    if (!publicPasswordSettings.has(key) && /^VITE_.*(SECRET|SERVICE_ROLE|PASSWORD|PRIVATE_KEY|ACCESS_TOKEN|GEMINI_API_KEY|RESEND_API_KEY|YOCO_API_KEY)/i.test(key)) errors.push(`${key} is server-only and must not have a VITE_ prefix.`);
   }
   const connectionErrors = [...errors];
   const price = (key, fallback) => {

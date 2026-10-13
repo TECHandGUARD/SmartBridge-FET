@@ -23,7 +23,8 @@ const CONFIG = {
   ENABLE_PORTAL: import.meta.env.VITE_DRAWER_ENABLE_PORTAL !== "false",
   ENABLE_HANDLE: import.meta.env.VITE_DRAWER_ENABLE_HANDLE !== "false"
 };
-const Drawer = ({
+const Drawer = /** @param {React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Root> & {shouldScaleBackground?: any; direction?: any; snapPoints?: any; dismissible?: boolean}} props */
+({
   shouldScaleBackground = CONFIG.SHOULD_SCALE_BACKGROUND,
   direction = CONFIG.DIRECTION,
   snapPoints,
@@ -36,13 +37,15 @@ Drawer.displayName = "Drawer";
 const DrawerTrigger = DrawerPrimitive.Trigger;
 const DrawerPortal = DrawerPrimitive.Portal;
 const DrawerClose = DrawerPrimitive.Close;
-const DrawerOverlay = React.forwardRef(({
+const DrawerOverlay = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Overlay> & {dim?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   dim = true,
   ...props
 }, ref) => <DrawerPrimitive.Overlay ref={ref} className={cn(CONFIG.OVERLAY_STYLES, !dim && "bg-transparent backdrop-blur-none", className)} {...props} />);
 DrawerOverlay.displayName = DrawerPrimitive.Overlay.displayName;
-const DrawerContent = React.forwardRef(({
+const DrawerContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: string; handle?: any; hideHandle?: boolean; portal?: any; direction?: any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   size = "default",
@@ -72,22 +75,26 @@ const DrawerContent = React.forwardRef(({
     </ContentWrapper>;
 });
 DrawerContent.displayName = DrawerPrimitive.Content.displayName;
-const DrawerHeader = ({
+const DrawerHeader = /** @param {React.ComponentPropsWithoutRef<'div'>} props */
+({
   className,
   ...props
 }) => <div className={cn(CONFIG.HEADER_STYLES, className)} {...props} />;
 DrawerHeader.displayName = "DrawerHeader";
-const DrawerFooter = ({
+const DrawerFooter = /** @param {React.ComponentPropsWithoutRef<'div'>} props */
+({
   className,
   ...props
 }) => <div className={cn(CONFIG.FOOTER_STYLES, className)} {...props} />;
 DrawerFooter.displayName = "DrawerFooter";
-const DrawerTitle = React.forwardRef(({
+const DrawerTitle = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Title>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DrawerPrimitive.Title ref={ref} className={cn(CONFIG.TITLE_STYLES, className)} {...props} />);
 DrawerTitle.displayName = DrawerPrimitive.Title.displayName;
-const DrawerDescription = React.forwardRef(({
+const DrawerDescription = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DrawerPrimitive.Description>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DrawerPrimitive.Description ref={ref} className={cn(CONFIG.DESCRIPTION_STYLES, className)} {...props} />);

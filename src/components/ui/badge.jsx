@@ -56,6 +56,7 @@ const badgeVariants = cva(CONFIG.BASE_STYLES, {
     shape: "default"
   }
 });
+/** @param {React.ComponentPropsWithoutRef<'div'> & {variant?: "default"|"secondary"|"destructive"|"outline"|"success"|"warning"|"info"|"gold"|"premium"|null; size?: "sm"|"default"|"lg"|null; shape?: "default"|"pill"|null; icon?: React.ReactNode; dismissible?: boolean; onDismiss?: (...args: any[]) => any}} props */
 function Badge({
   className,
   variant,

@@ -50,6 +50,7 @@ const CONFIG = {
 
 // ─── Streak Display ──────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {streak?: number}} props */
 function StreakDisplay({ streak = 0 }) {
   const isOnStreak = streak > 0;
   const emojis = ['🔥', '⚡', '💪', '🚀', '🌟', '🏆', '👑'];
@@ -73,6 +74,7 @@ function StreakDisplay({ streak = 0 }) {
 
 // ─── Goal Card ─────────────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {icon?: React.ElementType; label?: React.ReactNode; current?: number; target?: number; color?: string}} props */
 function GoalCard({ icon: Icon, label, current, target, color }) {
   const percentage = target > 0 ? Math.min((current / target) * 100, 100) : 0;
   const isComplete = percentage >= 100;
@@ -108,6 +110,7 @@ function GoalCard({ icon: Icon, label, current, target, color }) {
 
 // ─── Session Time Slot ─────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {time?: any; subject?: any; tutor?: any; status?: any}} props */
 function SessionSlot({ time, subject, tutor, status }) {
   const statusColors = {
     confirmed: "border-green-200 bg-green-50/50",
@@ -141,6 +144,7 @@ function SessionSlot({ time, subject, tutor, status }) {
 
 // ─── Achievement Badge ────────────────────────────────────────
 
+/** @param {React.ComponentPropsWithoutRef<'div'> & {icon?: React.ElementType; label?: React.ReactNode; unlocked?: any; color?: any}} props */
 function AchievementBadge({ icon: Icon, label, unlocked, color }) {
   return (
     <div className={cn(
@@ -177,6 +181,7 @@ function AchievementBadge({ icon: Icon, label, unlocked, color }) {
  * @param {function} props.onSelect - Callback when date is selected
  * @param {string} props.className - Additional CSS classes
  */
+/** @param {Omit<React.ComponentPropsWithoutRef<typeof DayPicker>, 'mode'|'selected'|'onSelect'> & {userType?: string; studyStreak?: number; dailyGoals?: any; sessions?: any; earnings?: number; achievements?: any; selected?: any; onSelect?: (...args: any[]) => any}} props */
 function Calendar({
   className,
   userType = 'student',
@@ -311,7 +316,7 @@ function Calendar({
         selected={selected}
         onSelect={onSelect}
         showOutsideDays={CONFIG.SHOW_OUTSIDE_DAYS}
-        firstWeekday={CONFIG.FIRST_WEEKDAY}
+        weekStartsOn={/** @type {0|1|2|3|4|5|6} */ (CONFIG.FIRST_WEEKDAY >= 0 && CONFIG.FIRST_WEEKDAY <= 6 ? CONFIG.FIRST_WEEKDAY : 1)}
         className="[&_.rdp-caption]:justify-center"
         classNames={{
           months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
@@ -346,10 +351,12 @@ function Calendar({
           ...props.classNames,
         }}
         components={{
-          IconLeft: ({ className, ...props }) => (
+          IconLeft: /** @param {import('lucide-react').LucideProps} props */
+({ className, ...props }) => (
             <ChevronLeft className={cn("h-4 w-4", className)} {...props} />
           ),
-          IconRight: ({ className, ...props }) => (
+          IconRight: /** @param {import('lucide-react').LucideProps} props */
+({ className, ...props }) => (
             <ChevronRight className={cn("h-4 w-4", className)} {...props} />
           ),
         }}

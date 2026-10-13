@@ -28,7 +28,7 @@ const dayColors = {
   Saturday: 'bg-orange-50 border-orange-200 text-orange-800 dark:bg-orange-950/30 dark:border-orange-800 dark:text-orange-300',
   Sunday: 'bg-teal-50 border-teal-200 text-teal-800 dark:bg-teal-950/30 dark:border-teal-800 dark:text-teal-300'
 };
-const daysUntil = dateStr => Math.ceil((new Date(dateStr) - new Date()) / (1000 * 60 * 60 * 24));
+const daysUntil = dateStr => Math.ceil(((new Date(dateStr)).getTime() - (new Date()).getTime()) / (1000 * 60 * 60 * 24));
 const priorityColor = p => {
   if (p === 'High') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-300 dark:border-red-800';
   if (p === 'Medium') return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800';

@@ -42,7 +42,8 @@ const checkboxVariants = cva(CONFIG.BASE_STYLES, {
     size: "default"
   }
 });
-const Checkbox = React.forwardRef(({
+const Checkbox = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root> & {variant?: "default"|"destructive"|"success"|"warning"|"info"|null; size?: "sm"|"default"|"lg"|"xl"|null; label?: React.ReactNode; labelClassName?: any; indeterminate?: boolean; onCheckedChange?: (...args: any[]) => any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant,
   size,
@@ -68,7 +69,7 @@ const Checkbox = React.forwardRef(({
   }} id={checkboxId} className={cn(checkboxVariants({
     variant,
     size
-  }), className)} disabled={disabled} checked={checked} defaultChecked={defaultChecked} onCheckedChange={onCheckedChange} indeterminate={CONFIG.ENABLE_INDETERMINATE ? indeterminate : undefined} {...props}>
+  }), className)} disabled={disabled} checked={CONFIG.ENABLE_INDETERMINATE && indeterminate ? 'indeterminate' : checked} defaultChecked={defaultChecked} onCheckedChange={onCheckedChange} {...props}>
         <CheckboxPrimitive.Indicator className={cn("flex items-center justify-center text-current")}>
           {indeterminate ? <Minus className="h-3 w-3" /> : <Check className="h-3 w-3" />}
         </CheckboxPrimitive.Indicator>

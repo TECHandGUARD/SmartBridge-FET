@@ -28,13 +28,15 @@ const Dialog = DialogPrimitive.Root;
 const DialogTrigger = DialogPrimitive.Trigger;
 const DialogPortal = DialogPrimitive.Portal;
 const DialogClose = DialogPrimitive.Close;
-const DialogOverlay = React.forwardRef(({
+const DialogOverlay = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay> & {dim?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   dim = true,
   ...props
 }, ref) => <DialogPrimitive.Overlay ref={ref} className={cn(CONFIG.OVERLAY_STYLES, !dim && "bg-transparent backdrop-blur-none", className)} {...props} />);
 DialogOverlay.displayName = DialogPrimitive.Overlay.displayName;
-const DialogContent = React.forwardRef(({
+const DialogContent = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {size?: string; closeIcon?: React.ElementType; hideCloseButton?: boolean; portal?: any; onInteractOutside?: (...args: any[]) => any; onEscapeKeyDown?: (...args: any[]) => any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   size = "default",
@@ -62,22 +64,26 @@ const DialogContent = React.forwardRef(({
     </ContentComponent>;
 });
 DialogContent.displayName = DialogPrimitive.Content.displayName;
-const DialogHeader = ({
+const DialogHeader = /** @param {React.ComponentPropsWithoutRef<'div'>} props */
+({
   className,
   ...props
 }) => <div className={cn(CONFIG.HEADER_STYLES, className)} {...props} />;
 DialogHeader.displayName = "DialogHeader";
-const DialogFooter = ({
+const DialogFooter = /** @param {React.ComponentPropsWithoutRef<'div'>} props */
+({
   className,
   ...props
 }) => <div className={cn(CONFIG.FOOTER_STYLES, className)} {...props} />;
 DialogFooter.displayName = "DialogFooter";
-const DialogTitle = React.forwardRef(({
+const DialogTitle = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DialogPrimitive.Title>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DialogPrimitive.Title ref={ref} className={cn(CONFIG.TITLE_STYLES, className)} {...props} />);
 DialogTitle.displayName = DialogPrimitive.Title.displayName;
-const DialogDescription = React.forwardRef(({
+const DialogDescription = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <DialogPrimitive.Description ref={ref} className={cn(CONFIG.DESCRIPTION_STYLES, className)} {...props} />);

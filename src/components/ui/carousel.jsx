@@ -31,7 +31,8 @@ function useCarousel() {
   }
   return context;
 }
-const Carousel = React.forwardRef(({
+const Carousel = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {orientation?: string; opts?: any; setApi?: any; plugins?: any; autoplay?: any; autoplayDelay?: number; showDots?: boolean; gap?: any; navPosition?: any}} props @param {React.ForwardedRef<any>} ref */
+({
   orientation = "horizontal",
   opts,
   setApi,
@@ -154,7 +155,8 @@ const Carousel = React.forwardRef(({
       </CarouselContext.Provider>;
 });
 Carousel.displayName = "Carousel";
-const CarouselContent = React.forwardRef(({
+const CarouselContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {
@@ -169,7 +171,8 @@ const CarouselContent = React.forwardRef(({
     </div>;
 });
 CarouselContent.displayName = "CarouselContent";
-const CarouselItem = React.forwardRef(({
+const CarouselItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {
@@ -181,7 +184,8 @@ const CarouselItem = React.forwardRef(({
   return <div ref={ref} role="group" aria-roledescription="slide" className={cn("min-w-0 shrink-0 grow-0 basis-full", gapClass, className)} {...props} />;
 });
 CarouselItem.displayName = "CarouselItem";
-const CarouselPrevious = React.forwardRef(({
+const CarouselPrevious = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {variant?: React.ComponentProps<typeof Button>['variant']; size?: React.ComponentProps<typeof Button>['size']}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant = CONFIG.BUTTON_VARIANT,
   size = CONFIG.BUTTON_SIZE,
@@ -200,7 +204,8 @@ const CarouselPrevious = React.forwardRef(({
       </Button>;
 });
 CarouselPrevious.displayName = "CarouselPrevious";
-const CarouselNext = React.forwardRef(({
+const CarouselNext = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {variant?: React.ComponentProps<typeof Button>['variant']; size?: React.ComponentProps<typeof Button>['size']}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant = CONFIG.BUTTON_VARIANT,
   size = CONFIG.BUTTON_SIZE,
@@ -219,7 +224,8 @@ const CarouselNext = React.forwardRef(({
       </Button>;
 });
 CarouselNext.displayName = "CarouselNext";
-const CarouselDots = React.forwardRef(({
+const CarouselDots = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {

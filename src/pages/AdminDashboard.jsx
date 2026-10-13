@@ -1,3 +1,4 @@
+import StudyModerationPanel from '@/components/admin/StudyModerationPanel';
 import OperationsPanel from '@/components/admin/OperationsPanel';
 import PaymentGatewayPanel from '@/components/admin/PaymentGatewayPanel';
 import UniversityDirectoryAdmin from '@/components/admin/UniversityDirectoryAdmin';
@@ -746,6 +747,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
             <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
+            <TabsTrigger value="study-moderation">Study moderation</TabsTrigger>
             <TabsTrigger value="university-directory">Universities</TabsTrigger>
             <TabsTrigger value="financial" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Financial</TabsTrigger>
             <TabsTrigger value="activity" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
@@ -944,6 +946,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="payment-gateways"><SafeSubComponent><PaymentGatewayPanel /></SafeSubComponent></TabsContent>
+          <TabsContent value="study-moderation"><SafeSubComponent><StudyModerationPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="operations"><SafeSubComponent><OperationsPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="university-directory"><SafeSubComponent><UniversityDirectoryAdmin /></SafeSubComponent></TabsContent>
           <TabsContent value="financial">
@@ -1058,13 +1061,13 @@ export default function AdminDashboard() {
 
           <TabsContent value="user-viewer">
             <SafeSubComponent>
-              <AdminUserViewer />
+              <AdminUserViewer users={users} subscriptions={subscriptions} />
             </SafeSubComponent>
           </TabsContent>
 
           <TabsContent value="knowledge">
             <SafeSubComponent>
-              <KnowledgeBaseManager />
+              <KnowledgeBaseManager user={user} />
             </SafeSubComponent>
           </TabsContent>
 

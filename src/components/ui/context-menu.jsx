@@ -40,7 +40,8 @@ const ContextMenuGroup = ContextMenuPrimitive.Group;
 const ContextMenuPortal = ContextMenuPrimitive.Portal;
 const ContextMenuSub = ContextMenuPrimitive.Sub;
 const ContextMenuRadioGroup = ContextMenuPrimitive.RadioGroup;
-const ContextMenuSubTrigger = React.forwardRef(({
+const ContextMenuSubTrigger = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubTrigger> & {inset?: any; icon?: React.ReactNode; variant?: "default"|"destructive"|"success"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -55,12 +56,14 @@ const ContextMenuSubTrigger = React.forwardRef(({
       <ChevronRight className="ml-auto h-4 w-4" />
     </ContextMenuPrimitive.SubTrigger>);
 ContextMenuSubTrigger.displayName = ContextMenuPrimitive.SubTrigger.displayName;
-const ContextMenuSubContent = React.forwardRef(({
+const ContextMenuSubContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.SubContent>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <ContextMenuPrimitive.SubContent ref={ref} className={cn(CONFIG.SUB_CONTENT_STYLES, className)} {...props} />);
 ContextMenuSubContent.displayName = ContextMenuPrimitive.SubContent.displayName;
-const ContextMenuContent = React.forwardRef(({
+const ContextMenuContent = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {portal?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   portal = true,
   ...props
@@ -72,7 +75,8 @@ const ContextMenuContent = React.forwardRef(({
     </Content>;
 });
 ContextMenuContent.displayName = ContextMenuPrimitive.Content.displayName;
-const ContextMenuItem = React.forwardRef(({
+const ContextMenuItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Item> & {inset?: any; icon?: React.ReactNode; rightIcon?: React.ReactNode; shortcut?: any; variant?: "default"|"destructive"|"success"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -90,7 +94,8 @@ const ContextMenuItem = React.forwardRef(({
       {CONFIG.ENABLE_ICONS && rightIcon && <span className="ml-auto flex-shrink-0">{rightIcon}</span>}
     </ContextMenuPrimitive.Item>);
 ContextMenuItem.displayName = ContextMenuPrimitive.Item.displayName;
-const ContextMenuCheckboxItem = React.forwardRef(({
+const ContextMenuCheckboxItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.CheckboxItem>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   checked,
@@ -104,7 +109,8 @@ const ContextMenuCheckboxItem = React.forwardRef(({
       {children}
     </ContextMenuPrimitive.CheckboxItem>);
 ContextMenuCheckboxItem.displayName = ContextMenuPrimitive.CheckboxItem.displayName;
-const ContextMenuRadioItem = React.forwardRef(({
+const ContextMenuRadioItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.RadioItem>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   ...props
@@ -117,7 +123,8 @@ const ContextMenuRadioItem = React.forwardRef(({
       {children}
     </ContextMenuPrimitive.RadioItem>);
 ContextMenuRadioItem.displayName = ContextMenuPrimitive.RadioItem.displayName;
-const ContextMenuLabel = React.forwardRef(({
+const ContextMenuLabel = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {inset?: any; icon?: React.ReactNode; description?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   inset,
   children,
@@ -132,12 +139,14 @@ const ContextMenuLabel = React.forwardRef(({
       {description && <p className="px-2 pb-1 text-[10px] text-muted-foreground">{description}</p>}
     </div>);
 ContextMenuLabel.displayName = ContextMenuPrimitive.Label.displayName;
-const ContextMenuSeparator = React.forwardRef(({
+const ContextMenuSeparator = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof ContextMenuPrimitive.Separator>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <ContextMenuPrimitive.Separator ref={ref} className={cn(CONFIG.SEPARATOR_STYLES, className)} {...props} />);
 ContextMenuSeparator.displayName = ContextMenuPrimitive.Separator.displayName;
-const ContextMenuShortcut = ({
+const ContextMenuShortcut = /** @param {React.ComponentPropsWithoutRef<'span'>} props */
+({
   className,
   ...props
 }) => {

@@ -38,7 +38,8 @@ function useChart() {
   }
   return context;
 }
-const ChartContainer = React.forwardRef(({
+const ChartContainer = React.forwardRef(/** @param {Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> & {children?: React.ReactElement} & {config?: Record<string, {label?: React.ReactNode; icon?: React.ElementType; color?: string; theme?: Record<string,string>}>; size?: string; loading?: boolean; emptyMessage?: any; description?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   id,
   className,
   children,
@@ -84,7 +85,8 @@ const ChartContainer = React.forwardRef(({
       </ChartContext.Provider>;
 });
 ChartContainer.displayName = "Chart";
-const ChartStyle = ({
+const ChartStyle = /** @param {React.ComponentPropsWithoutRef<'style'> & {config?: Record<string, {label?: React.ReactNode; icon?: React.ElementType; color?: string; theme?: Record<string,string>}>}} props */
+({
   id,
   config
 }) => {
@@ -102,7 +104,8 @@ const ChartStyle = ({
   return <style>{themeEntries}</style>;
 };
 const ChartTooltip = RechartsPrimitive.Tooltip;
-const ChartTooltipContent = React.forwardRef(({
+const ChartTooltipContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {active?: boolean; payload?: any[]; indicator?: string; hideLabel?: boolean; hideIndicator?: boolean; label?: React.ReactNode; labelFormatter?: (...args: any[]) => any; labelClassName?: any; formatter?: (...args: any[]) => any; color?: any; nameKey?: string; labelKey?: string}} props @param {React.ForwardedRef<any>} ref */
+({
   active,
   payload,
   className,
@@ -173,7 +176,8 @@ const ChartTooltipContent = React.forwardRef(({
 });
 ChartTooltipContent.displayName = "ChartTooltip";
 const ChartLegend = RechartsPrimitive.Legend;
-const ChartLegendContent = React.forwardRef(({
+const ChartLegendContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {hideIcon?: boolean; payload?: any[]; verticalAlign?: string; nameKey?: string}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   hideIcon = false,
   payload,

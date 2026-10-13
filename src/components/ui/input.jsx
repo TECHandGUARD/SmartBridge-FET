@@ -2,7 +2,8 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-const Input = React.forwardRef(/** @param {import('react').ComponentPropsWithoutRef<"input">} props @param {import('react').ForwardedRef<import('react').ElementRef<"input">>} ref */ ({ className, type, ...props }, ref) => {
+const Input = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'input'>} props @param {React.ForwardedRef<any>} ref */
+({ className, type, ...props }, ref) => {
   return (
     (<input
       type={type}

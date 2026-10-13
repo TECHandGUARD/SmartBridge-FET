@@ -13,7 +13,7 @@ const ALL_BADGES = [{
   category: 'Study',
   check: ({
     prog
-  }) => prog.reduce((s, p) => s + (p.resources_accessed || 0), 0) >= 1
+  }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 1
 }, {
   id: 'five_sessions',
   emoji: '📚',
@@ -22,7 +22,7 @@ const ALL_BADGES = [{
   category: 'Study',
   check: ({
     prog
-  }) => prog.reduce((s, p) => s + (p.resources_accessed || 0), 0) >= 5
+  }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 5
 }, {
   id: 'ten_sessions',
   emoji: '🔟',
@@ -31,7 +31,7 @@ const ALL_BADGES = [{
   category: 'Study',
   check: ({
     prog
-  }) => prog.reduce((s, p) => s + (p.resources_accessed || 0), 0) >= 10
+  }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 10
 }, {
   id: 'dedicated',
   emoji: '💪',
@@ -40,7 +40,7 @@ const ALL_BADGES = [{
   category: 'Study',
   check: ({
     prog
-  }) => prog.reduce((s, p) => s + (p.resources_accessed || 0), 0) >= 20
+  }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 20
 }, {
   id: 'bookworm50',
   emoji: '📖',
@@ -49,7 +49,7 @@ const ALL_BADGES = [{
   category: 'Study',
   check: ({
     prog
-  }) => prog.reduce((s, p) => s + (p.resources_accessed || 0), 0) >= 50
+  }) => prog.reduce((s, p) => s + (p.study_sessions || 0), 0) >= 50
 }, {
   id: 'multi_subject',
   emoji: '🌟',
@@ -246,7 +246,7 @@ export default function MilestoneBadges({
         error: bookingError
       } = await supabase.from('tutor_bookings').select('status').eq('student_email', user.email);
       if (bookingError) throw bookingError;
-      const rawDates = (prog || []).filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+      const rawDates = (prog || []).filter(p => p.last_access).map(p => p.last_access.split('T')[0]);
       const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
       let streak = 0;
       if (uniqueSortedDates.length > 0) {

@@ -53,3 +53,11 @@ test('server configuration requires a selected model and trusted app origin, wit
   assert.throws(()=>serverConfig({APP_BASE_URL:'https://evil.test/path'}).appUrl('/bookings'), /HTTPS origin/);
   assert.throws(()=>serverConfig({GEMINI_MODEL:'model?key=x'}).geminiSettings(), /model ID/);
 });
+
+test('Amplify public password routes and length settings are allowed while credentials remain blocked',()=>{
+ const publicSettings={...connection,VITE_RESET_PASSWORD_ROUTE:'/reset-password',VITE_FORGOT_PASSWORD_ROUTE:'/forgot-password',VITE_MIN_PASSWORD_LENGTH:'8'};
+ assert.deepEqual(readPublicConfig(publicSettings).errors,[]);
+ for(const key of ['VITE_PASSWORD','VITE_ADMIN_PASSWORD','VITE_SUPABASE_SERVICE_ROLE_KEY','VITE_PAYSTACK_SECRET_KEY','VITE_RESEND_API_KEY']){
+  assert.ok(readPublicConfig({...publicSettings,[key]:'private-value'}).errors.some(error=>error.includes(key)));
+ }
+});

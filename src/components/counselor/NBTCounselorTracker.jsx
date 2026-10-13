@@ -89,7 +89,7 @@ export default function NBTCounselorTracker({
   const completed = registrations.filter(r => r.status === 'completed').length;
   const withResults = registrations.filter(r => r.results_uploaded).length;
   const upcoming = registrations.filter(r => {
-    const d = Math.ceil((new Date(r.test_date) - new Date()) / 86400000);
+    const d = Math.ceil(((new Date(r.test_date)).getTime() - (new Date()).getTime()) / 86400000);
     return d >= 0 && d <= 7 && r.status !== 'cancelled';
   }).length;
   if (loading) {
@@ -147,7 +147,7 @@ export default function NBTCounselorTracker({
           </div> : <div className="space-y-2">
             {registrations.map(reg => {
           const cfg = STATUS_CONFIG[reg.status] || STATUS_CONFIG.registered;
-          const daysUntil = Math.ceil((new Date(reg.test_date) - new Date()) / 86400000);
+          const daysUntil = Math.ceil(((new Date(reg.test_date)).getTime() - (new Date()).getTime()) / 86400000);
           const isPast = daysUntil < 0;
           return <div key={reg.id} className="border rounded-xl p-3 bg-card">
                   <div className="flex items-start gap-3">

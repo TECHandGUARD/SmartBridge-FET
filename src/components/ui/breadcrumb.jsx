@@ -22,7 +22,8 @@ const CONFIG = {
   },
   ENABLE_HOME_ICON: import.meta.env.VITE_BREADCRUMB_ENABLE_HOME_ICON !== "false"
 };
-const Breadcrumb = React.forwardRef(({
+const Breadcrumb = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {separator?: any; size?: string}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   separator = CONFIG.SEPARATOR,
   size = "default",
@@ -50,7 +51,8 @@ const useBreadcrumb = () => {
   }
   return context;
 };
-const BreadcrumbList = React.forwardRef(({
+const BreadcrumbList = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'ol'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => {
@@ -61,12 +63,14 @@ const BreadcrumbList = React.forwardRef(({
   return <ol ref={ref} className={cn(CONFIG.LIST_STYLES, sizeClass, className)} {...props} />;
 });
 BreadcrumbList.displayName = "BreadcrumbList";
-const BreadcrumbItem = React.forwardRef(({
+const BreadcrumbItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'li'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <li ref={ref} className={cn(CONFIG.ITEM_STYLES, className)} {...props} />);
 BreadcrumbItem.displayName = "BreadcrumbItem";
-const BreadcrumbLink = React.forwardRef(({
+const BreadcrumbLink = React.forwardRef(/** @param {React.HTMLAttributes<HTMLElement> & {asChild?: boolean; icon?: React.ElementType}} props @param {React.ForwardedRef<any>} ref */
+({
   asChild,
   className,
   children,
@@ -80,12 +84,14 @@ const BreadcrumbLink = React.forwardRef(({
     </Comp>;
 });
 BreadcrumbLink.displayName = "BreadcrumbLink";
-const BreadcrumbPage = React.forwardRef(({
+const BreadcrumbPage = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'span'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <span ref={ref} role="link" aria-disabled="true" aria-current="page" className={cn(CONFIG.PAGE_STYLES, className)} {...props} />);
 BreadcrumbPage.displayName = "BreadcrumbPage";
-const BreadcrumbSeparator = ({
+const BreadcrumbSeparator = /** @param {React.ComponentPropsWithoutRef<'li'> & {icon?: React.ElementType}} props */
+({
   children,
   className,
   icon: CustomIcon,
@@ -100,7 +106,8 @@ const BreadcrumbSeparator = ({
     </li>;
 };
 BreadcrumbSeparator.displayName = "BreadcrumbSeparator";
-const BreadcrumbEllipsis = ({
+const BreadcrumbEllipsis = /** @param {React.ComponentPropsWithoutRef<'span'>} props */
+({
   className,
   ...props
 }) => <span role="presentation" aria-hidden="true" className={cn(CONFIG.ELLIPSIS_STYLES, className)} {...props}>

@@ -11,14 +11,16 @@ const assert=require('node:assert/strict');
  browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {})});
  const errors=[]; const writes=[];
  const context=await browser.newContext();
- const page=await context.newPage(); page.on('pageerror',e=>errors.push(e.message));
+ const page=await context.newPage(); page.on('pageerror',e=>{errors.push(e.message);console.error('PAGE ERROR',e.message)});
  let profile={id:'00000000-0000-4000-8000-000000000101',email:'learner@example.test',full_name:'Test Learner',role:'user',onboarding_complete:false,is_active:true,is_super_admin:false};
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
  let failResult=true, failBooking=true, failOnboarding=false;
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
- const bookingCalls=[];let links=[];let bookingRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];
+ const bookingCalls=[];let links=[];let bookingRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];let roomPosts=[{id:'00000000-0000-4000-8000-000000000201',room_id:'math',author_id:'00000000-0000-4000-8000-000000000202',author_name:'Other learner',type:'Note',title:'Approved note',body:'Safe study content',moderation_status:'approved',created_at:'2026-10-13T10:00:00Z'}];const studyCalls=[];let denyStudyQuota=true,failStudyPost=true,roomReplies=[];
 
+ // Keep browser fixtures isolated from live providers and third-party embeds.
+ await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**', async route=>{
   const req=route.request(),url=new URL(req.url()); let data=[];let status=200;
   if(url.pathname==='/auth/v1/user') data=authUser;
@@ -49,6 +51,17 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/respond_parent_link') {links=links.map(link=>({...link,status:req.postDataJSON().decision}));data=true;}
   if(url.pathname==='/rest/v1/rpc/log_study_session') {sessionCalls.push(req.postDataJSON());sessions=1;data='session-1';}
   if(url.pathname.startsWith('/functions/')) {status=404;data={error:'Not available'};}
+  if(url.pathname==='/rest/v1/study_rooms') data=[{id:'math',name:'Mathematics'}];
+  if(url.pathname==='/rest/v1/rpc/join_study_room') data=true;
+  if(url.pathname==='/rest/v1/study_room_posts') {assert.equal(url.searchParams.get('select').includes('author_email'),false);data=roomPosts;}
+  if(url.pathname==='/rest/v1/study_room_replies') data=roomReplies;
+  if(url.pathname==='/functions/v1/check-rate-limit') {if(denyStudyQuota){denyStudyQuota=false;status=503;data={error:'Unavailable'};}else{status=200;data={allowed:true};}}
+  if(url.pathname==='/functions/v1/moderate-post') {studyCalls.push(req.postDataJSON());if(failStudyPost){failStudyPost=false;status=503;data={error:'Unavailable'};}else{status=200;data={id:'00000000-0000-4000-8000-000000000203',status:'pending',approved:false};roomPosts=[...roomPosts,{...req.postDataJSON(),...data,author_id:profile.id,author_name:profile.full_name,moderation_status:'pending',created_at:'2026-10-13T10:01:00Z'}];}}
+  if(url.pathname==='/functions/v1/moderate-reply') {status=200;data={id:'00000000-0000-4000-8000-000000000204',status:'pending',approved:false};roomReplies=[{...req.postDataJSON(),...data,author_name:profile.full_name,moderation_status:'pending'}];}
+  if(url.pathname==='/functions/v1/report-content') {status=200;data={id:'report-1',status:'received',approved:true};}
+  if(url.pathname==='/rest/v1/rpc/archive_study_post') {roomPosts=roomPosts.filter(post=>post.id!==req.postDataJSON().target);data=true;}
+  if(url.pathname==='/rest/v1/rpc/study_moderation_queue') data={posts:[],replies:[],reports:[]};
+
   if(url.pathname==='/auth/v1/user' && req.method()==='PUT') data=authUser;
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
  });
@@ -119,7 +132,7 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Track',exact:true}).click();
  await page.getByRole('combobox').nth(0).click();await page.getByRole('option',{name:/Mathematics/}).first().click();
  await page.getByRole('button',{name:'Log Study Session',exact:true}).click();
- await page.getByText('Study session logged!',{exact:true}).waitFor();
+ await page.getByText(/^Study session logged!/).waitFor();
  assert.equal(sessionCalls.length,1);assert.ok(sessionCalls[0].request_id);
  console.log('PASS: progress tracker uses existing study-session records through one RPC');
  await page.getByRole('button',{name:'Add',exact:true}).click();
@@ -129,7 +142,7 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Goals & Badges',exact:true}).click();
  await page.getByRole('button',{name:'Add Goal',exact:true}).click();
  await page.getByRole('button',{name:'Save Goal',exact:true}).click();
- await page.getByText('Goal added successfully!',{exact:true}).waitFor();
+ await page.getByText(/^Goal added successfully!/).waitFor();
  assert.ok(contractWrites.some(row=>row.week_start),'Goal saves with canonical fields');
  console.log('PASS: reminders and weekly goals use real schema fields and ownership IDs');
  await page.getByRole('button',{name:'My Progress',exact:true}).click();
@@ -212,19 +225,47 @@ const assert=require('node:assert/strict');
   await page.goto('http://127.0.0.1:5173/subjects');
   await page.getByRole('navigation',{name:'Main navigation',exact:true}).filter({visible:true}).waitFor();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Page must fit width '+width);
-  await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{}))));
+  await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
   await page.screenshot({path:'/tmp/smartbridge-subjects-'+width+'.png',fullPage:true});
  }
  console.log('PASS: navigation and subjects layout fit 320, 768, 1024 and 1440px');
 
+ // Membership, failures and queued-content UI use the real endpoint contracts.
+ await page.goto('http://127.0.0.1:5173/study-rooms');
+ await page.getByRole('button',{name:'Join study room',exact:true}).click();
+ await page.getByRole('heading',{name:'Approved note',exact:true}).waitFor();
+ await page.getByRole('button',{name:'New post',exact:true}).click();
+ await page.getByLabel('Title',{exact:true}).fill('My queued note');
+ await page.getByLabel('Your post',{exact:true}).fill('A useful explanation');
+ await page.getByRole('button',{name:'Submit for review',exact:true}).click();
+ await page.getByText('Could not check posting limits. Please retry.',{exact:true}).waitFor();
+ assert.equal(studyCalls.length,0,'Quota failure must prevent mutation');
+ await page.getByRole('button',{name:'Submit for review',exact:true}).click();
+ await page.getByText('Post could not be submitted.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Submit for review',exact:true}).click();
+ await page.getByRole('heading',{name:'My queued note',exact:true}).waitFor();
+ assert.equal(studyCalls.length,2);assert.equal(studyCalls[0].request_id,studyCalls[1].request_id);
+ await page.getByText('Awaiting review',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Replies (0)',exact:true}).click();
+ await page.getByLabel('Your reply',{exact:true}).fill('Helpful reply');
+ await page.getByRole('button',{name:'Submit reply for review',exact:true}).click();
+ await page.getByText('Helpful reply',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Report',exact:true}).click();
+ await page.getByRole('button',{name:'Submit report',exact:true}).click();
+ await page.getByText('Report received for administrator review.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Delete',exact:true}).click();
+ await page.getByRole('button',{name:'Remove post',exact:true}).click();
+ await page.getByRole('heading',{name:'My queued note',exact:true}).waitFor({state:'hidden'});
+ console.log('PASS: study-room membership, fail-closed quotas, idempotent submission, queued replies, reports and withdrawal');
+
  if(process.env.AUDIT_ALL_PAGES==='1' || process.argv.includes('--all-pages')) {
   const publicPages=['/privacy','/terms','/about-tech-guard','/forgot-password','/not-a-real-page'];
   const sharedPages=['/','/subjects','/subjects/math','/tutors','/premium','/bookings','/search','/quiz','/study-rooms','/videos','/resources-library','/forum','/bursaries','/opportunities'];
-  for(const route of [...publicPages,...sharedPages]) {
+  for(const route of [...publicPages,...sharedPages]) {console.log('AUDIT:',route);
    await page.goto('http://127.0.0.1:5173'+route);
    await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
-   await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{}))));
-   assert.ok((await page.locator('body').innerText()).trim().length>20,'Page must render: '+route);
+   await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
+   await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
   }
   for(const [role,sections] of Object.entries({student:['subjects','progress','ai','goals','simulations','bookmarks','messages','applications'],parent:['child','progress','subjects','tutors','reports','premium'],sace_tutor:['upload','availability','students','earnings','messages','bookings','reviews','sessions']})) {
    profile={...profile,role,is_super_admin:false};
@@ -232,7 +273,7 @@ const assert=require('node:assert/strict');
    for(const section of sections) {
     await page.goto('http://127.0.0.1:5173/'+base+'-dashboard?section='+section);
     await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
-   await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{}))));
+   await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
    }
   }
   console.log('PASS: shared and public routes render');
@@ -240,13 +281,17 @@ const assert=require('node:assert/strict');
   for(const route of ['/admin','/caps-admin','/payout-log','/counselor']) {
    await page.goto('http://127.0.0.1:5173'+route);
    await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
-   await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{}))));
+   await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
    const tabs=await page.getByRole('tab').all();
    for(const tab of tabs) {await tab.click();await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
-   await page.evaluate(()=>Promise.all(document.getAnimations().filter(animation=>animation.effect?.getTiming().iterations!==Infinity).map(animation=>animation.finished.catch(()=>{}))));}
+   await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});}
   }
   console.log('PASS: broad route and dashboard-section render audit (mocked services)');
  }
  assert.deepEqual(errors,[]);
+ } catch(error) {
+  const debugPage=browser?.contexts()[0]?.pages()[0];
+  if(debugPage){console.error('PAGE URL:',debugPage.url());console.error('PAGE TEXT:',(await debugPage.locator('body').innerText()).slice(0,5000));await debugPage.screenshot({path:'/tmp/fet-browser-failure.png'});}
+  throw error;
  } finally { if(browser) await browser.close(); server.kill(); }
 })().catch(e=>{console.error(e);process.exit(1)});

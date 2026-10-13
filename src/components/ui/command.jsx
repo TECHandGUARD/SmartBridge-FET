@@ -27,7 +27,8 @@ function useCommandContext() {
   }
   return context;
 }
-const Command = React.forwardRef(({
+const Command = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive> & {placeholder?: string; emptyMessage?: any; loadingMessage?: any; loadingIndicator?: React.ElementType; loading?: boolean; footer?: React.ReactNode; onValueChange?: (...args: any[]) => any; filter?: any; shouldFilter?: any; loop?: any; label?: string}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   placeholder = CONFIG.PLACEHOLDER,
@@ -61,7 +62,8 @@ const Command = React.forwardRef(({
       </CommandContext.Provider>;
 });
 Command.displayName = CommandPrimitive.displayName;
-const CommandDialog = ({
+const CommandDialog = /** @param {React.HTMLAttributes<HTMLElement>} props */
+({
   children,
   ...props
 }) => {
@@ -73,7 +75,8 @@ const CommandDialog = ({
       </DialogContent>
     </Dialog>;
 };
-const CommandInput = React.forwardRef(({
+const CommandInput = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input> & {icon?: React.ElementType}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   placeholder,
   icon,
@@ -88,12 +91,14 @@ const CommandInput = React.forwardRef(({
     </div>;
 });
 CommandInput.displayName = CommandPrimitive.Input.displayName;
-const CommandList = React.forwardRef(({
+const CommandList = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.List>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <CommandPrimitive.List ref={ref} className={cn(CONFIG.LIST_MAX_HEIGHT, "overflow-y-auto overflow-x-hidden", className)} {...props} />);
 CommandList.displayName = CommandPrimitive.List.displayName;
-const CommandEmpty = React.forwardRef(({
+const CommandEmpty = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.Empty> & {message?: any; icon?: React.ReactNode}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   message,
   icon,
@@ -107,7 +112,8 @@ const CommandEmpty = React.forwardRef(({
     </CommandPrimitive.Empty>;
 });
 CommandEmpty.displayName = CommandPrimitive.Empty.displayName;
-const CommandLoading = React.forwardRef(({
+const CommandLoading = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {message?: any; icon?: React.ElementType}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   message,
   icon,
@@ -123,17 +129,20 @@ const CommandLoading = React.forwardRef(({
     </div>;
 });
 CommandLoading.displayName = "CommandLoading";
-const CommandGroup = React.forwardRef(({
+const CommandGroup = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.Group>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <CommandPrimitive.Group ref={ref} className={cn(CONFIG.GROUP_STYLES, className)} {...props} />);
 CommandGroup.displayName = CommandPrimitive.Group.displayName;
-const CommandSeparator = React.forwardRef(({
+const CommandSeparator = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.Separator>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <CommandPrimitive.Separator ref={ref} className={cn("-mx-1 h-px bg-border", className)} {...props} />);
 CommandSeparator.displayName = CommandPrimitive.Separator.displayName;
-const CommandItem = React.forwardRef(({
+const CommandItem = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<typeof CommandPrimitive.Item> & {icon?: React.ReactNode; rightIcon?: React.ReactNode; shortcut?: any; onSelect?: (...args: any[]) => any}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   children,
   icon,
@@ -153,7 +162,8 @@ const CommandItem = React.forwardRef(({
       </CommandPrimitive.Item>;
 });
 CommandItem.displayName = CommandPrimitive.Item.displayName;
-const CommandShortcut = ({
+const CommandShortcut = /** @param {React.ComponentPropsWithoutRef<'span'>} props */
+({
   className,
   ...props
 }) => {

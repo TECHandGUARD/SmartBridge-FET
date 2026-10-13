@@ -75,7 +75,8 @@ const buttonVariants = cva(CONFIG.BASE_STYLES, {
     size: "default"
   }
 });
-const Button = React.forwardRef(({
+const Button = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'button'> & {variant?: "default"|"destructive"|"outline"|"secondary"|"ghost"|"link"|"success"|"warning"|"info"|"gold"|"premium"|null; size?: "xs"|"sm"|"default"|"lg"|"xl"|"icon"|"icon_sm"|"icon_lg"|null; fullWidth?: boolean; leftIcon?: React.ReactNode; rightIcon?: React.ReactNode; loading?: boolean; loadingText?: string; asChild?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant,
   size,

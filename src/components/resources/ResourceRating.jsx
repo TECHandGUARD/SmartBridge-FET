@@ -8,7 +8,7 @@ const STARS = [1, 2, 3, 4, 5];
 export default function ResourceRating({
   resource,
   user,
-  onRatingUpdate
+  onRatingUpdate = undefined
 }) {
   const [myRating, setMyRating] = useState(0);
   const [avgRating, setAvgRating] = useState(0);

@@ -43,7 +43,8 @@ const CONFIG = {
 // Sub-Components
 // ============================================================
 
-const TrialBadge = ({ daysLeft }) => {
+const TrialBadge = /** @param {React.ComponentPropsWithoutRef<'span'> & {daysLeft?: any}} props */
+({ daysLeft }) => {
   const isUrgent = daysLeft <= 2;
   const color = isUrgent ? 'bg-red-500/20 text-red-100' : 'bg-white/20 text-white';
 
@@ -78,7 +79,8 @@ const TrialBadge = ({ daysLeft }) => {
  * <TrialBanner trialDaysLeft={1} variant="urgent" />
  * <TrialBanner trialDaysLeft={0} variant="expired" />
  */
-export default function TrialBanner({
+export default /** @param {React.ComponentPropsWithoutRef<'div'> & {trialDaysLeft?: any; variant?: string; position?: string; dismissible?: boolean; customTitle?: any; customDescription?: any; customUpgradeText?: any; onDismiss?: (...args: any[]) => any; onUpgrade?: (...args: any[]) => any}} props */
+function TrialBanner({
   trialDaysLeft,
   variant = 'active',
   position = 'top',

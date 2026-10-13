@@ -62,7 +62,8 @@ const cardVariants = cva(CONFIG.BASE_STYLES, {
     hoverable: false
   }
 });
-const Card = React.forwardRef(({
+const Card = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {variant?: "default"|"outline"|"ghost"|"primary"|"destructive"|"glass"|"gradient"|null; size?: "sm"|"default"|"lg"|null; hoverable?: boolean}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   variant,
   size,
@@ -77,7 +78,8 @@ const Card = React.forwardRef(({
   }), className)} {...props} />;
 });
 Card.displayName = "Card";
-const CardHeader = React.forwardRef(({
+const CardHeader = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: "sm"|"default"|"lg"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   size = "default",
   ...props
@@ -86,17 +88,20 @@ const CardHeader = React.forwardRef(({
   return <div ref={ref} className={cn("flex flex-col space-y-1.5", sizeClass, className)} {...props} />;
 });
 CardHeader.displayName = "CardHeader";
-const CardTitle = React.forwardRef(({
+const CardTitle = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <div ref={ref} className={cn("font-semibold leading-none tracking-tight", CONFIG.CARD_TITLE_STYLES || "text-foreground", className)} {...props} />);
 CardTitle.displayName = "CardTitle";
-const CardDescription = React.forwardRef(({
+const CardDescription = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'>} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   ...props
 }, ref) => <div ref={ref} className={cn("text-sm text-muted-foreground", className)} {...props} />);
 CardDescription.displayName = "CardDescription";
-const CardContent = React.forwardRef(({
+const CardContent = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: "sm"|"default"|"lg"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   size = "default",
   ...props
@@ -105,7 +110,8 @@ const CardContent = React.forwardRef(({
   return <div ref={ref} className={cn(sizeClass, className)} {...props} />;
 });
 CardContent.displayName = "CardContent";
-const CardFooter = React.forwardRef(({
+const CardFooter = React.forwardRef(/** @param {React.ComponentPropsWithoutRef<'div'> & {size?: "sm"|"default"|"lg"|null}} props @param {React.ForwardedRef<any>} ref */
+({
   className,
   size = "default",
   ...props

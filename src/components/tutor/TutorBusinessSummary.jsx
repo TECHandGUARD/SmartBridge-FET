@@ -30,9 +30,9 @@ function MetricCard({
   label,
   value,
   sub,
-  trend,
+  trend = undefined,
   color,
-  loading
+  loading = false
 }) {
   if (loading) {
     return <div className="bg-muted/30 rounded-xl p-3 animate-pulse">

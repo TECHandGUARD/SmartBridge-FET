@@ -28,6 +28,31 @@
       ]
     },
     {
+      "slug": "check-rate-limit",
+      "entrypoint": "supabase/functions/checkRateLimit/entry.ts",
+      "access": "user",
+      "verify_jwt": true,
+      "provider": null,
+      "dependencies": [
+        "supabase/shared/study-room.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts",
+        "supabase/shared/api.ts"
+      ],
+      "required_migrations": [
+        "supabase/migrations/20261013143001_study_room_moderation.sql"
+      ],
+      "reconciled_entrypoint_sha256": "a837f4c8e0ff970ace33bc88b35e93fb02933c72955a74f75bee7e51ae366317",
+      "dependency_sha256": {
+        "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
+        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      }
+    },
+    {
       "slug": "create-checkout",
       "entrypoint": "supabase/functions/createCheckout/entry.ts",
       "access": "user",
@@ -337,6 +362,56 @@
       ]
     },
     {
+      "slug": "moderate-post",
+      "entrypoint": "supabase/functions/moderatePost/entry.ts",
+      "access": "user",
+      "verify_jwt": true,
+      "provider": null,
+      "dependencies": [
+        "supabase/shared/study-room.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts",
+        "supabase/shared/api.ts"
+      ],
+      "required_migrations": [
+        "supabase/migrations/20261013143001_study_room_moderation.sql"
+      ],
+      "reconciled_entrypoint_sha256": "e08826d3f8af9a4b30f972f005e5494156322062d6e62aebe6f34024475abc59",
+      "dependency_sha256": {
+        "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
+        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      }
+    },
+    {
+      "slug": "moderate-reply",
+      "entrypoint": "supabase/functions/moderateReply/entry.ts",
+      "access": "user",
+      "verify_jwt": true,
+      "provider": null,
+      "dependencies": [
+        "supabase/shared/study-room.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts",
+        "supabase/shared/api.ts"
+      ],
+      "required_migrations": [
+        "supabase/migrations/20261013143001_study_room_moderation.sql"
+      ],
+      "reconciled_entrypoint_sha256": "9c43f082c8cb7b04570165e760e7b432ae42465d0faf52e4f59b513941f4d291",
+      "dependency_sha256": {
+        "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
+        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      }
+    },
+    {
       "slug": "notify-booking-confirmed",
       "entrypoint": "supabase/functions/notifyBookingConfirmed/entry.ts",
       "access": "job",
@@ -600,6 +675,31 @@
         "supabase/migrations/20261013103838_payment_gateway_settings.sql",
         "supabase/migrations/20261013123603_operational_integrations.sql"
       ]
+    },
+    {
+      "slug": "report-content",
+      "entrypoint": "supabase/functions/reportContent/entry.ts",
+      "access": "user",
+      "verify_jwt": true,
+      "provider": null,
+      "dependencies": [
+        "supabase/shared/study-room.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts",
+        "supabase/shared/api.ts"
+      ],
+      "required_migrations": [
+        "supabase/migrations/20261013143001_study_room_moderation.sql"
+      ],
+      "reconciled_entrypoint_sha256": "f2141d070ddd665dfa5a1f08f1aa374f06ade9801d5f098a20b4d6de132e8fdf",
+      "dependency_sha256": {
+        "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
+        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      }
     },
     {
       "slug": "resend-webhook",

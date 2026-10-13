@@ -438,7 +438,7 @@ export default function UniversityDirectoryAdmin() {
               <tbody>
                 {sorted.length === 0 ? (
                   <tr>
-                    <td colSpan="5" className="text-center py-10 text-muted-foreground">
+                    <td colSpan={5} className="text-center py-10 text-muted-foreground">
                       {search ? 'No universities match your search.' : 'No universities found. Add your first one above.'}
                     </td>
                   </tr>

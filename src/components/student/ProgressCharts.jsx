@@ -29,9 +29,9 @@ export default function ProgressCharts({
       if (dbError) throw dbError;
       const progressData = (data || []).map(item => ({
         ...item,
-        resources_accessed: item.resources_accessed || 0
+        resources_accessed: item.study_sessions || 0
       }));
-      const rawDates = progressData.filter(p => p.last_accessed).map(p => p.last_accessed.split('T')[0]);
+      const rawDates = progressData.filter(p => p.last_access).map(p => p.last_access.split('T')[0]);
       const uniqueSortedDates = [...new Set(rawDates)].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
       let calculatedStreak = 0;
       if (uniqueSortedDates.length > 0) {
@@ -52,11 +52,11 @@ export default function ProgressCharts({
         }
       }
       setStreak(calculatedStreak);
-      const formattedChartData = progressData.filter(p => (p.resources_accessed || 0) > 0).map((p, i) => {
+      const formattedChartData = progressData.filter(p => (p.study_sessions || 0) > 0).map((p, i) => {
         const shortSubjectName = p.subject.length > 10 ? p.subject.slice(0, 10) + '…' : p.subject;
         return {
           name: shortSubjectName,
-          sessions: p.resources_accessed || 0,
+          sessions: p.study_sessions || 0,
           fill: COLORS[i % COLORS.length],
           fullName: p.subject
         };

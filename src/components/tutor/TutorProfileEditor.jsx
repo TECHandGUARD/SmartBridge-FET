@@ -97,7 +97,7 @@ export default function TutorProfileEditor({
   const [isDirty, setIsDirty] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(DEFAULT_CONFIG.autoSave?.enabled ?? true);
   const [lastAutoSave, setLastAutoSave] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
+  const [validationErrors, setValidationErrors] = useState({sace_number:'',session_price_per_hour:''});
   const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false);
   const [form, setForm] = useState({
     bio: profile?.bio || '',
@@ -173,7 +173,7 @@ export default function TutorProfileEditor({
       if (data?.session) {
         const expiresAt = new Date(data.session.expires_at * 1000);
         const now = new Date();
-        const minutesLeft = (expiresAt - now) / 1000 / 60;
+        const minutesLeft = (expiresAt.getTime() - now.getTime()) / 1000 / 60;
         if (minutesLeft < 10 && minutesLeft > 0) {
           setSessionExpiryWarning(true);
         } else {
@@ -741,7 +741,7 @@ export default function TutorProfileEditor({
               <Sparkles className="w-3.5 h-3.5 text-primary" /> Subjects You Teach
             </Label>
             <div className="flex flex-wrap gap-1.5 p-3 border rounded-xl min-h-[80px] bg-muted/10">
-              {SUBJECTS.map(subject => {
+              {SUBJECTS.map(({name:subject}) => {
               const selected = form.subjects.includes(subject);
               return <Badge key={subject} variant={selected ? 'default' : 'outline'} className="cursor-pointer transition-all active:scale-95" onClick={() => toggleItem('subjects', subject)}>
                     {subject}
