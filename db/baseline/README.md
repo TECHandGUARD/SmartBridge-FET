@@ -1,7 +1,7 @@
 # Schema-only baseline
 
-The [MVP access follow-up](../../docs/mvp-backend-access.md) adds one later repair;
-the current replay includes ten migrations and seven SQL suites. The captured
+The [focused MVP candidate](../../docs/mvp-release-candidate.md) adds later repairs;
+the current replay includes twelve migrations and eight SQL suites. The captured
 baseline itself remains unchanged and still reproduces the original nine-migration checkpoint.
 
 Captured from SmartBridge FET (`bbhrnidzjeccggununzq`) on 13 October 2026. This snapshot contains definitions and bucket settings, not customer rows, uploaded files, credentials or provider configuration values. The existing recorded website migration is recovered from its stored SQL; no new production migration history has been written.

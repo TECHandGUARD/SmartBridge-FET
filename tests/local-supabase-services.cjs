@@ -57,6 +57,9 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await student.client.storage.from('application_documents').upload(file,bytes,{contentType:'application/pdf'}));
  assert.ok((await other.client.storage.from('application_documents').download(file)).error);
  assert.deepEqual(new Uint8Array(await ok(await student.client.storage.from('application_documents').download(file)).arrayBuffer()),bytes);
+ const signed=ok(await student.client.storage.from('application_documents').createSignedUrl(file,60));localOnly(signed.signedUrl);
+ const downloaded=await fetch(signed.signedUrl);assert.equal(downloaded.status,200);assert.deepEqual(new Uint8Array(await downloaded.arrayBuffer()),bytes);
+ assert.ok((await other.client.storage.from('application_documents').createSignedUrl(file,60)).error);
  ok(await student.client.storage.from('application_documents').upload(file,bytes,{contentType:'application/pdf',upsert:true}));
  ok(await student.client.storage.from('application_documents').remove([file]));
  assert.ok((await student.client.storage.from('application_documents').download(file)).error);

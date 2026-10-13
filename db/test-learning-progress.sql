@@ -46,3 +46,11 @@ do $$ begin
 end $$;
 reset role;
 select 'PASS: topic retry/undo, NBT persistence, private ownership and inactive-account denial' as result;
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select public.is_admin(null::uuid),public.is_tutor(null::uuid);
+update public.tutor_profiles set bio='Service update fixture' where user_id='00000000-0000-4000-8000-000000000102';
+do $$ begin
+ if not exists(select 1 from public.tutor_profiles where user_id='00000000-0000-4000-8000-000000000102' and bio='Service update fixture') then raise exception 'Trusted service tutor update failed'; end if;
+end $$;
+reset role;

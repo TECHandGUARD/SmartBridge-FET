@@ -1,7 +1,7 @@
 # Focused MVP candidate
 
 Continues from PR #1 checkpoint `7ca815c`; completed repairs are retained. Current
-fresh replay includes eleven migrations and eight SQL security/workflow suites.
+fresh replay includes twelve migrations and eight SQL security/workflow suites.
 
 | Included in the candidate | Deferred from the first release |
 | --- | --- |
@@ -27,7 +27,7 @@ labelled as a personal checklist, not certified CAPS curriculum.
 
 ## Evidence and gates
 
-Eleven migrations/eight SQL suites, 49 unit/API tests, lint, full typechecking,
+Twelve migrations/eight SQL suites, 49 unit/API tests, lint, full typechecking,
 production build, API mappings, Edge checks and 38 hashed bundles pass locally.
 New browser cases cover topic save/reload/undo, NBT failure/retry/reload/undo and
 the absence of requests to deferred tables. Their latest remote CI must pass.
@@ -56,4 +56,11 @@ substitute. Keep optional providers/jobs inactive. Docker CI does not establish
 production hostname, SMTP, institutional/content approval or hosting configuration.
 
 This is a testable candidate, not a claim that unchanged production is launch-ready.
+The real-service gate identified missing invoker-helper privileges during a trusted
+tutor update. An incremental migration grants only `service_role` execution of the
+existing administrator/tutor helpers; SQL regression also exercises that update.
+Unused Vitest and React Quill packages were removed after confirming no source or
+test imports. The active test runner remains Node's test runner. The dependency
+audit now has zero critical advisories; nine noncritical build/router advisories
+remain tracked rather than forcing major framework upgrades into this repair.
 See `staging-rollout.md` and `mvp-backend-access.md` for rollout requirements.
