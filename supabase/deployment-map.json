@@ -19,7 +19,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -46,7 +46,7 @@
       "reconciled_entrypoint_sha256": "a837f4c8e0ff970ace33bc88b35e93fb02933c72955a74f75bee7e51ae366317",
       "dependency_sha256": {
         "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
@@ -74,7 +74,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
@@ -106,7 +106,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -134,7 +134,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -162,7 +162,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -188,7 +188,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -215,7 +215,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -244,7 +244,7 @@
       "dependency_sha256": {
         "supabase/shared/ai.ts": "90543698efeed3aa1d4d9d8b7aed91d88835bc73878b0901cec65444525e197f",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -272,7 +272,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -298,7 +298,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -323,7 +323,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -352,7 +352,7 @@
       "dependency_sha256": {
         "supabase/shared/ai.ts": "90543698efeed3aa1d4d9d8b7aed91d88835bc73878b0901cec65444525e197f",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -380,7 +380,7 @@
       "reconciled_entrypoint_sha256": "e08826d3f8af9a4b30f972f005e5494156322062d6e62aebe6f34024475abc59",
       "dependency_sha256": {
         "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
@@ -405,7 +405,7 @@
       "reconciled_entrypoint_sha256": "9c43f082c8cb7b04570165e760e7b432ae42465d0faf52e4f59b513941f4d291",
       "dependency_sha256": {
         "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
@@ -429,7 +429,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -457,7 +457,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -485,7 +485,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -513,7 +513,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -541,7 +541,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -569,7 +569,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -598,7 +598,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -628,7 +628,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
@@ -663,7 +663,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
@@ -695,7 +695,7 @@
       "reconciled_entrypoint_sha256": "f2141d070ddd665dfa5a1f08f1aa374f06ade9801d5f098a20b4d6de132e8fdf",
       "dependency_sha256": {
         "supabase/shared/study-room.ts": "d4cf5911e6c3e9892c9c514a0228b6755d1d8a30ad0c657f5bcd13fe68fedf82",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
@@ -721,7 +721,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/webhook.ts": "0417775600fc64d652e4bda6ea2c8b86a18af7df12ba49d29f1dd0f61966891b"
@@ -750,7 +750,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -777,7 +777,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -803,7 +803,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -831,7 +831,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -861,7 +861,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -889,7 +889,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -919,7 +919,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -946,7 +946,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -974,7 +974,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -1004,7 +1004,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
@@ -1032,7 +1032,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
       },
@@ -1063,7 +1063,7 @@
       ],
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "c75d9c4f03344c1cb67993f12d8d75525e8076cfc8863cce6801d3546f920980",
+        "supabase/shared/config.ts": "7eaae7cafedaea81898a247f30a1cf8919f95899f602cf3b93899e3350c89433",
         "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",

@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { isDashboardSectionEnabled } from '@/lib/release-scope';
 import { Badge } from '@/components/ui/badge';
 import { Upload, Calendar, Users, Wallet, MessageCircle, BookOpen, Star, Video } from 'lucide-react';
 import PropTypes from 'prop-types';
@@ -74,7 +75,7 @@ export default function TutorQuickActions({
   return <Card className="border-border bg-card/95 backdrop-blur-sm">
       <CardContent className="pt-4 pb-3">
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {actions.map(a => {
+          {actions.filter(a => isDashboardSectionEnabled('tutor',a.key)).map(a => {
           const isActive = activeSection === a.key;
           return <button key={a.key} aria-pressed={isActive} onClick={() => onAction(a.key)} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all relative group ${isActive ? 'bg-muted ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isActive ? a.activeColor : a.color}`}>

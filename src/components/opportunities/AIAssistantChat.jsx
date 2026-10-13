@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Bot, Send, User, Sparkles, Loader2, ExternalLink, BookOpen, AlertCircle } from 'lucide-react';
@@ -8,7 +9,7 @@ import { toast } from 'sonner';
 const FALLBACK_SUGGESTIONS = ["What is the NBT and do I need it?", "What are the minimum requirements for UCT?", "How do I apply for NSFAS?", "What is the difference between APS and NBT score?", "When do university applications open?", "Which universities don't require the NBT?"];
 const FALLBACK_WELCOME = "Hi! 👋 I'm your University & NBT AI Guide. I can help you with university applications, NBT preparation, bursaries, and career guidance.\n\nWhat would you like to know?";
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-export default function AIAssistantChat({
+function AIAssistantChatImplementation({
   prospectusUrls = [],
   grade = null,
   subject = null
@@ -174,4 +175,8 @@ export default function AIAssistantChat({
         </Button>
       </div>
     </div>;
+}
+
+export default function AIAssistantChat(props) {
+ return <ReleaseGate feature="externalAi"><AIAssistantChatImplementation {...props} /></ReleaseGate>;
 }

@@ -4,6 +4,10 @@ Updated 13 October 2026. Target: `TECHandGUARD/SmartBridge-FET`, based on main `
 
 ## Implemented repairs
 
+The [focused MVP candidate](mvp-release-candidate.md) completes local learning
+progress and defers unfinished features. Current replay is eleven migrations/eight
+SQL suites; an isolated Docker service CI gate supplements SQL and browser mocks.
+
 The subsequent local MVP access work is recorded in [mvp-backend-access.md](mvp-backend-access.md).
 It adds catalogue/queue/exam policies and atomic opportunity review after the verified baseline,
 bringing fresh replay to ten migrations and seven SQL suites. Production remains unchanged.

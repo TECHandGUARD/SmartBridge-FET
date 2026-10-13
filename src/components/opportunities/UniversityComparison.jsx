@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { GitCompareArrows, X, ExternalLink, CheckCircle2, AlertCircle, Info, GraduationCap, Loader2 } from 'lucide-react';
@@ -135,7 +136,7 @@ function RowLabel({
       {sub && <div className="font-normal text-muted-foreground/70 mt-0.5">{sub}</div>}
     </td>;
 }
-export default function UniversityComparison({
+function UniversityComparisonImplementation({
   userEmail
 }) {
   const [trackedApps, setTrackedApps] = useState([]);
@@ -392,4 +393,8 @@ export default function UniversityComparison({
             </p>}
         </>}
     </div>;
+}
+
+export default function UniversityComparison(props) {
+  return <ReleaseGate feature="universityComparison"><UniversityComparisonImplementation {...props} /></ReleaseGate>;
 }

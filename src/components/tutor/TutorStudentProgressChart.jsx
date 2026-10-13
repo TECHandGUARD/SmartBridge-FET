@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +46,7 @@ const getDateFilter = (timeFrame) => {
   return { gte: date.toISOString().split('T')[0] };
 };
 
-export default function TutorStudentProgressChart({ user, onContactParent = undefined, schoolContext = null }) {
+function TutorStudentProgressChartImplementation({ user, onContactParent = undefined, schoolContext = null }) {
   const [progress, setProgress] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState({});
@@ -624,4 +625,8 @@ export default function TutorStudentProgressChart({ user, onContactParent = unde
       </CardContent>
     </Card>
   );
+}
+
+export default function TutorStudentProgressChart(props) {
+  return <ReleaseGate feature="tutorAnalytics"><TutorStudentProgressChartImplementation {...props} /></ReleaseGate>;
 }

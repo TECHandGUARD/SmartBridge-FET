@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +35,7 @@ const ICON_MAP = {
 };
 const FALLBACK_WELCOME = "Hi! 👋 I'm your AI Study Assistant. I can help you explain CAPS concepts, summarise notes, generate practice questions, and give study tips.\n\nWhat would you like help with today?";
 const GRADES = ['Grade 10', 'Grade 11', 'Grade 12'];
-export default function AIStudyAssistant({
+function AIStudyAssistantImplementation({
   user
 }) {
   const [quickPrompts, setQuickPrompts] = useState(FALLBACK_PROMPTS);
@@ -320,4 +321,8 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
         </div>
       </CardContent>
     </Card>;
+}
+
+export default function AIStudyAssistant(props) {
+ return <ReleaseGate feature="externalAi"><AIStudyAssistantImplementation {...props} /></ReleaseGate>;
 }

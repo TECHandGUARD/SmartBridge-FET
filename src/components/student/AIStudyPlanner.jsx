@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { isReleaseFeatureEnabled } from '@/lib/release-scope';
 import PropTypes from 'prop-types';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -322,9 +323,9 @@ Respond with a structured JSON study plan.`,
           </div>
 
           {}
-          <Button onClick={generateSchedule} disabled={loading || exams.length === 0} className="w-full gap-2 bg-primary">
+          <Button onClick={generateSchedule} disabled={!isReleaseFeatureEnabled('externalAi') || loading || exams.length === 0} className="w-full gap-2 bg-primary">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-            {loading ? 'Generating your personalised plan...' : 'Generate AI Study Schedule'}
+            {!isReleaseFeatureEnabled('externalAi') ? 'AI scheduling is not available in this release' : loading ? 'Generating your personalised plan...' : 'Generate AI Study Schedule'}
           </Button>
 
           {}

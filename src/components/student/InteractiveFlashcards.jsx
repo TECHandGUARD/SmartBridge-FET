@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Shield, AlertTriangle } from 'lucide-react';
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -33,7 +34,7 @@ const SUBJECT_OPTIONS = [{
   code: 'Business Studies',
   name: 'Business Studies'
 }];
-export default function InteractiveFlashcards({
+function InteractiveFlashcardsImplementation({
   user
 }) {
   const completionId = useRef(null);
@@ -293,4 +294,8 @@ export default function InteractiveFlashcards({
           </>}
       </CardContent>
     </Card>;
+}
+
+export default function InteractiveFlashcards(props) {
+  return <ReleaseGate feature="flashcards"><InteractiveFlashcardsImplementation {...props} /></ReleaseGate>;
 }

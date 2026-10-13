@@ -266,7 +266,7 @@ export default function StudentOpportunities() {
                 </TabsContent>
 
                 <TabsContent value="nbt-planner">
-                  <NBTPrepPlanner userEmail={user?.email} />
+                  <NBTPrepPlanner userEmail={user?.email} userId={user?.id} />
                 </TabsContent>
 
                 <TabsContent value="prospectuses">

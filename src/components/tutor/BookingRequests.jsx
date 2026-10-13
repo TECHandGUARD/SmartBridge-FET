@@ -1,4 +1,5 @@
 import { Shield } from 'lucide-react';
+import { isReleaseFeatureEnabled } from '@/lib/release-scope';
 const PLATFORM_FEE_PERCENT = 0.10;
 const VAT_PERCENT = 0.15;
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -97,9 +98,9 @@ export default function BookingRequests({
       if (profileError) throw profileError;
       setBookings(bookingsData || []);
       setTutorProfile(profileData);
-      const {
-        data: rescheduleData
-      } = await supabase.from('booking_reschedule_requests').select('*').eq('tutor_email', user.email).eq('status', 'pending');
+      const { data: rescheduleData } = isReleaseFeatureEnabled('bookingReschedule')
+        ? await supabase.from('booking_reschedule_requests').select('*').eq('tutor_email', user.email).eq('status', 'pending')
+        : { data: [] };
       if (rescheduleData) {
         const requestMap = {};
         rescheduleData.forEach(r => {
@@ -136,6 +137,7 @@ export default function BookingRequests({
     };
   }, [user?.email, loadData]);
   const sendEmailNotification = async booking => {
+    if (!isReleaseFeatureEnabled('externalEmail')) return;
     try {
       const {
         error
@@ -541,7 +543,7 @@ export default function BookingRequests({
                           </Button>}
 
                         {}
-                        {b.status === 'completed' && !b.attendance_status && <div className="flex gap-1">
+                        {isReleaseFeatureEnabled('attendance') && b.status === 'completed' && !b.attendance_status && <div className="flex gap-1">
                             <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => markAttendance(b, 'attended')}>
                               Attended
                             </Button>
@@ -572,7 +574,7 @@ export default function BookingRequests({
                       </div>}
 
                     {}
-                    {b.status === 'completed' && !b.attendance_status && <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
+                    {isReleaseFeatureEnabled('attendance') && b.status === 'completed' && !b.attendance_status && <div className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-800">
                         <p className="text-[10px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
                           <AlertCircle className="w-3 h-3" /> Please mark student attendance for this session.
                         </p>

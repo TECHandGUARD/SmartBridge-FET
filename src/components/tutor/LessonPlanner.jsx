@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import usePremiumAccess from '@/hooks/usePremiumAccess';
@@ -21,7 +22,7 @@ const getCompletionRate = stats => {
   if (stats.total === 0) return 0;
   return Math.round(stats.completed / stats.total * 100);
 };
-export default function LessonPlanner({
+function LessonPlannerImplementation({
   user,
   onLessonUpdate = undefined
 }) {
@@ -553,4 +554,8 @@ export default function LessonPlanner({
           </div>}
       </CardContent>
     </Card>;
+}
+
+export default function LessonPlanner(props) {
+ return <ReleaseGate feature="lessonPlanning"><LessonPlannerImplementation {...props} /></ReleaseGate>;
 }

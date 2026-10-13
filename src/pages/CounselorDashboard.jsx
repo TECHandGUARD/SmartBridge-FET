@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
@@ -212,7 +213,7 @@ function StudentRow({
         </div>}
     </div>;
 }
-export default function CounselorDashboard() {
+function CounselorDashboardImplementation() {
   const {
     user
   } = useAuth();
@@ -443,4 +444,8 @@ export default function CounselorDashboard() {
           </div>}
       </div>
     </div>;
+}
+
+export default function CounselorDashboard(props) {
+  return <ReleaseGate feature="counselorPortal"><CounselorDashboardImplementation {...props} /></ReleaseGate>;
 }

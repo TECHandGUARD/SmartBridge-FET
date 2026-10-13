@@ -1,4 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { isDashboardSectionEnabled } from '@/lib/release-scope';
 import { BookOpen, TrendingUp, Brain, Target, FlaskConical, Bookmark, MessageCircle, ClipboardCheck } from 'lucide-react';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const actions = [{
@@ -57,7 +58,7 @@ export default function StudentQuickActions({
   return <Card className="border-border bg-card/95 backdrop-blur-sm">
       <CardContent className="pt-4 pb-3">
         <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
-          {actions.map(a => {
+          {actions.filter(a => isDashboardSectionEnabled('student',a.key)).map(a => {
           const isActive = activeSection === a.key;
           return <button key={a.key} aria-pressed={isActive} onClick={() => onAction(a.key)} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all group ${isActive ? 'bg-muted ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isActive ? a.activeColor : a.color}`}>

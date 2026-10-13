@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Badge } from '@/components/ui/badge';
@@ -62,7 +63,7 @@ const cleanRegexPattern = pattern => {
   if (!pattern || typeof pattern !== 'string') return pattern;
   return pattern.replace(/^\/|\/$/g, '');
 };
-export default function TutorVerificationBadge({
+function TutorVerificationBadgeImplementation({
   user,
   profile,
   onProfileUpdate
@@ -297,3 +298,7 @@ export default function TutorVerificationBadge({
     </Card>;
 }
 TutorVerificationBadge.propTypes = propTypes;
+
+export default function TutorVerificationBadge(props) {
+  return <ReleaseGate feature="extraTutorVerification"><TutorVerificationBadgeImplementation {...props} /></ReleaseGate>;
+}

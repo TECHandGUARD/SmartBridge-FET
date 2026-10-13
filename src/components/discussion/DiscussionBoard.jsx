@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { SUBJECTS } from '@/lib/subjects';
@@ -112,7 +113,7 @@ function PostCard({ post, user, onPostUpdate }) {
 // Main Component
 // ============================================================
 
-export default function DiscussionBoard({ user }) {
+function DiscussionBoardImplementation({ user }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -382,4 +383,8 @@ export default function DiscussionBoard({ user }) {
       </CardContent>
     </Card>
   );
+}
+
+export default function DiscussionBoard(props) {
+  return <ReleaseGate feature="advancedDiscussion"><DiscussionBoardImplementation {...props} /></ReleaseGate>;
 }

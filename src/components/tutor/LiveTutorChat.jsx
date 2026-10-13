@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { MessageCircle, Shield, CheckCheck, Check } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -9,7 +10,7 @@ import { Send, X, Minimize2, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const TYPING_TIMEOUT = 1000;
-export default function LiveTutorChat({
+function LiveTutorChatImplementation({
   user,
   tutorEmail,
   tutorName,
@@ -329,4 +330,8 @@ export default function LiveTutorChat({
           </div>
         </>}
     </Card>;
+}
+
+export default function LiveTutorChat(props) {
+  return <ReleaseGate feature="advancedChat"><LiveTutorChatImplementation {...props} /></ReleaseGate>;
 }

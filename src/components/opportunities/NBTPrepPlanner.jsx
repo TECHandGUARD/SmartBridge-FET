@@ -184,7 +184,7 @@ function SessionCard({
   const builtInRes = session.resource ? RESOURCES[session.resource] : null;
   return <div className={`rounded-lg border p-3 transition-all ${completed ? 'bg-green-50 border-green-200 opacity-75' : 'bg-card border-border hover:shadow-sm'}`}>
       <div className="flex items-start gap-3">
-        <button onClick={() => onToggle(session.day)} className="mt-0.5 flex-shrink-0">
+        <button aria-label={`${completed ? 'Undo' : 'Complete'} ${session.topic}`} onClick={() => onToggle(session.day)} className="mt-0.5 flex-shrink-0">
           {completed ? <CheckCircle2 className="w-5 h-5 text-green-600" /> : <Circle className="w-5 h-5 text-muted-foreground" />}
         </button>
         <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ function WeekBlock({
     </Card>;
 }
 export default function NBTPrepPlanner({
-  userEmail
+  userEmail, userId
 }) {
   const [nbtDeadlines, setNbtDeadlines] = useState([]);
   const [selectedDeadline, setSelectedDeadline] = useState(null);
@@ -266,11 +266,12 @@ export default function NBTPrepPlanner({
   const [libraryResources, setLibraryResources] = useState([]);
   const [loading, setLoading] = useState(true);
   const loadData = useCallback(async () => {
-    if (!userEmail) {
+    if (!userId) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    setCompletedSessions({});
     try {
       const {
         data: deadlines,
@@ -290,8 +291,9 @@ export default function NBTPrepPlanner({
       const {
         data: progress,
         error: progressError
-      } = await supabase.from('nbt_planner_progress').select('completed_sessions').eq('user_email', userEmail).maybeSingle();
-      if (!progressError && progress) {
+      } = await supabase.from('nbt_planner_progress').select('completed_sessions').eq('student_id', userId).maybeSingle();
+      if (progressError) throw progressError;
+      if (progress) {
         setCompletedSessions(progress.completed_sessions || {});
       }
     } catch (err) {
@@ -300,26 +302,29 @@ export default function NBTPrepPlanner({
     } finally {
       setLoading(false);
     }
-  }, [userEmail]);
+  }, [userId]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   const saveProgress = async updatedSessions => {
-    if (!userEmail) return;
+    if (!userId) return false;
     try {
       const {
         error
       } = await supabase.from('nbt_planner_progress').upsert({
-        user_email: userEmail,
+        student_id: userId,
+        student_email: userEmail,
         completed_sessions: updatedSessions,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_email'
+        onConflict: 'student_id'
       });
       if (error) throw error;
+      return true;
     } catch (err) {
       console.error('Error saving progress:', err);
       toast.error('Failed to save progress');
+      return false;
     }
   };
   const handleToggle = async key => {
@@ -328,8 +333,7 @@ export default function NBTPrepPlanner({
       [key]: !completedSessions[key]
     };
     Object.keys(updated).forEach(k => !updated[k] && delete updated[k]);
-    setCompletedSessions(updated);
-    await saveProgress(updated);
+    if (await saveProgress(updated)) setCompletedSessions(updated);
   };
   const totalSessions = WEEK_TEMPLATES.reduce((sum, w) => sum + w.sessions.length, 0);
   const completedCount = Object.values(completedSessions).filter(Boolean).length;

@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import SimulationCard from './SimulationCard';
@@ -26,7 +27,7 @@ const GRADE_OPTIONS = ['All Grades', 'Grade 10', 'Grade 11', 'Grade 12'];
 // Main Component
 // ============================================================
 
-export default function SimulationLab({ isTutor = false, user = null }) {
+function SimulationLabImplementation({ isTutor = false, user = null }) {
   const [simulations, setSimulations] = useState([]);
   const [filteredSims, setFilteredSims] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -348,4 +349,8 @@ export default function SimulationLab({ isTutor = false, user = null }) {
       </Card>
     </div>
   );
+}
+
+export default function SimulationLab(props) {
+  return <ReleaseGate feature="simulations"><SimulationLabImplementation {...props} /></ReleaseGate>;
 }

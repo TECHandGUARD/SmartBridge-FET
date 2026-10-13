@@ -17,6 +17,9 @@ const assert=require('node:assert/strict');
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
  let failResult=true, failBooking=true, failOnboarding=false;
  let hasPremium=false;let examRows=[];const examWrites=[];
+ let topicRows=[];let nbtProgress=null;let failNbtSave=true;
+ const deferredRequests=[];
+ const deferredTables=['simulations','sim_quizzes','flashcards','weak_concepts','student_analytics','forum_answers','chat_rooms','chat_typing_status','tutor_applications','student_requests','tutor_verification_requests','school_subject_averages','booking_reschedule_requests'];
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
  const bookingCalls=[];let links=[];let bookingRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];let roomPosts=[{id:'00000000-0000-4000-8000-000000000201',room_id:'math',author_id:'00000000-0000-4000-8000-000000000202',author_name:'Other learner',type:'Note',title:'Approved note',body:'Safe study content',moderation_status:'approved',created_at:'2026-10-13T10:00:00Z'}];const studyCalls=[];let denyStudyQuota=true,failStudyPost=true,roomReplies=[];
 
@@ -24,6 +27,17 @@ const assert=require('node:assert/strict');
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**', async route=>{
   const req=route.request(),url=new URL(req.url()); let data=[];let status=200;
+  if(deferredTables.includes(url.pathname.split('/').at(-1))) deferredRequests.push(url.pathname);
+  if(url.pathname==='/rest/v1/syllabus_progress') {
+    if(req.method()==='POST') {const value=req.postDataJSON();const row=Array.isArray(value)?value[0]:value;assert.equal(row.student_id,profile.id);topicRows=[row];data=topicRows;}
+    else if(req.method()==='DELETE') {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);topicRows=[];data=[];}
+    else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=topicRows;}
+  }
+  if(url.pathname==='/rest/v1/nbt_planner_progress') {
+    if(req.method()==='POST') {const body=req.postDataJSON();assert.equal(body.student_id,profile.id);assert.equal(body.student_email,profile.email);if(failNbtSave){failNbtSave=false;status=503;data={message:'Test save unavailable'};}else{nbtProgress=body;data=body;}}
+    else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=nbtProgress;}
+  }
+  if(url.pathname==='/rest/v1/application_deadlines') data=[{id:'nbt-date',event_name:'Test NBT',category:'NBT',date:'2099-12-01',is_active:true,is_approved:true}];
   if(url.pathname==='/auth/v1/user') data=authUser;
   if(url.pathname==='/auth/v1/token') data=session;
   if(url.pathname==='/rest/v1/users') data=[profile];
@@ -142,6 +156,13 @@ const assert=require('node:assert/strict');
  await page.getByText(/^Study session logged!/).waitFor();
  assert.equal(sessionCalls.length,1);assert.ok(sessionCalls[0].request_id);
  console.log('PASS: progress tracker uses existing study-session records through one RPC');
+ await page.getByRole('checkbox',{name:'Algebra',exact:true}).click();
+ await page.getByRole('checkbox',{name:'Algebra',exact:true}).check();
+ assert.equal(topicRows.length,1);
+ await page.reload();
+ await page.getByRole('checkbox',{name:'Algebra',exact:true}).uncheck();
+ assert.equal(topicRows.length,0);
+ console.log('PASS: topic completion persists across reload and can be undone with account ownership');
  await page.getByRole('button',{name:'Add',exact:true}).click();
  await page.getByRole('button',{name:'Save Reminder',exact:true}).click();
  await page.getByText(/Reminder set for Mathematics/).waitFor();
@@ -168,6 +189,23 @@ const assert=require('node:assert/strict');
  assert.equal(examRows.length,0);
  hasPremium=false;
  console.log('PASS: personal exam save, UUID-scoped reload and deletion use the ownership contract');
+ hasPremium=true;
+ await page.goto('http://127.0.0.1:5173/opportunities');
+ await page.getByRole('tab',{name:'NBT Planner',exact:true}).click();
+ const nbtButton=page.getByRole('button',{name:'Complete AL: Reading Comprehension Basics',exact:true});
+ await nbtButton.click();
+ await page.getByText('Failed to save progress',{exact:true}).waitFor();
+ assert.equal(nbtProgress,null);
+ await nbtButton.click();
+ await page.getByRole('button',{name:'Undo AL: Reading Comprehension Basics',exact:true}).waitFor();
+ assert.equal(nbtProgress.completed_sessions['4_Monday'],true);
+ await page.reload();
+ await page.getByRole('tab',{name:'NBT Planner',exact:true}).click();
+ await page.getByRole('button',{name:'Undo AL: Reading Comprehension Basics',exact:true}).click();
+ await page.getByRole('button',{name:'Complete AL: Reading Comprehension Basics',exact:true}).waitFor();
+ assert.deepEqual(nbtProgress.completed_sessions,{});
+ hasPremium=false;
+ console.log('PASS: failed NBT saves preserve the previous state; retries, reload and undo persist');
  await page.goto('http://127.0.0.1:5173/student-dashboard?section=goals');
  await page.getByRole('button',{name:'My Progress',exact:true}).click();
 
@@ -313,6 +351,7 @@ const assert=require('node:assert/strict');
   console.log('PASS: broad route and dashboard-section render audit (mocked services)');
  }
  assert.deepEqual(errors,[]);
+ assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
  } catch(error) {
   const debugPage=browser?.contexts()[0]?.pages()[0];
   if(debugPage){console.error('PAGE URL:',debugPage.url());console.error('PAGE TEXT:',(await debugPage.locator('body').innerText()).slice(0,5000));await debugPage.screenshot({path:'/tmp/fet-browser-failure.png'});}

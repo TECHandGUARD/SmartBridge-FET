@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Shield } from 'lucide-react';
 import { uploadPrivate } from '@/lib/private-storage';
 import FileLink from '@/components/operations/FileLink';
@@ -16,7 +17,7 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
 const STORAGE_BUCKET = import.meta.env.VITE_STORAGE_BUCKET || 'chat-attachments';
 const QUICK_REPLIES = ["I'm available for a session. What time works for you?", "Can you share which topics you're struggling with?", "I've attached some practice materials for you.", "Great session today! Your homework is: ", "Let me know if you need any clarification on today's lesson."];
-export default function ChatInbox({
+function ChatInboxImplementation({
   user
 }) {
   const [conversations, setConversations] = useState([]);
@@ -660,4 +661,8 @@ export default function ChatInbox({
         </Tabs>
       </CardContent>
     </Card>;
+}
+
+export default function ChatInbox(props) {
+  return <ReleaseGate feature="advancedChat"><ChatInboxImplementation {...props} /></ReleaseGate>;
 }

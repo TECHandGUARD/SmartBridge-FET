@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +24,7 @@ const QUESTION_COUNTS = [{
   value: '10',
   label: '10 questions'
 }];
-export default function AIQuizGenerator({
+function AIQuizGeneratorImplementation({
   user,
   onQuizSaved
 }) {
@@ -256,4 +257,8 @@ export default function AIQuizGenerator({
           </CardContent>
         </Card>}
     </div>;
+}
+
+export default function AIQuizGenerator(props) {
+ return <ReleaseGate feature="externalAi"><AIQuizGeneratorImplementation {...props} /></ReleaseGate>;
 }

@@ -30,3 +30,17 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e:config
       - run: npm run test:e2e:audit
+  supabase-services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.120.0
+      - run: npm ci --include=dev
+      - run: node tests/local-supabase-services.cjs

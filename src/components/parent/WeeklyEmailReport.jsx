@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Mail, Loader2, CheckCircle, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function WeeklyEmailReport({ parentUser }) {
+function WeeklyEmailReportImplementation({ parentUser }) {
   const [childEmail, setChildEmail] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
@@ -73,4 +74,8 @@ export default function WeeklyEmailReport({ parentUser }) {
       </CardContent>
     </Card>
   );
+}
+
+export default function WeeklyEmailReport(props) {
+ return <ReleaseGate feature="externalEmail"><WeeklyEmailReportImplementation {...props} /></ReleaseGate>;
 }

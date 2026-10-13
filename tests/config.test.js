@@ -61,3 +61,9 @@ test('Amplify public password routes and length settings are allowed while crede
   assert.ok(readPublicConfig({...publicSettings,[key]:'private-value'}).errors.some(error=>error.includes(key)));
  }
 });
+test('local Edge gateway HTTP requires an explicit server-only test setting',()=>{
+ assert.throws(()=>edgeRuntime(null,{env:{SUPABASE_URL:'http://kong:8000'}}).config.serverConnection(),/HTTPS/);
+ assert.equal(edgeRuntime(null,{env:{SUPABASE_URL:'http://kong:8000',SMARTBRIDGE_LOCAL_TEST:'true'}}).config.serverConnection().url,'http://kong:8000');
+ assert.throws(()=>edgeRuntime(null,{env:{SUPABASE_URL:'http://external.example:8000',SMARTBRIDGE_LOCAL_TEST:'true'}}).config.serverConnection(),/HTTPS/);
+});
+import {edgeRuntime} from './helpers/edge-runtime.js';

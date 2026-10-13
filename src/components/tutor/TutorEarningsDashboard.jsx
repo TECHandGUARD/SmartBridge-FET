@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -31,7 +32,7 @@ function getNextPayoutDate() {
   });
 }
 
-export default function TutorEarningsDashboard({ user, onRequestPayout = undefined }) {
+function TutorEarningsDashboardImplementation({ user, onRequestPayout = undefined }) {
   const [bookings, setBookings] = useState([]);
   const [payouts, setPayouts] = useState([]);
   const [bankDetails, setBankDetails] = useState(null);
@@ -589,4 +590,8 @@ export default function TutorEarningsDashboard({ user, onRequestPayout = undefin
       )}
     </Card>
   );
+}
+
+export default function TutorEarningsDashboard(props) {
+  return <ReleaseGate feature="tutorBanking"><TutorEarningsDashboardImplementation {...props} /></ReleaseGate>;
 }

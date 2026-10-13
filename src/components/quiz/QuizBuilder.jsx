@@ -1,3 +1,4 @@
+import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -178,7 +179,7 @@ function QuizTaker({ quiz, onClose, user }) {
 // Main QuizBuilder Component
 // ============================================================
 
-export default function QuizBuilder({ user }) {
+function QuizBuilderImplementation({ user }) {
   const [quizzes, setQuizzes] = useState([]);
   const [mode, setMode] = useState('list');
   const [activeQuiz, setActiveQuiz] = useState(null);
@@ -596,4 +597,8 @@ export default function QuizBuilder({ user }) {
       </CardContent>
     </Card>
   );
+}
+
+export default function QuizBuilder(props) {
+ return <ReleaseGate feature="quizAuthoring"><QuizBuilderImplementation {...props} /></ReleaseGate>;
 }
