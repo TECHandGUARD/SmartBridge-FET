@@ -55,7 +55,7 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/respond_counselor_link') {counselorLinkState=req.postDataJSON().decision;data=true;}
   if(url.pathname==='/auth/v1/user') data=authUser;
   if(url.pathname==='/auth/v1/token') data=session;
-  if(url.pathname==='/rest/v1/users') data=[profile];
+  if(url.pathname==='/rest/v1/users') data=req.headers().accept?.includes('vnd.pgrst.object')?profile:[profile];
   if(url.pathname==='/rest/v1/rpc/complete_onboarding') {if(failOnboarding){failOnboarding=false;await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Setup temporarily unavailable. Please retry.'})});return;}writes.push(req.postDataJSON());const chosen=req.postDataJSON().requested_role;profile={...profile,role:chosen.includes('tutor')?'tutor_pending':chosen,onboarding_complete:true};data=profile;}
   if(url.pathname==='/rest/v1/quizzes') data=[{id:'quiz-1',title:'Test Quiz',subject:'Mathematics',grade:'Grade 12',questions:[{question:'Test question?',options:['A','B','C','D'],correct_index:0,explanation:'Test explanation'}]}];
   if(url.pathname==='/rest/v1/quiz_results' && req.method()==='POST') { const body=req.postDataJSON();writes.push(body); if(failResult){failResult=false;status=403;data={message:'Test save failure',code:'42501'};}else data={...body,id:'result-1'}; }

@@ -28,7 +28,7 @@ export default function LegalDocumentsPanel() {
       else setOwnerEmail(data?.email || '');
     });
     return () => { active = false; };
-  }, [draft.owner_user_id]);
+  }, [draft.owner_user_id, fileInputKey]);
   const edit = (document) => { setDraft({ ...document, owner_user_id: document.owner_user_id || '' }); setFile(null); setFileInputKey(value => value + 1); };
   const set = (field, value) => setDraft(current => ({ ...current, [field]: value }));
   const save = async (event) => {
