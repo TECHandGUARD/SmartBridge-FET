@@ -422,7 +422,7 @@ const assert=require('node:assert/strict');
  await page.getByLabel('Version',{exact:true}).fill('1.1');
  await page.getByRole('button',{name:'Save document',exact:true}).click();
  await page.getByLabel('Document key',{exact:true}).waitFor();
- await page.waitForFunction(()=>document.querySelector('input[disabled]')===null);
+ await page.getByLabel('Document key',{exact:true}).fill('');
  assert.equal(legalRows[0].audience,'owner');
  assert.equal(legalRows[0].contains_personal_information,true);
  page.once('dialog',dialog=>dialog.accept());

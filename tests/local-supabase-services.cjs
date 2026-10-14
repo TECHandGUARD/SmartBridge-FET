@@ -30,6 +30,31 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
+
+ // Verify legal-file controls against the actual Storage HTTP service.
+ const legalId=randomUUID(), legalPath=randomUUID()+'.pdf';
+ const pdf=Buffer.from('%PDF-1.7\nDisposable legal test fixture');
+ ok(await admin.storage.from('legal-documents').upload(legalPath,pdf,{contentType:'application/pdf'}));
+ ok(await admin.from('legal_documents').insert({id:legalId,doc_key:'legal-http-'+legalId,title:'Private signed form',content:'Fixture',version:'1.0',is_published:true,audience:'owner',owner_user_id:student.id,contains_personal_information:true,file_path:legalPath,file_sha256:require('node:crypto').createHash('sha256').update(pdf).digest('hex')}));
+ assert.deepEqual(ok(await other.client.from('legal_documents').select('id').eq('id',legalId)),[]);
+ assert.ok((await other.client.storage.from('legal-documents').download(legalPath)).error,'Cross-user download must fail');
+ const ownPdf=ok(await student.client.storage.from('legal-documents').download(legalPath));
+ assert.equal(Buffer.from(await ownPdf.arrayBuffer()).toString(),pdf.toString());
+ assert.ok((await student.client.storage.from('legal-documents').createSignedUrl(legalPath,3600)).error,'User signed URL creation must fail');
+ assert.ok((await other.client.storage.from('legal-documents').upload(randomUUID()+'.pdf',pdf,{contentType:'application/pdf'})).error,'Non-admin upload must fail');
+ assert.ok((await admin.from('legal_documents').update({audience:'public'}).eq('id',legalId)).error,'Confidential document cannot become public');
+ ok(await admin.from('legal_documents').update({is_published:false}).eq('id',legalId));
+ assert.ok((await student.client.storage.from('legal-documents').download(legalPath)).error,'Unpublishing must revoke future downloads');
+ const tutorId=randomUUID(),tutorPath=randomUUID()+'.pdf';
+ ok(await admin.storage.from('legal-documents').upload(tutorPath,pdf,{contentType:'application/pdf'}));
+ ok(await admin.from('legal_documents').insert({id:tutorId,doc_key:'legal-tutor-'+tutorId,title:'Tutor timetable',content:'Fixture',version:'1.0',is_published:true,audience:'tutor',file_path:tutorPath,file_sha256:require('node:crypto').createHash('sha256').update(pdf).digest('hex')}));
+ ok(await tutor.client.storage.from('legal-documents').download(tutorPath));
+ assert.ok((await student.client.storage.from('legal-documents').download(tutorPath)).error,'Learner cannot read tutor-only file');
+ ok(await admin.from('legal_documents').delete().in('id',[legalId,tutorId]));
+ assert.ok((await tutor.client.storage.from('legal-documents').download(tutorPath)).error,'Deleted metadata must block remaining bytes');
+ ok(await admin.storage.from('legal-documents').remove([legalPath,tutorPath]));
+ console.log('PASS: real legal metadata/file privacy, owner and SACE tutor downloads, forbidden signed URLs/uploads, confidential publication guard and unpublish/delete revocation');
+
  const bookingArgs={profile_id:profile.id,chosen_subject:'Mathematics',chosen_date:'2099-12-01',chosen_time:'10:00',hours:1,booking_message:'Local fixture',request_id:randomUUID()};
  const booking=ok(await student.client.rpc('create_booking',bookingArgs));
  assert.equal(ok(await student.client.rpc('create_booking',bookingArgs)).id,booking.id);assert.equal(Number(booking.amount),100);
