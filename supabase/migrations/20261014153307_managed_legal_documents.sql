@@ -21,7 +21,7 @@ returns boolean language sql stable security definer set search_path='' as $$
  when not published then false when audience='public' then true
  when not smartbridge_private.active_account() then false
  when audience='owner' then owner_user_id=auth.uid()
- else exists(select 1 from public.users u where u.id=auth.uid() and u.is_active and (u.role=audience or (audience='tutor' and u.role in ('student_tutor','professional_tutor')))) end;
+ else exists(select 1 from public.users u where u.id=auth.uid() and u.is_active and (u.role=audience or (audience='tutor' and u.role in ('student_tutor','sace_tutor','tutor')))) end;
 $$;
 revoke all on function smartbridge_private.legal_document_visible(boolean,text,uuid) from public;
 grant execute on function smartbridge_private.legal_document_visible(boolean,text,uuid) to anon,authenticated,service_role;
