@@ -1,6 +1,14 @@
 # Legal, notification and tutor-profile improvements
 
-This follow-up is prepared separately from the completed PR #1 rollout. It does not repeat the thirteen deployed migrations. Apply only `20261013234334_legal_notifications_tutor_profiles.sql` after its CI and deployment review. No paid upgrade or staging branch is required.
+## Deployed status — 14 October 2026
+
+The owner explicitly authorized merging and deployment. PR #2 merged as `68a8818dbf12d4fdb767cb08176df0c5ae669b55`. Amplify main job 102 succeeded at 00:55 UTC (02:55 South African time). Merge CI [38492729421](https://github.com/TECHandGUARD/SmartBridge-FET/actions/runs/38492729421) passed, including the browser audit and real Supabase services; candidate CI 38489392466 also passed.
+
+The incremental migration is applied to the existing Free project, with history reconciled to repository version `20261013234334` only after successful application. All fourteen migrations are recorded; the original thirteen were not replayed. All 39 Edge functions are active. The new SQL workflow suite passed on hosted PostgreSQL in a rolled-back transaction; its fixture accounts were not retained. Four original accounts remain. Browser roles cannot read the private notification outbox. The owner-reported previously accepted student tutor was repaired through the new atomic approval function: the existing student-tutor role was retained, verification/profile consistency restored, and exactly one approval notification queued. Its email is pending, not delivered.
+
+Live HTTP checks confirm the new favicon and PWA icons exactly match repository files. A hosting check found that the existing Amplify SPA rewrite returned HTML for PDF downloads. Its exclusion list now also includes `pdf`, `jpeg`, `webp`, `mp4` and `webmanifest`; this documentation commit triggers the hosting release needed to activate that configuration. Verify all ten PDF responses have a PDF body and matching file hash after that release. Keep the SPA deep-link fallback for extensionless routes.
+
+All ten new legal documents remain unpublished review drafts; their downloads are not activated contracts. AI, payment gateways and scheduled notifications remain gated/disabled pending their respective configuration and acceptance. No paid upgrade or hosted staging branch was created.
 
 ## Implemented changes
 
@@ -31,4 +39,4 @@ Primary references: Consumer Protection Act 68 of 2008, sections 14, 17, 48, 49 
 
 ## Verification scope
 
-Local replay covers fourteen migrations and nine SQL suites. Unit/API tests, lint, typecheck, Edge source/type/API checks and production build are run for this follow-up. Remote Docker Supabase and browser CI remain the integration gate. Local success does not certify live sender configuration, OpenAI access, payment settlement or legal enforceability.
+Local replay covers fourteen migrations and nine SQL suites. Unit/API tests, lint, typecheck, Edge source/type/API checks and production build are run for this follow-up. Remote Docker Supabase and browser CI passed for the merged release. Local success does not certify live sender configuration, OpenAI access, payment settlement or legal enforceability.
