@@ -90,12 +90,12 @@ export default function Premium() {
     if(!user?.id) { toast.error('Please sign in first.'); return; }
     if(!gateway) { toast.error('Choose an available payment gateway.'); return; }
     setCheckingOut(true);
-    const storageKey = `smartbridge-checkout:${appConfig.supabaseUrl}:${user.id}:${plan.id}:${gateway}`;
+    const storageKey = `smartbridge-checkout:${appConfig.supabaseUrl}:${user.id}:${plan.id}:${gateway}:${plan.price}`;
     if(!paymentIntent.current) {
-      try { const saved=sessionStorage.getItem(storageKey); if(saved && /^[0-9a-f-]{36}$/i.test(saved)) paymentIntent.current={product:plan.id,userId:user.id,gateway,id:saved}; } catch { /* In-memory retry remains available. */ }
+      try { const saved=sessionStorage.getItem(storageKey); if(saved && /^[0-9a-f-]{36}$/i.test(saved)) paymentIntent.current={product:plan.id,userId:user.id,gateway,price:plan.price,id:saved}; } catch { /* In-memory retry remains available. */ }
     }
-    if(paymentIntent.current?.product !== plan.id || paymentIntent.current?.userId !== user.id || paymentIntent.current?.gateway !== gateway) {
-      paymentIntent.current = {product: plan.id, userId: user.id, gateway, id: crypto.randomUUID()};
+    if(paymentIntent.current?.product !== plan.id || paymentIntent.current?.userId !== user.id || paymentIntent.current?.gateway !== gateway || paymentIntent.current?.price !== plan.price) {
+      paymentIntent.current = {product: plan.id, userId: user.id, gateway, price:plan.price, id: crypto.randomUUID()};
       try { sessionStorage.setItem(storageKey,paymentIntent.current.id); } catch { /* In-memory retry remains available. */ }
     }
     try {
@@ -108,7 +108,7 @@ export default function Premium() {
       const redirect = new URL(data.redirect_url);
       if(redirect.protocol !== 'https:' || !(gateway==='paystack'?['checkout.paystack.com']:['c.yoco.com','pay.yoco.com']).includes(redirect.hostname) || redirect.username || redirect.password) throw new Error('Invalid payment redirect.');
       window.location.assign(redirect.href);
-    } catch(error) { paymentIntent.current=null; try {sessionStorage.removeItem(storageKey);} catch { /* Retry remains available. */ } await prices.refetch(); toast.error(error.message || 'Checkout unavailable. Please retry.'); }
+    } catch(error) { await prices.refetch(); toast.error(error.message || 'Checkout unavailable. Please retry.'); }
     finally { setCheckingOut(false); }
   };
 
