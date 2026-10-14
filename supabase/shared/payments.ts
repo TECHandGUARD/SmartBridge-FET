@@ -11,7 +11,7 @@ export function paymentSettings() {
 export async function planAmount(product: string,client: any): Promise<number> {
  if(!['student','parent','tutor_pro'].includes(product))failure(400,'Unknown plan');
  const {data,error}=await client.from('subscription_prices').select('amount_cents').eq('product',product).maybeSingle();
- if(error||!data||!Number.isInteger(data.amount_cents)||data.amount_cents<1||data.amount_cents>2147483647)failure(503,'Current plan price unavailable');
+ if(error||!data||!Number.isInteger(data.amount_cents)||data.amount_cents<100||data.amount_cents>2147483647)failure(503,'Current plan price unavailable');
  return data.amount_cents;
 }
 export function checkoutUrl(value: unknown, provider: 'yoco'|'paystack' = 'yoco'): string {

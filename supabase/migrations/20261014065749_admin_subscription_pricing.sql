@@ -1,8 +1,8 @@
 alter table public.payment_orders drop constraint payment_orders_amount_cents_check;
-alter table public.payment_orders add constraint payment_orders_amount_cents_check check(amount_cents>0);
+alter table public.payment_orders add constraint payment_orders_amount_cents_check check(amount_cents>=100);
 create table public.subscription_prices (
  product text primary key check(product in ('student','parent','tutor_pro')),
- amount_cents integer not null check(amount_cents between 1 and 2147483647),
+ amount_cents integer not null check(amount_cents between 100 and 2147483647),
  revision integer not null default 1,
  updated_at timestamptz not null default now()
 );
@@ -24,7 +24,7 @@ language plpgsql security definer set search_path='' as $$
 declare previous public.subscription_prices; changed public.subscription_prices;
 begin
  if auth.uid() is null or not exists(select 1 from public.users where id=auth.uid() and is_active and (role='admin' or is_super_admin)) then raise exception 'Administrator required';end if;
- if new_amount_cents is null or new_amount_cents not between 1 and 2147483647 then raise exception 'Price must be positive';end if;
+ if new_amount_cents is null or new_amount_cents not between 100 and 2147483647 then raise exception 'Price must be at least R1';end if;
  select * into previous from public.subscription_prices where product=product_key for update;
  if not found then raise exception 'Unknown plan';end if;
  if expected_revision is null or previous.revision<>expected_revision then raise exception 'Another administrator changed this price. Reload before saving.';end if;

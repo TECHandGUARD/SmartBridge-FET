@@ -18,7 +18,7 @@ test('only administrators can change gateways and unconfigured modes cannot be e
  assert.equal((await runtime.handle(request({action:'save',provider:'paystack',enabled:true,mode:'test',priority:2}))).status,200);assert.equal(calls[0].name,'set_payment_gateway');assert.ok(!Object.hasOwn(calls[0].args,'actor_id'));
 });
 test('Paystack initialization uses server pricing, authenticated email and stable references',async()=>{
- const sends=[],rpc=[];const id='00000000-0000-4000-8000-000000000601';const client=fakeClient(account,call=>({data:call.table==='payment_gateway_settings'?settings[1]:[],error:null}));
+ const sends=[],rpc=[];const id='00000000-0000-4000-8000-000000000601';const client=fakeClient(account,call=>({data:call.table==='payment_gateway_settings'?settings[1]:call.table==='subscription_prices'?{amount_cents:2000}:[],error:null}));
  client.rpc=async(name,args)=>{rpc.push({name,args});return {data:name==='consume_api_quota'?true:{id,amount_cents:2000,mode:'test',provider:'paystack',status:'pending'},error:null};};
  const runtime=edgeRuntime('createCheckout',{client,env,fetch:async(url,options)=>{sends.push({url,options});return Response.json({status:true,data:{reference:`sb-test-${id}`,authorization_url:'https://checkout.paystack.com/test-checkout'}});}});
  for(let i=0;i<2;i++)assert.equal((await runtime.handle(request({gateway:'paystack',product:'student',request_id:id}))).status,200);
