@@ -18,6 +18,7 @@ const assert=require('node:assert/strict');
  let failResult=true, failBooking=true, failOnboarding=false;
  let hasPremium=false;let examRows=[];const examWrites=[];
  let topicRows=[];let nbtProgress=null;let failNbtSave=true;
+ let priceRows=[{product:'student',amount_cents:2000,revision:1},{product:'parent',amount_cents:5000,revision:1},{product:'tutor_pro',amount_cents:15000,revision:1}];
  let counselorRosterApproved=true; let counselorLinkState='';
  const deferredRequests=[];
  const deferredTables=['simulations','sim_quizzes','flashcards','weak_concepts','student_analytics','forum_answers','chat_rooms','chat_typing_status','tutor_applications','student_requests','tutor_verification_requests','school_subject_averages','booking_reschedule_requests'];
@@ -38,6 +39,8 @@ const assert=require('node:assert/strict');
     if(req.method()==='POST') {const body=req.postDataJSON();assert.equal(body.student_id,profile.id);assert.equal(body.student_email,profile.email);if(failNbtSave){failNbtSave=false;status=503;data={message:'Test save unavailable'};}else{nbtProgress=body;data=body;}}
     else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=nbtProgress;}
   }
+  if(url.pathname==='/rest/v1/subscription_prices') data=priceRows;
+  if(url.pathname==='/rest/v1/rpc/set_subscription_price') {const body=req.postDataJSON();assert.equal(profile.role,'admin');priceRows=priceRows.map(row=>row.product===body.product_key?{...row,amount_cents:body.new_amount_cents,revision:row.revision+1}:row);data=priceRows.find(row=>row.product===body.product_key);}
   if(url.pathname==='/rest/v1/application_deadlines') data=[{id:'nbt-date',event_name:'Test NBT',category:'NBT',date:'2099-12-01',is_active:true,is_approved:true}];
   if(url.pathname==='/rest/v1/rpc/get_counselor_dashboard') data={students:counselorRosterApproved?[{id:'00000000-0000-4000-8000-000000004013',email:'roster@example.test',full_name:'Roster Learner'}]:[],applications:[],documents:[]};
   if(url.pathname==='/rest/v1/rpc/queue_counselor_reminder') {assert.equal(req.postDataJSON().learner_id,'00000000-0000-4000-8000-000000004013');data='00000000-0000-4000-8000-000000004020';}
@@ -382,6 +385,17 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Revoke sharing',exact:true}).click();
  await page.getByRole('button',{name:'Revoke sharing',exact:true}).waitFor({state:'hidden'});
  console.log('PASS: legacy legal route redirects to actual content; staff roster/search/queued reminder/revocation and learner sharing controls');
+ profile={...profile,role:'admin',is_super_admin:true};
+ await page.goto('http://127.0.0.1:5173/admin');
+ await page.getByRole('tab',{name:'Subscription Prices',exact:true}).click();
+ await page.getByLabel('New monthly price (ZAR)',{exact:true}).first().waitFor();
+ await page.locator('#price-student').fill('37.50');
+ await page.getByRole('button',{name:'Save Student Premium price',exact:true}).click();
+ await page.getByText('Student Premium price saved.',{exact:true}).waitFor();
+ assert.equal(priceRows.find(row=>row.product==='student').amount_cents,3750);
+ await page.goto('http://127.0.0.1:5173/premium');
+ await page.getByRole('button').filter({hasText:'Student Premium'}).getByText('R37.5',{exact:false}).waitFor();
+ console.log('PASS: admin price save updates displayed subscription price');
  assert.deepEqual(errors,[]);
  assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
  assert.equal(await page.getByRole('button',{name:/Delete (My|Tutor) Account/}).count(),0,'Unimplemented permanent deletion must not be offered');

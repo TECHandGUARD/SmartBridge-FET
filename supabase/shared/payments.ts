@@ -8,14 +8,11 @@ export function paymentSettings() {
         failure(503, 'Payment mode configuration is invalid');
     return { mode, key };
 }
-export function planAmount(product: string): number {
-    const settings = { student: 'PAYMENT_STUDENT_AMOUNT_CENTS', parent: 'PAYMENT_PARENT_AMOUNT_CENTS', tutor_pro: 'PAYMENT_TUTOR_PRO_AMOUNT_CENTS' };
-    if (!Object.hasOwn(settings, product))
-        failure(400, 'Unknown plan');
-    const value = Number(requiredEnv(settings[product]));
-    if (!Number.isInteger(value) || value < 100 || value > 1000000)
-        failure(503, 'Plan price configuration is invalid');
-    return value;
+export async function planAmount(product: string,client: any): Promise<number> {
+ if(!['student','parent','tutor_pro'].includes(product))failure(400,'Unknown plan');
+ const {data,error}=await client.from('subscription_prices').select('amount_cents').eq('product',product).maybeSingle();
+ if(error||!data||!Number.isInteger(data.amount_cents)||data.amount_cents<100||data.amount_cents>2147483647)failure(503,'Current plan price unavailable');
+ return data.amount_cents;
 }
 export function checkoutUrl(value: unknown, provider: 'yoco'|'paystack' = 'yoco'): string {
     if (typeof value !== 'string')
