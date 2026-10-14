@@ -226,6 +226,7 @@ function CounselorDashboardImplementation() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [rosterFilter, setRosterFilter] = useState('all');
   const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [remindingEmail, setRemindingEmail] = useState(null);
@@ -293,9 +294,16 @@ function CounselorDashboardImplementation() {
   }, [loadDashboardData]);
   const filteredStudents = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    if (!query) return students;
-    return students.filter(s => (s.full_name || '').toLowerCase().includes(query) || (s.email || '').toLowerCase().includes(query));
-  }, [students, searchQuery]);
+    return students.filter(student => {
+      const matchesSearch = !query || (student.full_name || '').toLowerCase().includes(query) || (student.email || '').toLowerCase().includes(query);
+      const apps = applications.filter(app => app.student_id === student.id);
+      const matchesFilter = rosterFilter === 'all' || (rosterFilter === 'no-applications' && apps.length === 0) || (rosterFilter === 'deadlines' && apps.some(app => {
+        const days = getDaysBetween(app.deadline);
+        return days !== null && days >= 0 && days <= CONFIG.WARNING_DAYS;
+      }));
+      return matchesSearch && matchesFilter;
+    });
+  }, [students, applications, searchQuery, rosterFilter]);
   const totalStudents = students.length;
   const totalApps = applications.length;
   const submittedApps = applications.filter(a => ['Submitted', 'Pending NBT', 'Accepted', 'Waitlisted'].includes(a.stage)).length;
@@ -321,7 +329,7 @@ function CounselorDashboardImplementation() {
                   Counselor Dashboard
                 </h1>
                 <p className="text-white/70 text-sm">
-                  Monitor authorised learner applications and document checklists.
+                  Help learners take their next step after matric.
                 </p>
               </div>
             </div>
@@ -334,6 +342,13 @@ function CounselorDashboardImplementation() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-5 pb-5">
+            <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="h-4 w-4 text-primary" /><p className="font-semibold">Counsellor workspace is live</p></div>
+            <p className="text-sm text-muted-foreground">Track applications, spot approaching deadlines and review recorded document categories in one place.</p>
+            <p className="text-sm text-muted-foreground mt-2">{isStaffAdministrator ? 'To test: assign a registered staff account and learner below, approve sharing from the learner account, then sign in as the counsellor.' : 'Your roster contains learners who approved sharing. Open a learner card to review applications and record a reminder.'}</p>
+          </CardContent>
+        </Card>
         {isStaffAdministrator && <CounselorAssignment />}
         {!isStaffAdministrator && <p className="text-sm text-muted-foreground">Only learners who approved sharing with you appear here. Ask your administrator to request an assignment if your roster is empty.</p>}
 
@@ -369,6 +384,9 @@ function CounselorDashboardImplementation() {
         </div>
 
         {}
+        <div className="flex flex-wrap gap-2" aria-label="Filter learner roster">
+          {[['all', 'All learners'], ['deadlines', 'Approaching deadlines'], ['no-applications', 'No saved applications']].map(([value, label]) => <Button key={value} size="sm" variant={rosterFilter === value ? 'default' : 'outline'} aria-pressed={rosterFilter === value} onClick={() => setRosterFilter(value)}>{value === 'deadlines' ? 'Deadlines within ' + CONFIG.WARNING_DAYS + ' days' : label}</Button>)}
+        </div>
         <div className="relative">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search students by name or email..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-10 w-full" aria-label="Search students" />
@@ -396,7 +414,7 @@ function CounselorDashboardImplementation() {
             <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
             <p className="font-semibold text-foreground mb-1">{CONFIG.MESSAGES.NO_STUDENTS}</p>
             <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'Try adjusting your search criteria.' : CONFIG.MESSAGES.ADD_STUDENTS}
+              {searchQuery || rosterFilter !== 'all' ? 'Try another filter or clear your search.' : CONFIG.MESSAGES.ADD_STUDENTS}
             </p>
           </div> : <div className="space-y-2">
             {filteredStudents.map(student => <StudentRow key={student.id || student.email} student={student} applications={applications} documents={documents} onRemind={handleSendReminder} isLoading={remindingEmail === student.email} />)}
