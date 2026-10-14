@@ -63,7 +63,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Users, GraduationCap, CheckCircle2, Clock, ChevronDown, ChevronUp, Mail, Search, RefreshCw, Loader2, AlertCircle, Building2 } from 'lucide-react';
-const DOC_TYPES = ["ID Copy", "Matric Certificate", "Proof of Payment", "NBT Results", "Academic Transcript", "Motivation Letter", "Reference Letter", "Other"];
+const DOC_TYPES = CONFIG.DOC_TYPES;
 const STAGE_STYLES = {
   Saved: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   Started: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -86,8 +86,8 @@ const getDaysBetween = targetDateStr => {
 function StageBar({
   stage
 }) {
-  const step = Math.min(STAGE_ORDER[stage] ?? 0, 3);
-  return <div className="flex gap-0.5 mt-1.5 w-full" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={3}>
+  const step = Math.min(STAGE_ORDER[stage] ?? 0, 4);
+  return <div className="flex gap-0.5 mt-1.5 w-full" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={4}>
       {[0, 1, 2, 3].map(i => <div key={i} className={`flex-1 h-1 rounded-full ${i < step ? 'bg-primary' : 'bg-muted'}`} />)}
     </div>;
 }
@@ -107,7 +107,7 @@ function StudentRow({
   }), [apps]);
   const docProgress = useMemo(() => {
     if (apps.length === 0) return 0;
-    const uniqueUploadedPairs = new Set(docs.map(d => `${d.application_id}|${d.doc_type}`));
+    const uniqueUploadedPairs = new Set(docs.filter(d => DOC_TYPES.includes(d.doc_type)).map(d => `${d.application_id}|${d.doc_type}`));
     const totalRequiredDocs = apps.length * DOC_TYPES.length;
     return Math.min(Math.round(uniqueUploadedPairs.size / totalRequiredDocs * 100), 100);
   }, [apps, docs]);
@@ -119,7 +119,7 @@ function StudentRow({
     return 'text-red-500 dark:text-red-400';
   };
   return <div className="border rounded-xl overflow-hidden bg-card shadow-sm transition-all duration-200">
-      <div className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setExpanded(e => !e)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setExpanded(e => !e)} aria-expanded={expanded}>
+      <div className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setExpanded(e => !e)} role="button" tabIndex={0} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setExpanded(value => !value); } }} aria-expanded={expanded}>
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <span className="text-xs font-bold text-primary">
             {(student.full_name || student.email).charAt(0).toUpperCase()}
@@ -175,7 +175,7 @@ function StudentRow({
             </p> : <div className="space-y-2.5">
               {apps.map(app => {
           const appDocs = docs.filter(d => d.application_id === app.id);
-          const uploadedTypes = new Set(appDocs.map(d => d.doc_type));
+          const uploadedTypes = new Set(appDocs.filter(d => DOC_TYPES.includes(d.doc_type)).map(d => d.doc_type));
           const daysLeft = getDaysBetween(app.deadline);
           const getDaysLeftColor = () => {
             if (daysLeft === null) return 'text-muted-foreground';
@@ -230,9 +230,7 @@ function CounselorDashboardImplementation() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [remindingEmail, setRemindingEmail] = useState(null);
   const fetchTrackerRef = useRef({
-    generation: 0,
-    inFlight: false,
-    lastFetchTime: 0
+    generation: 0
   });
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!user?.email) {
@@ -267,13 +265,12 @@ function CounselorDashboardImplementation() {
     } finally {
       if (generation === fetchTrackerRef.current.generation) { setLoading(false);
       setIsRefreshing(false); }
-      fetchTrackerRef.current.inFlight = false;
     }
   }, [user?.email]);
   useEffect(() => {
     let active = true;
-    const refresh = () => { if (active) loadDashboardData(false); };
-    refresh();
+    const refresh = (silent = true) => { if (active) loadDashboardData(silent); };
+    refresh(false);
     const channel = supabase.channel(`counselor-dashboard-${user?.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_dashboard_signals', filter: `counselor_id=eq.${user?.id}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_student_links', filter: `counselor_id=eq.${user?.id}` }, () => { setStudents([]); setApplications([]); setDocuments([]); refresh(); }).subscribe();
