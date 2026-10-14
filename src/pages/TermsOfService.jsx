@@ -40,6 +40,7 @@ export default function TermsOfService() {
   };
   return <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
     <h1 className="text-3xl font-bold">Terms, policies and downloadable forms</h1>
+    <p className="font-semibold">SmartBridge FET is operated by TECH AND GUARD (Pty) Ltd · Registration 2026/155090/07.</p>
     <p>Review the general terms and the documents for your role. Completed forms contain personal information: retain a copy and submit only through an approved secure support process.</p>
     {error && <p role="alert">{error}</p>}
     <Label htmlFor="legal-document">Choose a document</Label>

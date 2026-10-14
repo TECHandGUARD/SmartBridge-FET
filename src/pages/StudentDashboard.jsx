@@ -1,3 +1,4 @@
+import { CounselorSharing } from '@/components/counselor/CounselorAccess';
 import { appConfig } from '@/lib/config';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useDashboardSection } from '@/lib/useDashboardSection';
@@ -194,6 +195,7 @@ export default function StudentDashboard() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <CounselorSharing userId={user.id} />
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">

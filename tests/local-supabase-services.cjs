@@ -107,5 +107,37 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(notificationResponse.status,200);const queued=await notificationResponse.json();assert.equal(queued.failed,2);assert.equal(queued.delivered,false);
  assert.equal(ok(await admin.from('action_notifications').select('email_status').eq('id',cancelled.notification_ids[0]).single()).email_status,'failed');
  console.log('PASS: real notification Edge retains failed email for retry without claiming delivery');
+ const staff=await account('student');
+ const assigned=ok(await moderator.client.rpc('assign_counselor',{counselor_email:staff.email,learner_email:student.email,school_name:'Disposable School'}));
+ assert.equal(ok(await staff.client.rpc('get_counselor_dashboard')).students.length,0);
+ assert.ok((await other.client.rpc('assign_counselor',{counselor_email:staff.email,learner_email:other.email,school_name:'Forged School'})).error);
+ ok(await student.client.rpc('respond_counselor_link',{link_id:assigned,decision:'approved'}));
+ const application=ok(await student.client.from('university_applications').insert({student_id:student.id,student_email:student.email,university_name:'Disposable University',stage:'Saved',created_by:student.id}).select('id').single());
+ const staffReport=ok(await staff.client.rpc('get_counselor_dashboard'));
+ assert.equal(staffReport.students.length,1);assert.equal(staffReport.students[0].id,student.id);assert.equal(staffReport.applications.length,1);
+ assert.ok(!('metadata' in staffReport.students[0]));assert.ok((await other.client.rpc('get_counselor_dashboard')).error);
+ const reminder=ok(await staff.client.rpc('queue_counselor_reminder',{learner_id:student.id}));
+ assert.equal(ok(await staff.client.rpc('queue_counselor_reminder',{learner_id:student.id})),reminder);
+ assert.ok((await staff.client.rpc('queue_counselor_reminder',{learner_id:other.id})).error);
+ await staff.client.realtime.setAuth(staff.token);
+ const beforeRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;
+ let signalResolve;const signal=new Promise(resolve=>{signalResolve=resolve;});
+ // WebSocket join acknowledgement can precede the actual replication listener.
+ let readyResolve,readyReject;const ready=new Promise((resolve,reject)=>{readyResolve=resolve;readyReject=reject;});
+ const readyTimer=setTimeout(()=>readyReject(new Error('Staff Realtime replication readiness unavailable')),20000);
+ const staffChannel=staff.client.channel('staff-signal-acceptance')
+  .on('system',{},payload=>{if(payload.extension==='postgres_changes' && payload.status==='ok'){clearTimeout(readyTimer);readyResolve();}})
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'counselor_dashboard_signals',filter:'counselor_id=eq.'+staff.id},payload=>signalResolve(payload));
+ staffChannel.subscribe(status=>{if(status==='CHANNEL_ERROR'){clearTimeout(readyTimer);readyReject(new Error('Staff Realtime subscription failed'));}});
+ await ready;
+ ok(await student.client.from('university_applications').update({stage:'Started'}).eq('id',application.id));
+ const afterRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;assert.ok(afterRevision>beforeRevision,'Staff signal trigger must advance');
+ let eventTimer;const signalEvent=await Promise.race([signal,new Promise((_,reject)=>{eventTimer=setTimeout(()=>reject(new Error('Staff Realtime signal missing')),20000);})]);clearTimeout(eventTimer);
+ assert.equal(signalEvent.new.counselor_id,staff.id);await staff.client.removeChannel(staffChannel);
+ ok(await student.client.rpc('respond_counselor_link',{link_id:assigned,decision:'revoked'}));
+ assert.equal(ok(await staff.client.rpc('get_counselor_dashboard')).students.length,0);
+ assert.ok((await staff.client.rpc('queue_counselor_reminder',{learner_id:student.id})).error);
+ console.log('PASS: real staff assignment, learner consent/revocation, scoped roster, daily reminder deduplication and Realtime delivery');
+
 
 }finally{worker?.kill('SIGTERM');try{await command(['stop']);}catch{}fs.rmSync(root,{recursive:true,force:true});}})().catch(error=>{console.error(clean(error.message));process.exitCode=1;});

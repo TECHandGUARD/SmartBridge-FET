@@ -120,6 +120,7 @@ const AuthenticatedApp = () => {
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/TermsOfService" element={<Navigate to="/terms" replace />} />
         <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
 
         {/* 🔐 ONBOARDING */}
@@ -354,7 +355,7 @@ const AuthenticatedApp = () => {
             path="/counselor"
             element={
               <RequireAuthAndOnboarding>
-                <ProtectedRoute allowedRoles={['admin']}>
+                <ProtectedRoute allowedRoles={['admin', 'school_counselor']}>
                   <CounselorDashboard />
                 </ProtectedRoute>
               </RequireAuthAndOnboarding>

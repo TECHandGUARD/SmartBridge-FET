@@ -1,4 +1,6 @@
 import ReleaseGate from '@/components/operations/ReleaseGate';
+import { CounselorAssignment } from '@/components/counselor/CounselorAccess';
+import { dispatchNotifications } from '@/lib/action-notifications';
 // ============================================================
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
@@ -28,7 +30,7 @@ const CONFIG = {
     REMINDER_SENT: import.meta.env.VITE_COUNSELOR_REMINDER_SENT_MSG || 'Reminder successfully sent to {name}.',
     REMINDER_FAILED: import.meta.env.VITE_COUNSELOR_REMINDER_FAILED_MSG || 'Failed to send reminder. Please try again.',
     NO_STUDENTS: import.meta.env.VITE_COUNSELOR_NO_STUDENTS_MSG || 'No students match selection parameters.',
-    ADD_STUDENTS: import.meta.env.VITE_COUNSELOR_ADD_STUDENTS_MSG || 'Add students to get started.',
+    ADD_STUDENTS: import.meta.env.VITE_COUNSELOR_ADD_STUDENTS_MSG || 'Assigned learners appear after they approve sharing.',
     LOADING: import.meta.env.VITE_COUNSELOR_LOADING_MSG || 'Loading student data...',
     SYNC_SUCCESS: import.meta.env.VITE_COUNSELOR_SYNC_SUCCESS_MSG || 'Dashboard synchronized successfully.',
     SYNC_FAILED: import.meta.env.VITE_COUNSELOR_SYNC_FAILED_MSG || 'Sync failed. Please try again.'
@@ -61,7 +63,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Users, GraduationCap, CheckCircle2, Clock, ChevronDown, ChevronUp, Mail, Search, RefreshCw, Loader2, AlertCircle, Building2 } from 'lucide-react';
-const DOC_TYPES = ["ID Copy", "Matric Certificate", "Proof of Payment", "NBT Results", "Academic Transcript", "Motivation Letter", "Reference Letter", "Other"];
+const DOC_TYPES = CONFIG.DOC_TYPES;
 const STAGE_STYLES = {
   Saved: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
   Started: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -84,8 +86,8 @@ const getDaysBetween = targetDateStr => {
 function StageBar({
   stage
 }) {
-  const step = Math.min(STAGE_ORDER[stage] ?? 0, 3);
-  return <div className="flex gap-0.5 mt-1.5 w-full" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={3}>
+  const step = Math.min(STAGE_ORDER[stage] ?? 0, 4);
+  return <div className="flex gap-0.5 mt-1.5 w-full" role="progressbar" aria-valuenow={step} aria-valuemin={0} aria-valuemax={4}>
       {[0, 1, 2, 3].map(i => <div key={i} className={`flex-1 h-1 rounded-full ${i < step ? 'bg-primary' : 'bg-muted'}`} />)}
     </div>;
 }
@@ -105,7 +107,7 @@ function StudentRow({
   }), [apps]);
   const docProgress = useMemo(() => {
     if (apps.length === 0) return 0;
-    const uniqueUploadedPairs = new Set(docs.map(d => `${d.application_id}|${d.doc_type}`));
+    const uniqueUploadedPairs = new Set(docs.filter(d => DOC_TYPES.includes(d.doc_type)).map(d => `${d.application_id}|${d.doc_type}`));
     const totalRequiredDocs = apps.length * DOC_TYPES.length;
     return Math.min(Math.round(uniqueUploadedPairs.size / totalRequiredDocs * 100), 100);
   }, [apps, docs]);
@@ -117,7 +119,7 @@ function StudentRow({
     return 'text-red-500 dark:text-red-400';
   };
   return <div className="border rounded-xl overflow-hidden bg-card shadow-sm transition-all duration-200">
-      <div className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setExpanded(e => !e)} role="button" tabIndex={0} onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && setExpanded(e => !e)} aria-expanded={expanded}>
+      <div className="flex items-center gap-3 px-4 py-3.5 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => setExpanded(e => !e)} role="button" tabIndex={0} onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setExpanded(value => !value); } }} aria-expanded={expanded}>
         <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <span className="text-xs font-bold text-primary">
             {(student.full_name || student.email).charAt(0).toUpperCase()}
@@ -150,7 +152,7 @@ function StudentRow({
             <div className={`font-semibold ${getProgressColor(docProgress)}`}>
               {docProgress}%
             </div>
-            <div className="text-[10px]">Docs</div>
+            <div className="text-[10px]">Checklist coverage</div>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -173,7 +175,7 @@ function StudentRow({
             </p> : <div className="space-y-2.5">
               {apps.map(app => {
           const appDocs = docs.filter(d => d.application_id === app.id);
-          const uploadedTypes = new Set(appDocs.map(d => d.doc_type));
+          const uploadedTypes = new Set(appDocs.filter(d => DOC_TYPES.includes(d.doc_type)).map(d => d.doc_type));
           const daysLeft = getDaysBetween(app.deadline);
           const getDaysLeftColor = () => {
             if (daysLeft === null) return 'text-muted-foreground';
@@ -199,9 +201,10 @@ function StudentRow({
                     </div>
                     <div className="mt-3 pt-2.5 border-t border-border/50">
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                        Documents ({uploadedTypes.size}/{DOC_TYPES.length})
+                        Recorded document categories ({uploadedTypes.size}/{DOC_TYPES.length})
                       </p>
                       <div className="flex flex-wrap gap-1.5">
+                        <p className="text-[10px] text-muted-foreground">Each institution sets its own document requirements.</p>
                         {DOC_TYPES.map(dt => <span key={dt} className={`text-[10px] px-2 py-0.5 rounded-full border font-medium transition-colors ${uploadedTypes.has(dt) ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950/20 dark:text-green-400 dark:border-green-900/30' : 'bg-muted text-muted-foreground border-border'}`}>
                             {uploadedTypes.has(dt) ? '✓ ' : ''}{dt}
                           </span>)}
@@ -215,8 +218,9 @@ function StudentRow({
 }
 function CounselorDashboardImplementation() {
   const {
-    user
+    user, isAdmin
   } = useAuth();
+  const isStaffAdministrator = isAdmin || user?.role === 'admin';
   const [students, setStudents] = useState([]);
   const [applications, setApplications] = useState([]);
   const [documents, setDocuments] = useState([]);
@@ -226,23 +230,14 @@ function CounselorDashboardImplementation() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [remindingEmail, setRemindingEmail] = useState(null);
   const fetchTrackerRef = useRef({
-    inFlight: false,
-    lastFetchTime: 0
+    generation: 0
   });
   const loadDashboardData = useCallback(async (silent = false) => {
     if (!user?.email) {
       setLoading(false);
       return;
     }
-    if (fetchTrackerRef.current.inFlight) {
-      return;
-    }
-    const now = Date.now();
-    if (silent && now - fetchTrackerRef.current.lastFetchTime < 2000) {
-      return;
-    }
-    fetchTrackerRef.current.inFlight = true;
-    fetchTrackerRef.current.lastFetchTime = now;
+    const generation = ++fetchTrackerRef.current.generation;
     if (!silent) {
       setLoading(true);
     } else {
@@ -250,86 +245,48 @@ function CounselorDashboardImplementation() {
     }
     setError(null);
     try {
-      const [studentsRes, appsRes, docsRes] = await Promise.all([supabase.from('users').select('*').eq('role', 'student'), supabase.from('university_applications').select('*'), supabase.from('application_documents').select('*')]);
-      if (studentsRes.error) throw studentsRes.error;
-      if (appsRes.error) throw appsRes.error;
-      if (docsRes.error) throw docsRes.error;
-      setStudents(studentsRes.data || []);
-      setApplications(appsRes.data || []);
-      setDocuments(docsRes.data || []);
+      const { data, error } = await supabase.rpc('get_counselor_dashboard');
+      if (error) throw error;
+      if (generation !== fetchTrackerRef.current.generation) return;
+      setStudents(data?.students || []);
+      setApplications(data?.applications || []);
+      setDocuments(data?.documents || []);
       if (!silent) {
         toast.success(CONFIG.MESSAGES.SYNC_SUCCESS);
       }
     } catch (err) {
+      if (generation !== fetchTrackerRef.current.generation) return;
       console.error("Dashboard orchestration pipeline error:", err);
+      setStudents([]); setApplications([]); setDocuments([]);
       setError(CONFIG.MESSAGES.LOAD_FAILED);
       if (!silent) {
         toast.error(CONFIG.MESSAGES.LOAD_FAILED);
       }
     } finally {
-      setLoading(false);
-      setIsRefreshing(false);
-      fetchTrackerRef.current.inFlight = false;
+      if (generation === fetchTrackerRef.current.generation) { setLoading(false);
+      setIsRefreshing(false); }
     }
   }, [user?.email]);
   useEffect(() => {
     let active = true;
-    if (active) {
-      loadDashboardData(false);
-    }
-    if (!CONFIG.ENABLE_REALTIME) return;
-    const channelIdSuffix = Math.random().toString(36).substring(2, 8);
-    const appChannel = supabase.channel(`counselor-apps-${channelIdSuffix}`).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'university_applications'
-    }, () => {
-      if (active) loadDashboardData(true);
-    }).subscribe();
-    const docChannel = supabase.channel(`counselor-docs-${channelIdSuffix}`).on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'application_documents'
-    }, () => {
-      if (active) loadDashboardData(true);
-    }).subscribe();
-    return () => {
-      active = false;
-      supabase.removeChannel(appChannel);
-      supabase.removeChannel(docChannel);
-    };
-  }, [loadDashboardData]);
+    const refresh = (silent = true) => { if (active) loadDashboardData(silent); };
+    refresh(false);
+    const channel = supabase.channel(`counselor-dashboard-${user?.id}`)
+      .on('system', {}, payload => { if (payload.extension === 'postgres_changes' && payload.status === 'ok') refresh(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_dashboard_signals', filter: `counselor_id=eq.${user?.id}` }, () => refresh())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_student_links', filter: `counselor_id=eq.${user?.id}` }, () => { setStudents([]); setApplications([]); setDocuments([]); refresh(); }).subscribe();
+    const timer = setInterval(refresh, 30000);
+    return () => { active = false; ++fetchTrackerRef.current.generation; clearInterval(timer); supabase.removeChannel(channel); };
+  }, [loadDashboardData, user?.id]);
   const handleSendReminder = async student => {
-    if (!CONFIG.ENABLE_REMINDERS) {
-      toast.warning('Reminders are currently disabled.');
-      return;
-    }
     setRemindingEmail(student.email);
     try {
-      toast.loading(`Dispatching portfolio reminder to ${student.email}...`);
-      const {
-        error
-      } = await supabase.functions.invoke('send-counselor-reminders', {
-        body: {
-          students: [{
-            email: student.email,
-            name: student.full_name || student.email,
-            university_name: 'Portfolio Review',
-            deadline: new Date().toISOString().split('T')[0],
-            school_name: 'Counselor Dashboard'
-          }]
-        }
-      });
+      const { data, error } = await supabase.rpc('queue_counselor_reminder', { learner_id: student.id });
       if (error) throw error;
-      toast.dismiss();
-      toast.success(CONFIG.MESSAGES.REMINDER_SENT.replace('{name}', student.full_name || student.email));
-    } catch (err) {
-      console.error('Reminder error:', err);
-      toast.dismiss();
-      toast.error(CONFIG.MESSAGES.REMINDER_FAILED);
-    } finally {
-      setRemindingEmail(null);
-    }
+      const email = await dispatchNotifications([data]);
+      toast.success(email.status === 'accepted' ? 'Reminder accepted by email provider; inbox delivery is not confirmed.' : 'Reminder recorded. Email remains queued for delivery.');
+    } catch (error) { toast.error(error.message || CONFIG.MESSAGES.REMINDER_FAILED); }
+    finally { setRemindingEmail(null); }
   };
   const handleRefresh = useCallback(() => {
     loadDashboardData(false);
@@ -364,7 +321,7 @@ function CounselorDashboardImplementation() {
                   Counselor Dashboard
                 </h1>
                 <p className="text-white/70 text-sm">
-                  Monitor student applications and document verification.
+                  Monitor authorised learner applications and document checklists.
                 </p>
               </div>
             </div>
@@ -377,6 +334,8 @@ function CounselorDashboardImplementation() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {isStaffAdministrator && <CounselorAssignment />}
+        {!isStaffAdministrator && <p className="text-sm text-muted-foreground">Only learners who approved sharing with you appear here. Ask your administrator to request an assignment if your roster is empty.</p>}
 
         {}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
