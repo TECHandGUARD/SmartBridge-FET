@@ -86,7 +86,7 @@ export default function ParentProgressDashboard({ user, onLinked = undefined }) 
   useEffect(() => {
     if (!learnerId) return;
     const channel = supabase.channel(`parent-report:${learnerId}`);
-    for (const table of ['study_progress', 'quiz_results', 'tutor_bookings']) {
+    for (const table of ['student_progress', 'study_sessions', 'quiz_results', 'tutor_bookings']) {
       channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `student_id=eq.${learnerId}` }, () => loadChildData(learnerId));
     }
     channel.subscribe();

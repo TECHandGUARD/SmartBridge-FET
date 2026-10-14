@@ -155,7 +155,7 @@ create policy "Tutor media ownership boundary delete" on storage.objects as rest
 -- Signed-in sessions receive their protected database role/profile changes without refresh.
 do $$declare relation text;begin
  if exists(select 1 from pg_publication where pubname='supabase_realtime') then
-  foreach relation in array array['study_progress','quiz_results','users','tutor_profiles','tutor_bookings','parent_student_links','study_sessions','student_progress','syllabus_progress','nbt_planner_progress','action_notifications','study_room_memberships','study_room_replies'] loop
+  foreach relation in array array['quiz_results','users','tutor_profiles','tutor_bookings','parent_student_links','study_sessions','student_progress','syllabus_progress','nbt_planner_progress','action_notifications','study_room_memberships','study_room_replies'] loop
    if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=relation) then
     execute format('alter publication supabase_realtime add table public.%I',relation);
    end if;

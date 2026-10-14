@@ -69,6 +69,26 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await student.client.storage.from('application_documents').remove([file]));
  assert.ok((await student.client.storage.from('application_documents').download(file)).error);
  console.log('PASS: real private binary upload/download/replacement/deletion and cross-account denial');
+ // This approval exercises the actual administrator RPC, not a service-role impersonation.
+ const moderator=await account('student'),newTutor=await account('student');
+ ok(await admin.from('users').update({role:'admin'}).eq('id',moderator.id));
+ const approval=ok(await moderator.client.rpc('approve_account',{target_id:newTutor.id,approved_role:'student_tutor'}));
+ assert.equal(ok(await moderator.client.rpc('approve_account',{target_id:newTutor.id,approved_role:'student_tutor'})).notification_id,approval.notification_id);
+ assert.equal(ok(await newTutor.client.from('tutor_profiles').select('user_id,is_verified').eq('user_id',newTutor.id).single()).is_verified,true);
+ assert.deepEqual(ok(await other.client.from('action_notifications').select('id').eq('id',approval.notification_id)),[]);
+ const professionalFile=newTutor.id+'/'+randomUUID()+'.png';
+ const picture=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a9AAAAABJRU5ErkJggg==','base64');
+ ok(await newTutor.client.storage.from('tutor-profile-media').upload(professionalFile,picture,{contentType:'image/png'}));
+ assert.ok((await other.client.storage.from('tutor-profile-media').upload(newTutor.id+'/'+randomUUID()+'.png',picture,{contentType:'image/png'})).error);
+ const professionalUrl=newTutor.client.storage.from('tutor-profile-media').getPublicUrl(professionalFile).data.publicUrl;localOnly(professionalUrl);
+ ok(await newTutor.client.from('tutor_profiles').update({bio:'Verified local profile edit',avatar_url:professionalUrl}).eq('user_id',newTutor.id));
+ assert.equal(ok(await student.client.from('tutor_directory').select('bio').eq('user_id',newTutor.id).single()).bio,'Verified local profile edit');
+ ok(await newTutor.client.storage.from('tutor-profile-media').remove([professionalFile]));
+ const cancelled=ok(await student.client.rpc('cancel_booking',{booking_id:booking.id,cancellation_message:'I am cancelling; please rearrange your day.'}));
+ assert.equal(cancelled.refund_eligibility,'no_payment');assert.equal(Number(cancelled.refundable_amount),0);
+ assert.equal(cancelled.notification_ids.length,2);
+ assert.equal(ok(await student.client.rpc('cancel_booking',{booking_id:booking.id,cancellation_message:'Retry the same cancellation safely.'})).id,booking.id);
+ console.log('PASS: real atomic tutor approval/profile edit, media ownership, cancellation and notification isolation');
  const envFile=path.join(root,'edge.env');fs.writeFileSync(envFile,'SMARTBRIDGE_LOCAL_TEST=true\nAPP_BASE_URL=http://127.0.0.1:5173\n');
  worker=spawn(cli,['functions','serve','--env-file',envFile,'--workdir',root],{stdio:'ignore'});
  const endpoint=url+'/functions/v1/check-rate-limit';let response;
@@ -83,4 +103,9 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const submitted=await post();assert.equal(submitted.status,'pending');assert.equal((await post()).id,submitted.id);
  assert.deepEqual(ok(await other.client.from('study_room_posts').select('id').eq('id',submitted.id)),[]);
  console.log('PASS: real Edge authorization/runtime, queued study content and idempotent retry');
+ const notificationResponse=await fetch(url+'/functions/v1/dispatch-notifications',{method:'POST',headers:{Authorization:'Bearer '+student.token,apikey:status.ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({event_ids:cancelled.notification_ids})});
+ assert.equal(notificationResponse.status,200);const queued=await notificationResponse.json();assert.equal(queued.failed,2);assert.equal(queued.delivered,false);
+ assert.equal(ok(await admin.from('action_notifications').select('email_status').eq('id',cancelled.notification_ids[0]).single()).email_status,'failed');
+ console.log('PASS: real notification Edge retains failed email for retry without claiming delivery');
+
 }finally{worker?.kill('SIGTERM');try{await command(['stop']);}catch{}fs.rmSync(root,{recursive:true,force:true});}})().catch(error=>{console.error(clean(error.message));process.exitCode=1;});

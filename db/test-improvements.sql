@@ -58,3 +58,36 @@ do $$begin
  begin perform public.cancel_booking(current_setting('smartbridge.test_booking')::uuid,'I am not the owner of this booking.');raise exception 'Other account cancelled';exception when raise_exception then if sqlerrm='Other account cancelled' then raise;end if;end;
 end;$$;
 reset role;
+-- Exact deadline, late notice and tutor cancellation use the transaction's fixed clock.
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000002011","role":"authenticated"}',true);
+set local role authenticated;
+do $$declare b jsonb; slot text;begin
+ foreach slot in array array['11:00','13:00','15:00'] loop
+  b:=to_jsonb(public.create_booking((select id from public.tutor_directory where user_id='00000000-0000-4000-8000-000000002012'),'Mathematics','2099-12-01',slot,1,'Boundary test',gen_random_uuid()));
+  perform set_config('smartbridge.boundary_'||split_part(slot,':',1),b->>'id',true);
+ end loop;
+end;$$;
+reset role;
+select set_config('smartbridge.cancel_booking','true',true);
+update public.tutor_bookings set payment_status='paid',amount_paid=100,
+ date=((now()+interval '24 hours') at time zone 'Africa/Johannesburg')::date,
+ time=to_char((now()+interval '24 hours') at time zone 'Africa/Johannesburg','HH24:MI:SS.US')
+ where id=current_setting('smartbridge.boundary_11')::uuid;
+update public.tutor_bookings set payment_status='paid',amount_paid=80,
+ date=((now()+interval '23 hours') at time zone 'Africa/Johannesburg')::date,
+ time=to_char((now()+interval '23 hours') at time zone 'Africa/Johannesburg','HH24:MI:SS.US')
+ where id in (current_setting('smartbridge.boundary_13')::uuid,current_setting('smartbridge.boundary_15')::uuid);
+select set_config('smartbridge.cancel_booking','false',true);
+set local role authenticated;
+do $$declare b jsonb;begin
+ b:=public.cancel_booking(current_setting('smartbridge.boundary_11')::uuid,'Exactly 24 hours before the session; please adjust your day.');
+ if b->>'refund_eligibility'<>'full_booking_refund' or (b->>'refundable_amount')::numeric<>100 then raise exception 'Exact 24-hour boundary denied';end if;
+ b:=public.cancel_booking(current_setting('smartbridge.boundary_13')::uuid,'Late notice; please review my cancellation circumstances.');
+ if b->>'refund_eligibility'<>'manual_statutory_review' or (b->>'refundable_amount')::numeric<>0 then raise exception 'Late notice incorrectly auto-refunded';end if;
+end;$$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000002012","role":"authenticated"}',true);
+do $$declare b jsonb;begin
+ b:=public.cancel_booking(current_setting('smartbridge.boundary_15')::uuid,'As the tutor I cannot provide this booked session.');
+ if b->>'refund_eligibility'<>'full_booking_refund' or (b->>'refundable_amount')::numeric<>80 then raise exception 'Tutor cancellation failed to preserve collected amount';end if;
+end;$$;
+reset role;
