@@ -1,4 +1,6 @@
 reset role;
+update public.users set is_active=true,is_super_admin=true where id='00000000-0000-4000-8000-000000000102';
+update public.users set is_active=true where id='00000000-0000-4000-8000-000000000101';
 select set_config('request.jwt.claims','{}',true);
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000101","role":"authenticated"}',true);
