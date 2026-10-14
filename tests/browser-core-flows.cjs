@@ -18,6 +18,7 @@ const assert=require('node:assert/strict');
  let failResult=true, failBooking=true, failOnboarding=false;
  let hasPremium=false;let examRows=[];const examWrites=[];
  let topicRows=[];let nbtProgress=null;let failNbtSave=true;
+ let counselorRosterApproved=true; let counselorLinkState='';
  const deferredRequests=[];
  const deferredTables=['simulations','sim_quizzes','flashcards','weak_concepts','student_analytics','forum_answers','chat_rooms','chat_typing_status','tutor_applications','student_requests','tutor_verification_requests','school_subject_averages','booking_reschedule_requests'];
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
@@ -38,6 +39,10 @@ const assert=require('node:assert/strict');
     else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=nbtProgress;}
   }
   if(url.pathname==='/rest/v1/application_deadlines') data=[{id:'nbt-date',event_name:'Test NBT',category:'NBT',date:'2099-12-01',is_active:true,is_approved:true}];
+  if(url.pathname==='/rest/v1/rpc/get_counselor_dashboard') data={students:counselorRosterApproved?[{id:'00000000-0000-4000-8000-000000004013',email:'roster@example.test',full_name:'Roster Learner'}]:[],applications:[],documents:[]};
+  if(url.pathname==='/rest/v1/rpc/queue_counselor_reminder') {assert.equal(req.postDataJSON().learner_id,'00000000-0000-4000-8000-000000004013');data='00000000-0000-4000-8000-000000004020';}
+  if(url.pathname==='/rest/v1/rpc/get_counselor_sharing_requests') data=counselorLinkState?[{id:'00000000-0000-4000-8000-000000004021',school_name:'Fixture School',status:counselorLinkState}]:[];
+  if(url.pathname==='/rest/v1/rpc/respond_counselor_link') {counselorLinkState=req.postDataJSON().decision;data=true;}
   if(url.pathname==='/auth/v1/user') data=authUser;
   if(url.pathname==='/auth/v1/token') data=session;
   if(url.pathname==='/rest/v1/users') data=[profile];
@@ -323,7 +328,7 @@ const assert=require('node:assert/strict');
  console.log('PASS: study-room membership, fail-closed quotas, idempotent submission, queued replies, reports and withdrawal');
 
  if(process.env.AUDIT_ALL_PAGES==='1' || process.argv.includes('--all-pages')) {
-  const publicPages=['/privacy','/terms','/about-tech-guard','/forgot-password','/not-a-real-page'];
+  const publicPages=['/privacy','/TermsOfService','/terms','/about-tech-guard','/forgot-password','/not-a-real-page'];
   const sharedPages=['/','/subjects','/subjects/math','/tutors','/premium','/bookings','/search','/quiz','/study-rooms','/videos','/resources-library','/forum','/bursaries','/opportunities'];
   for(const route of [...publicPages,...sharedPages]) {console.log('AUDIT:',route);
    await page.goto('http://127.0.0.1:5173'+route);
@@ -352,6 +357,31 @@ const assert=require('node:assert/strict');
   }
   console.log('PASS: broad route and dashboard-section render audit (mocked services)');
  }
+ // Assert content and the resolved route; an HTTP 200 SPA shell can still render a 404.
+ await page.goto('http://127.0.0.1:5173/TermsOfService');
+ await page.getByRole('heading',{name:'Terms, policies and downloadable forms'}).waitFor();
+ assert.equal(new URL(page.url()).pathname,'/terms');
+ await page.getByText('SmartBridge FET is operated by TECH AND GUARD (Pty) Ltd',{exact:false}).waitFor();
+ profile={...profile,role:'school_counselor',is_super_admin:false,onboarding_complete:true};
+ await page.goto('http://127.0.0.1:5173/counselor');
+ await page.getByRole('heading',{name:'Counselor Dashboard',exact:true}).waitFor();
+ await page.getByText('Roster Learner',{exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Assign staff and request sharing'}).count(),0);
+ await page.getByRole('textbox',{name:'Search students'}).fill('No match');
+ await page.getByText('Roster Learner',{exact:true}).waitFor({state:'hidden'});
+ await page.getByRole('textbox',{name:'Search students'}).fill('');
+ await page.getByRole('button',{name:'Remind',exact:true}).click();
+ await page.getByText('Reminder recorded. Email remains queued for delivery.',{exact:true}).waitFor();
+ counselorRosterApproved=false;
+ await page.getByRole('button',{name:'Sync',exact:true}).click();
+ await page.getByText('Roster Learner',{exact:true}).waitFor({state:'hidden'});
+ profile={...profile,role:'student'};counselorLinkState='pending';
+ await page.goto('http://127.0.0.1:5173/student-dashboard');
+ await page.getByRole('button',{name:'Approve sharing',exact:true}).click();
+ await page.getByRole('button',{name:'Approve sharing',exact:true}).waitFor({state:'hidden'});
+ await page.getByRole('button',{name:'Revoke sharing',exact:true}).click();
+ await page.getByRole('button',{name:'Revoke sharing',exact:true}).waitFor({state:'hidden'});
+ console.log('PASS: legacy legal route redirects to actual content; staff roster/search/queued reminder/revocation and learner sharing controls');
  assert.deepEqual(errors,[]);
  assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
  assert.equal(await page.getByRole('button',{name:/Delete (My|Tutor) Account/}).count(),0,'Unimplemented permanent deletion must not be offered');

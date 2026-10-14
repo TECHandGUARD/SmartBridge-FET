@@ -11,7 +11,7 @@ export const RELEASE_FEATURES = Object.freeze({
   universityComparison: false,
   bookingReschedule: false,
   attendance: false,
-  counselorPortal: false,
+  counselorPortal: true,
   externalAi: false,
   externalEmail: false,
   lessonPlanning: false,
