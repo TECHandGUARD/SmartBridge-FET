@@ -20,6 +20,7 @@ const assert=require('node:assert/strict');
  let topicRows=[];let nbtProgress=null;let failNbtSave=true;
  let priceRows=[{product:'student',amount_cents:2000,revision:1},{product:'parent',amount_cents:5000,revision:1},{product:'tutor_pro',amount_cents:15000,revision:1}];
  let counselorRosterApproved=true; let counselorLinkState='';
+ let legalRows=[];
  const deferredRequests=[];
  const deferredTables=['simulations','sim_quizzes','flashcards','weak_concepts','student_analytics','forum_answers','chat_rooms','chat_typing_status','tutor_applications','student_requests','tutor_verification_requests','school_subject_averages','booking_reschedule_requests'];
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
@@ -39,6 +40,12 @@ const assert=require('node:assert/strict');
     if(req.method()==='POST') {const body=req.postDataJSON();assert.equal(body.student_id,profile.id);assert.equal(body.student_email,profile.email);if(failNbtSave){failNbtSave=false;status=503;data={message:'Test save unavailable'};}else{nbtProgress=body;data=body;}}
     else {assert.equal(url.searchParams.get('student_id'),'eq.'+profile.id);data=nbtProgress;}
   }
+  if(url.pathname==='/rest/v1/legal_documents') {
+    if(req.method()==='POST') {assert.equal(profile.role,'admin');const body=req.postDataJSON();legalRows=[{...body,id:'legal-fixture',revision:1,document_sha256:'a'.repeat(64)}];data=[{id:'legal-fixture'}];}
+    else if(req.method()==='PATCH') {assert.equal(profile.role,'admin');assert.equal(url.searchParams.get('revision'),'eq.1');legalRows=legalRows.map(row=>({...row,...req.postDataJSON(),revision:2}));data=[{id:'legal-fixture'}];}
+    else if(req.method()==='DELETE') {assert.equal(profile.role,'admin');assert.equal(url.searchParams.get('revision'),'eq.2');legalRows=[];data=[{id:'legal-fixture'}];}
+    else data=url.searchParams.get('is_published')==='eq.true'?legalRows.filter(row=>row.is_published):legalRows;
+  }
   if(url.pathname==='/rest/v1/subscription_prices') data=priceRows;
   if(url.pathname==='/rest/v1/rpc/set_subscription_price') {const body=req.postDataJSON();assert.equal(profile.role,'admin');priceRows=priceRows.map(row=>row.product===body.product_key?{...row,amount_cents:body.new_amount_cents,revision:row.revision+1}:row);data=priceRows.find(row=>row.product===body.product_key);}
   if(url.pathname==='/rest/v1/application_deadlines') data=[{id:'nbt-date',event_name:'Test NBT',category:'NBT',date:'2099-12-01',is_active:true,is_approved:true}];
@@ -48,7 +55,7 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/respond_counselor_link') {counselorLinkState=req.postDataJSON().decision;data=true;}
   if(url.pathname==='/auth/v1/user') data=authUser;
   if(url.pathname==='/auth/v1/token') data=session;
-  if(url.pathname==='/rest/v1/users') data=[profile];
+  if(url.pathname==='/rest/v1/users') data=req.headers().accept?.includes('vnd.pgrst.object')?profile:[profile];
   if(url.pathname==='/rest/v1/rpc/complete_onboarding') {if(failOnboarding){failOnboarding=false;await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Setup temporarily unavailable. Please retry.'})});return;}writes.push(req.postDataJSON());const chosen=req.postDataJSON().requested_role;profile={...profile,role:chosen.includes('tutor')?'tutor_pending':chosen,onboarding_complete:true};data=profile;}
   if(url.pathname==='/rest/v1/quizzes') data=[{id:'quiz-1',title:'Test Quiz',subject:'Mathematics',grade:'Grade 12',questions:[{question:'Test question?',options:['A','B','C','D'],correct_index:0,explanation:'Test explanation'}]}];
   if(url.pathname==='/rest/v1/quiz_results' && req.method()==='POST') { const body=req.postDataJSON();writes.push(body); if(failResult){failResult=false;status=403;data={message:'Test save failure',code:'42501'};}else data={...body,id:'result-1'}; }
@@ -362,7 +369,7 @@ const assert=require('node:assert/strict');
  }
  // Assert content and the resolved route; an HTTP 200 SPA shell can still render a 404.
  await page.goto('http://127.0.0.1:5173/TermsOfService');
- await page.getByRole('heading',{name:'Terms, policies and downloadable forms'}).waitFor();
+ await page.getByRole('heading',{name:'Legal documents'}).waitFor();
  assert.equal(new URL(page.url()).pathname,'/terms');
  await page.getByText('SmartBridge FET is operated by TECH AND GUARD (Pty) Ltd',{exact:false}).waitFor();
  profile={...profile,role:'school_counselor',is_super_admin:false,onboarding_complete:true};
@@ -396,6 +403,34 @@ const assert=require('node:assert/strict');
  await page.goto('http://127.0.0.1:5173/premium');
  await page.getByRole('button').filter({hasText:'Student Premium'}).getByText('R37.5',{exact:false}).waitFor();
  console.log('PASS: admin price save updates displayed subscription price');
+ profile={...profile,role:'admin',is_super_admin:true};
+ await page.goto('http://127.0.0.1:5173/admin');
+ await page.getByRole('tab',{name:'Legal documents',exact:true}).click();
+ await page.getByLabel('Title',{exact:true}).fill('Tutor payment timetable');
+ await page.getByLabel('Document key',{exact:true}).fill('test_tutor_payments');
+ await page.getByLabel('Who can view this document?',{exact:true}).selectOption('tutor');
+ await page.getByLabel('Document text',{exact:true}).fill('Payments are reviewed monthly.');
+ await page.getByLabel('Published to selected audience',{exact:true}).check();
+ await page.getByRole('button',{name:'Save document',exact:true}).click();
+ await page.getByText('Document saved.',{exact:true}).waitFor();
+ assert.equal(legalRows[0].audience,'tutor');
+ await page.getByRole('button',{name:'Edit',exact:true}).click();
+ await page.getByLabel('Contains personal information / completed form',{exact:true}).check();
+ assert.deepEqual(await page.getByLabel('Who can view this document?',{exact:true}).locator('option').evaluateAll(options=>options.map(option=>option.value)),['owner','admin']);
+ await page.getByLabel('Who can view this document?',{exact:true}).selectOption('owner');
+ await page.getByLabel('Registered user email',{exact:true}).fill(profile.email);
+ await page.getByLabel(/^Version/).fill('1.1');
+ await page.getByRole('button',{name:'Save document',exact:true}).click();
+ await page.getByLabel('Document key',{exact:true}).waitFor();
+ await page.getByLabel('Document key',{exact:true}).fill('');
+ assert.equal(legalRows[0].audience,'owner');
+ assert.equal(legalRows[0].contains_personal_information,true);
+ page.once('dialog',dialog=>dialog.accept());
+ await page.getByRole('button',{name:'Delete',exact:true}).click();
+ await page.getByText('Document deleted.',{exact:true}).waitFor();
+ assert.equal(legalRows.length,0);
+ console.log('PASS: administrator document create, private audience guard, versioned edit and delete');
+
  assert.deepEqual(errors,[]);
  assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
  assert.equal(await page.getByRole('button',{name:/Delete (My|Tutor) Account/}).count(),0,'Unimplemented permanent deletion must not be offered');

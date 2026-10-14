@@ -193,6 +193,7 @@ export default function PrivacyPolicy() {
             .from('legal_documents')
             .select('content, updated_at, version')
             .eq('doc_key', key)
+            .eq('is_published', true)
             .single();
 
           if (fetchError) {

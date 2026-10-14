@@ -14,6 +14,7 @@ create function auth.email() returns text language sql stable as $$select auth.j
 create table storage.buckets(id text primary key,name text,public boolean default false,file_size_limit bigint,allowed_mime_types text[]);
 create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text,owner uuid,owner_id text,metadata jsonb default '{}',created_at timestamptz default now(),updated_at timestamptz default now());
 alter table storage.objects enable row level security;
+create function storage.allow_any_operation(operations text[]) returns boolean language sql stable as $$select coalesce(current_setting('storage.operation',true),'')=any(operations)$$;
 create function storage.foldername(name text) returns text[] language sql immutable as $$select (string_to_array(name,'/'))[1:array_length(string_to_array(name,'/'),1)-1]$$;
 grant usage on schema public,auth,storage,extensions to anon,authenticated,service_role;
 grant all on all tables in schema storage to anon,authenticated,service_role;
@@ -44,7 +45,7 @@ for(const name of fs.readdirSync(directory).filter(x=>x.endsWith('.sql')).sort()
 }
 console.log('PASS: fresh schema, original history, baseline and all repairs replay');
 await db.exec('begin;');
-for(const name of ['test-core-flows.sql','test-bookings-and-links.sql','test-api-integrations.sql','test-payment-gateways.sql','test-operations.sql','test-study-rooms.sql','test-mvp-access.sql','test-learning-progress.sql','test-improvements.sql','test-counselor.sql','test-subscription-pricing.sql']){
+for(const name of ['test-core-flows.sql','test-bookings-and-links.sql','test-api-integrations.sql','test-payment-gateways.sql','test-operations.sql','test-study-rooms.sql','test-mvp-access.sql','test-learning-progress.sql','test-improvements.sql','test-counselor.sql','test-subscription-pricing.sql','test-managed-legal.sql']){
  console.log('TEST',name);await db.exec(fs.readFileSync(path.join(process.cwd(),'db',name),'utf8'));}
-await db.exec('rollback;');console.log('PASS: all eleven security/workflow SQL fixtures');
+await db.exec('rollback;');console.log('PASS: all twelve security/workflow SQL fixtures');
 }finally{await db.close();}})().catch(e=>{console.error('ERROR',e.message,e.where||'',e.detail||'');process.exit(1)});

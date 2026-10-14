@@ -1,3 +1,4 @@
+import LegalDocumentsPanel from '@/components/admin/LegalDocumentsPanel';
 import SubscriptionPricingPanel from '@/components/admin/SubscriptionPricingPanel';
 import StudyModerationPanel from '@/components/admin/StudyModerationPanel';
 import OperationsPanel from '@/components/admin/OperationsPanel';
@@ -747,6 +748,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="reports" className="gap-1.5"><Mail className="w-3.5 h-3.5" /> Parent Reports</TabsTrigger>
             <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
             <TabsTrigger value="subscription-pricing">Subscription Prices</TabsTrigger>
+            <TabsTrigger value="legal-documents">Legal documents</TabsTrigger>
             <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="study-moderation">Study moderation</TabsTrigger>
@@ -948,6 +950,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="subscription-pricing"><SafeSubComponent><SubscriptionPricingPanel /></SafeSubComponent></TabsContent>
+          <TabsContent value="legal-documents"><SafeSubComponent><LegalDocumentsPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="payment-gateways"><SafeSubComponent><PaymentGatewayPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="study-moderation"><SafeSubComponent><StudyModerationPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="operations"><SafeSubComponent><OperationsPanel /></SafeSubComponent></TabsContent>
