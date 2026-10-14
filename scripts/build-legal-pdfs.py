@@ -43,7 +43,7 @@ for item in json.loads((ROOT/'legal/legal-documents.json').read_text()):
  if item['fillable']:
   story.extend([PageBreak(),Paragraph('Participation / signature record',styles['LegalTitle']),Paragraph(escape(item['title']+' | '+item['version']),styles['LegalHeading']),Paragraph('Complete only relevant fields. Do not enter ID numbers, medical or banking details. Retain a copy; use an approved secure submission process. This draft does not activate unpublished terms or verify authority.',styles['LegalBody']),Spacer(1,14),SignatureFields()])
  target=OUT/(item['key']+'.pdf')
- SimpleDocTemplate(str(target),pagesize=A4,rightMargin=48,leftMargin=48,topMargin=48,bottomMargin=58,title=item['title'],author='Tech & GUARD (Pty) Ltd').build(story,onFirstPage=footer,onLaterPages=footer,canvasmaker=stable_canvas)
+ SimpleDocTemplate(str(target),pagesize=A4,rightMargin=48,leftMargin=48,topMargin=48,bottomMargin=58,title=item['title'],author='TECH AND GUARD (Pty) Ltd').build(story,onFirstPage=footer,onLaterPages=footer,canvasmaker=stable_canvas)
  reader=PdfReader(target)
  if item['fillable']:
   fields=reader.get_fields() or {};assert set(fields)==set(FIELDS),(target,list(fields))

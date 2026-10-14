@@ -1,9 +1,9 @@
 # Subscription and Booking Cancellation Policy
 
-SmartBridge FET | Tech & GUARD (Pty) Ltd
+SmartBridge FET | TECH AND GUARD (Pty) Ltd
 Version 1.1-draft | Prepared 14 October 2026
 
-DRAFT FOR OWNER AND SOUTH AFRICAN LEGAL REVIEW. This document is not yet an activated contract. Registered business address and company registration details must be confirmed before paid public trading. Support: aneleq@techandguard.co.za.
+DRAFT FOR OWNER AND SOUTH AFRICAN LEGAL REVIEW. This document is not yet an activated contract. Operator: TECH AND GUARD (Pty) Ltd, CIPC registration 2026/155090/07. Registered office: 6 Marais Road, Stellenbosch, Western Cape, 7600, South Africa. Support: aneleq@techandguard.co.za. SmartBridge FET is the platform brand; no registered trademark status is claimed.
 
 ## Subscription fees
 Subscription fees pay for the selected service/access period and contribute to server hosting, database operation, security, maintenance, support and other services that keep the app working. They are ordinarily non-refundable for change of mind once the paid service has commenced. Cancellation of renewal stops future charges in line with disclosed renewal terms; it does not automatically reverse an already supplied period. These fees are not an indefinite personal-data-storage fee and do not override privacy/deletion obligations.

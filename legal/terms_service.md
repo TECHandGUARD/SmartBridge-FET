@@ -1,9 +1,9 @@
 # Terms of Service
 
-SmartBridge FET | Tech & GUARD (Pty) Ltd
+SmartBridge FET | TECH AND GUARD (Pty) Ltd
 Version 1.1-draft | Prepared 14 October 2026
 
-DRAFT FOR OWNER AND SOUTH AFRICAN LEGAL REVIEW. This document is not yet an activated contract. Registered business address and company registration details must be confirmed before paid public trading. Support: aneleq@techandguard.co.za.
+DRAFT FOR OWNER AND SOUTH AFRICAN LEGAL REVIEW. This document is not yet an activated contract. Operator: TECH AND GUARD (Pty) Ltd, CIPC registration 2026/155090/07. Registered office: 6 Marais Road, Stellenbosch, Western Cape, 7600, South Africa. Support: aneleq@techandguard.co.za. SmartBridge FET is the platform brand; no registered trademark status is claimed.
 
 ## The service
 SmartBridge FET provides a learning platform, resources, progress tools and a marketplace for independently provided tutoring. Features offered are those shown as available. We do not guarantee examination results, CAPS certification, school admission, scholarships, employment or uninterrupted internet access. Tutors may not represent themselves as employees or authorised agents unless separately appointed in writing.
