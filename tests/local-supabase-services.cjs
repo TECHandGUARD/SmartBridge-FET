@@ -122,8 +122,14 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  await staff.client.realtime.setAuth(staff.token);
  const beforeRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;
  let signalResolve;const signal=new Promise(resolve=>{signalResolve=resolve;});
- const staffChannel=staff.client.channel('staff-signal-acceptance').on('postgres_changes',{event:'UPDATE',schema:'public',table:'counselor_dashboard_signals',filter:'counselor_id=eq.'+staff.id},payload=>signalResolve(payload));
- await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Staff Realtime subscription unavailable')),20000);staffChannel.subscribe(status=>{if(status==='SUBSCRIBED'){clearTimeout(timer);resolve();}if(status==='CHANNEL_ERROR'){clearTimeout(timer);reject(new Error('Staff Realtime subscription failed'));}});});
+ // WebSocket join acknowledgement can precede the actual replication listener.
+ let readyResolve,readyReject;const ready=new Promise((resolve,reject)=>{readyResolve=resolve;readyReject=reject;});
+ const readyTimer=setTimeout(()=>readyReject(new Error('Staff Realtime replication readiness unavailable')),20000);
+ const staffChannel=staff.client.channel('staff-signal-acceptance')
+  .on('system',{},payload=>{if(payload.extension==='postgres_changes' && payload.status==='ok'){clearTimeout(readyTimer);readyResolve();}})
+  .on('postgres_changes',{event:'UPDATE',schema:'public',table:'counselor_dashboard_signals',filter:'counselor_id=eq.'+staff.id},payload=>signalResolve(payload));
+ staffChannel.subscribe(status=>{if(status==='CHANNEL_ERROR'){clearTimeout(readyTimer);readyReject(new Error('Staff Realtime subscription failed'));}});
+ await ready;
  ok(await student.client.from('university_applications').update({stage:'Started'}).eq('id',application.id));
  const afterRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;assert.ok(afterRevision>beforeRevision,'Staff signal trigger must advance');
  let eventTimer;const signalEvent=await Promise.race([signal,new Promise((_,reject)=>{eventTimer=setTimeout(()=>reject(new Error('Staff Realtime signal missing')),20000);})]);clearTimeout(eventTimer);

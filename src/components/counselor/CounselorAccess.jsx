@@ -42,7 +42,7 @@ export function CounselorSharing({ userId }) {
     let active = true;
     const refresh = () => { if (active) load(); };
     refresh();
-    const channel = supabase.channel(`counselor-sharing-${userId}`).on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_student_links', filter: `student_id=eq.${userId}` }, refresh).subscribe();
+    const channel = supabase.channel(`counselor-sharing-${userId}`).on('system', {}, payload => { if (payload.extension === 'postgres_changes' && payload.status === 'ok') refresh(); }).on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_student_links', filter: `student_id=eq.${userId}` }, refresh).subscribe();
     return () => { active = false; supabase.removeChannel(channel); };
   }, [load, userId]);
   const respond = async (id, decision) => {

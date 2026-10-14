@@ -272,6 +272,7 @@ function CounselorDashboardImplementation() {
     const refresh = (silent = true) => { if (active) loadDashboardData(silent); };
     refresh(false);
     const channel = supabase.channel(`counselor-dashboard-${user?.id}`)
+      .on('system', {}, payload => { if (payload.extension === 'postgres_changes' && payload.status === 'ok') refresh(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_dashboard_signals', filter: `counselor_id=eq.${user?.id}` }, () => refresh())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'counselor_student_links', filter: `counselor_id=eq.${user?.id}` }, () => { setStudents([]); setApplications([]); setDocuments([]); refresh(); }).subscribe();
     const timer = setInterval(refresh, 30000);
