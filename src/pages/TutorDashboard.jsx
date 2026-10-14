@@ -70,7 +70,7 @@ export default function TutorDashboard() {
       const { data: profileData, error: profileError } = await supabase
         .from('tutor_profiles')
         .select('*')
-        .eq('user_email', user.email)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       if (profileError) throw profileError;
@@ -95,6 +95,11 @@ export default function TutorDashboard() {
   }, [user?.email]);
 
   // Set up real-time subscription for resources
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase.channel(`tutor-profile-${user.id}`).on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_profiles', filter: `user_id=eq.${user.id}` }, loadData).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, loadData]);
   useEffect(() => {
     loadData();
 

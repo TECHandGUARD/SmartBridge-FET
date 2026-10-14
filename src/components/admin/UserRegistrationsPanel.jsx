@@ -1,3 +1,4 @@
+import { approveAccount } from '@/lib/action-notifications';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,30 +95,9 @@ export default function UserRegistrationsPanel() {
   const approveAsRole = async (u, role) => {
     setProcessingId(u.id + role);
     try {
-      const {
-        error
-      } = await supabase.from('users').update({
-        role,
-        onboarding_complete: true,
-        updated_at: new Date().toISOString()
-      }).eq('id', u.id);
-      if (error) throw error;
-      setUsers(prev => prev.map(x => x.id === u.id ? {
-        ...x,
-        role,
-        onboarding_complete: true
-      } : x));
-      const {
-        error: fnError
-      } = await supabase.functions.invoke('notify-user-approved', {
-        body: {
-          email: u.email,
-          full_name: u.full_name,
-          role
-        }
-      });
-      if (fnError) console.error('Email notification error:', fnError);
-      toast.success(`${u.full_name || u.email} approved as ${role}. Approval email sent.`);
+      const result = await approveAccount(u.id, role);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role, onboarding_complete: true } : x));
+      toast.success(`${u.full_name || u.email} approved. ${result.email.status === 'accepted' ? 'Email accepted by the provider.' : 'Email queued; delivery needs attention.'}`);
     } catch (err) {
       console.error('Approve error:', err);
       toast.error(`Failed to approve: ${err.message}`);
@@ -128,43 +108,12 @@ export default function UserRegistrationsPanel() {
   const verifyTutor = async u => {
     setProcessingId(u.id + 'verify');
     try {
-      const profile = tutorProfiles.find(p => p.user_email === u.email);
-      if (profile) {
-        const {
-          error: profileError
-        } = await supabase.from('tutor_profiles').update({
-          is_verified: true,
-          updated_at: new Date().toISOString()
-        }).eq('id', profile.id);
-        if (profileError) throw profileError;
-        setTutorProfiles(prev => prev.map(p => p.id === profile.id ? {
-          ...p,
-          is_verified: true
-        } : p));
-      }
+      const profile = tutorProfiles.find(p => p.user_id === u.id || p.user_email === u.email);
       const newRole = profile?.sace_number ? 'sace_tutor' : 'student_tutor';
-      const {
-        error: userError
-      } = await supabase.from('users').update({
-        role: newRole,
-        updated_at: new Date().toISOString()
-      }).eq('id', u.id);
-      if (userError) throw userError;
-      setUsers(prev => prev.map(x => x.id === u.id ? {
-        ...x,
-        role: newRole
-      } : x));
-      const {
-        error: fnError
-      } = await supabase.functions.invoke('notify-user-approved', {
-        body: {
-          email: u.email,
-          full_name: u.full_name,
-          role: newRole
-        }
-      });
-      if (fnError) console.error('Email notification error:', fnError);
-      toast.success(`${u.full_name || u.email} verified as tutor! Approval email sent.`);
+      const result = await approveAccount(u.id, newRole);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole, is_verified: true } : x));
+      await load();
+      toast.success(`Tutor approved. ${result.email.status === 'accepted' ? 'Email accepted by the provider.' : 'Email queued; delivery needs attention.'}`);
     } catch (err) {
       console.error('Verify error:', err);
       toast.error(`Failed to verify tutor: ${err.message}`);

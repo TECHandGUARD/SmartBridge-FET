@@ -4,16 +4,16 @@ import {createHmac} from 'node:crypto';
 import {edgeRuntime,fakeClient} from './helpers/edge-runtime.js';
 const request=(body={},headers={Authorization:'Bearer test'})=>new Request('https://example.test/function',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 const active={id:'user-id',email:'user@example.test',role:'student',is_active:true};
-const gemini=(text)=>Response.json({candidates:[{finishReason:'STOP',content:{parts:[{text}]}}]});
+const openai=(text)=>Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text}]}]});
 
 test('study APIs retain text and structured contracts while rejecting caller-selected models and invalid provider content',async()=>{
- const calls=[];const client=fakeClient(active);const runtime=edgeRuntime('invokeLLM',{client,fetch:async(url,options)=>{calls.push({url,options});return gemini('An explanation');}});
+ const calls=[];const client=fakeClient(active);const runtime=edgeRuntime('invokeLLM',{client,fetch:async(url,options)=>{calls.push({url,options});return openai('An explanation');}});
  let response=await runtime.handle(request({prompt:'Explain algebra',task:'study-assistant'}));assert.equal(response.status,200);assert.equal((await response.json()).response,'An explanation');
- assert.equal(calls[0].options.headers['x-goog-api-key'],'model-test-key');assert.ok(JSON.parse(calls[0].options.body).systemInstruction);
+ assert.equal(calls[0].options.headers.Authorization,'Bearer model-test-key');assert.ok(JSON.parse(calls[0].options.body).instructions);
  response=await runtime.handle(request({prompt:'Explain algebra',model:'any-model'}));assert.equal(response.status,400);assert.equal(calls.length,1);
  const plan={weekly_plan:[{day:'Monday',date:'2026-10-13',total_hours:1,sessions:[{time:'14:00',subject:'Math',duration_min:60,focus:'Algebra',priority:'High'}]}],tips:['Take breaks'],summary:'A plan'};
- const structured=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>gemini(JSON.stringify(plan))});response=await structured.handle(request({prompt:'Plan my week',task:'study-plan'}));assert.deepEqual(await response.json(),plan);
- const invalid=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>gemini('{"weekly_plan":"bad"}')});assert.equal((await invalid.handle(request({prompt:'Plan',task:'study-plan'}))).status,502);
+ const structured=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>openai(JSON.stringify(plan))});response=await structured.handle(request({prompt:'Plan my week',task:'study-plan'}));assert.deepEqual(await response.json(),plan);
+ const invalid=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>openai('{"weekly_plan":"bad"}')});assert.equal((await invalid.handle(request({prompt:'Plan',task:'study-plan'}))).status,502);
 });
 
 test('quota exhaustion, invalid JSON and oversized bodies fail before provider calls',async()=>{
@@ -27,7 +27,7 @@ test('quota exhaustion, invalid JSON and oversized bodies fail before provider c
 test('lesson generation requires a verified tutor and valid grade and returns editable draft fields',async()=>{
  assert.equal((await edgeRuntime('generateLessonPlan',{client:fakeClient(active)}).handle(request({subject:'Math',topic:'Algebra',grade:'Grade 12'}))).status,403);
  const lesson={objectives:['Solve equations'],resources:['Textbook'],homework:'Practise',notes:'Review understanding'};
- const runtime=edgeRuntime('generateLessonPlan',{client:fakeClient({...active,role:'tutor',is_verified:true}),fetch:async()=>gemini(JSON.stringify(lesson))});
+ const runtime=edgeRuntime('generateLessonPlan',{client:fakeClient({...active,role:'tutor',is_verified:true}),fetch:async()=>openai(JSON.stringify(lesson))});
  assert.equal((await runtime.handle(request({subject:'Math',topic:'Algebra',grade:'Grade 9'}))).status,400);
  assert.deepEqual(await (await runtime.handle(request({subject:'Math',topic:'Algebra',grade:'Grade 12'}))).json(),lesson);
 });

@@ -1,5 +1,7 @@
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
-import { createBooking } from '@/lib/bookings';
+import { createBooking, cancelBooking } from '@/lib/bookings';
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -23,6 +25,9 @@ const STATUS_STYLES = {
 };
 
 export default function Bookings() {
+  const [cancelId, setCancelId] = useState(null);
+  const [cancelMessage, setCancelMessage] = useState('');
+  const [cancelling, setCancelling] = useState(false);
   const { user } = useAuth();
 
   const [bookings, setBookings] = useState([]);
@@ -112,21 +117,18 @@ export default function Bookings() {
     }
   };
 
-  const handleCancelBooking = async (id) => {
+  const handleCancelBooking = id => { setCancelId(id); setCancelMessage(''); };
+  const confirmCancellation = async () => {
+    setCancelling(true);
     try {
-      const { error } = await supabase
-        .from('tutor_bookings')
-        .update({ status: 'cancelled' })
-        .eq('id', id);
-
-      if (error) throw error;
-      toast.success('Session cancellation logged.');
+      const result = await cancelBooking(cancelId, cancelMessage);
+      toast.success(result.refund_eligibility === 'full_booking_refund' ? 'Cancelled. A paid booking refund is eligible; settlement is separate.' : 'Cancelled. Any paid refund will be reviewed under the policy and applicable law.');
+      if (result.email.status !== 'accepted') toast.info('The tutor has an in-app notice. Email is queued and needs delivery attention.');
+      setCancelId(null);
       await fetchBookingDashboardData();
-    } catch (err) {
-      toast.error(err.message || 'Failed updating record parameter.');
-    }
+    } catch (err) { toast.error(err.message || 'Could not cancel.'); }
+    finally { setCancelling(false); }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 gap-2 select-none">
@@ -138,6 +140,15 @@ export default function Bookings() {
 
   return (
     <div className="min-h-screen bg-slate-50 py-8 font-sans select-none antialiased">
+      <Dialog open={Boolean(cancelId)} onOpenChange={open => { if (!open && !cancelling) setCancelId(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Cancel your tutoring booking</DialogTitle></DialogHeader>
+          <p className="text-sm">A paid booking is eligible for a full booking-fee refund when cancelled at least 24 hours before the session (South Africa time). Later cancellations require review, including your statutory rights. This does not refund a subscription.</p>
+          <Label htmlFor="cancellation-message">Message to your tutor</Label>
+          <Textarea id="cancellation-message" value={cancelMessage} onChange={e => setCancelMessage(e.target.value)} maxLength={2000} placeholder="Tell the tutor you are cancelling so they can rearrange their day." />
+          <p className="text-xs">Your written message will be recorded and shared with the tutor. Minimum 10 characters.</p>
+          <Button onClick={confirmCancellation} disabled={cancelling || cancelMessage.trim().length < 10}>{cancelling ? 'Cancelling…' : 'Confirm cancellation and notify tutor'}</Button>
+        </DialogContent>
+      </Dialog>
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
         {/* Dashboard Title Header Block */}

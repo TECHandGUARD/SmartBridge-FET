@@ -9,13 +9,10 @@ export function appUrl(path = ''): string {
   if ((url.protocol !== 'https:' && !(local && url.protocol === 'http:')) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) throw new Error('APP_BASE_URL must be an HTTPS origin');
   return new URL(path || '/', url.origin).href;
 }
-export function geminiSettings(): { url: string; apiKey: string } {
-  const model = requiredEnv('GEMINI_MODEL');
-  if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('GEMINI_MODEL must be a model ID');
-  return {
-    url: `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-    apiKey: requiredEnv('GEMINI_API_KEY'),
-  };
+export function openaiSettings(): { url: string; apiKey: string; model: string } {
+  const model = requiredEnv('OPENAI_MODEL');
+  if (!/^[a-zA-Z0-9._-]+$/.test(model)) throw new Error('OPENAI_MODEL must be a model ID');
+  return { url: 'https://api.openai.com/v1/responses', apiKey: requiredEnv('OPENAI_API_KEY'), model };
 }
 
 // Compatibility with existing live secret names while migrating to canonical names.

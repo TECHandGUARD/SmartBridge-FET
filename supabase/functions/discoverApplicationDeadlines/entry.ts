@@ -1,5 +1,6 @@
+import { generate } from '../../shared/ai.ts';
 import {consumeQuota,readJson} from '../../shared/api.ts';
-import { serverConnection, geminiSettings } from "../../shared/config.ts";
+import { serverConnection } from "../../shared/config.ts";
 import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
@@ -32,38 +33,7 @@ serve(withHttp(async (req) => {
       Return ONLY the JSON array, no other text.
     `;
 
-    const { url: geminiUrl, apiKey: geminiApiKey } = geminiSettings();
-
-    const geminiResponse = await fetch(
-      geminiUrl,
-      {
-        signal: AbortSignal.timeout(25000),
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": geminiApiKey },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.2,
-            topK: 1,
-            topP: 0.8,
-            maxOutputTokens: 2048,
-          }
-        })
-      }
-    );
-
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      return new Response(
-        JSON.stringify({ error: `Gemini API error: ${errorText}` }),
-        { status: 500, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const geminiData = await geminiResponse.json();
-    const textResponse = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const { response: textResponse } = await generate(prompt);
 
     let deadlines = [];
     try {
