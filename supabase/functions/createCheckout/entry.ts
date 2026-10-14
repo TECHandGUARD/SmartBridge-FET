@@ -14,7 +14,7 @@ serve(withHttp(async (request) => {
         if (['amount', 'user_id', 'successUrl', 'cancelUrl', 'failureUrl'].some(field => Object.hasOwn(body, field)))
             failure(400, 'Price, account and callback URLs are chosen by the server');
         const provider = gatewayId(body.gateway || 'yoco');
-        const settings = await enabledGateway(client,provider), amount = planAmount(product);
+        const settings = await enabledGateway(client,provider), amount = await planAmount(product,client);
         await consumeQuota(client, user.id, 'checkout');
         const { data: order, error } = await client.rpc('create_gateway_payment_order', { actor_id: user.id, request_id: id, product_key: product, quoted_amount: amount, payment_mode: settings.mode, provider_key: provider });
         if (error || !order)

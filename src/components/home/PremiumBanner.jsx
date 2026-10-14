@@ -1,3 +1,4 @@
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Star, Zap, Shield, Download } from 'lucide-react';
@@ -13,6 +14,9 @@ const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 // ============================================================
 
 export default function PremiumBanner() {
+  const prices=useSubscriptionPrices();
+  const amounts=prices.isError?[]:(prices.data||[]).map(row=>row.amount_cents/100);
+  const startingPrice=amounts.length===3?Math.min(...amounts):null;
   return (
     <section className="py-20 bg-background">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,10 +31,10 @@ export default function PremiumBanner() {
                 <span className="font-semibold text-secondary">Premium Membership</span>
               </div>
               <h2 className="font-playfair text-3xl sm:text-4xl font-bold mb-4 leading-tight">
-                Unlock Everything — From R20/month
+                Premium resources {startingPrice!==null ? '— From R'+startingPrice+'/month' : 'for your next step'}
               </h2>
               <p className="text-primary-foreground/80 mb-6 leading-relaxed">
-                Students from R20 · Parents from R50 · Tutors from R150.
+                View the latest student, parent and tutor prices on the Premium page.
                 Get full access to premium resources, past papers, tutor notes, and more.
               </p>
               <Link to="/premium">

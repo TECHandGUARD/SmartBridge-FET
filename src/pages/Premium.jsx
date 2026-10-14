@@ -1,3 +1,4 @@
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { appConfig } from '@/lib/config';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -8,7 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Star, CheckCircle, Shield, Users, Loader2, CreditCard, GraduationCap, Briefcase, Copy, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
-const PLANS = [
+const PLAN_TEMPLATES = [
 {
   id: 'student',
   label: 'Student Premium',
@@ -67,6 +68,8 @@ const YOCO_LINKS = appConfig.checkout;
 
 export default function Premium() {
   const { user } = useAuth() || {};
+  const prices = useSubscriptionPrices();
+  const PLANS = PLAN_TEMPLATES.map(plan=>({...plan,price:(prices.data?.find(row=>row.product===plan.id)?.amount_cents||0)/100}));
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -101,11 +104,11 @@ export default function Premium() {
       });
       if(error) throw error;
       if(data?.status === 'paid') { paymentIntent.current=null; try { sessionStorage.removeItem(storageKey); } catch { /* No stored intent. */ } toast.info('Payment already received. Refresh your account status.'); await loadSubscription(); return; }
-      if(data?.amount_cents !== Math.round(plan.price * 100)) throw new Error('The plan price has changed. Contact support before paying.');
+      if(data?.amount_cents !== Math.round(plan.price * 100)) { await prices.refetch(); throw new Error('The plan price changed. Review the updated price before paying.'); }
       const redirect = new URL(data.redirect_url);
       if(redirect.protocol !== 'https:' || !(gateway==='paystack'?['checkout.paystack.com']:['c.yoco.com','pay.yoco.com']).includes(redirect.hostname) || redirect.username || redirect.password) throw new Error('Invalid payment redirect.');
       window.location.assign(redirect.href);
-    } catch(error) { toast.error(error.message || 'Checkout unavailable. Please retry.'); }
+    } catch(error) { paymentIntent.current=null; try {sessionStorage.removeItem(storageKey);} catch { /* Retry remains available. */ } await prices.refetch(); toast.error(error.message || 'Checkout unavailable. Please retry.'); }
     finally { setCheckingOut(false); }
   };
 
@@ -155,7 +158,7 @@ export default function Premium() {
     catch { toast.error('Could not copy. Please select and copy the text.'); }
   };
 
-  if (loading) {
+  if (loading || prices.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -163,6 +166,7 @@ export default function Premium() {
     );
   }
 
+  if(prices.isError || !prices.data) return <div className="max-w-lg mx-auto p-8 space-y-4" role="alert"><h1 className="text-xl font-bold">Subscription prices unavailable</h1><p>Please load the current prices before making a payment.</p><Button onClick={()=>prices.refetch()}>Retry prices</Button></div>;
   return (
     <div className="min-h-screen bg-background py-12">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -265,7 +269,7 @@ export default function Premium() {
                     {appConfig.paymentsApiEnabled && <div className="space-y-2">
                       {gatewaysLoading?<p role="status">Loading payment options…</p>:gatewayError?<p role="alert">{gatewayError}</p>:gateways.length?<label className="block text-sm">Payment gateway<select className="block w-full border rounded-md p-2 mt-1 bg-background" value={gateway} onChange={event=>setGateway(event.target.value)}>{gateways.map(item=><option key={item.provider} value={item.provider}>{item.name}{item.mode==='test'?' — test mode':''}</option>)}</select></label>:<p role="status">No online payment gateway is currently available.</p>}
                     </div>}
-                    {appConfig.paymentsApiEnabled ? <Button className="w-full" disabled={!user || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : YOCO_LINKS[plan.id] ? <a
+                    {appConfig.paymentsApiEnabled ? <Button className="w-full" disabled={!user || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : YOCO_LINKS[plan.id] && plan.price === appConfig.prices[plan.id] ? <a
                       href={YOCO_LINKS[plan.id]}
                       target="_blank"
                       rel="noopener noreferrer"
