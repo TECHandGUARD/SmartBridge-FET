@@ -362,7 +362,7 @@ const assert=require('node:assert/strict');
  }
  // Assert content and the resolved route; an HTTP 200 SPA shell can still render a 404.
  await page.goto('http://127.0.0.1:5173/TermsOfService');
- await page.getByRole('heading',{name:'Terms, policies and downloadable forms'}).waitFor();
+ await page.getByRole('heading',{name:'Legal documents'}).waitFor();
  assert.equal(new URL(page.url()).pathname,'/terms');
  await page.getByText('SmartBridge FET is operated by TECH AND GUARD (Pty) Ltd',{exact:false}).waitFor();
  profile={...profile,role:'school_counselor',is_super_admin:false,onboarding_complete:true};
