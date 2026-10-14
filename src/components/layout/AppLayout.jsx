@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
+import NotificationInbox from '@/components/operations/NotificationInbox';
 import Footer from './Footer';
 import MobileHeader from './MobileHeader';
 import MobileBottomTabs from './MobileBottomTabs';
@@ -46,6 +47,7 @@ export default function AppLayout() {
     <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:p-3 focus:text-primary-foreground">Skip to content</a>
     <div className="hidden lg:block"><Navbar user={user} /></div>
     <div className="lg:hidden"><MobileHeader user={user} /></div>
+    {user?.id && <NotificationInbox userId={user.id} />}
     <main id="main-content" ref={main} tabIndex={-1} className="app-main flex-1 outline-none">
       <motion.div key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
     </main>

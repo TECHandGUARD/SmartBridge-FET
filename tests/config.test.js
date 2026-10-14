@@ -17,7 +17,7 @@ test('missing connection fails clearly; public keys and legacy anon work, privil
     assert.equal(result.config.supabaseKey, '');
     assert.ok(result.errors.every(error => !error.includes(key)));
   }
-  assert.ok(readPublicConfig({...connection, VITE_GEMINI_API_KEY:'private-value'}).errors.length);
+  assert.ok(readPublicConfig({...connection, VITE_OPENAI_API_KEY:'private-value'}).errors.length);
 });
 
 test('optional checkout fails closed, staging uses its own origin, and prices share validated values', () => {
@@ -45,13 +45,13 @@ function serverConfig(env) {
   return context.exports;
 }
 test('server configuration requires a selected model and trusted app origin, without embedding API keys in URLs', () => {
-  assert.throws(()=>serverConfig({}).geminiSettings(), /GEMINI_MODEL is not configured/);
-  const settings = serverConfig({GEMINI_MODEL:'account-model', GEMINI_API_KEY:'private-test-key', APP_BASE_URL:'https://staging.example.test'});
+  assert.throws(()=>serverConfig({}).openaiSettings(), /OPENAI_MODEL is not configured/);
+  const settings = serverConfig({OPENAI_MODEL:'account-model', OPENAI_API_KEY:'private-test-key', APP_BASE_URL:'https://staging.example.test'});
   assert.equal(settings.appUrl('/bookings'), 'https://staging.example.test/bookings');
-  assert.equal(settings.geminiSettings().url, 'https://generativelanguage.googleapis.com/v1beta/models/account-model:generateContent');
-  assert.ok(!settings.geminiSettings().url.includes('private-test-key'));
+  assert.equal(settings.openaiSettings().url, 'https://api.openai.com/v1/responses');
+  assert.ok(!settings.openaiSettings().url.includes('private-test-key'));
   assert.throws(()=>serverConfig({APP_BASE_URL:'https://evil.test/path'}).appUrl('/bookings'), /HTTPS origin/);
-  assert.throws(()=>serverConfig({GEMINI_MODEL:'model?key=x'}).geminiSettings(), /model ID/);
+  assert.throws(()=>serverConfig({OPENAI_MODEL:'model?key=x'}).openaiSettings(), /model ID/);
 });
 
 test('Amplify public password routes and length settings are allowed while credentials remain blocked',()=>{

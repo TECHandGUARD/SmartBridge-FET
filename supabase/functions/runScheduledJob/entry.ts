@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { serverConnection, requiredEnv } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
 import { readJson, text, json, apiError } from '../../shared/api.ts';
-const allowed = new Set(['send-study-reminders', 'send-session-reminders', 'send-nbt-reminders', 'send-deadline-reminders', 'expire-subscriptions', 'send-weekly-parent-reports', 'send-operational-alerts']);
+const allowed = new Set(['send-study-reminders', 'send-session-reminders', 'send-nbt-reminders', 'send-deadline-reminders', 'expire-subscriptions', 'send-weekly-parent-reports', 'send-operational-alerts', 'dispatch-notifications']);
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
@@ -22,7 +22,7 @@ serve(withHttp(async (request) => {
                 failure(400, 'Unknown job target');
             const response = await fetch(`${url}/functions/v1/${job.function_slug}`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-job-secret': requiredEnv('JOB_AUTH_SECRET') }, body: JSON.stringify(job.body || {}), signal: AbortSignal.timeout(60000) });
             const result = await response.json();
-            status = response.ok ? (Array.isArray(result?.errors) && result.errors.length ? 'partial' : 'success') : 'failed';
+            status = response.ok ? ((Array.isArray(result?.errors) && result.errors.length) || result?.failed > 0 ? 'partial' : 'success') : 'failed';
         }
         catch {
             status = 'failed';

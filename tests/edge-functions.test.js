@@ -81,11 +81,11 @@ test('all five AI handlers use the configured model and header credential while 
  for(const name of ['generateQuiz','studentOpportunitiesAssistant','discoverApplicationDeadlines','discoverOpportunityGuides','discoverUniversityProspectuses']){
   const calls=[];const client=fakeClient({id:'user-id',role:'admin',is_active:true},call=>({data:call.table==='universities'?[{name:'Test University',website:'https://example.test'}]:[],error:null}));
   const result={questions:[{question:'Test?',options:['A','B','C','D'],correct_index:0}],topic_summary:'Summary',response:'Answer',guides:[],deadlines:[],prospectuses:[]};
-  const runtime=edgeRuntime(name,{client,fetch:async(url,options)=>{calls.push({url,options});return Response.json({candidates:[{content:{parts:[{text:JSON.stringify(result)}]}}]});}});
+  const runtime=edgeRuntime(name,{client,fetch:async(url,options)=>{calls.push({url,options});return Response.json({status:'completed',output:[{type:'message',content:[{type:'output_text',text:JSON.stringify(result)}]}]});}});
   const response=await runtime.handle(request({subject:'Math',grade:'Grade 12',topic:'Algebra',message:'What is NBT?'}));
   assert.equal(response.status,200,name);assert.equal(calls.length,1,name);
-  assert.equal(calls[0].url,'https://generativelanguage.googleapis.com/v1beta/models/account-model:generateContent');
-  assert.equal(calls[0].options.headers['x-goog-api-key'],'model-test-key');assert.ok(!calls[0].url.includes('model-test-key'));
+  assert.equal(calls[0].url,'https://api.openai.com/v1/responses');
+  assert.equal(calls[0].options.headers.Authorization,'Bearer model-test-key');assert.ok(!calls[0].url.includes('model-test-key'));
  }
 });
 

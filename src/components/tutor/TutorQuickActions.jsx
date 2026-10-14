@@ -42,7 +42,7 @@ const actions = [{
   activeColor: 'bg-rose-600 text-white dark:bg-rose-700'
 }, {
   key: 'reviews',
-  label: 'My Reviews',
+  label: 'My Profile & Reviews',
   icon: Star,
   color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300',
   activeColor: 'bg-orange-600 text-white dark:bg-orange-700'

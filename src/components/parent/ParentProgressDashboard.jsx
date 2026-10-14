@@ -83,6 +83,16 @@ export default function ParentProgressDashboard({ user, onLinked = undefined }) 
     return () => { ++requestGeneration.current; };
   }, [learnerId, loadChildData]);
 
+  useEffect(() => {
+    if (!learnerId) return;
+    const channel = supabase.channel(`parent-report:${learnerId}`);
+    for (const table of ['study_progress', 'quiz_results', 'tutor_bookings']) {
+      channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `student_id=eq.${learnerId}` }, () => loadChildData(learnerId));
+    }
+    channel.subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [learnerId, loadChildData]);
+
   const chartData = progress.map(p => ({
     subject: SUBJECTS.find(s => s.name === p.subject)?.icon + ' ' + (p.subject?.substring(0, 8) || p.subject),
     sessions: p.study_sessions || 0,

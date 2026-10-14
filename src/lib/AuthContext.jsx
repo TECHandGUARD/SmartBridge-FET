@@ -71,6 +71,12 @@ export const AuthProvider = ({ children }) => {
     checkUser();
     return () => { alive.current = false; ++generation.current; clearTimeout(timer); subscription.unsubscribe(); };
   }, [checkUser, hydrate]);
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase.channel(`account-role-${user.id}`).on('postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'users', filter: `id=eq.${user.id}` }, () => { checkUser(); }).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id, checkUser]);
   const signIn = async (email, password) => {
     setIsLoadingAuth(true);
     try {

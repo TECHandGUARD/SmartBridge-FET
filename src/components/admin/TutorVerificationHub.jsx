@@ -1,5 +1,4 @@
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const appUrl = import.meta.env.VITE_APP_URL || window.location.origin;
+import { approveAccount } from '@/lib/action-notifications';
 
 // ============================================================
 // Helper Functions
@@ -23,72 +22,6 @@ function timeSince(dateStr) {
   const days = Math.floor(hours / 24);
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
-const sendTutorApprovalEmail = async tutor => {
-  const isSACE = !!tutor.sace_number;
-  const tutorType = isSACE ? 'SACE Registered Tutor' : 'Student Tutor';
-  try {
-    const {
-      data,
-      error
-    } = await supabase.functions.invoke('send-email', {
-      body: {
-        to: tutor.user_email,
-        subject: `✅ Your ${appName} Tutor Profile is Verified!`,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #0F766E, #0d9488); padding: 20px; border-radius: 10px 10px 0 0; color: white; text-align: center;">
-              <h2 style="margin: 0;">🎉 Welcome to the Tutor Network!</h2>
-            </div>
-            <div style="padding: 20px; background: #f8fafc; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb;">
-              <p>Dear <strong>${tutor.full_name}</strong>,</p>
-              <p>Great news! Your tutor profile on ${appName} has been <strong style="color: #16a34a;">verified and approved</strong> by our admin team.</p>
-
-              <div style="background-color: #f0fdf4; padding: 15px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #0F766E;">
-                <h3 style="margin-top: 0; color: #166534;">✅ Verification Details</h3>
-                <p style="margin: 5px 0;">• Account Type: <strong>${tutorType}</strong></p>
-                ${isSACE ? `<p style="margin: 5px 0;">• SACE Number: <strong>${tutor.sace_number}</strong></p>` : ''}
-                <p style="margin: 5px 0;">• Verification Date: ${new Date().toLocaleDateString()}</p>
-              </div>
-
-              <h3>🎓 What You Can Do Now:</h3>
-              <ul style="padding-left: 20px;">
-                <li>Accept booking requests from students</li>
-                <li>Upload study resources to share with learners</li>
-                <li>Set your availability calendar</li>
-                <li>Earn through tutoring sessions</li>
-                <li>Get featured in the tutor directory</li>
-              </ul>
-
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${appUrl}/tutor-dashboard"
-                   style="background-color: #0F766E; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; display: inline-block;">
-                  🚀 Go to Your Dashboard
-                </a>
-              </div>
-
-              <hr style="margin: 20px 0; border-color: #e5e7eb;">
-
-              <p style="font-size: 11px; color: #999; text-align: center;">
-                — ${appName} / Tech &amp; GUARD Pty Ltd<br>
-                <a href="${appUrl}" style="color: #0F766E;">${appUrl}</a>
-              </p>
-            </div>
-          </div>
-        `
-      }
-    });
-    if (error) throw error;
-    return {
-      success: true
-    };
-  } catch (error) {
-    console.error('Failed to send tutor approval email:', error);
-    return {
-      success: false,
-      error
-    };
-  }
-};
 export default function TutorVerificationHub() {
   const [pendingProfiles, setPendingProfiles] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
@@ -137,31 +70,10 @@ export default function TutorVerificationHub() {
   const handleVerify = async tutor => {
     setProcessing(tutor.id);
     try {
-      const {
-        error: updateError
-      } = await supabase.from('tutor_profiles').update({
-        is_verified: true,
-        updated_at: new Date().toISOString()
-      }).eq('id', tutor.id);
-      if (updateError) throw updateError;
-      const tutorType = tutor.sace_number ? 'sace_tutor' : 'student_tutor';
-      const {
-        error: userError
-      } = await supabase.from('users').update({
-        role: tutorType
-      }).eq('email', tutor.user_email);
-      if (userError) console.error('Error updating user role:', userError);
-      await supabase.from('activity_log').insert({
-        event_type: 'tutor_verified',
-        user_email: tutor.user_email,
-        description: `Admin verified tutor: ${tutor.full_name}`
-      });
-      const emailResult = await sendTutorApprovalEmail(tutor);
-      if (emailResult.success) {
-        toast.success(`✅ ${tutor.full_name} verified. Approval email sent.`);
-      } else {
-        toast.success(`✅ ${tutor.full_name} verified. Email failed to send.`);
-      }
+      const { data: account, error } = await supabase.from('users').select('id').eq('email', tutor.user_email).single();
+      if (error) throw error;
+      const result = await approveAccount(account.id, tutor.sace_number ? 'sace_tutor' : 'student_tutor');
+      toast.success(`Tutor approved. ${result.email.status === 'accepted' ? 'Email accepted by the provider.' : 'Email queued; delivery needs attention.'}`);
       setPendingProfiles(prev => prev.filter(t => t.id !== tutor.id));
     } catch (error) {
       console.error('Verification error:', error);

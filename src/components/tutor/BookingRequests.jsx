@@ -1,3 +1,5 @@
+import { cancelBooking } from '@/lib/bookings';
+import { dispatchBookingNotifications } from '@/lib/action-notifications';
 import { Shield } from 'lucide-react';
 import { isReleaseFeatureEnabled } from '@/lib/release-scope';
 const PLATFORM_FEE_PERCENT = 0.10;
@@ -136,22 +138,7 @@ export default function BookingRequests({
       supabase.removeChannel(channel);
     };
   }, [user?.email, loadData]);
-  const sendEmailNotification = async booking => {
-    if (!isReleaseFeatureEnabled('externalEmail')) return;
-    try {
-      const {
-        error
-      } = await supabase.functions.invoke('send-email', {
-        body: {
-          kind: 'booking-status',
-          booking_id: booking.id
-        }
-      });
-      if (error) console.error('Email notification error:', error);
-    } catch (err) {
-      console.error('Failed to send email:', err);
-    }
-  };
+
   const accept = async booking => {
     setProcessing(booking.id);
     const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || '';
@@ -175,7 +162,7 @@ export default function BookingRequests({
         status: 'confirmed',
         session_link: sessionLink
       } : b));
-      await sendEmailNotification(booking);
+      await dispatchBookingNotifications(booking.id);
       toast.success('Booking confirmed.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
@@ -188,20 +175,8 @@ export default function BookingRequests({
   const decline = async (booking, reason = null) => {
     setProcessing(booking.id);
     try {
-      const {
-        error
-      } = await supabase.from('tutor_bookings').update({
-        status: 'cancelled',
-        cancellation_reason: reason,
-        updated_at: new Date().toISOString()
-      }).eq('id', booking.id);
-      if (error) throw error;
-      setBookings(prev => prev.map(b => b.id === booking.id ? {
-        ...b,
-        status: 'cancelled',
-        cancellation_reason: reason
-      } : b));
-      await sendEmailNotification(booking);
+      const updated = await cancelBooking(booking.id, reason || 'The tutor is cancelling this session and cannot attend. Please contact support about a paid booking refund.');
+      setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, ...updated } : b));
       toast.info('Booking declined.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {

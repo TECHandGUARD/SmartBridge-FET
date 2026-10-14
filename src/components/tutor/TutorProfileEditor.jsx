@@ -34,8 +34,8 @@ const DEFAULT_CONFIG = {
       allowedTypes: ['image/jpeg', 'image/png', 'image/jpg', 'image/webp']
     },
     video: {
-      maxSizeMB: 50,
-      allowedTypes: ['video/mp4', 'video/quicktime']
+      maxSizeMB: 20,
+      allowedTypes: ['video/mp4']
     }
   },
   validation: {
@@ -327,20 +327,20 @@ export default function TutorProfileEditor({
     setError(null);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `tutor-avatars/${user.email}_${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/photo-${crypto.randomUUID()}.${fileExt}`;
       const interval = setInterval(() => {
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 200);
       const {
         error: uploadError
-      } = await supabase.storage.from('avatars').upload(fileName, file);
+      } = await supabase.storage.from('tutor-profile-media').upload(fileName, file);
       clearInterval(interval);
       if (uploadError) throw uploadError;
       const {
         data: {
           publicUrl
         }
-      } = supabase.storage.from('avatars').getPublicUrl(fileName);
+      } = supabase.storage.from('tutor-profile-media').getPublicUrl(fileName);
       setAvatarUrl(publicUrl);
       setUploadProgress(100);
       setIsDirty(true);
@@ -374,16 +374,16 @@ export default function TutorProfileEditor({
     setError(null);
     try {
       const fileExt = file.name.split('.').pop();
-      const fileName = `tutor-videos/${user.email}_${Date.now()}.${fileExt}`;
+      const fileName = `${user.id}/intro-${crypto.randomUUID()}.${fileExt}`;
       const {
         error: uploadError
-      } = await supabase.storage.from('videos').upload(fileName, file);
+      } = await supabase.storage.from('tutor-profile-media').upload(fileName, file);
       if (uploadError) throw uploadError;
       const {
         data: {
           publicUrl
         }
-      } = supabase.storage.from('videos').getPublicUrl(fileName);
+      } = supabase.storage.from('tutor-profile-media').getPublicUrl(fileName);
       setVideoUrl(publicUrl);
       setIsDirty(true);
       toast.success('Introduction video uploaded!');
@@ -556,7 +556,7 @@ export default function TutorProfileEditor({
         {}
         <div className="space-y-3 bg-muted/30 rounded-xl p-4 dark:bg-muted/20">
           <p className="text-sm font-semibold flex items-center gap-1.5">
-            <UserIcon className="w-4 h-4 text-primary" /> Profile Photo
+            <UserIcon className="w-4 h-4 text-primary" /> Public Profile Photo
           </p>
           <p className="text-[11px] text-muted-foreground">
             Upload a <strong>real photo of yourself</strong> (selfie or professional headshot).
@@ -586,10 +586,10 @@ export default function TutorProfileEditor({
         {}
         <div className="space-y-3 bg-muted/30 rounded-xl p-4 dark:bg-muted/20">
           <p className="text-sm font-semibold flex items-center gap-1.5">
-            <Video className="w-4 h-4 text-primary" /> Introduction Video (Optional)
+            <Video className="w-4 h-4 text-primary" /> Public Introduction Video (Optional)
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Max {config.uploadLimits?.video?.maxSizeMB || 50}MB, MP4 format. 30-60 seconds recommended.
+            Max {config.uploadLimits?.video?.maxSizeMB || 20}MB, MP4 format. 30-60 seconds recommended.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -602,7 +602,7 @@ export default function TutorProfileEditor({
 
             <div className="flex gap-2">
               <label className="cursor-pointer">
-                <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={uploadingVideo} />
+                <input type="file" accept="video/mp4" onChange={handleVideoUpload} className="hidden" disabled={uploadingVideo} />
                 <Button type="button" variant="outline" size="sm" disabled={uploadingVideo} className="gap-1">
                   {uploadingVideo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Video className="w-3 h-3" />}
                   {uploadingVideo ? 'Uploading...' : 'Upload Video'}
