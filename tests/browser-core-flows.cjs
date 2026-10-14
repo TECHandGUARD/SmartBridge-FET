@@ -418,7 +418,7 @@ const assert=require('node:assert/strict');
  await page.getByLabel('Contains personal information / completed form',{exact:true}).check();
  assert.deepEqual(await page.getByLabel('Who can view this document?',{exact:true}).locator('option').evaluateAll(options=>options.map(option=>option.value)),['owner','admin']);
  await page.getByLabel('Who can view this document?',{exact:true}).selectOption('owner');
- await page.getByLabel('Specific user account ID',{exact:true}).fill(profile.id);
+ await page.getByLabel('Registered user email',{exact:true}).fill(profile.email);
  await page.getByLabel(/^Version/).fill('1.1');
  await page.getByRole('button',{name:'Save document',exact:true}).click();
  await page.getByLabel('Document key',{exact:true}).waitFor();
