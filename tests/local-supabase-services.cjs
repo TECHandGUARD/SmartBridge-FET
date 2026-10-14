@@ -119,10 +119,13 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const reminder=ok(await staff.client.rpc('queue_counselor_reminder',{learner_id:student.id}));
  assert.equal(ok(await staff.client.rpc('queue_counselor_reminder',{learner_id:student.id})),reminder);
  assert.ok((await staff.client.rpc('queue_counselor_reminder',{learner_id:other.id})).error);
+ await staff.client.realtime.setAuth(staff.token);
+ const beforeRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;
  let signalResolve;const signal=new Promise(resolve=>{signalResolve=resolve;});
  const staffChannel=staff.client.channel('staff-signal-acceptance').on('postgres_changes',{event:'UPDATE',schema:'public',table:'counselor_dashboard_signals',filter:'counselor_id=eq.'+staff.id},payload=>signalResolve(payload));
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Staff Realtime subscription unavailable')),20000);staffChannel.subscribe(status=>{if(status==='SUBSCRIBED'){clearTimeout(timer);resolve();}if(status==='CHANNEL_ERROR'){clearTimeout(timer);reject(new Error('Staff Realtime subscription failed'));}});});
  ok(await student.client.from('university_applications').update({stage:'Started'}).eq('id',application.id));
+ const afterRevision=ok(await staff.client.from('counselor_dashboard_signals').select('revision').eq('counselor_id',staff.id).single()).revision;assert.ok(afterRevision>beforeRevision,'Staff signal trigger must advance');
  let eventTimer;const signalEvent=await Promise.race([signal,new Promise((_,reject)=>{eventTimer=setTimeout(()=>reject(new Error('Staff Realtime signal missing')),20000);})]);clearTimeout(eventTimer);
  assert.equal(signalEvent.new.counselor_id,staff.id);await staff.client.removeChannel(staffChannel);
  ok(await student.client.rpc('respond_counselor_link',{link_id:assigned,decision:'revoked'}));

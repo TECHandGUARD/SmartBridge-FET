@@ -85,8 +85,10 @@ create trigger counselor_documents_signal after insert or update or delete on pu
 revoke all on function smartbridge_private.signal_counselor_dashboard() from public,anon,authenticated;
 revoke all on function smartbridge_private.assign_counselor(text,text,text),public.assign_counselor(text,text,text),smartbridge_private.respond_counselor_link(uuid,text),public.respond_counselor_link(uuid,text),smartbridge_private.get_counselor_dashboard(),public.get_counselor_dashboard(),smartbridge_private.queue_counselor_reminder(uuid),public.queue_counselor_reminder(uuid) from public,anon;
 grant execute on function smartbridge_private.assign_counselor(text,text,text),public.assign_counselor(text,text,text),smartbridge_private.respond_counselor_link(uuid,text),public.respond_counselor_link(uuid,text),smartbridge_private.get_counselor_dashboard(),public.get_counselor_dashboard(),smartbridge_private.queue_counselor_reminder(uuid),public.queue_counselor_reminder(uuid) to authenticated;
-do $$begin
- if exists(select 1 from pg_publication where pubname='supabase_realtime') then
-  alter publication supabase_realtime add table public.counselor_student_links,public.counselor_dashboard_signals;
- end if;
+-- Fresh local databases may not have the hosted default publication yet.
+do $$declare relation text;begin
+ if not exists(select 1 from pg_publication where pubname='supabase_realtime') then create publication supabase_realtime;end if;
+ foreach relation in array array['quiz_results','users','tutor_profiles','tutor_bookings','parent_student_links','study_sessions','student_progress','syllabus_progress','nbt_planner_progress','action_notifications','study_room_memberships','study_room_replies','counselor_student_links','counselor_dashboard_signals'] loop
+  if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and schemaname='public' and tablename=relation) then execute format('alter publication supabase_realtime add table public.%I',relation);end if;
+ end loop;
 end;$$;

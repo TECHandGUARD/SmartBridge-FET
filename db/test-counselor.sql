@@ -1,4 +1,6 @@
-reset role;select set_config('request.jwt.claims','{}',true);
+reset role;
+do $$begin if not exists(select 1 from pg_publication_tables where pubname='supabase_realtime' and tablename='counselor_dashboard_signals') then raise exception 'Dashboard signal publication missing';end if;end;$$;
+select set_config('request.jwt.claims','{}',true);
 insert into auth.users(id,email,raw_user_meta_data) values
 ('00000000-0000-4000-8000-000000004011','counselor-admin@example.invalid','{}'),
 ('00000000-0000-4000-8000-000000004012','counselor-staff@example.invalid','{}'),
