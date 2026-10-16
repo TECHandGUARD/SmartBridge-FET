@@ -1,6 +1,7 @@
+import { parseTutorRate, rateLabel } from '@/lib/tutor-pricing';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Linkedin, Twitter, Shield, AlertCircle } from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { SUBJECTS } from '@/lib/subjects';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -39,9 +40,7 @@ const DEFAULT_CONFIG = {
     }
   },
   validation: {
-    saceRegex: /^\d{10,12}$/,
-    minHourlyRate: 50,
-    maxHourlyRate: 1000
+    saceRegex: /^\d{10,12}$/
   },
   autoSave: {
     enabled: true,
@@ -85,22 +84,7 @@ const TEACHING_LANGUAGES = ['English', 'Afrikaans', 'isiZulu', 'isiXhosa', 'Seso
 const GRADES = ['Grade 10', 'Grade 11', 'Grade 12'];
 const STUDY_YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Honours', 'Masters', 'PhD', 'Graduated', 'N/A'];
 const getDraftKey = email => `tutor_profile_draft_${email}`;
-export default function TutorProfileEditor({
-  profile,
-  user,
-  onProfileUpdate
-}) {
-  const {
-    config,
-    loading: configLoading
-  } = useProfileConfig();
-  const [previewMode, setPreviewMode] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(DEFAULT_CONFIG.autoSave?.enabled ?? true);
-  const [lastAutoSave, setLastAutoSave] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({sace_number:'',session_price_per_hour:''});
-  const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false);
-  const [form, setForm] = useState({
+const profileForm = profile => ({
     bio: profile?.bio || '',
     institution: profile?.institution || '',
     study_field: profile?.study_field || '',
@@ -111,9 +95,28 @@ export default function TutorProfileEditor({
     qualifications: profile?.qualifications || [],
     specializations: profile?.specializations || [],
     session_price_per_hour: profile?.session_price_per_hour ?? profile?.hourly_rate ?? '',
-    group_session_price: profile?.group_session_price || '',
+    group_session_price: profile?.group_session_price ?? '',
+    subject_rates: profile?.subject_rates || {},
+    offers_free_intro: profile?.offers_free_intro || false,
     teaching_languages: profile?.teaching_languages || []
   });
+export default function TutorProfileEditor({
+  profile,
+  user,
+  onProfileUpdate
+}) {
+  const {
+    config,
+    loading: configLoading
+  } = useProfileConfig();
+  const [previewMode, setPreviewMode] = useState(false);
+  const saveInFlight = useRef(false);
+  const [isDirty, setIsDirty] = useState(false);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(DEFAULT_CONFIG.autoSave?.enabled ?? true);
+  const [lastAutoSave, setLastAutoSave] = useState(null);
+  const [validationErrors, setValidationErrors] = useState(/** @type {Record<string, string>} */ ({}));
+  const [sessionExpiryWarning, setSessionExpiryWarning] = useState(false);
+  const [form, setForm] = useState(() => profileForm(profile));
   const [socialLinks, setSocialLinks] = useState({
     linkedin: profile?.metadata?.social_links?.linkedin || '',
     twitter: profile?.metadata?.social_links?.twitter || '',
@@ -140,25 +143,23 @@ export default function TutorProfileEditor({
     let total = 0;
     Object.entries(weights).forEach(([field, weight]) => {
       total += weight;
-      if (field === 'avatar_url' && avatarUrl) score += weight;else if (field === 'bio' && form.bio?.trim()) score += weight;else if (field === 'institution' && form.institution?.trim()) score += weight;else if (field === 'study_field' && form.study_field?.trim()) score += weight;else if (field === 'qualifications' && form.qualifications?.length > 0) score += weight;else if (field === 'subjects' && form.subjects?.length > 0) score += weight;else if (field === 'grades' && form.grades?.length > 0) score += weight;else if (field === 'session_price_per_hour' && form.session_price_per_hour) score += weight;else if (field === 'teaching_languages' && form.teaching_languages?.length > 0) score += weight;else if (field === 'specializations' && form.specializations?.length > 0) score += weight;
+      if (field === 'avatar_url' && avatarUrl) score += weight;else if (field === 'bio' && form.bio?.trim()) score += weight;else if (field === 'institution' && form.institution?.trim()) score += weight;else if (field === 'study_field' && form.study_field?.trim()) score += weight;else if (field === 'qualifications' && form.qualifications?.length > 0) score += weight;else if (field === 'subjects' && form.subjects?.length > 0) score += weight;else if (field === 'grades' && form.grades?.length > 0) score += weight;else if (field === 'session_price_per_hour' && parseTutorRate(form.session_price_per_hour) !== null && Number.isFinite(parseTutorRate(form.session_price_per_hour))) score += weight;else if (field === 'teaching_languages' && form.teaching_languages?.length > 0) score += weight;else if (field === 'specializations' && form.specializations?.length > 0) score += weight;
     });
     return total > 0 ? Math.round(score / total * 100) : 0;
   }, [form, avatarUrl, config.completionWeights]);
   const validateForm = useCallback(() => {
+    /** @type {Record<string, string>} */
     const errors = {};
-    const {
-      saceRegex,
-      minHourlyRate,
-      maxHourlyRate
-    } = config.validation || DEFAULT_CONFIG.validation;
+    const saceRegex = new RegExp(config.validation?.saceRegex || DEFAULT_CONFIG.validation.saceRegex);
     if (form.sace_number && !saceRegex.test(form.sace_number)) {
       errors.sace_number = 'Invalid SACE number (10-12 digits)';
     }
-    if (form.session_price_per_hour) {
-      const price = Number(form.session_price_per_hour);
-      if (isNaN(price) || price < minHourlyRate || price > maxHourlyRate) {
-        errors.session_price_per_hour = `Rate must be between R${minHourlyRate} and R${maxHourlyRate}`;
-      }
+    if (Number.isNaN(parseTutorRate(form.session_price_per_hour))) {
+      errors.session_price_per_hour = 'Enter a non-negative rate with at most two decimal places, or leave blank.';
+    }
+    if (Number.isNaN(parseTutorRate(form.group_session_price))) errors.group_session_price = 'Enter a valid group rate.';
+    if (Object.entries(form.subject_rates).some(([subject, value]) => form.subjects.includes(subject) && Number.isNaN(parseTutorRate(value)))) {
+      errors.subject_rates = 'Enter valid subject rates with at most two decimal places.';
     }
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -408,23 +409,21 @@ export default function TutorProfileEditor({
     toast.success('Video removed');
     await logActivity('video_removed', 'Removed introduction video');
   };
+  const discardChanges = () => {
+    setForm(profileForm(profile));
+    setSocialLinks(profile?.metadata?.social_links || {linkedin: '', twitter: '', website: ''});
+    setAvatarUrl(profile?.avatar_url || '');
+    setVideoUrl(profile?.metadata?.video_url || '');
+    clearDraft();
+  };
   const handleSave = async () => {
-    const {
-      saceRegex,
-      minHourlyRate,
-      maxHourlyRate
-    } = config.validation || DEFAULT_CONFIG.validation;
-    if (form.sace_number && !saceRegex.test(form.sace_number)) {
-      toast.error('Please enter a valid SACE number (10-12 digits) or leave blank.');
-      return;
-    }
-    const hourlyPrice = form.session_price_per_hour ? Number(form.session_price_per_hour) : null;
-    if (hourlyPrice !== null && (isNaN(hourlyPrice) || hourlyPrice < minHourlyRate || hourlyPrice > maxHourlyRate)) {
-      toast.error(`Please enter a valid hourly rate (R${minHourlyRate}-R${maxHourlyRate}).`);
-      return;
-    }
-    const groupPrice = form.group_session_price ? Number(form.group_session_price) : null;
-    if(groupPrice!==null && (!Number.isFinite(groupPrice)||groupPrice<0)) {toast.error('Enter a valid group price');return;}
+    if (saveInFlight.current || !validateForm()) return;
+    const hourlyPrice = parseTutorRate(form.session_price_per_hour);
+    const groupPrice = parseTutorRate(form.group_session_price);
+    const subjectRates = Object.fromEntries(Object.entries(form.subject_rates)
+      .filter(([subject, value]) => form.subjects.includes(subject) && parseTutorRate(value) !== null)
+      .map(([subject, value]) => [subject, parseTutorRate(value)]));
+    saveInFlight.current = true;
     setSaving(true);
     setError(null);
     try {
@@ -441,22 +440,20 @@ export default function TutorProfileEditor({
         session_price_per_hour: hourlyPrice,
         hourly_rate: hourlyPrice,
         group_session_price: groupPrice,
+        subject_rates: subjectRates,
+        offers_free_intro: form.offers_free_intro,
         teaching_languages: form.teaching_languages,
         avatar_url: avatarUrl,
         metadata: {
-          ...profile.metadata,
+          ...profile?.metadata,
           video_url: videoUrl,
           social_links: socialLinks
         },
         updated_at: new Date().toISOString()
       };
-      const {
-        error: updateError
-      } = await supabase.from('tutor_profiles').update(updateData).eq('id', profile.id);
-      if (updateError) throw updateError;
-      const {
-        data: updatedProfile
-      } = await supabase.from('tutor_profiles').select('*').eq('id', profile.id).single();
+      const { data: updatedProfile, error: updateError } = await supabase.from('tutor_profiles')
+        .update(updateData).eq('id', profile.id).eq('user_id', user.id).select('*').single();
+      if (updateError || !updatedProfile) throw updateError || new Error('Profile was not saved. Please retry.');
       onProfileUpdate(updatedProfile);
       clearDraft();
       await logActivity('profile_updated', 'Updated tutor profile', {
@@ -468,6 +465,7 @@ export default function TutorProfileEditor({
       setError(error.message || 'Failed to save profile');
       toast.error('Failed to save profile: ' + error.message);
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   };
@@ -552,7 +550,7 @@ export default function TutorProfileEditor({
           </div>}
       </CardHeader>
 
-      <CardContent className="space-y-7 max-h-[70vh] overflow-y-auto">
+      <CardContent className="space-y-7 sm:max-h-[70vh] sm:overflow-y-auto">
         {}
         <div className="space-y-3 bg-muted/30 rounded-xl p-4 dark:bg-muted/20">
           <p className="text-sm font-semibold flex items-center gap-1.5">
@@ -709,29 +707,43 @@ export default function TutorProfileEditor({
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">One-on-One Rate (ZAR / Hour)</Label>
+              <Label htmlFor="tutor-hourly-rate" className="text-xs">One-on-One Rate (ZAR / Hour)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-semibold">R</span>
-                <Input type="number" placeholder="e.g. 150" value={form.session_price_per_hour} onChange={e => handleFormChange(prev => ({
+                <Input id="tutor-hourly-rate" min="0" step="0.01" type="number" placeholder="e.g. 150" value={form.session_price_per_hour} onChange={e => handleFormChange(prev => ({
                 ...prev,
                 session_price_per_hour: e.target.value
               }))} className={`pl-7 ${validationErrors.session_price_per_hour ? 'border-red-500' : ''}`} />
               </div>
               {validationErrors.session_price_per_hour ? <p className="text-[11px] text-red-500">{validationErrors.session_price_per_hour}</p> : <p className="text-[10px] text-muted-foreground">
-                  Recommended: R120 - R250 per hour.
+                  You choose your rate. Enter 0 for free sessions, or leave blank until ready.
                 </p>}
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Group Session Rate (ZAR / Hour / Student - Optional)</Label>
+              <Label htmlFor="tutor-group-rate" className="text-xs">Group Session Rate (ZAR / Hour / Student - Optional)</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-semibold">R</span>
-                <Input type="number" placeholder="e.g. 80" value={form.group_session_price} onChange={e => handleFormChange(prev => ({
+                <Input id="tutor-group-rate" min="0" step="0.01" type="number" placeholder="e.g. 80" value={form.group_session_price} onChange={e => handleFormChange(prev => ({
                 ...prev,
                 group_session_price: e.target.value
               }))} className="pl-7" />
               </div>
             </div>
           </div>
+          {validationErrors.group_session_price && <p role="alert" className="text-xs text-destructive">{validationErrors.group_session_price}</p>}
+          <p className="text-xs text-muted-foreground">Optional subject rates override your standard hourly rate. Leave a subject blank to use the standard rate.</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {form.subjects.map((subject, index) => <div key={subject} className="space-y-1">
+              <Label htmlFor={`subject-rate-${index}`}>{subject} (R/hour)</Label>
+              <Input id={`subject-rate-${index}`} type="number" min="0" step="0.01" placeholder="Use standard rate"
+                value={form.subject_rates[subject] ?? ''} onChange={e => handleFormChange(prev => ({...prev, subject_rates: {...prev.subject_rates, [subject]: e.target.value}}))} />
+            </div>)}
+          </div>
+          {validationErrors.subject_rates && <p role="alert" className="text-xs text-destructive">{validationErrors.subject_rates}</p>}
+          <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
+            <input type="checkbox" checked={form.offers_free_intro} className="mt-1" onChange={e => handleFormChange(prev => ({...prev, offers_free_intro: e.target.checked}))} />
+            <span>Offer a free 30-minute introduction<span className="block text-xs text-muted-foreground">Optional. One introduction per learner and tutor. Regular sessions use your chosen rates.</span></span>
+          </label>
         </div>
 
         {}
@@ -863,11 +875,11 @@ export default function TutorProfileEditor({
         </div>
 
         {}
-        <div className="flex justify-end gap-2 pt-4 border-t border-border">
-          <Button type="button" variant="ghost" onClick={clearDraft} disabled={!isDirty}>
+        <div className="flex flex-wrap justify-end gap-2 pt-4 border-t border-border">
+          <Button type="button" variant="ghost" onClick={discardChanges} disabled={!isDirty || saving}>
             Discard Changes
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving} className="gap-1.5">
+          <Button type="button" onClick={handleSave} disabled={saving || Object.keys(validationErrors).length > 0} className="gap-1.5">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
           </Button>
@@ -888,7 +900,7 @@ export default function TutorProfileEditor({
               <div>
                 <p className="text-lg font-bold flex items-center gap-1.5">
                   {user?.full_name || 'Your Name'}
-                  {form.sace_number ? <Badge className="bg-green-100 text-green-700 pointer-events-none text-[10px] py-0.5">SACE</Badge> : <Badge className="bg-blue-100 text-blue-700 pointer-events-none text-[10px] py-0.5">Verified</Badge>}
+                  {profile?.is_verified && <Badge className="bg-blue-100 text-blue-700 pointer-events-none text-[10px] py-0.5">Verified</Badge>}
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {form.study_field} at {form.institution}
@@ -924,7 +936,7 @@ export default function TutorProfileEditor({
             <div className="border-t pt-4 flex justify-between items-center">
               <div>
                 <p className="text-[10px] text-muted-foreground uppercase">Rate per Hour</p>
-                <p className="text-xl font-bold text-primary">R {form.session_price_per_hour || '0'}/hr</p>
+                <p className="text-xl font-bold text-primary">{rateLabel(parseTutorRate(form.session_price_per_hour))}</p>
               </div>
               <Button size="sm" onClick={() => setPreviewMode(false)}>
                 Back to Editing

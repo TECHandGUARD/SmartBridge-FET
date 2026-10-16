@@ -1,3 +1,4 @@
+import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
 import { createBooking } from '@/lib/bookings';
 import { useState, useRef, useEffect } from 'react';
@@ -15,15 +16,17 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
     date: '',
     time: '09:00',
     duration_hours: 1,
-    message: ''
+    message: '', is_intro: false
   });
   const bookingRequest = useRef(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   useEffect(() => {
-    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:''}); bookingRequest.current=null; }
+    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',is_intro:false}); bookingRequest.current=null; }
   }, [open, tutor?.id]);
 
+  const rate = tutorRate(tutor, form.subject);
+  const estimate = bookingEstimate(tutor, form);
   const submit = async () => {
     if (loading) return;
     if (!form.date || !form.subject) {
@@ -43,12 +46,13 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
       const booking = await createBooking(tutor, form, bookingRequest.current.id);
       bookingRequest.current = null;
       setDone(true);
+      setLoading(false);
 
       if (onBookingCreated) onBookingCreated(booking);
 
     } catch (err) {
       console.error('Booking error:', err);
-      toast.error('Failed to create booking. Please try again.');
+      toast.error(err.message || 'Failed to create booking. Please try again.');
       setLoading(false);
     }
   };
@@ -84,6 +88,10 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
               </Select>
             </div>
 
+            {tutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
+              <input type="checkbox" checked={form.is_intro} className="mt-1" onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? 0.5 : 1}))} />
+              <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
+            </label>}
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -110,15 +118,15 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
             {/* Duration */}
             <div>
               <Label>Duration (hours)</Label>
-              <Select value={String(form.duration_hours)} onValueChange={v => setForm(f => ({ ...f, duration_hours: Number(v) }))}>
+              <Select disabled={form.is_intro} value={String(form.duration_hours)} onValueChange={v => setForm(f => ({ ...f, duration_hours: Number(v) }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[1, 2, 3].map(h => (
+                  {(form.is_intro ? [0.5] : [0.5, 1, 1.5, 2, 3, 4]).map(h => (
                     <SelectItem key={h} value={String(h)}>
                       {h} hour{h > 1 ? 's' : ''}
-                      {tutor?.hourly_rate ? ` — R${tutor.hourly_rate * h}` : ''}
+                      {rate !== null && Number.isFinite(rate) && !form.is_intro ? ` — R${(rate * h).toFixed(2)}` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -136,19 +144,16 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
             </div>
 
             {/* Cost Estimate */}
-            {tutor?.hourly_rate && (
-              <div className="bg-primary/5 rounded-xl p-3 text-sm">
-                <span className="text-muted-foreground">Estimated cost: </span>
-                <span className="font-bold text-primary">
-                  R{tutor.hourly_rate * form.duration_hours}
-                </span>
-              </div>
-            )}
+            <div className="bg-primary/5 rounded-xl p-3 text-sm" aria-live="polite">
+              <span className="text-muted-foreground">Estimated cost: </span>
+              <span className="font-bold text-primary">{estimate === null ? 'Rate not set — contact the tutor' : estimate === 0 ? 'Free' : `R${estimate.toFixed(2)}`}</span>
+              {!form.is_intro && <p className="text-xs text-muted-foreground">{rateLabel(rate)} · Final price checked when you submit.</p>}
+            </div>
 
             {/* Submit Button */}
             <Button
               onClick={submit}
-              disabled={loading || !form.date || !form.subject}
+              disabled={loading || !form.date || !form.subject || estimate === null}
               className="w-full bg-primary gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarDays className="w-4 h-4" />}

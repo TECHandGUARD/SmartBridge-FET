@@ -20,7 +20,8 @@
     "check:api": "node scripts/check-api-contracts.js",
     "prepare:edge": "node scripts/prepare-edge-deployment.js",
     "configure:auth-email": "node scripts/configure-auth-email.js",
-    "check:db": "node scripts/check-db-baseline.cjs"
+    "check:db": "node scripts/check-db-baseline.cjs",
+    "test:e2e:tutors": "node tests/browser-tutor-pricing.cjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

@@ -1,3 +1,4 @@
+import { tutorRate, rateLabel } from '@/lib/tutor-pricing';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -227,7 +228,7 @@ export default function Tutors() {
                         <Star className="w-3.5 h-3.5" />No reviews yet
                       </span>
                     )}
-                    {tutor.hourly_rate && <span>R{tutor.hourly_rate}/hr</span>}
+                    <span>{rateLabel(tutorRate(tutor))}</span>{tutor.offers_free_intro && <span className="text-primary">Free 30-min intro</span>}
                   </div>
                   <div className="flex gap-1.5 flex-wrap">
                     <Button size="sm" variant="outline" className="gap-1 text-xs h-8" onClick={() => setProfileTutor(tutor)}>

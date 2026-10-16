@@ -8,6 +8,7 @@ export async function createBooking(tutor, form, requestId) {
     profile_id: tutor.id, chosen_subject: form.subject, chosen_date: form.date,
     chosen_time: form.time, hours: Number(form.duration_hours),
     booking_message: form.message?.trim() || '', request_id: requestId,
+    ...(form.is_intro ? { free_intro: true } : {}),
   }));
   if (error) throw error;
   await dispatchBookingNotifications(data.id);

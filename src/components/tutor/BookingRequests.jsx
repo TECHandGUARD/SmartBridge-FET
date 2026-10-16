@@ -477,6 +477,8 @@ export default function BookingRequests({
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.duration_hours}h</span>
                         </div>
 
+                        {b.is_intro && <Badge variant="outline">Free introduction · 30 minutes</Badge>}
+                        {b.amount === 0 && !b.is_intro && <span className="text-xs">Free session</span>}
                         {b.amount > 0 && <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs font-medium text-primary">R{b.amount}</span>
                             <span className="text-[10px] text-muted-foreground">

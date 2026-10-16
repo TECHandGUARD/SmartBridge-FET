@@ -1,3 +1,4 @@
+import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
@@ -43,7 +44,7 @@ export default function Bookings() {
     date: '',
     time: '14:00',
     duration_hours: '1',
-    message: ''
+    message: '', is_intro: false
   });
 
   useEffect(() => {
@@ -91,13 +92,12 @@ export default function Bookings() {
 
   const bookingRequest = useRef(null);
   const selectedTutor = tutors.find(t => t.user_email === form.tutor_email);
-  const computedHourlyDuration = parseFloat(form.duration_hours) || 1;
-  const estimatedCost = (selectedTutor?.hourly_rate || 0) * computedHourlyDuration;
+  const estimatedCost = bookingEstimate(selectedTutor, form);
 
   const handleCreateBooking = async () => {
     if (isSaving) return;
     if (!selectedTutor?.user_id || !form.date) {
-      toast.error('Please specify target scheduling date and tutor requirements.');
+      toast.error('Choose a tutor and session date.');
       return;
     }
     try {
@@ -106,12 +106,12 @@ export default function Bookings() {
       await createBooking(selectedTutor, form, bookingRequest.current.id);
       bookingRequest.current = null;
 
-      toast.success('Lesson reservation dispatched to instructor inbox successfully!');
-      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '' });
+      toast.success('Booking request sent. Your tutor will confirm shortly.');
+      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '', is_intro: false });
       setShowForm(false);
       await fetchBookingDashboardData();
     } catch (err) {
-      toast.error(err.message || 'Transaction submission error.');
+      toast.error(err.message || 'Could not send your booking. Please retry.');
     } finally {
       setIsSaving(false);
     }
@@ -167,7 +167,7 @@ export default function Bookings() {
           <Card className="border-slate-200 shadow-xl bg-white overflow-hidden">
             <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/50">
               <CardTitle className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-blue-600" /> Set Up Target Lesson Request
+                <Calendar className="w-4 h-4 text-blue-600" /> Request a tutoring session
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-4">
@@ -175,22 +175,22 @@ export default function Bookings() {
 
                 {/* Tutor Dropdown Node */}
                 <div className="sm:col-span-2 space-y-1">
-                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Instructor Registry *</Label>
-                  <Select value={form.tutor_email} onValueChange={v => setForm({ ...form, tutor_email: v })}>
+                  <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tutor *</Label>
+                  <Select value={form.tutor_email} onValueChange={v => setForm({ ...form, tutor_email: v, subject: tutors.find(t => t.user_email === v)?.subjects?.[0] || '', is_intro: false, duration_hours: '1' })}>
                     <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
-                      <SelectValue placeholder="Select from verified available SACE educators..." />
+                      <SelectValue placeholder="Select a verified tutor..." />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
                       {tutors.map(t => (
                         <SelectItem key={t.id} value={t.user_email} className="text-xs font-medium">
-                          {t.full_name} (Hourly Rank: R {t.hourly_rate} / hr)
+                          {t.full_name} ({rateLabel(tutorRate(t))})
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {selectedTutor && (
                     <p className="text-[10px] text-slate-400 font-semibold leading-none pl-0.5 mt-1.5">
-                      ✓ Qualifications: {selectedTutor.qualifications} · Focus: {selectedTutor.subjects?.join(', ')}
+                      ✓ Subjects: {selectedTutor.subjects?.join(', ')}
                     </p>
                   )}
                 </div>
@@ -203,7 +203,7 @@ export default function Bookings() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
-                      {SUBJECT_OPTIONS.map(s => (
+                      {(selectedTutor?.subjects || SUBJECT_OPTIONS).map(s => (
                         <SelectItem key={s} value={s} className="text-xs font-medium">{s}</SelectItem>
                       ))}
                     </SelectContent>
@@ -213,12 +213,12 @@ export default function Bookings() {
                 {/* Duration Node */}
                 <div className="space-y-1">
                   <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Session Interval</Label>
-                  <Select value={form.duration_hours} onValueChange={v => setForm({ ...form, duration_hours: v })}>
+                  <Select disabled={form.is_intro} value={form.duration_hours} onValueChange={v => setForm({ ...form, duration_hours: v })}>
                     <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
-                      {['1', '1.5', '2', '3'].map(h => (
+                      {(form.is_intro ? ['0.5'] : ['0.5', '1', '1.5', '2', '3', '4']).map(h => (
                         <SelectItem key={h} value={h} className="text-xs font-medium">
                           {h} Hour{parseFloat(h) !== 1 ? 's' : ''}
                         </SelectItem>
@@ -262,11 +262,15 @@ export default function Bookings() {
                 </div>
               </div>
 
-              {/* FIXED: Complete, unbroken implementation of cost estimation logic */}
+              {selectedTutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
+                <input type="checkbox" className="mt-1" checked={form.is_intro} onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? '0.5' : '1'}))} />
+                <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
+              </label>}
+              <p className="text-xs text-muted-foreground">Session times use South African time. Prices and availability are checked when you submit.</p>
               {selectedTutor && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-blue-700">Estimated Operational Cost:</span>
-                  <span className="text-sm font-black text-blue-800">R {estimatedCost} ZAR</span>
+                  <span className="text-xs font-semibold text-blue-700">Estimated cost:</span>
+                  <span className="text-sm font-black text-blue-800">{estimatedCost === null ? 'Rate not set' : estimatedCost === 0 ? 'Free' : `R${estimatedCost.toFixed(2)}`}</span>
                 </div>
               )}
 
@@ -284,13 +288,13 @@ export default function Bookings() {
                   size="sm"
                   type="button"
                   onClick={handleCreateBooking}
-                  disabled={isSaving}
+                  disabled={isSaving || !selectedTutor || estimatedCost === null || !form.date || !form.subject}
                   className="h-8 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm gap-1.5 rounded-xl"
                 >
                   {isSaving ? (
-                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing Secure Booking...</>
+                    <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</>
                   ) : (
-                    'Dispatch Lesson Proposal'
+                    'Request Booking'
                   )}
                 </Button>
               </div>
@@ -332,6 +336,8 @@ export default function Bookings() {
                           <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{b.subject}</span>
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{b.date}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{cleanTime} · {b.duration_hours}h</span>
+                          {b.is_intro && <Badge variant="outline">Free introduction</Badge>}
+                          {b.amount === 0 && !b.is_intro && <span>Free session</span>}
                           {b.amount > 0 && <span className="flex items-center gap-1 text-blue-600 font-bold">R{b.amount}</span>}
                         </div>
                         {b.message && <p className="text-xs text-slate-400 mt-1 italic">"{b.message}"</p>}
