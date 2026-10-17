@@ -103,7 +103,7 @@ export default function Register() {
               <GraduationCap className="w-8 h-8" />
             </div>
           </div>
-          <CardTitle className="font-playfair text-3xl font-bold">Your future starts here</CardTitle>>
+          <CardTitle className="font-playfair text-3xl font-bold">Your future starts here</CardTitle>
           <p className="text-sm text-muted-foreground">Join {CONFIG.APP_NAME} and take the next step in your learning journey.</p>
           <p className="text-sm font-semibold tracking-wide text-emerald-800 dark:text-emerald-300">Connect. Learn. Grow.</p>
           <div className="grid grid-cols-3 gap-2 pt-3 text-[11px] text-muted-foreground">
