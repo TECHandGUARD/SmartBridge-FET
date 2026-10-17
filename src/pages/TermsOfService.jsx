@@ -22,10 +22,10 @@ export default function TermsOfService() {
     let active = true;
     setLoading(true);
     setError('');
-    supabase.from('legal_documents')
+    Promise.resolve(supabase.from('legal_documents')
       .select('id,doc_key,title,content,version,updated_at,is_published,category,audience,owner_user_id,contains_personal_information,file_path,document_sha256')
       .eq('is_published', true)
-      .order('title')
+      .order('title'))
       .then(({ data, error: loadError }) => {
         if (!active) return;
         if (loadError) {
