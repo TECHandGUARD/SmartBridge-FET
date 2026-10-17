@@ -499,7 +499,7 @@ export default function TutorProfileEditor({
         </CardContent>
       </Card>;
   }
-  return <Card className="border-border">
+  return <Card className="border-emerald-900/10 shadow-[0_18px_65px_-40px_rgba(6,65,46,0.38)] rounded-2xl overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -553,11 +553,15 @@ export default function TutorProfileEditor({
         </div>
 
         {}
-        {isDirty && <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2 dark:bg-amber-950/20 dark:border-amber-800">
-            <p className="text-[10px] text-amber-700 dark:text-amber-300 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              You have unsaved changes. Don't forget to save!
+        {isDirty && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2 dark:bg-amber-950/20 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2 flex-1">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Changes are not yet published. Save your profile to make photos, videos and details visible.
             </p>
+            <Button type="button" size="sm" onClick={handleSave} disabled={saving || uploadingAvatar || uploadingVideo || Object.keys(validationErrors).length > 0} className="gap-2 min-h-11 rounded-xl">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving…' : 'Save Profile'}
+            </Button>
           </div>}
       </CardHeader>
 
@@ -886,7 +890,7 @@ export default function TutorProfileEditor({
           <Button type="button" variant="ghost" onClick={discardChanges} disabled={!isDirty || saving}>
             Discard Changes
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving || Object.keys(validationErrors).length > 0} className="gap-1.5">
+          <Button type="button" onClick={handleSave} disabled={saving || uploadingAvatar || uploadingVideo || Object.keys(validationErrors).length > 0} className="gap-1.5 min-h-11 rounded-xl">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
           </Button>
