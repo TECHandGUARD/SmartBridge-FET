@@ -13,6 +13,7 @@ import PageNotFound from './lib/PageNotFound';
 // ============================================================
 // 🚀 LAZY LOAD PAGES (Reduces initial bundle size)
 // ============================================================
+const StemLab = lazy(() => import('./pages/StemLab'));
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -179,6 +180,9 @@ const AuthenticatedApp = () => {
               </RequireAuthAndOnboarding>
             }
           />
+
+          {/* Shared learning tool: no tutor role or learner-data permissions required. */}
+          <Route path="/stem-lab" element={<RequireAuthAndOnboarding><StemLab /></RequireAuthAndOnboarding>} />
 
           {/* 📊 STUDENT DASHBOARD */}
           <Route

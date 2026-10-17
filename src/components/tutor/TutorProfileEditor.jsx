@@ -431,7 +431,7 @@ export default function TutorProfileEditor({
         bio: form.bio,
         institution: form.institution,
         study_field: form.study_field,
-        study_year: form.study_year,
+        study_year: form.study_year || null,
         sace_number: form.sace_number || null,
         subjects: form.subjects,
         grades: form.grades,

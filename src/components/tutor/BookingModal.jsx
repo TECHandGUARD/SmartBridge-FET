@@ -1,3 +1,4 @@
+import SponsorshipChoice from '@/components/student/SponsorshipChoice';
 import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
 import { createBooking } from '@/lib/bookings';
@@ -16,13 +17,13 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
     date: '',
     time: '09:00',
     duration_hours: 1,
-    message: '', is_intro: false
+    message: '', is_intro: false, sponsorship_allocation_id: ''
   });
   const bookingRequest = useRef(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   useEffect(() => {
-    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',is_intro:false}); bookingRequest.current=null; }
+    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',is_intro:false,sponsorship_allocation_id:''}); bookingRequest.current=null; }
   }, [open, tutor?.id]);
 
   const rate = tutorRate(tutor, form.subject);
@@ -133,6 +134,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
               </Select>
             </div>
 
+            <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimate===0} refreshKey={String(open)} />
             {/* Message */}
             <div>
               <Label>Message (optional)</Label>

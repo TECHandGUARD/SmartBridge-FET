@@ -1,3 +1,4 @@
+import { tutorBookingSummary } from '@/lib/tutor-booking-finance';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +8,6 @@ import { DollarSign, TrendingUp } from 'lucide-react';
 // Configuration (Soft-coded for future flexibility)
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const currency = import.meta.env.VITE_CURRENCY || 'ZAR';
 
 // ============================================================
@@ -19,41 +19,14 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
     if (!tutors.length || !bookings.length) return [];
 
     return tutors
-      .map(tutor => {
-        const tutorBookings = bookings.filter(b =>
-          b.tutor_email === tutor.user_email &&
-          (b.status === 'confirmed' || b.status === 'completed')
-        );
-        
-        const totalHours = tutorBookings.reduce((s, b) => s + (b.duration_hours || 1), 0);
-        
-        const totalEarnings = tutorBookings.reduce((s, b) => {
-          const earned = b.amount || (tutor.hourly_rate || 0) * (b.duration_hours || 1);
-          return s + earned;
-        }, 0);
-        
-        const pendingBookings = bookings.filter(b => 
-          b.tutor_email === tutor.user_email && b.status === 'pending'
-        );
-        
-        const pendingAmount = pendingBookings.reduce((s, b) => {
-          return s + ((tutor.hourly_rate || 0) * (b.duration_hours || 1));
-        }, 0);
-        
-        return {
-          ...tutor,
-          confirmedSessions: tutorBookings.length,
-          totalHours,
-          totalEarnings,
-          pendingAmount,
-          pendingCount: pendingBookings.length,
-        };
-      })
+      .map(tutor => ({...tutor, ...tutorBookingSummary(tutor, bookings)}))
       .filter(t => t.confirmedSessions > 0 || t.pendingCount > 0)
       .sort((a, b) => b.totalEarnings - a.totalEarnings);
   }, [tutors, bookings]);
 
   const grandTotal = earnings.reduce((s, t) => s + t.totalEarnings, 0);
+  const recordedPayments = earnings.reduce((sum, tutor) => sum + tutor.receivedAmount, 0);
+  const missingAmounts = earnings.reduce((sum, tutor) => sum + tutor.missingAmounts, 0);
   const totalPending = earnings.reduce((s, t) => s + t.pendingAmount, 0);
 
   if (!tutors.length || !bookings.length) {
@@ -61,7 +34,7 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="font-playfair flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" /> Tutor Earnings Tracker
+            <DollarSign className="w-5 h-5 text-primary" /> Tutor Session Value
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -78,19 +51,19 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="font-playfair flex items-center gap-2">
-            <DollarSign className="w-5 h-5 text-primary" /> Tutor Earnings Tracker
+            <DollarSign className="w-5 h-5 text-primary" /> Tutor Session Value
           </CardTitle>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-green-600" />
               <span className="text-sm font-semibold text-green-700">
-                Total Paid: <span className="font-bold">{currency} {grandTotal.toFixed(0)}</span>
+                Confirmed / completed: <span className="font-bold">{currency} {grandTotal.toFixed(2)}</span>
               </span>
             </div>
             {totalPending > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold text-amber-600">
-                  Pending: <span className="font-bold">{currency} {totalPending.toFixed(0)}</span>
+                  Awaiting confirmation: <span className="font-bold">{currency} {totalPending.toFixed(2)}</span>
                 </span>
               </div>
             )}
@@ -98,16 +71,18 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
         </div>
       </CardHeader>
       <CardContent>
+        <p className="mb-3 text-xs text-muted-foreground">Recorded payments on active bookings: {currency} {recordedPayments.toFixed(2)}. Session values are booked amounts, not tutor payouts. Sponsored funding is tracked separately and must be reconciled before settlement. Cancelled bookings are excluded.</p>
+        {missingAmounts > 0 && <p role="status" className="mb-3 text-sm text-amber-700">{missingAmounts} booking(s) have no valid saved price. Their value is excluded until reviewed; current tutor rates are not substituted.</p>}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
                 <th className="text-left py-2 pr-3">Tutor</th>
-                <th className="text-left py-2 pr-3">Rate/hr</th>
+                <th className="text-left py-2 pr-3">Current rate/hr</th>
                 <th className="text-left py-2 pr-3">Sessions</th>
                 <th className="text-left py-2 pr-3">Hours</th>
-                <th className="text-left py-2 pr-3">Earned ({currency})</th>
-                <th className="text-left py-2">Pending</th>
+                <th className="text-left py-2 pr-3">Session value ({currency})</th>
+                <th className="text-left py-2">Awaiting confirmation</th>
               </tr>
             </thead>
             <tbody>
@@ -134,7 +109,7 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
                       </div>
                     </td>
                     <td className="py-2.5 pr-3 text-muted-foreground">
-                      {currency} {t.hourly_rate || 0}/hr
+                      {currency} {t.hourly_rate == null ? 'Not set' : Number(t.hourly_rate).toFixed(2) + '/hr'}
                     </td>
                     <td className="py-2.5 pr-3">
                       <Badge variant="outline" className="text-xs">{t.confirmedSessions}</Badge>
@@ -144,13 +119,15 @@ export default function TutorEarningsTable({ tutors = [], bookings = [] }) {
                     </td>
                     <td className="py-2.5 pr-3">
                       <span className="font-bold text-green-700">
-                        {currency} {t.totalEarnings.toFixed(0)}
+                        {currency} {t.totalEarnings.toFixed(2)}
                       </span>
+                      <p className="text-xs text-muted-foreground">Recorded payments: {currency} {t.receivedAmount.toFixed(2)}</p>
+                      {t.sponsoredValue > 0 && <p className="text-xs text-muted-foreground">Sponsored confirmed / completed: {currency} {t.sponsoredValue.toFixed(2)} · settlement separate</p>}
                     </td>
                     <td className="py-2.5">
                       {t.pendingCount > 0 ? (
                         <span className="text-amber-600 text-xs">
-                          {currency} {t.pendingAmount.toFixed(0)} ({t.pendingCount} pending)
+                          {currency} {t.pendingAmount.toFixed(2)} ({t.pendingCount} pending)
                         </span>
                       ) : (
                         <span className="text-muted-foreground text-xs">—</span>

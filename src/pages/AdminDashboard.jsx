@@ -1,3 +1,4 @@
+import SponsorshipPanel from '@/components/admin/SponsorshipPanel';
 import LegalDocumentsPanel from '@/components/admin/LegalDocumentsPanel';
 import SubscriptionPricingPanel from '@/components/admin/SubscriptionPricingPanel';
 import StudyModerationPanel from '@/components/admin/StudyModerationPanel';
@@ -747,6 +748,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="leaderboard" className="gap-1.5"><Trophy className="w-3.5 h-3.5" /> Leaderboard</TabsTrigger>
             <TabsTrigger value="reports" className="gap-1.5"><Mail className="w-3.5 h-3.5" /> Parent Reports</TabsTrigger>
             <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
+            <TabsTrigger value="sponsorship">Sponsored tutoring</TabsTrigger>
             <TabsTrigger value="subscription-pricing">Subscription Prices</TabsTrigger>
             <TabsTrigger value="legal-documents">Legal documents</TabsTrigger>
             <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
@@ -949,6 +951,7 @@ export default function AdminDashboard() {
             </SafeSubComponent>
           </TabsContent>
 
+          <TabsContent value="sponsorship"><SafeSubComponent><SponsorshipPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="subscription-pricing"><SafeSubComponent><SubscriptionPricingPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="legal-documents"><SafeSubComponent><LegalDocumentsPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="payment-gateways"><SafeSubComponent><PaymentGatewayPanel /></SafeSubComponent></TabsContent>

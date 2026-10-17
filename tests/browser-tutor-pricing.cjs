@@ -11,7 +11,8 @@ const assert=require('node:assert/strict');
   if(!ready) throw new Error('Test server did not start');
   browser=await chromium.launch({headless:true,...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {})});
   const errors=[];const context=await browser.newContext();const page=await context.newPage();
-  page.on('pageerror',e=>errors.push(e.message));
+  page.on('pageerror',e=>{errors.push(e.message);console.error('PAGE ERROR',e.message);});
+  page.on('console',msg=>{if(msg.type()==='error')console.error('BROWSER ERROR',msg.text());});
   let profile={id:'00000000-0000-4000-8000-000000000101',email:'tutor@example.test',full_name:'Test Tutor',role:'tutor',onboarding_complete:true,is_active:true};
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
@@ -62,6 +63,7 @@ const assert=require('node:assert/strict');
   }
   await page.getByText('Profile updated successfully!',{exact:true}).waitFor();
   assert.equal(savedProfiles.at(-1).hourly_rate,1200.5);
+  assert.equal(savedProfiles.at(-1).study_year,null,'Blank optional study year saves as null');
   assert.equal(savedProfiles.at(-1).subject_rates.Mathematics,20);
   assert.equal(savedProfiles.at(-1).offers_free_intro,true);
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('30');

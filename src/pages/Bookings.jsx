@@ -1,3 +1,4 @@
+import SponsorshipChoice from '@/components/student/SponsorshipChoice';
 import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,7 +45,7 @@ export default function Bookings() {
     date: '',
     time: '14:00',
     duration_hours: '1',
-    message: '', is_intro: false
+    message: '', is_intro: false, sponsorship_allocation_id: ''
   });
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function Bookings() {
       bookingRequest.current = null;
 
       toast.success('Booking request sent. Your tutor will confirm shortly.');
-      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '', is_intro: false });
+      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '', is_intro: false, sponsorship_allocation_id: '' });
       setShowForm(false);
       await fetchBookingDashboardData();
     } catch (err) {
@@ -176,7 +177,7 @@ export default function Bookings() {
                 {/* Tutor Dropdown Node */}
                 <div className="sm:col-span-2 space-y-1">
                   <Label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tutor *</Label>
-                  <Select value={form.tutor_email} onValueChange={v => setForm({ ...form, tutor_email: v, subject: tutors.find(t => t.user_email === v)?.subjects?.[0] || '', is_intro: false, duration_hours: '1' })}>
+                  <Select value={form.tutor_email} onValueChange={v => setForm({ ...form, tutor_email: v, subject: tutors.find(t => t.user_email === v)?.subjects?.[0] || '', is_intro: false, sponsorship_allocation_id: '', duration_hours: '1' })}>
                     <SelectTrigger className="text-xs h-8 bg-white border-slate-200">
                       <SelectValue placeholder="Select a verified tutor..." />
                     </SelectTrigger>
@@ -262,6 +263,7 @@ export default function Bookings() {
                 </div>
               </div>
 
+              <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimatedCost===0} refreshKey={String(showForm)} />
               {selectedTutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={form.is_intro} onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? '0.5' : '1'}))} />
                 <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
@@ -336,6 +338,7 @@ export default function Bookings() {
                           <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{b.subject}</span>
                           <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{b.date}</span>
                           <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{cleanTime} · {b.duration_hours}h</span>
+                          {b.sponsorship_allocation_id && <Badge variant="outline">Sponsored · no learner payment</Badge>}
                           {b.is_intro && <Badge variant="outline">Free introduction</Badge>}
                           {b.amount === 0 && !b.is_intro && <span>Free session</span>}
                           {b.amount > 0 && <span className="flex items-center gap-1 text-blue-600 font-bold">R{b.amount}</span>}

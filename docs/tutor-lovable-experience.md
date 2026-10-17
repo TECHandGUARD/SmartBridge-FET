@@ -25,3 +25,6 @@ Browser downloads from the normal Playwright CDN failed in this environment. Tes
 4. Deploy the corresponding frontend and repeat smoke tests on the actual site.
 
 Yoco keys, webhook setup, payments and production settings were untouched. Free sessions remain pending tutor confirmation and do not imply receipt of payment. The STEM lab remains behind its existing release gate; CAPS mapping, simulation links and non-tutor teacher access still need verification and implementation. This is a tested tutor increment toward the minimum lovable product, not a declaration that the entire application is ready for launch.
+
+
+Subsequent work: see `mlp-integration-20261017.md` for the combined STEM lab and NPO sponsorship candidate. The statements above describe the earlier tutor-only checkpoint.

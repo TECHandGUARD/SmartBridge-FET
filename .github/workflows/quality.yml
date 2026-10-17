@@ -31,6 +31,8 @@ jobs:
       - run: npm run test:e2e:config
       - run: npm run test:e2e:audit
       - run: npm run test:e2e:tutors
+      - run: npm run test:e2e:lab
+      - run: npm run test:e2e:sponsorship
   supabase-services:
     runs-on: ubuntu-latest
     timeout-minutes: 25
