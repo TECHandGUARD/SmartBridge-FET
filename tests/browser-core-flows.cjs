@@ -282,7 +282,10 @@ const assert=require('node:assert/strict');
    await page.getByRole('button',{name:'Open navigation menu',exact:true}).click();
    await page.getByRole('button',{name:'Sign out',exact:true}).waitFor();
    await page.keyboard.press('Escape');
-  } else await page.getByRole('heading',{name:'Tutor verification pending',exact:true}).waitFor();
+  } else {
+   await page.getByRole('heading',{name:'Tutor verification pending',exact:true}).waitFor();
+   await page.getByRole('navigation',{name:'Legal information'}).getByRole('link',{name:'Legal documents'}).waitFor();
+  }
   console.log('PASS: '+role+' mobile setup, review and role destination');
  }
  profile={...profile,role:'sace_tutor',onboarding_complete:true};
@@ -291,7 +294,8 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Open navigation menu',exact:true}).click();
  await page.getByRole('link',{name:'My bookings',exact:true}).waitFor();
  await page.keyboard.press('Escape');
- console.log('PASS: verified tutor sees relevant mobile navigation');
+ await page.getByRole('navigation',{name:'Mobile legal and company information'}).getByRole('link',{name:'Legal documents'}).waitFor();
+ console.log('PASS: verified tutor sees relevant mobile and legal navigation');
  profile={...profile,role:'tutor'};
  await page.goto('http://127.0.0.1:5173/tutor-dashboard');
  await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
@@ -371,7 +375,19 @@ const assert=require('node:assert/strict');
  await page.goto('http://127.0.0.1:5173/TermsOfService');
  await page.getByRole('heading',{name:'Legal documents'}).waitFor();
  assert.equal(new URL(page.url()).pathname,'/terms');
- await page.getByText('SmartBridge FET is operated by TECH AND GUARD (Pty) Ltd',{exact:false}).waitFor();
+ await page.getByText('SmartBridge FET · TECH AND GUARD (Pty) Ltd',{exact:false}).waitFor();
+ // Verify a published document is readable on iPhone/Android-sized screens.
+ legalRows=[{id:'00000000-0000-4000-8000-000000000301',doc_key:'test_policy',title:'Test learner safety policy',content:'# Safety\n\nReport concerns to support.',version:'1.0',updated_at:'2026-10-17T00:00:00Z',category:'policy',audience:'public',is_published:true,contains_personal_information:false,document_sha256:'a'.repeat(64)}];
+ for(const width of [320,390,768]) {
+  await page.setViewportSize({width,height:844});
+  await page.goto('http://127.0.0.1:5173/terms');
+  await page.getByRole('heading',{name:'Test learner safety policy'}).waitFor();
+  await page.getByText('Report concerns to support.').waitFor();
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Legal page must fit width '+width);
+  await page.getByRole('link',{name:'Privacy policy',exact:true}).waitFor();
+ }
+ legalRows=[];
+ console.log('PASS: public legal document readability, privacy navigation and mobile widths');
  profile={...profile,role:'school_counselor',is_super_admin:false,onboarding_complete:true};
  await page.goto('http://127.0.0.1:5173/counselor');
  await page.getByRole('heading',{name:'Counselor Dashboard',exact:true}).waitFor();
