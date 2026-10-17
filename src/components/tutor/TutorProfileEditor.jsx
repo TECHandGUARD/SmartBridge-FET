@@ -584,10 +584,10 @@ export default function TutorProfileEditor({
         {}
         <div className="space-y-3 bg-muted/30 rounded-xl p-4 dark:bg-muted/20">
           <p className="text-sm font-semibold flex items-center gap-1.5">
-            <Video className="w-4 h-4 text-primary" /> Public Introduction Video (Optional)
+            <Video className="w-4 h-4 text-primary" /> Public Introduction Video (Optional, 30–60 seconds)
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Max {config.uploadLimits?.video?.maxSizeMB || 20}MB, MP4 format. 30-60 seconds recommended.
+            Max {config.uploadLimits?.video?.maxSizeMB || 20}MB, MP4 format. Record a short profile introduction of 30 seconds to 1 minute.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -742,7 +742,7 @@ export default function TutorProfileEditor({
           {validationErrors.subject_rates && <p role="alert" className="text-xs text-destructive">{validationErrors.subject_rates}</p>}
           <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
             <input type="checkbox" checked={form.offers_free_intro} className="mt-1" onChange={e => handleFormChange(prev => ({...prev, offers_free_intro: e.target.checked}))} />
-            <span>Offer a free 30-minute introduction<span className="block text-xs text-muted-foreground">Optional. One introduction per learner and tutor. Regular sessions use your chosen rates.</span></span>
+            <span>Offer a free 30-minute live introductory session<span className="block text-xs text-muted-foreground">A separate live session, not your profile video. Optional; one per learner and tutor. Regular sessions use your chosen rates.</span></span>
           </label>
         </div>
 
