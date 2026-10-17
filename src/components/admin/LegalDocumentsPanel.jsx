@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import LegalDocumentPreview from '@/components/admin/LegalDocumentPreview';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { LEGAL_BUCKET, LEGAL_CATEGORIES, LEGAL_AUDIENCES, validateLegalPdf, downloadLegalFile } from '@/lib/legal-files';
@@ -13,6 +14,7 @@ export default function LegalDocumentsPanel() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [fileInputKey, setFileInputKey] = useState(0);
+  const [previewDocument, setPreviewDocument] = useState(null);
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('legal_documents').select('*').order('title');
     if (error) { setError('Documents could not load. Please retry.'); return; }
@@ -92,6 +94,7 @@ export default function LegalDocumentsPanel() {
   return <section className="space-y-6">
     <h2 className="text-2xl font-semibold">Legal documents</h2>
     <p>Manage agreements, compliance documents, terms and policies. Publish to the selected audience. Completed forms containing personal details must be private.</p>
+    <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">To read drafts before legal review, use <strong>Preview</strong> below. Previewing does not publish documents, collect acceptance, or expose them to learners and tutors. Keep the draft disclaimer until a qualified South African legal review is complete.</p>
     {error && <p role="alert">{error}</p>}
     <Button disabled={busy} onClick={load}>Refresh</Button>
     <Button disabled={busy} onClick={() => edit(emptyDocument())}>New document</Button>
@@ -108,10 +111,12 @@ export default function LegalDocumentsPanel() {
       <label><input type="checkbox" checked={draft.is_published} onChange={event => set('is_published', event.target.checked)} /> Published to selected audience</label>
       <Button disabled={busy} type="submit">{busy ? 'Saving…' : 'Save document'}</Button>
     </form>
+    {previewDocument && <LegalDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
     {Object.entries(LEGAL_CATEGORIES).map(([category, label]) => <section key={category} className="space-y-3">
       <h3 className="text-xl font-semibold">{label}</h3>
       {documents.filter(document => document.category === category).map(document => <div key={document.id} className="flex flex-wrap items-center gap-3 rounded border p-3">
         <span className="flex-1">{document.title} · {document.version} · {LEGAL_AUDIENCES[document.audience]} · {document.is_published ? 'Published' : 'Draft'}</span>
+        <Button disabled={busy} variant="outline" onClick={() => { setPreviewDocument(document); }}>Preview</Button>
         <Button disabled={busy} variant="outline" onClick={() => edit(document)}>Edit</Button>
         {document.file_path && <Button disabled={busy} variant="outline" onClick={() => downloadLegalFile(supabase, document).catch(() => toast.error('Download failed.'))}>Download</Button>}
         <Button disabled={busy} variant="destructive" onClick={() => remove(document)}>Delete</Button>
