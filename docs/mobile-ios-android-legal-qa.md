@@ -37,6 +37,12 @@ Status: **web/PWA compatibility work in progress; native app-store compliance is
 
 As of 17 October 2026, Google Play's published policy requires new ordinary Android apps and updates to target **Android 16 / API 36** (subject to documented exceptions/extension). This target does not apply to a PWA hosted as a website; it applies to a submitted Android package.
 
+## Live legal publication audit (read-only, 17 October 2026)
+
+A read-only query of the production `public.legal_documents` table confirmed **13 legal-document records**. Three privacy records are published (`privacy_student`, `privacy_parent`, `privacy_tutor`); the **10 other records are unpublished drafts** (terms, consent/indemnity, refunds and the service/media/AI addendum). No records have an uploaded PDF attached at the time of this audit. This means the new library can display the published privacy records, but **the full Terms & Conditions, indemnity, consent and refund content is not yet public**. Do not describe the legal library as complete or the service as legally ready for launch.
+
+**Owner action required:** approve the correct audience and final text of each document, obtain appropriate legal review for minors, POPIA, tutor payments and refunds, then explicitly authorize publication. Do not make unpublished drafts public or broaden their RLS audiences without approval.
+
 ## Legal review and authorization gates
 
 **Developer can complete without account-level changes:** responsive document navigation, safe rendering, automated tests, accessibility improvements, and staging review.
