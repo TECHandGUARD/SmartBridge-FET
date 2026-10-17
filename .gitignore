@@ -72,3 +72,6 @@ coverage
 !.env.example
 !**/.env.example
 supabase/.temp
+
+# Local AI evaluation outputs (never commit credentials or user conversations)
+artifacts/ai-comparison/
