@@ -1,3 +1,4 @@
+import { tutorRate, rateLabel } from '@/lib/tutor-pricing';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -242,15 +243,17 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
           )}
 
           {/* Hourly Rate */}
-          {tutor.hourly_rate && tutor.hourly_rate > 0 && (
+          {(
             <div className="flex items-center justify-between bg-primary/5 border border-primary/15 rounded-xl px-4 py-3 dark:bg-primary/10">
               <span className="text-sm font-medium">Hourly Rate</span>
               <span className="font-playfair text-xl font-bold text-primary">
-                R{tutor.hourly_rate}<span className="text-sm font-normal text-muted-foreground">/hr</span>
+                {rateLabel(tutorRate(tutor))}
               </span>
             </div>
           )}
 
+          {(tutor.subjects || []).filter(subject => Object.hasOwn(tutor.subject_rates || {}, subject)).map(subject => <p key={subject} className="text-sm">{subject}: {rateLabel(tutorRate(tutor, subject))}</p>)}
+          {tutor.offers_free_intro && <p className="text-sm text-primary">Free 30-minute introduction available — one per learner and tutor.</p>}
           {/* Bio */}
           {tutor.bio && (
             <div>

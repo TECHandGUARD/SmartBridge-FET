@@ -1,7 +1,7 @@
 // User-interface release scope only. Database/API authorization remains independent.
 export const RELEASE_FEATURES = Object.freeze({
   learningProgress: true,
-  simulations: false,
+  simulations: true,
   flashcards: false,
   advancedDiscussion: false,
   advancedChat: false,
@@ -21,7 +21,7 @@ export const RELEASE_FEATURES = Object.freeze({
 export const isReleaseFeatureEnabled = key => RELEASE_FEATURES[key] === true;
 export function isDashboardSectionEnabled(role, key) {
   const deferred = {
-    student: ['simulations', 'messages'],
+    student: ['messages'],
     tutor: ['students', 'earnings', 'messages'],
     parent: [],
   };

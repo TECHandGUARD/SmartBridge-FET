@@ -1,3 +1,4 @@
+import { tutorRate, rateLabel } from '@/lib/tutor-pricing';
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
@@ -77,9 +78,7 @@ export default function SubjectTutors({ subjectName }) {
                       <Star className="w-3 h-3 fill-amber-400 text-amber-400" /> {Number(tutor.rating).toFixed(1)}
                     </span>
                   )}
-                  {tutor.hourly_rate && (
-                    <span className="text-xs text-muted-foreground">R{tutor.hourly_rate}/hr</span>
-                  )}
+                  <span className="text-xs text-muted-foreground">{rateLabel(tutorRate(tutor, subjectName))}</span>
                 </div>
               </div>
               {tutor.user_email && (

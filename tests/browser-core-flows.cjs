@@ -145,7 +145,7 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Schedule New Session'}).click();
  await page.getByRole('combobox').nth(0).click();await page.getByRole('option',{name:/Test Tutor/}).click();
  await page.locator('input[type=date]').fill('2027-01-20');
- const submitBooking=page.getByRole('button',{name:/Submit|Reserve|Confirm|Dispatch/});
+ const submitBooking=page.getByRole('button',{name:/Submit|Reserve|Confirm|Dispatch|Request Booking/});
  await submitBooking.click();await page.getByText('Temporary booking failure').waitFor();
  await submitBooking.click();await page.getByText('Test Tutor',{exact:true}).waitFor();
  assert.equal(bookingCalls.length,2);assert.equal(bookingCalls[0].request_id,bookingCalls[1].request_id);assert.equal('amount' in bookingCalls[0],false);

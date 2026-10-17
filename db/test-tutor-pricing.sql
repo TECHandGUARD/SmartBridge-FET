@@ -1,0 +1,43 @@
+reset role;
+select set_config('request.jwt.claims','{}',true);
+update public.tutor_profiles set hourly_rate=1200.50, subjects=array['Mathematics','History'],subject_rates='{"Mathematics":20,"History":0}',offers_free_intro=true where user_id='00000000-0000-4000-8000-000000000102';
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000101","role":"authenticated","email":"repair-student@example.invalid"}',true);
+do $$ declare tutor uuid; b public.tutor_bookings; again public.tutor_bookings; begin
+ select id into tutor from public.tutor_directory where user_id='00000000-0000-4000-8000-000000000102';
+ b:=public.create_booking(tutor,'Mathematics',current_date+30,'10:00',1.5,'Subject price','00000000-0000-4000-8000-000000005001');
+ if b.amount<>30 then raise exception 'Subject price ignored';end if;
+ b:=public.create_booking(tutor,'History',current_date+31,'10:00',1,'Free regular','00000000-0000-4000-8000-000000005002');
+ if b.amount<>0 or b.is_intro then raise exception 'Zero override ignored';end if;
+ b:=public.create_booking(tutor,'Mathematics',current_date+32,'10:00',0.5,'Introduction','00000000-0000-4000-8000-000000005003',true);
+ if b.amount<>0 or not b.is_intro then raise exception 'Introduction pricing failed';end if;
+ again:=public.create_booking(tutor,'Mathematics',current_date+32,'10:00',0.5,'Introduction','00000000-0000-4000-8000-000000005003',true);
+ if b.id<>again.id then raise exception 'Intro retry duplicated';end if;
+ begin perform public.create_booking(tutor,'Mathematics',current_date+33,'10:00',0.5,'Repeat','00000000-0000-4000-8000-000000005004',true); raise exception 'Duplicate intro accepted';
+ exception when raise_exception then if sqlerrm='Duplicate intro accepted' then raise;end if;end;
+ begin perform public.create_booking(tutor,'Mathematics',current_date+33,'10:00',1,'Long intro','00000000-0000-4000-8000-000000005005',true); raise exception 'Long intro accepted';
+ exception when raise_exception then if sqlerrm='Long intro accepted' then raise;end if;end;
+ begin update public.tutor_bookings set is_intro=false where id=b.id;raise exception 'Intro flag editable';
+ exception when raise_exception then if sqlerrm='Intro flag editable' then raise;end if;end;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000102","role":"authenticated","email":"repair-tutor@example.invalid"}',true);
+do $$ begin
+ update public.tutor_profiles set hourly_rate=25 where user_id=auth.uid();
+ if not exists(select 1 from public.tutor_profiles where user_id=auth.uid() and session_price_per_hour=25) then raise exception 'Rate fields diverged';end if;
+ begin update public.tutor_profiles set subject_rates='{"Mathematics":-1}' where user_id=auth.uid();raise exception 'Negative rate accepted';
+ exception when raise_exception then if sqlerrm='Negative rate accepted' then raise;end if;end;
+ begin update public.tutor_profiles set subject_rates='{"Unlisted":100}' where user_id=auth.uid();raise exception 'Unlisted subject accepted';
+ exception when raise_exception then if sqlerrm='Unlisted subject accepted' then raise;end if;end;
+end $$;
+reset role;
+select set_config('request.jwt.claims','{}',true);
+update public.tutor_profiles set subject_rates='{}',hourly_rate=null where user_id='00000000-0000-4000-8000-000000000102';
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000101","role":"authenticated","email":"repair-student@example.invalid"}',true);
+do $$ declare tutor uuid;begin
+ select id into tutor from public.tutor_directory where user_id='00000000-0000-4000-8000-000000000102';
+ begin perform public.create_booking(tutor,'Mathematics',current_date+33,'10:00',1,'Unset','00000000-0000-4000-8000-000000005006');raise exception 'Missing price treated as free';
+ exception when raise_exception then if sqlerrm='Missing price treated as free' then raise;end if;end;
+end $$;
+reset role;
+select 'PASS: tutor rates, subject overrides, free sessions, introductory eligibility and immutable booking prices' result;

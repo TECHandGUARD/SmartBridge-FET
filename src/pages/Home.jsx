@@ -214,6 +214,7 @@ export default function Home() {
 
   return (
     <>
+      {isAuthenticated && user && <div className="max-w-7xl mx-auto px-4 py-4"><Link to="/stem-lab" className="inline-flex rounded-lg border bg-card px-4 py-3 font-semibold text-sm">Open Virtual STEM Lab · learners and classrooms</Link></div>}
       {isAuthenticated && user ? (
         <PersonalizedHome user={user} />
       ) : (

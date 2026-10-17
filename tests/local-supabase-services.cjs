@@ -62,6 +62,52 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
  console.log('PASS: real booking retries, server price, ownership and tutor confirmation');
+
+ // Exercise flexible tutor prices through real PostgREST, not a mocked save response.
+ const edited=ok(await tutor.client.from('tutor_profiles').update({study_year:null,hourly_rate:1250.50,subject_rates:{Mathematics:20,History:0},subjects:['Mathematics','History'],offers_free_intro:true})
+  .eq('id',profile.id).eq('user_id',tutor.id).select('hourly_rate,session_price_per_hour,subject_rates,offers_free_intro').single());
+ assert.equal(Number(edited.hourly_rate),1250.5);assert.equal(Number(edited.session_price_per_hour),1250.5);
+ const learnerDirectory=ok(await student.client.from('tutor_directory').select('*').eq('id',profile.id).single());
+ assert.equal(learnerDirectory.subject_rates.Mathematics,20);assert.equal(learnerDirectory.offers_free_intro,true);
+ assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
+ const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
+ assert.equal(Number(subjectBooking.amount),30);
+ const freeRegular=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_subject:'History',chosen_date:'2099-12-03',request_id:randomUUID()}));
+ assert.equal(Number(freeRegular.amount),0);assert.equal(freeRegular.is_intro,false);
+ const introArgs={...bookingArgs,chosen_date:'2099-12-04',hours:0.5,free_intro:true,request_id:randomUUID()};
+ const introduction=ok(await student.client.rpc('create_booking',introArgs));
+ assert.equal(Number(introduction.amount),0);assert.equal(introduction.is_intro,true);
+ assert.equal(ok(await student.client.rpc('create_booking',introArgs)).id,introduction.id);
+ assert.ok((await student.client.rpc('create_booking',{...introArgs,chosen_date:'2099-12-05',request_id:randomUUID()})).error,'A second introduction must fail');
+ assert.ok((await other.client.from('tutor_profiles').update({hourly_rate:1}).eq('id',profile.id).select('id').single()).error,'A different learner cannot save a tutor profile');
+ assert.ok((await tutor.client.from('tutor_profiles').update({subject_rates:{Mathematics:-1}}).eq('id',profile.id)).error,'Negative subject price must fail');
+ ok(await tutor.client.from('tutor_profiles').update({hourly_rate:100,subject_rates:{},subjects:['Mathematics'],offers_free_intro:false}).eq('id',profile.id));
+ console.log('PASS: real tutor save/reload, directory privacy, subject/free prices and one-time introduction RPC contracts');
+
+ // Two independent PostgREST requests compete for the last externally funded session.
+ const grantAdmin=await account('student');
+ ok(await admin.from('users').update({role:'admin'}).eq('id',grantAdmin.id));
+ const programme=ok(await grantAdmin.client.rpc('manage_sponsorship',{action:'record_verified_funding',payload:{name:'Parallel funding test',organisation:'Disposable NPO',amount:100,reference:randomUUID(),note:'Disposable test receipt recorded by operator',verified:true}}));
+ const allocation=ok(await grantAdmin.client.rpc('manage_sponsorship',{action:'allocate',payload:{programme_id:programme,student_id:student.id,amount:100}}));
+ const parallelClient=createClient(url,status.ANON_KEY,{...options,global:{headers:{Authorization:'Bearer '+student.token}}});
+ const raceArgs=[{...bookingArgs,allocation,chosen_date:'2099-12-10',request_id:randomUUID()},{...bookingArgs,allocation,chosen_date:'2099-12-11',request_id:randomUUID()}];
+ const raced=await Promise.all([student.client.rpc('create_sponsored_booking',raceArgs[0]),parallelClient.rpc('create_sponsored_booking',raceArgs[1])]);
+ assert.equal(raced.filter(r=>!r.error).length,1,'Exactly one reservation may spend the last funded session');
+ assert.match(raced.find(r=>r.error).error.message,/not enough sponsored funding/i);
+ const winner=raced.find(r=>!r.error).data;const losingArgs=raceArgs[raced.findIndex(r=>r.error)];
+ assert.equal(winner.payment_status,'sponsored');assert.equal(Number(winner.amount_paid),0);
+ assert.equal(ok(await admin.from('tutor_bookings').select('id').in('client_request_id',raceArgs.map(r=>r.request_id))).length,1,'Failed reservation leaves no orphan booking');
+ assert.equal(ok(await admin.from('sponsorship_reservations').select('amount,state').eq('allocation_id',allocation)).length,1);
+ const sponsoredCancellation=ok(await student.client.rpc('cancel_booking',{booking_id:winner.id,cancellation_message:'Disposable concurrency cancellation'}));
+ assert.equal(Number(sponsoredCancellation.refundable_amount),0);
+ assert.equal(ok(await student.client.from('sponsorship_reservations').select('state').eq('booking_id',winner.id).single()).state,'released');
+ const retryRace=await Promise.all([student.client.rpc('create_sponsored_booking',losingArgs),parallelClient.rpc('create_sponsored_booking',losingArgs)]);
+ assert.ok(retryRace.every(r=>!r.error),JSON.stringify(retryRace.map(r=>r.error?.message)));
+ assert.equal(retryRace[0].data.id,retryRace[1].data.id,'Concurrent duplicate retries resolve to one booking');
+ const charges=ok(await student.client.from('sponsorship_reservations').select('amount,state').eq('allocation_id',allocation));
+ assert.equal(charges.filter(r=>r.state==='reserved').length,1);assert.equal(charges.filter(r=>r.state==='released').length,1);
+ assert.deepEqual(ok(await other.client.from('sponsorship_allocations').select('id').eq('id',allocation)),[]);
+ console.log('PASS: real concurrent sponsorship cap, rollback, cancellation release and parallel retry');
  ok(await admin.from('users').update({is_active:false}).eq('id',tutor.id));
  assert.deepEqual(ok(await student.client.from('tutor_directory').select('id').eq('user_id',tutor.id)),[]);
  assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),false);
@@ -110,7 +156,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(ok(await student.client.from('tutor_directory').select('bio').eq('user_id',newTutor.id).single()).bio,'Verified local profile edit');
  ok(await newTutor.client.storage.from('tutor-profile-media').remove([professionalFile]));
  const cancelled=ok(await student.client.rpc('cancel_booking',{booking_id:booking.id,cancellation_message:'I am cancelling; please rearrange your day.'}));
- assert.equal(cancelled.refund_eligibility,'no_payment');assert.equal(Number(cancelled.refundable_amount),0);
+ assert.equal(cancelled.refund_eligibility,'no_payment');assert.equal(Number(sponsoredCancellation.refundable_amount),0);
  assert.equal(cancelled.notification_ids.length,2);
  assert.equal(ok(await student.client.rpc('cancel_booking',{booking_id:booking.id,cancellation_message:'Retry the same cancellation safely.'})).id,booking.id);
  console.log('PASS: real atomic tutor approval/profile edit, media ownership, cancellation and notification isolation');
