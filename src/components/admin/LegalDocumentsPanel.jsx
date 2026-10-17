@@ -109,7 +109,10 @@ export default function LegalDocumentsPanel() {
       <label>Document text<textarea className="block min-h-40 w-full rounded border bg-background p-2" value={draft.content} onChange={event => set('content', event.target.value)} /></label>
       <label>{draft.file_path ? 'Replace PDF' : 'Upload PDF'} (up to 10 MB)<input key={fileInputKey} type="file" accept="application/pdf,.pdf" onChange={event => setFile(event.target.files?.[0] || null)} /></label>
       <label><input type="checkbox" checked={draft.is_published} onChange={event => set('is_published', event.target.checked)} /> Published to selected audience</label>
-      <Button disabled={busy} type="submit">{busy ? 'Saving…' : 'Save document'}</Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button disabled={busy} type="button" variant="outline" onClick={() => setPreviewDocument({ ...draft })}>Preview current edits</Button>
+        <Button disabled={busy} type="submit">{busy ? 'Saving…' : 'Save document'}</Button>
+      </div>
     </form>
     {previewDocument && <LegalDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
     {Object.entries(LEGAL_CATEGORIES).map(([category, label]) => <section key={category} className="space-y-3">
