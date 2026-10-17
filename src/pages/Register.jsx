@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { GraduationCap, Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { GraduationCap, Loader2, Mail, Lock, User, Eye, EyeOff, ShieldCheck, BookOpen, Users, Globe2 } from 'lucide-react';
 import { toast } from 'sonner';
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
@@ -95,16 +95,22 @@ export default function Register() {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-primary/5 p-4">
-      <Card className="w-full max-w-md border-border shadow-xl">
+  return <div className="min-h-screen flex items-center justify-center bg-[radial-gradient(ellipse_at_top_left,_rgba(15,115,78,0.16),_transparent_55%),linear-gradient(145deg,#f9faf7,#edf5ef_65%,#f9faf7)] dark:bg-[radial-gradient(ellipse_at_top_left,_rgba(15,115,78,0.22),_transparent_55%),linear-gradient(145deg,#101a17,#14231e)] px-4 py-12">
+      <Card className="w-full max-w-lg border-emerald-900/10 rounded-[28px] shadow-[0_24px_80px_-35px_rgba(5,64,43,0.35)] bg-white/95 dark:bg-card/95 backdrop-blur-sm">
         <CardHeader className="text-center space-y-3 pt-8">
           <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-primary" />
+            <div className="w-16 h-16 rounded-2xl bg-emerald-950 text-emerald-50 shadow-lg flex items-center justify-center">
+              <GraduationCap className="w-8 h-8" />
             </div>
           </div>
-          <CardTitle className="font-playfair text-3xl font-bold">{CONFIG.APP_NAME} – Create Account</CardTitle>
-          <p className="text-sm text-muted-foreground">{CONFIG.MESSAGES.SUBTITLE}</p>
+          <CardTitle className="font-playfair text-3xl font-bold">Your future starts here</CardTitle>>
+          <p className="text-sm text-muted-foreground">Join {CONFIG.APP_NAME} and take the next step in your learning journey.</p>
+          <p className="text-sm font-semibold tracking-wide text-emerald-800 dark:text-emerald-300">Connect. Learn. Grow.</p>
+          <div className="grid grid-cols-3 gap-2 pt-3 text-[11px] text-muted-foreground">
+            <span className="flex flex-col items-center gap-1.5"><BookOpen className="h-4 w-4 text-emerald-700" /> CAPS Grades 10–12</span>
+            <span className="flex flex-col items-center gap-1.5"><Users className="h-4 w-4 text-emerald-700" /> Discover tutors</span>
+            <span className="flex flex-col items-center gap-1.5"><Globe2 className="h-4 w-4 text-emerald-700" /> Learn anywhere</span>
+          </div>
         </CardHeader>
         <CardContent className="space-y-6 pb-8">
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -157,6 +163,7 @@ export default function Register() {
             </Button>
           </form>
 
+          <p className="flex items-center justify-center gap-2 text-xs text-muted-foreground"><ShieldCheck className="h-4 w-4 text-emerald-700" /> Secure account registration</p>
           <p className="text-center text-sm text-muted-foreground">
             Already have an account?{' '}
             <Link to={CONFIG.LOGIN_ROUTE} className="text-primary font-semibold hover:underline">Sign in</Link>
