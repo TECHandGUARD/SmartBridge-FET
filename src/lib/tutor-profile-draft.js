@@ -8,7 +8,8 @@ export function tutorDraftKey(userId) {
 }
 
 export function createTutorDraft({ form, socialLinks, avatarUrl, videoUrl }, now = Date.now()) {
-  const { sace_number: _saceNumber, ...safeForm } = form || {};
+  const safeForm = { ...(form || {}) };
+  delete safeForm.sace_number;
   return {
     version: 2,
     form: safeForm,
@@ -28,7 +29,8 @@ export function readTutorDraft(raw, now = Date.now()) {
       savedAt > now + 60_000 || now - savedAt > TUTOR_DRAFT_MAX_AGE_MS ||
       !draft.form || typeof draft.form !== 'object' || Array.isArray(draft.form)) return null;
     // Never restore credential data even if a draft was manually modified.
-    const { sace_number: _saceNumber, ...safeForm } = draft.form;
+    const safeForm = { ...draft.form };
+    delete safeForm.sace_number;
     return {
       form: safeForm,
       socialLinks: draft.socialLinks && typeof draft.socialLinks === 'object' && !Array.isArray(draft.socialLinks) ? draft.socialLinks : {},
