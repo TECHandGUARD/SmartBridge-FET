@@ -111,7 +111,7 @@ function ActionButtons({ onPrint, onDownload }) {
           className="gap-1.5 text-xs"
         >
           <Download className="w-3.5 h-3.5" />
-          Download PDF
+          Download text
         </Button>
       )}
     </div>
@@ -254,43 +254,19 @@ export default function PrivacyPolicy() {
 
   const handleDownload = () => {
     try {
-      // Create a clean HTML version for download
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-          <head>
-            <title>Privacy Policy - ${CONFIG.APP_NAME}</title>
-            <style>
-              body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; line-height: 1.6; }
-              h1 { font-size: 24px; }
-              h2 { font-size: 20px; margin-top: 24px; }
-              h3 { font-size: 16px; margin-top: 16px; }
-              p { margin: 8px 0; }
-              ul { padding-left: 20px; }
-            </style>
-          </head>
-          <body>
-            <h1>Privacy Policy</h1>
-            <p><strong>${CONFIG.APP_NAME}</strong></p>
-            <p><strong>Effective:</strong> ${CONFIG.EFFECTIVE_DATE}</p>
-            ${lastUpdated ? `<p><strong>Last updated:</strong> ${new Date(lastUpdated).toLocaleDateString('en-ZA')}</p>` : ''}
-            <hr/>
-            <div>${markdown}</div>
-            <hr/>
-            <p><em>© ${new Date().getFullYear()} ${CONFIG.COMPANY_NAME}. All rights reserved.</em></p>
-          </body>
-        </html>
-      `;
-
-      const blob = new Blob([htmlContent], { type: 'text/html' });
+      // Export the exact published Markdown as plain text; do not interpret
+      // remotely managed legal content as executable HTML on a user's device.
+      const text = `Privacy Policy — ${CONFIG.APP_NAME}\n${CONFIG.COMPANY_NAME}\n\n${markdown}`;
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `privacy-policy-${new Date().toISOString().split('T')[0]}.html`;
+      a.download = 'smartbridge-privacy-policy.txt';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success('Privacy policy downloaded successfully!');
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success('Privacy policy saved as text. Use Print to save as PDF.');
     } catch (err) {
       console.error('Download error:', err);
       toast.error('Failed to download privacy policy.');

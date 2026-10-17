@@ -15,7 +15,7 @@ const ROLES = [
   { id: 'student', label: 'Student', icon: GraduationCap, desc: 'Study resources, practice and tutor sessions for Grade 10–12 learners.' },
   { id: 'parent', label: 'Parent / Guardian', icon: Users, desc: 'Link a learner, follow their progress and find learning support.' },
   { id: 'sace_tutor', label: 'SACE Registered Tutor', icon: Shield, desc: 'Apply to tutor learners as a SACE-registered educator.' },
-  { id: 'student_tutor', label: 'Student Tutor', icon: School, desc: 'Apply to tutor Grade 10–12 learners as a university student.' },
+  { id: 'student_tutor', label: 'Student Tutor', icon: School, desc: 'Apply to offer paid tutoring opportunities to Grade 10–12 learners while building teaching experience. Approval and bookings are not guaranteed.' },
 ];
 const UNIVERSITIES = ['University of Cape Town (UCT)', 'University of the Witwatersrand (Wits)', 'University of Pretoria (UP)', 'Stellenbosch University (SU)', 'University of KwaZulu-Natal (UKZN)', 'University of Johannesburg (UJ)', 'University of the Free State (UFS)', 'University of the Western Cape (UWC)', 'Rhodes University', 'North-West University (NWU)'];
 
@@ -84,7 +84,7 @@ export default function Onboarding({ user, onComplete }) {
           {step === 0 ? 'Welcome to SmartBridge FET' : lastStep ? 'Ready for your next step?' : 'Tell us about your qualifications'}
         </h1>
         <p className="mt-3 mb-6 text-sm leading-relaxed text-muted-foreground">
-          {step === 0 ? 'Tell us who you are so we can personalise your experience.' : lastStep ? 'Check your details and review the agreements before finishing setup.' : 'Your credentials will be reviewed before tutor tools become available.'}
+          {step === 0 ? 'Tell us who you are so we can personalise your experience.' : lastStep ? 'Check your details and review the agreements before finishing setup.' : 'Your credentials will be reviewed before tutor tools become available. Tutor applications require approval.'}
         </p>
         {step === 0 && <fieldset disabled={saving}>
           <legend className="mb-3 font-medium">How will you use SmartBridge?</legend>
@@ -104,14 +104,14 @@ export default function Onboarding({ user, onComplete }) {
             {university === 'other' && <div className="space-y-2"><Label htmlFor="other-university">University name</Label><Input id="other-university" value={otherUniversity} onChange={e => setOtherUniversity(e.target.value)} required /></div>}
             <div className="space-y-2"><Label htmlFor="student-number">Student number</Label><Input id="student-number" value={studentNumber} onChange={e => setStudentNumber(e.target.value)} autoComplete="off" required /></div>
           </>}
-          <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">After submission, you can check your verification status. Your profile will appear in the tutor directory once approved.</p>
+          <p className="rounded-xl bg-muted p-4 text-sm text-muted-foreground">Your application will be reviewed before you can accept bookings. If approved, you can set your rates and availability. Approval, bookings and earnings are not guaranteed.</p>
         </div>}
         {lastStep && <div className="space-y-5">
           <dl className="rounded-xl bg-muted p-4 text-sm"><dt className="text-muted-foreground">Your role</dt><dd className="mt-1 font-semibold">{selectedRole?.label}</dd>
             {role === 'sace_tutor' && <><dt className="mt-3 text-muted-foreground">SACE number</dt><dd className="break-words">{saceNumber}</dd></>}
             {role === 'student_tutor' && <><dt className="mt-3 text-muted-foreground">University</dt><dd className="break-words">{universityName}</dd><dt className="mt-3 text-muted-foreground">Student number</dt><dd className="break-words">{studentNumber}</dd></>}
           </dl>
-          <p className="text-sm leading-relaxed">{tutor ? 'Next: your application goes to admin review. Tutor tools stay locked until verification is complete.' : role === 'parent' ? 'Next: request access using your learner’s email. They must approve before you can see their reports.' : 'Next: open your dashboard to explore subjects and track your study progress.'}</p>
+          <p className="text-sm leading-relaxed">{tutor ? 'Next: your application goes to admin review. Tutor tools stay locked until verification is complete. Approval, bookings and earnings are not guaranteed.' : role === 'parent' ? 'Next: request access using your learner’s email. They must approve before you can see their reports.' : 'Next: open your dashboard to explore subjects and track your study progress.'}</p>
           <div className="flex items-start gap-3"><Checkbox id="policy-consent" checked={policyConsent} onCheckedChange={value => setPolicyConsent(value === true)} disabled={saving} className="mt-1 shrink-0" /><Label htmlFor="policy-consent" className="text-sm font-normal leading-relaxed">I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Service</Link> and <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</Link> (opens in a new tab).</Label></div>
           {tutor && <div className="rounded-xl border p-4"><p className="mb-3 text-sm">{agreementAccepted ? 'Tutor agreement accepted. Submit below when you are ready.' : 'Please read and accept the tutor agreement before submitting.'}</p><Button variant="outline" disabled={saving} onClick={() => setShowAgreement(true)}>{agreementAccepted ? 'Review tutor agreement' : 'Read tutor agreement'}</Button>{agreementAccepted && <Check className="ml-3 inline h-5 w-5 text-primary" aria-label="Agreement accepted" />}</div>}
         </div>}
@@ -121,7 +121,7 @@ export default function Onboarding({ user, onComplete }) {
           {lastStep ? <Button disabled={saving || !policyConsent || (tutor && !agreementAccepted)} onClick={submit} className="min-h-11 shrink-0 gap-2">{saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}{saving ? 'Saving…' : tutor ? 'Submit application' : 'Complete Setup'}</Button> : <Button disabled={!canContinue} onClick={() => move(step + 1)} className="min-h-11 gap-2">Continue<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>}
         </div>
       </section>
-      <p className="mt-5 text-center text-xs text-muted-foreground">Your account role determines which tools you can access.</p>
+      <p className="mt-5 text-center text-xs text-muted-foreground">Tutor applications are reviewed before approval. Tutoring opportunities depend on learner demand; earnings are not guaranteed.</p>
       <div className="mt-3 flex flex-wrap items-center justify-center gap-x-2 text-xs text-muted-foreground"><span className="max-w-full break-all">Setting up {user?.email}</span><Button variant="link" size="sm" disabled={saving} onClick={signOut}>Sign out</Button></div>
     </div>
     <TutorConsentModal open={showAgreement} onDecline={() => setShowAgreement(false)} onAccept={() => { setAgreementAccepted(true); setShowAgreement(false); }} />

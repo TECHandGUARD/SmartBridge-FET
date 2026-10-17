@@ -1,12 +1,11 @@
 {
   "name": "SmartBridge FET",
   "short_name": "SmartBridge",
-  "description": "CAPS-aligned learning platform for Grade 10\u201312 students, tutors, and parents.",
+  "description": "CAPS-aligned learning platform for Grade 10–12 students, tutors, and parents.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2B6F9C",
-  "orientation": "portrait-primary",
+  "theme_color": "#2d8a6e",
   "icons": [
     {
       "src": "/icons/smartbridge-192.png",
