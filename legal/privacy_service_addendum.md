@@ -1,15 +1,21 @@
 # Service, Media and AI Privacy Addendum
 
 SmartBridge FET | TECH AND GUARD (Pty) Ltd
-Version 1.1-draft | Prepared 14 October 2026
+Version 2.0 | Effective 17 October 2026
 
-DRAFT FOR OWNER AND SOUTH AFRICAN LEGAL REVIEW. This document is not yet an activated contract. Operator: TECH AND GUARD (Pty) Ltd, CIPC registration 2026/155090/07. Registered office: 6 Marais Road, Stellenbosch, Western Cape, 7600, South Africa. Support: aneleq@techandguard.co.za. SmartBridge FET is the platform brand; no registered trademark status is claimed.
+## Relationship to the privacy notice
+This addendum supplements the Privacy Notice — Learners and All Users. Support and privacy requests: [aneleq@techandguard.co.za](mailto:aneleq@techandguard.co.za).
 
-## Purpose and minimisation
-The platform processes account, booking, progress, consent and security records to provide and protect the service. Public tutor profile media is intentionally visible and should contain only professional information the tutor is authorised to publish. Learner records and completed legal forms must not be published in study rooms or public media buckets.
+## Service providers and information flows
+Supabase provides account, database and storage infrastructure; AWS Amplify hosts the web app. Enabled email services handle necessary recipients and message content. Payment processing, when available, uses the provider identified at checkout. Access must be limited to each provider's function and subject to appropriate contractual/security safeguards. Provider regions and subprocessors may involve international transfers; we must establish a lawful basis and appropriate protections before sharing. These documents do not certify that all vendor or security reviews have been completed.
 
-## Providers and AI
-Hosting, database and delivery providers process information needed for their functions. The proposed AI provider is OpenAI; the company must confirm the actual API project, processing terms, retention and safeguards before activation. Do not send children's identifiers, guardian forms, health or financial details to AI prompts. A reduced-storage API option is not a guarantee that no provider logging occurs. Explain international processing and lawful safeguards where applicable.
+## AI assistance
+Configured AI functions send learning requests to the OpenAI API and return supplementary educational answers or structured study/lesson plans. Availability depends on configuration. Outputs can be wrong, biased or unsuitable; they are not official marks, professional advice or admission decisions. Check important answers with a teacher or reliable source.
 
-## Rights and support
-Use the existing Privacy Notice alongside this draft addendum. Requests for access, correction, deletion or consent changes go through a verified support process. Keep only records necessary for the service, security, lawful transaction evidence and applicable retention duties; subscription payment does not justify indefinite data retention. The operator must confirm its responsible privacy contact, security-incident process and retention schedule before publishing this addendum. No claim of certified POPIA compliance is made.
+Use anonymised academic questions. Do not include names, learner identifiers, ID documents, guardian forms, contact details, health/criminal information or financial details. A general platform acceptance does not authorise children's personal information or special personal information to be sent to an AI service. Where such processing is proposed, it requires a separate lawful assessment, notice, safeguards and consent where required before activation. The API request disables optional response storage in the current code, but that does not guarantee zero provider logging, zero retention or a particular training practice. Support can provide the applicable provider terms for an enabled feature.
+
+## Media and recording
+Tutor introduction media is deliberately public when published. A tutor must own it or have permission for all people/materials shown. Learners' images, voices or testimonials must not appear in public marketing without specific valid permission and competent-person consent where required. The default is no recording of a lesson or private chat. Any exception requires an identified purpose, participants, access limits, retention period and separate informed permissions, including a competent person's permission for a child where required. Refusal of optional marketing/media permission must not prevent unrelated core learning access.
+
+## Retention, incidents and requests
+Use the main Privacy Notice for rights, retention principles and complaints. Report unintended AI submission or media disclosure privately with a reference; do not repeat sensitive data in a public report. We must assess deletion/containment options with the provider and meet applicable incident-notification duties. A browser deletion alone cannot erase copies already transmitted to a provider.

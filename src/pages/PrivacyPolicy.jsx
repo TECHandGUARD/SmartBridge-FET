@@ -24,8 +24,8 @@ const CONFIG = {
   // Company name
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || 'Tech & GUARD Pty Ltd',
 
-  // Effective date
-  EFFECTIVE_DATE: import.meta.env.VITE_PRIVACY_EFFECTIVE_DATE || '23 May 2026',
+  // Effective-date display
+  EFFECTIVE_DATE: import.meta.env.VITE_PRIVACY_EFFECTIVE_DATE || 'See the published document below',
 
   // Document keys in Supabase
   DOC_KEYS: {

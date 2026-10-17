@@ -11,31 +11,31 @@ export default function AboutTechAndGuard() {
   const CORPORATE_WEBSITE = appConfig.company.website;
   const values = [{
     icon: Shield,
-    title: 'POPIA Security Firewalls',
-    description: 'We implement strict Row-Level Security (RLS) to ensure high-risk student profile metadata remains fully secure and encrypted.',
+    title: 'Privacy and Access Controls',
+    description: 'Role-based database policies restrict access to learner information. Security requires ongoing testing and operational safeguards.',
     color: 'blue'
   }, {
     icon: Zap,
     title: 'CAPS Curriculum Mapping',
-    description: 'Our tracking engine aligns side-by-side with official Department of Basic Education criteria models for flawless reporting.',
+    description: 'Learning tools support the CAPS subjects offered on the platform. They do not replace official school assessment.',
     color: 'indigo'
   }, {
     icon: Heart,
-    title: 'SACE Educator Audits',
-    description: 'Our independent tutor marketplace maintains strict anti-fraud checks, requiring clean professional standing.',
+    title: 'Tutor Application Review',
+    description: 'Tutors provide qualifications and status for review. A profile must distinguish a student tutor from a registered professional.',
     color: 'emerald'
   }, {
     icon: MapPin,
     title: 'Proudly South African',
-    description: 'Built locally by a Stellenbosch University student, providing direct regulatory support for schools across the country.',
+    description: 'Built by a Stellenbosch University student to support South African learners and create tutoring opportunities.',
     color: 'amber'
   }];
   const complianceBadges = [{
-    label: 'POPIA Compliant',
+    label: 'Privacy Notices',
     icon: ShieldCheck,
     color: 'bg-blue-100 text-blue-700 border-blue-200'
   }, {
-    label: 'SACE Verified',
+    label: 'Tutor Applications',
     icon: Award,
     color: 'bg-emerald-100 text-emerald-700 border-emerald-200'
   }, {
@@ -43,7 +43,7 @@ export default function AboutTechAndGuard() {
     icon: GraduationCap,
     color: 'bg-indigo-100 text-indigo-700 border-indigo-200'
   }, {
-    label: 'DBE Guidelines',
+    label: 'Grades 10–12',
     icon: CheckCircle,
     color: 'bg-amber-100 text-amber-700 border-amber-200'
   }];
@@ -80,8 +80,7 @@ export default function AboutTechAndGuard() {
             <p className="text-slate-600 text-xs font-medium leading-relaxed">
               At Tech & GUARD, we engineer high-prestige, secure digital environments for the South African education sector.
               We believe that student tracking metrics and institutional data networks require the highest grade of protection.
-              SmartBridge FET is designed from the ground up to combine CAPS curriculum tracking tools with absolute data residency
-              safeguards, giving local schools a compliant alternative to global tech solutions.
+              SmartBridge FET combines learning tools with a tutor marketplace. Personal information can be processed outside South Africa; our privacy notice explains the relevant services and safeguards.
             </p>
           </CardContent>
         </Card>
@@ -170,8 +169,7 @@ export default function AboutTechAndGuard() {
 
             <div className="mt-6 pt-4 border-t border-slate-100">
               <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                As a registered South African technology company, we operate in full compliance with local consumer protection
-                frameworks, the Electronic Communications and Transactions Act (ECTA), and POPIA directives.
+                Our published policies describe responsibilities under South African privacy and consumer laws. Registration and policy publication do not certify legal compliance.
               </p>
             </div>
           </CardContent>
@@ -186,10 +184,10 @@ export default function AboutTechAndGuard() {
               </div>
               <div>
                 <h4 className="text-sm font-black text-slate-800">
-                  Data Protection & Security Accreditation
+                  Data Protection and Service Information
                 </h4>
                 <p className="text-xs text-slate-500 font-medium">
-                  SmartBridge FET is engineered with enterprise-grade security protocols
+                  Read our privacy notice and legal documents for information about data use and your rights.
                 </p>
               </div>
             </div>
@@ -197,7 +195,7 @@ export default function AboutTechAndGuard() {
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
                 <p className="font-bold text-slate-700">Encryption</p>
-                <p className="text-[10px] text-slate-500">TLS 1.3 for all data in transit</p>
+                <p className="text-[10px] text-slate-500">HTTPS protects web connections; security remains an ongoing responsibility.</p>
               </div>
               <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
                 <p className="font-bold text-slate-700">Access Control</p>
@@ -205,11 +203,11 @@ export default function AboutTechAndGuard() {
               </div>
               <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
                 <p className="font-bold text-slate-700">Data Residency</p>
-                <p className="text-[10px] text-slate-500">All data stored within South Africa</p>
+                <p className="text-[10px] text-slate-500">Database configured in eu-west-1; other providers may process internationally.</p>
               </div>
               <div className="bg-white/80 rounded-lg p-3 border border-blue-100">
                 <p className="font-bold text-slate-700">Compliance</p>
-                <p className="text-[10px] text-slate-500">POPIA, ECTA, and DBE guidelines</p>
+                <p className="text-[10px] text-slate-500">Policies address privacy and consumer rights; no independent certification claimed.</p>
               </div>
             </div>
           </CardContent>
@@ -246,7 +244,7 @@ export default function AboutTechAndGuard() {
             SmartBridge FET is a registered digital platform of Tech & GUARD Pty Ltd.
           </p>
           <p className="text-[10px] text-slate-300 mt-1">
-            CIPC Registration: {REGISTRATION_NUMBER} · POPIA Compliant · SACE Verified
+            CIPC Registration: {REGISTRATION_NUMBER} · Read our published policies
           </p>
         </div>
       </div>

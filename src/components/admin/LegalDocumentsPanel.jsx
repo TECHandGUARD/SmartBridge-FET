@@ -96,7 +96,7 @@ export default function LegalDocumentsPanel() {
   return <section className="space-y-6">
     <h2 className="text-2xl font-semibold">Legal documents</h2>
     <p>Manage agreements, compliance documents, terms and policies. Publish to the selected audience. Completed forms containing personal details must be private.</p>
-    <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">To read drafts before legal review, use <strong>Preview</strong> below. Previewing does not publish documents, collect acceptance, or expose them to learners and tutors. Keep the draft disclaimer until a qualified South African legal review is complete.</p>
+    <p className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-950 dark:bg-amber-950 dark:text-amber-100">Use <strong>Preview</strong> to read a document before saving or publishing. Publication makes it available to the selected audience; it does not certify legal compliance or establish verified guardian consent. Completed personal forms must remain private.</p>
     {error && <p role="alert">{error}</p>}
     <Button disabled={busy} onClick={load}>Refresh</Button>
     <Button disabled={busy} onClick={() => edit(emptyDocument())}>New document</Button>
