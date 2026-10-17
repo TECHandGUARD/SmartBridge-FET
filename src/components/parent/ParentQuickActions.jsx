@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, TrendingUp, BookOpen, Mail, UserPlus, Star } from 'lucide-react';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const actions = [{
+const actions = [{key:'messages',label:'Messages',icon:Mail,color:'bg-cyan-100 text-cyan-700',activeColor:'bg-cyan-600 text-white'}, {
   key: 'child',
   label: 'Link a Learner',
   icon: UserPlus,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,9 +35,9 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
   const [currentPost, setCurrentPost] = useState(post);
   const isAdmin = user?.role === 'admin';
 
-  const loadComments = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const loadComments = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    if (!silent) setError(null);
     try {
       const { data, error } = await supabase
         .from('forum_comments')
@@ -48,12 +48,12 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
       
       if (error) throw error;
       setComments(data || []);
+      setCurrentPost(previous => ({...previous,comment_count:(data || []).length}));
     } catch (err) {
       console.error('Error loading comments:', err);
-      setError('Failed to load comments');
-      toast.error("Failed to load comments");
+      if (!silent) { setError('Failed to load comments'); toast.error("Failed to load comments"); }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [post.id]);
 
@@ -71,17 +71,7 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
           table: 'forum_comments',
           filter: `post_id=eq.${post.id}`,
         },
-        (payload) => {
-          if (!payload.new.is_removed) {
-            setComments(prev => [...prev, payload.new]);
-            // Update comment count on post
-            setCurrentPost(prev => ({ 
-              ...prev, 
-              comment_count: (prev.comment_count || 0) + 1 
-            }));
-            toast.info('New comment added!');
-          }
-        }
+        () => loadComments(true)
       )
       .on(
         'postgres_changes',
@@ -91,59 +81,34 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
           table: 'forum_comments',
           filter: `post_id=eq.${post.id}`,
         },
-        (payload) => {
-          setComments(prev => prev.map(c => c.id === payload.new.id ? payload.new : c));
-        }
+        () => loadComments(true)
       )
       .subscribe();
     
+    const timer=setInterval(() => { if(document.visibilityState==='visible') loadComments(true); },5000);
     return () => {
+      clearInterval(timer);
       supabase.removeChannel(channel);
     };
   }, [post.id, loadComments]);
 
+  const commentRequest = useRef(null);
   const handleSubmitComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !user) return;
+    if (submitting || !newComment.trim() || !user) return;
     
     setSubmitting(true);
     try {
-      const { data: comment, error: commentError } = await supabase
-        .from('forum_comments')
-        .insert({
-          post_id: post.id,
-          body: newComment.trim(),
-          author_email: user.email,
-          author_name: user.full_name || user.email,
-          author_role: user.role || 'student',
-          likes: 0,
-          liked_by: [],
-          is_flagged: false,
-          is_removed: false,
-          is_best_answer: false,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-      
-      if (commentError) throw commentError;
-      
-      // Update comment count on post
-      const updatedCount = (currentPost.comment_count || 0) + 1;
-      const { error: updateError } = await supabase
-        .from('forum_posts')
-        .update({ 
-          comment_count: updatedCount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', post.id);
-      
-      if (updateError) throw updateError;
-      
+      const text = newComment.trim();
+      if (commentRequest.current?.text !== text || commentRequest.current?.post !== post.id) commentRequest.current = {text,post:post.id,id:crypto.randomUUID()};
+      const {data: comment,error: commentError} = await supabase.rpc('submit_forum_comment',{target_post:post.id,comment_text:text,client_request_id:commentRequest.current.id});
+      if (commentError || !comment) throw commentError || new Error('Reply was not confirmed.');
+      commentRequest.current=null;
+      const updatedCount=comments.some(c=>c.id===comment.id)?(currentPost.comment_count||0):(currentPost.comment_count||0)+1;
       const updatedPost = { ...currentPost, comment_count: updatedCount };
       setCurrentPost(updatedPost);
       onPostUpdated(updatedPost);
-      setComments(prev => [...prev, comment]);
+      setComments(prev => prev.some(c=>c.id===comment.id)?prev:[...prev, comment]);
       setNewComment("");
       toast.success("Comment posted!");
     } catch (err) {
@@ -378,7 +343,7 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
               <AlertCircle className="w-4 h-4 text-red-500" />
               <p className="text-sm text-red-700">{error}</p>
             </div>
-            <Button variant="outline" size="sm" onClick={loadComments}>Retry</Button>
+            <Button variant="outline" size="sm" onClick={() => loadComments()}>Retry</Button>
           </div>
         )}
 
@@ -481,6 +446,7 @@ export default function ForumPostDetail({ post, user, onBack, onPostUpdated }) {
             <p className="text-sm font-medium mb-2">Add your answer or comment</p>
             <textarea
               className="w-full min-h-[80px] rounded-md border border-input bg-transparent px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring mb-3"
+              maxLength={5000}
               placeholder="Share your knowledge..."
               value={newComment}
               onChange={e => setNewComment(e.target.value)}

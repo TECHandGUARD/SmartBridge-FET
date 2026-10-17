@@ -23,7 +23,8 @@
     "check:db": "node scripts/check-db-baseline.cjs",
     "test:e2e:tutors": "node tests/browser-tutor-pricing.cjs",
     "test:e2e:lab": "node tests/browser-stem-lab.cjs",
-    "test:e2e:sponsorship": "node tests/browser-sponsorship.cjs"
+    "test:e2e:sponsorship": "node tests/browser-sponsorship.cjs",
+    "test:e2e:messages": "node tests/browser-free-messaging.cjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

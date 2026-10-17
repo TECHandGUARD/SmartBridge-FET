@@ -1,3 +1,4 @@
+import MessagingInbox from '@/components/messaging/MessagingInbox';
 import { appConfig } from '@/lib/config';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import { useAuth } from '@/lib/AuthContext';
@@ -122,6 +123,7 @@ export default function ParentDashboard() {
           </div>
         )}
 
+        {activeSection === 'messages' && <div className="mb-6"><MessagingInbox user={user}/></div>}
         {/* Subjects */}
         {activeSection === 'subjects' && (
           <div className="mb-6">

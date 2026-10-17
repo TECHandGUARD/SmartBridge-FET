@@ -84,6 +84,34 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('tutor_profiles').update({hourly_rate:100,subject_rates:{},subjects:['Mathematics'],offers_free_intro:false}).eq('id',profile.id));
  console.log('PASS: real tutor save/reload, directory privacy, subject/free prices and one-time introduction RPC contracts');
 
+ const messageArgs={to_user:tutor.id,message_text:'Free ordinary learner message',client_request_id:randomUUID()};
+ const direct=ok(await student.client.rpc('send_direct_message',messageArgs));
+ assert.equal(ok(await student.client.rpc('send_direct_message',messageArgs)).id,direct.id);
+ assert.equal(ok(await tutor.client.rpc('messaging_contacts')).find(row=>row.user_id===student.id).unread_count,1);
+ assert.ok(ok(await tutor.client.rpc('read_direct_thread',{other_user:student.id})).some(row=>row.id===direct.id));
+ ok(await tutor.client.rpc('mark_direct_read',{other_user:student.id,through_message:direct.id}));
+ assert.ok(ok(await student.client.rpc('read_direct_thread',{other_user:tutor.id})).find(row=>row.id===direct.id).read_at);
+ const tutorReply=ok(await tutor.client.rpc('send_direct_message',{to_user:student.id,message_text:'Free tutor reply',client_request_id:randomUUID()}));
+ assert.ok(ok(await student.client.rpc('read_direct_thread',{other_user:tutor.id})).some(row=>row.id===tutorReply.id));
+ assert.deepEqual(ok(await other.client.from('direct_messages').select('id')),[]);
+ assert.ok((await other.client.rpc('send_direct_message',{to_user:student.id,message_text:'Unrelated learner',client_request_id:randomUUID()})).error);
+ const chatParent=await account('parent');
+ ok(await chatParent.client.rpc('send_direct_message',{to_user:tutor.id,message_text:'Parent tutor enquiry',client_request_id:randomUUID()}));
+ ok(await tutor.client.rpc('send_direct_message',{to_user:chatParent.id,message_text:'Tutor parent reply',client_request_id:randomUUID()}));
+ assert.ok((await chatParent.client.rpc('send_direct_message',{to_user:student.id,message_text:'Unlinked learner',client_request_id:randomUUID()})).error);
+ ok(await chatParent.client.rpc('request_parent_link',{learner_email:student.email}));
+ const messageLink=ok(await student.client.rpc('get_parent_links')).find(row=>row.parent_id===chatParent.id);
+ ok(await student.client.rpc('respond_parent_link',{link_id:messageLink.id,decision:'approved'}));
+ ok(await chatParent.client.rpc('send_direct_message',{to_user:student.id,message_text:'Linked parent message',client_request_id:randomUUID()}));
+ ok(await student.client.rpc('respond_parent_link',{link_id:messageLink.id,decision:'revoked'}));
+ assert.ok((await chatParent.client.rpc('send_direct_message',{to_user:student.id,message_text:'Revoked link message',client_request_id:randomUUID()})).error);
+ const forum=ok(await student.client.from('forum_posts').insert({title:'Free forum discussion',category:'General',body:'Ordinary non-AI question',author_id:student.id,author_email:student.email,author_name:'Disposable learner',is_removed:false}).select('id').single());
+ const commentArgs={target_post:forum.id,comment_text:'Free ordinary parent reply',client_request_id:randomUUID()};
+ const forumReply=ok(await chatParent.client.rpc('submit_forum_comment',commentArgs));
+ assert.equal(ok(await chatParent.client.rpc('submit_forum_comment',commentArgs)).id,forumReply.id);
+ assert.equal(ok(await student.client.from('forum_posts').select('comment_count').eq('id',forum.id).single()).comment_count,1);
+ console.log('PASS: real free learner/tutor/parent messages, replies, read receipts, role isolation, revoked consent and retry-safe forum replies');
+
  // Two independent PostgREST requests compete for the last externally funded session.
  const grantAdmin=await account('student');
  ok(await admin.from('users').update({role:'admin'}).eq('id',grantAdmin.id));
