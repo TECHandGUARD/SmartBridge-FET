@@ -34,7 +34,7 @@ async function request(url, body, headers, fetchImpl, timeoutMs) {
   catch { throw new Error('Provider returned invalid JSON'); }
 }
 
-export async function generateAnswer({ provider, model, prompt, env = process.env, fetchImpl = fetch, timeoutMs = 120000 }) {
+export async function generateAnswer({ provider, model, prompt, instructions = INSTRUCTIONS, format, env = process.env, fetchImpl = fetch, timeoutMs = 120000 }) {
   if (!['ollama', 'openai'].includes(provider)) throw new Error('Unknown provider');
   if (!model || !/^[a-zA-Z0-9._:/-]+$/.test(model)) throw new Error('A valid model ID is required');
   if (provider === 'ollama' && model.toLowerCase().includes('cloud')) throw new Error('Cloud model tags are not allowed in the local-only comparison');
@@ -43,11 +43,11 @@ export async function generateAnswer({ provider, model, prompt, env = process.en
   const start = performance.now();
   const data = provider === 'ollama'
     ? await request(`${localOrigin(env.OLLAMA_BASE_URL)}/api/generate`, {
-      model, system: INSTRUCTIONS, prompt, stream: false, think: false,
+      model, system: instructions, prompt, stream: false, think: false, ...(format ? { format } : {}),
       options: { temperature: 0, num_predict: 768, num_ctx: 4096 },
     }, {}, fetchImpl, timeoutMs)
     : await request('https://api.openai.com/v1/responses', {
-      model, instructions: INSTRUCTIONS, input: prompt, store: false, max_output_tokens: 768,
+      model, instructions, input: prompt, store: false, max_output_tokens: 768,
     }, { Authorization: `Bearer ${env.OPENAI_API_KEY.trim()}` }, fetchImpl, timeoutMs);
   const latencyMs = Math.round(performance.now() - start);
   if (provider === 'ollama' && data.done !== true) throw new Error('Local response was not completed');

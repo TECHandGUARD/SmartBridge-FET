@@ -75,3 +75,7 @@ supabase/.temp
 
 # Local AI evaluation outputs (never commit credentials or user conversations)
 artifacts/ai-comparison/
+
+# Per-user resource extracts and grounded evaluation outputs
+artifacts/rag-comparison/
+__pycache__/

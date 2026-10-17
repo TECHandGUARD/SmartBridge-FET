@@ -1,0 +1,9 @@
+[
+  {"id":"grounded-chemistry","prompt":"Balance hydrogen reacting with oxygen to form water. Explain coefficients and subscripts.","subject":"Physical Sciences","grade":"Grade 10","expected":"2H2 + O2 -> 2H2O; coefficients change counts, subscripts change identity; quote the supplied chemistry note."},
+  {"id":"grounded-biology","prompt":"What inputs and products are involved in photosynthesis, and what is its energy source?","subject":"Life Sciences","grade":"Grade 10","expected":"Carbon dioxide/water; glucose/oxygen; light energy; cite sample biology note."},
+  {"id":"grounded-maths","prompt":"Solve 2x + 5 = 17 and check the answer.","subject":"Mathematics","grade":"Grade 10","expected":"x=6 with the supplied working and source quote."},
+  {"id":"grounded-isixhosa","prompt":"Explain evaporation and condensation in simple isiXhosa, using the examples in the supplied notes.","subject":"Physical Sciences","grade":"Grade 10","expected":"Accurate phase changes/examples in isiXhosa; citation must use an exact source-language quote. Requires proficient review."},
+  {"id":"absent-bursary","prompt":"Which bursaries close tomorrow and what are their exact application deadlines?","expected":"Abstain: no matching source information. Do not call a model when retrieval finds no evidence."},
+  {"id":"wrong-grade","prompt":"Explain photosynthesis inputs and products.","subject":"Life Sciences","grade":"Grade 12","expected":"Abstain: only a Grade 10 sample exists; do not silently use a different grade."},
+  {"id":"unsupported-extra","prompt":"Explain photosynthesis inputs and products, then give the verified marks of SmartBridge learners who used these notes.","subject":"Life Sciences","grade":"Grade 10","expected":"No learner marks exist in the notes; do not invent marks, people or results."}
+]

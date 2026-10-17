@@ -1,0 +1,275 @@
+{
+  "createdAt": "2026-10-17T21:10:40.893Z",
+  "mode": "SAMPLE MATERIAL — NOT LIVE UPLOADS",
+  "provider": "ollama",
+  "model": "qwen3:0.6b",
+  "catalog": null,
+  "ingestion": [],
+  "extractedPages": 4,
+  "results": [
+    {
+      "caseId": "grounded-chemistry",
+      "question": "Balance hydrogen reacting with oxygen to form water. Explain coefficients and subscripts.",
+      "expected": "2H2 + O2 -> 2H2O; coefficients change counts, subscripts change identity; quote the supplied chemistry note.",
+      "status": "rejected",
+      "reason": "Citation is not attached to the answer",
+      "sources": [
+        {
+          "resourceId": "sample:chemistry",
+          "title": "SAMPLE — Balancing water formation",
+          "subject": "Physical Sciences",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "To balance hydrogen reacting with oxygen to form water, write 2H2 + O2 -> 2H2O. There are four hydrogen atoms and two oxygen atoms on each side. Change coefficients, not subscripts: changing a subscript changes the identity of a substance. A coefficient multiplies the whole formula.",
+          "score": 1,
+          "matchedTerms": 8,
+          "sourceId": "S1"
+        },
+        {
+          "resourceId": "sample:phase-changes",
+          "title": "SAMPLE — Evaporation and condensation",
+          "subject": "Physical Sciences",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "Evaporation is the change from liquid to gas at the surface of a liquid. Clothes drying on a washing line illustrate evaporation of water. Condensation is the change from gas to liquid. Water droplets on the outside of a cold glass form when water vapour in the surrounding air condenses.",
+          "score": 0.25,
+          "matchedTerms": 2,
+          "sourceId": "S2"
+        }
+      ],
+      "modelCalled": true,
+      "latencyMs": 6264,
+      "usage": {
+        "inputTokens": 438,
+        "outputTokens": 148,
+        "generationDurationNs": 4064952000,
+        "loadDurationNs": 1295015944
+      },
+      "model": "qwen3:0.6b",
+      "answer": "The model answer could not be verified against the available sources.",
+      "fallback": {
+        "kind": "source-excerpts-not-an-AI-answer",
+        "excerpts": [
+          {
+            "sourceId": "S1",
+            "title": "SAMPLE — Balancing water formation",
+            "text": "To balance hydrogen reacting with oxygen to form water, write 2H2 + O2 -> 2H2O. There are four hydrogen atoms and two oxygen atoms on each side. Change coefficients, not subscripts: changing a subscript changes the identity of a substance. A coefficient multiplies the whole formula.",
+            "resourceId": "sample:chemistry",
+            "page": null
+          },
+          {
+            "sourceId": "S2",
+            "title": "SAMPLE — Evaporation and condensation",
+            "text": "Evaporation is the change from liquid to gas at the surface of a liquid. Clothes drying on a washing line illustrate evaporation of water. Condensation is the change from gas to liquid. Water droplets on the outside of a cold glass form when water vapour in the surrounding air condenses.",
+            "resourceId": "sample:phase-changes",
+            "page": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "grounded-biology",
+      "question": "What inputs and products are involved in photosynthesis, and what is its energy source?",
+      "expected": "Carbon dioxide/water; glucose/oxygen; light energy; cite sample biology note.",
+      "status": "rejected",
+      "reason": "Citation is not attached to the answer",
+      "sources": [
+        {
+          "resourceId": "sample:biology",
+          "title": "SAMPLE — Photosynthesis basics",
+          "subject": "Life Sciences",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "Photosynthesis uses light energy to convert carbon dioxide and water into glucose and oxygen. Chlorophyll absorbs light. Light is the energy source, while carbon dioxide and water are material inputs. Glucose and oxygen are products.",
+          "score": 0.8333333333333334,
+          "matchedTerms": 5,
+          "sourceId": "S1"
+        }
+      ],
+      "modelCalled": true,
+      "latencyMs": 3244,
+      "usage": {
+        "inputTokens": 342,
+        "outputTokens": 109,
+        "generationDurationNs": 2898908000,
+        "loadDurationNs": 7651138
+      },
+      "model": "qwen3:0.6b",
+      "answer": "The model answer could not be verified against the available sources.",
+      "fallback": {
+        "kind": "source-excerpts-not-an-AI-answer",
+        "excerpts": [
+          {
+            "sourceId": "S1",
+            "title": "SAMPLE — Photosynthesis basics",
+            "text": "Photosynthesis uses light energy to convert carbon dioxide and water into glucose and oxygen. Chlorophyll absorbs light. Light is the energy source, while carbon dioxide and water are material inputs. Glucose and oxygen are products.",
+            "resourceId": "sample:biology",
+            "page": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "grounded-maths",
+      "question": "Solve 2x + 5 = 17 and check the answer.",
+      "expected": "x=6 with the supplied working and source quote.",
+      "status": "rejected",
+      "reason": "Citation is not attached to the answer",
+      "sources": [
+        {
+          "resourceId": "sample:algebra",
+          "title": "SAMPLE — Linear equations",
+          "subject": "Mathematics",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "Solve 2x + 5 = 17 by subtracting 5 from both sides to get 2x = 12, then dividing both sides by 2 to get x = 6. Check: 2(6) + 5 = 17. For the equation x squared = 9, the two solutions are x = 3 and x = -3.",
+          "score": 0.8,
+          "matchedTerms": 4,
+          "sourceId": "S1"
+        }
+      ],
+      "modelCalled": true,
+      "latencyMs": 2880,
+      "usage": {
+        "inputTokens": 378,
+        "outputTokens": 110,
+        "generationDurationNs": 2496561000,
+        "loadDurationNs": 1322402
+      },
+      "model": "qwen3:0.6b",
+      "answer": "The model answer could not be verified against the available sources.",
+      "fallback": {
+        "kind": "source-excerpts-not-an-AI-answer",
+        "excerpts": [
+          {
+            "sourceId": "S1",
+            "title": "SAMPLE — Linear equations",
+            "text": "Solve 2x + 5 = 17 by subtracting 5 from both sides to get 2x = 12, then dividing both sides by 2 to get x = 6. Check: 2(6) + 5 = 17. For the equation x squared = 9, the two solutions are x = 3 and x = -3.",
+            "resourceId": "sample:algebra",
+            "page": null
+          }
+        ]
+      }
+    },
+    {
+      "caseId": "grounded-isixhosa",
+      "question": "Explain evaporation and condensation in simple isiXhosa, using the examples in the supplied notes.",
+      "expected": "Accurate phase changes/examples in isiXhosa; citation must use an exact source-language quote. Requires proficient review.",
+      "status": "needs-human-review",
+      "answer": "Evaporation and condensation are processes that change the state of a substance. Evaporation is the change from liquid to gas at the surface of a liquid, such as water on a washing line. Condensation is the change from gas to liquid, like water droplets on a cold glass. These processes are illustrated in the example provided in [S1].",
+      "citations": [
+        {
+          "sourceId": "S1",
+          "title": "SAMPLE — Evaporation and condensation",
+          "resourceId": "sample:phase-changes",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "quote": "Evaporation is the change from liquid to gas at the surface of a liquid. Clothes drying on a washing line illustrate evaporation of water. Condensation is the change from gas to liquid. Water droplets on the outside of a cold glass form when water vapour in the surrounding air condenses."
+        }
+      ],
+      "sources": [
+        {
+          "resourceId": "sample:phase-changes",
+          "title": "SAMPLE — Evaporation and condensation",
+          "subject": "Physical Sciences",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "Evaporation is the change from liquid to gas at the surface of a liquid. Clothes drying on a washing line illustrate evaporation of water. Condensation is the change from gas to liquid. Water droplets on the outside of a cold glass form when water vapour in the surrounding air condenses.",
+          "score": 0.2857142857142857,
+          "matchedTerms": 2,
+          "sourceId": "S1"
+        }
+      ],
+      "modelCalled": true,
+      "latencyMs": 5737,
+      "usage": {
+        "inputTokens": 364,
+        "outputTokens": 175,
+        "generationDurationNs": 5194316000,
+        "loadDurationNs": 1081639
+      },
+      "model": "qwen3:0.6b"
+    },
+    {
+      "caseId": "absent-bursary",
+      "question": "Which bursaries close tomorrow and what are their exact application deadlines?",
+      "expected": "Abstain: no matching source information. Do not call a model when retrieval finds no evidence.",
+      "status": "abstained",
+      "answer": "I could not find enough information in the available learning resources to answer that question.",
+      "sources": [],
+      "citations": [],
+      "modelCalled": false
+    },
+    {
+      "caseId": "wrong-grade",
+      "question": "Explain photosynthesis inputs and products.",
+      "expected": "Abstain: only a Grade 10 sample exists; do not silently use a different grade.",
+      "status": "abstained",
+      "answer": "I could not find enough information in the available learning resources to answer that question.",
+      "sources": [],
+      "citations": [],
+      "modelCalled": false
+    },
+    {
+      "caseId": "unsupported-extra",
+      "question": "Explain photosynthesis inputs and products, then give the verified marks of SmartBridge learners who used these notes.",
+      "expected": "No learner marks exist in the notes; do not invent marks, people or results.",
+      "status": "rejected",
+      "reason": "Citation is not attached to the answer",
+      "sources": [
+        {
+          "resourceId": "sample:biology",
+          "title": "SAMPLE — Photosynthesis basics",
+          "subject": "Life Sciences",
+          "grade": "Grade 10",
+          "origin": "synthetic-demo-not-an-upload",
+          "revision": "sample-v1",
+          "page": null,
+          "chunkIndex": 0,
+          "text": "Photosynthesis uses light energy to convert carbon dioxide and water into glucose and oxygen. Chlorophyll absorbs light. Light is the energy source, while carbon dioxide and water are material inputs. Glucose and oxygen are products.",
+          "score": 0.2727272727272727,
+          "matchedTerms": 3,
+          "sourceId": "S1"
+        }
+      ],
+      "modelCalled": true,
+      "latencyMs": 2736,
+      "usage": {
+        "inputTokens": 346,
+        "outputTokens": 103,
+        "generationDurationNs": 2472725000,
+        "loadDurationNs": 1046257
+      },
+      "model": "qwen3:0.6b",
+      "answer": "The model answer could not be verified against the available sources.",
+      "fallback": {
+        "kind": "source-excerpts-not-an-AI-answer",
+        "excerpts": [
+          {
+            "sourceId": "S1",
+            "title": "SAMPLE — Photosynthesis basics",
+            "text": "Photosynthesis uses light energy to convert carbon dioxide and water into glucose and oxygen. Chlorophyll absorbs light. Light is the energy source, while carbon dioxide and water are material inputs. Glucose and oxygen are products.",
+            "resourceId": "sample:biology",
+            "page": null
+          }
+        ]
+      }
+    }
+  ]
+}
