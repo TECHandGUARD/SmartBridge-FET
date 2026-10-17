@@ -71,3 +71,9 @@ Tests cover grade/subject filtering, no-evidence/no-inference, citation/quote ch
 ## Actual sample run
 
 See `docs/grounded-sample-findings.md` and `evals/grounded-sample-run/results.json`. Results distinguish retrieval, model behaviour and validation. They must not be described as proof that the model is safe, multilingual, or ready for production.
+
+## Owner-authorised merge/deployment scope
+
+The owner requested merging PR #12 and deploying the English-only notice. Local-model generation now adds a server-owned English-only instruction, rejects declared non-English response languages and the explicit unsupported language names in the current tests, and explains that isiXhosa is unsupported. This is not a comprehensive language detector and does not cure the model's other failures. The OpenAI provider retains its independent language behaviour. Historical isiXhosa/Afrikaans test outputs above predate this gate and are not demonstrations of supported languages.
+
+The study-assistant page displays the local experiment's language limitation and states that the local model is not connected to live chat. Merging the repository deploys the website code/notice, **not** a permanent local inference server. No hosted model machine is provisioned or paid fallback enabled. The existing online-provider release gate remains in place. A real hosted model service and reliability verification remain necessary before learners can use local-model chat.
