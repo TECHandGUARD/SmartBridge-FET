@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { appConfig } from '@/lib/config';
 import { useState } from 'react';
 import { BookOpen, CheckCircle, ShieldCheck } from 'lucide-react';
@@ -30,6 +31,10 @@ export default function TutorPendingScreen({ onRefresh }) {
         {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
         <div className="flex flex-col gap-3 sm:flex-row"><Button onClick={refresh} disabled={checking} className="min-h-11">{checking ? 'Checking…' : 'Check verification'}</Button><Button variant="outline" onClick={signOut} disabled={checking} className="min-h-11">Sign out</Button></div>
       </section>
+      <nav aria-label="Legal information" className="mt-6 flex flex-wrap justify-center gap-4 text-sm">
+        <Link to="/terms" className="min-h-11 inline-flex items-center text-primary underline underline-offset-4">Legal documents</Link>
+        <Link to="/privacy" className="min-h-11 inline-flex items-center text-primary underline underline-offset-4">Privacy policy</Link>
+      </nav>
     </div>
   </main>;
 }
