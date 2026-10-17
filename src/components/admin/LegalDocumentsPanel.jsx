@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import LegalDocumentPreview from '@/components/admin/LegalDocumentPreview';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,8 @@ export default function LegalDocumentsPanel() {
   const [error, setError] = useState('');
   const [fileInputKey, setFileInputKey] = useState(0);
   const [previewDocument, setPreviewDocument] = useState(null);
+  const previewRef = useRef(null);
+  useEffect(() => { if (previewDocument) previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [previewDocument]);
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('legal_documents').select('*').order('title');
     if (error) { setError('Documents could not load. Please retry.'); return; }
@@ -114,7 +116,7 @@ export default function LegalDocumentsPanel() {
         <Button disabled={busy} type="submit">{busy ? 'Saving…' : 'Save document'}</Button>
       </div>
     </form>
-    {previewDocument && <LegalDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} />}
+    {previewDocument && <div ref={previewRef}><LegalDocumentPreview document={previewDocument} onClose={() => setPreviewDocument(null)} /></div>}
     {Object.entries(LEGAL_CATEGORIES).map(([category, label]) => <section key={category} className="space-y-3">
       <h3 className="text-xl font-semibold">{label}</h3>
       {documents.filter(document => document.category === category).map(document => <div key={document.id} className="flex flex-wrap items-center gap-3 rounded border p-3">
