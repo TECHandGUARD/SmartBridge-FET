@@ -62,6 +62,27 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
  console.log('PASS: real booking retries, server price, ownership and tutor confirmation');
+
+ // Exercise flexible tutor prices through real PostgREST, not a mocked save response.
+ const edited=ok(await tutor.client.from('tutor_profiles').update({hourly_rate:1250.50,subject_rates:{Mathematics:20,History:0},subjects:['Mathematics','History'],offers_free_intro:true})
+  .eq('id',profile.id).eq('user_id',tutor.id).select('hourly_rate,session_price_per_hour,subject_rates,offers_free_intro').single());
+ assert.equal(Number(edited.hourly_rate),1250.5);assert.equal(Number(edited.session_price_per_hour),1250.5);
+ const learnerDirectory=ok(await student.client.from('tutor_directory').select('*').eq('id',profile.id).single());
+ assert.equal(learnerDirectory.subject_rates.Mathematics,20);assert.equal(learnerDirectory.offers_free_intro,true);
+ assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
+ const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
+ assert.equal(Number(subjectBooking.amount),30);
+ const freeRegular=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_subject:'History',chosen_date:'2099-12-03',request_id:randomUUID()}));
+ assert.equal(Number(freeRegular.amount),0);assert.equal(freeRegular.is_intro,false);
+ const introArgs={...bookingArgs,chosen_date:'2099-12-04',hours:0.5,free_intro:true,request_id:randomUUID()};
+ const introduction=ok(await student.client.rpc('create_booking',introArgs));
+ assert.equal(Number(introduction.amount),0);assert.equal(introduction.is_intro,true);
+ assert.equal(ok(await student.client.rpc('create_booking',introArgs)).id,introduction.id);
+ assert.ok((await student.client.rpc('create_booking',{...introArgs,chosen_date:'2099-12-05',request_id:randomUUID()})).error,'A second introduction must fail');
+ assert.ok((await other.client.from('tutor_profiles').update({hourly_rate:1}).eq('id',profile.id).select('id').single()).error,'A different learner cannot save a tutor profile');
+ assert.ok((await tutor.client.from('tutor_profiles').update({subject_rates:{Mathematics:-1}}).eq('id',profile.id)).error,'Negative subject price must fail');
+ ok(await tutor.client.from('tutor_profiles').update({hourly_rate:100,subject_rates:{},subjects:['Mathematics'],offers_free_intro:false}).eq('id',profile.id));
+ console.log('PASS: real tutor save/reload, directory privacy, subject/free prices and one-time introduction RPC contracts');
  ok(await admin.from('users').update({is_active:false}).eq('id',tutor.id));
  assert.deepEqual(ok(await student.client.from('tutor_directory').select('id').eq('user_id',tutor.id)),[]);
  assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),false);
