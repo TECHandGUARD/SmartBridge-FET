@@ -111,6 +111,8 @@ export default function TutorProfileEditor({
   } = useProfileConfig();
   const [previewMode, setPreviewMode] = useState(false);
   const saveInFlight = useRef(false);
+  const avatarInputRef = useRef(null);
+  const videoInputRef = useRef(null);
   const [isDirty, setIsDirty] = useState(false);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(DEFAULT_CONFIG.autoSave?.enabled ?? true);
   const [lastAutoSave, setLastAutoSave] = useState(null);
@@ -316,7 +318,7 @@ export default function TutorProfileEditor({
       maxSizeMB
     } = config.uploadLimits?.avatar || DEFAULT_CONFIG.uploadLimits.avatar;
     if (!allowedTypes.includes(file.type)) {
-      toast.error(`Please upload ${allowedTypes.join(', ')} format`);
+      toast.error('Choose a JPEG, PNG or WebP photo. For iPhone HEIC photos, export or share as JPEG first.');
       return;
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -329,13 +331,10 @@ export default function TutorProfileEditor({
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/photo-${crypto.randomUUID()}.${fileExt}`;
-      const interval = setInterval(() => {
-        setUploadProgress(prev => Math.min(prev + 10, 90));
-      }, 200);
+      setUploadProgress(15);
       const {
         error: uploadError
       } = await supabase.storage.from('tutor-profile-media').upload(fileName, file);
-      clearInterval(interval);
       if (uploadError) throw uploadError;
       const {
         data: {
@@ -351,9 +350,10 @@ export default function TutorProfileEditor({
     } catch (error) {
       console.error('Avatar upload failed:', error);
       setError(error.message || 'Failed to upload photo');
-      toast.error('Failed to upload photo. Please try again.');
+      toast.error(`Photo upload failed: ${error.message || 'Please try again.'}`);
     } finally {
       setUploadingAvatar(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = '';
     }
   };
   const handleVideoUpload = async e => {
@@ -364,7 +364,7 @@ export default function TutorProfileEditor({
       maxSizeMB
     } = config.uploadLimits?.video || DEFAULT_CONFIG.uploadLimits.video;
     if (!allowedTypes.includes(file.type)) {
-      toast.error('Please upload a video file (MP4 format recommended)');
+      toast.error('Choose an MP4 video. If your iPhone recorded MOV, export it as MP4 first.');
       return;
     }
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -374,6 +374,16 @@ export default function TutorProfileEditor({
     setUploadingVideo(true);
     setError(null);
     try {
+      const duration = await new Promise((resolve, reject) => {
+        const preview = document.createElement('video');
+        const objectUrl = URL.createObjectURL(file);
+        const cleanup = () => { preview.removeAttribute('src'); preview.load(); URL.revokeObjectURL(objectUrl); };
+        preview.preload = 'metadata';
+        preview.onloadedmetadata = () => { const seconds = preview.duration; cleanup(); resolve(seconds); };
+        preview.onerror = () => { cleanup(); reject(new Error('Could not read video metadata. Try another MP4 file.')); };
+        preview.src = objectUrl;
+      });
+      if (!Number.isFinite(duration) || duration < 30 || duration > 60) throw new Error('Introduction videos must be between 30 and 60 seconds.');
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/intro-${crypto.randomUUID()}.${fileExt}`;
       const {
@@ -392,9 +402,10 @@ export default function TutorProfileEditor({
     } catch (error) {
       console.error('Video upload failed:', error);
       setError(error.message || 'Failed to upload video');
-      toast.error('Failed to upload video');
+      toast.error(`Video upload failed: ${error.message || 'Please try again.'}`);
     } finally {
       setUploadingVideo(false);
+      if (videoInputRef.current) videoInputRef.current.value = '';
     }
   };
   const handleRemoveAvatar = async () => {
@@ -482,13 +493,13 @@ export default function TutorProfileEditor({
     }
   };
   if (configLoading) {
-    return <Card className="border-border">
+    return <Card className="border-emerald-900/10 shadow-[0_18px_65px_-40px_rgba(6,65,46,0.38)] rounded-2xl overflow-hidden">
         <CardContent className="flex justify-center py-12">
           <Loader2 className="w-5 h-5 animate-spin text-primary" />
         </CardContent>
       </Card>;
   }
-  return <Card className="border-border">
+  return <Card className="border-emerald-900/10 shadow-[0_18px_65px_-40px_rgba(6,65,46,0.38)] rounded-2xl overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
@@ -542,11 +553,15 @@ export default function TutorProfileEditor({
         </div>
 
         {}
-        {isDirty && <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2 dark:bg-amber-950/20 dark:border-amber-800">
-            <p className="text-[10px] text-amber-700 dark:text-amber-300 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" />
-              You have unsaved changes. Don't forget to save!
+        {isDirty && <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-2 dark:bg-amber-950/20 dark:border-amber-800 flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-xs text-amber-800 dark:text-amber-200 flex items-center gap-2 flex-1">
+              <AlertTriangle className="w-4 h-4 shrink-0" />
+              Changes are not yet published. Save your profile to make photos, videos and details visible.
             </p>
+            <Button type="button" size="sm" onClick={handleSave} disabled={saving || uploadingAvatar || uploadingVideo || Object.keys(validationErrors).length > 0} className="gap-2 min-h-11 rounded-xl">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              {saving ? 'Saving…' : 'Save Profile'}
+            </Button>
           </div>}
       </CardHeader>
 
@@ -558,7 +573,7 @@ export default function TutorProfileEditor({
           </p>
           <p className="text-[11px] text-muted-foreground">
             Upload a <strong>real photo of yourself</strong> (selfie or professional headshot).
-            Max {config.uploadLimits?.avatar?.maxSizeMB || 2}MB, JPEG or PNG.
+            Max {config.uploadLimits?.avatar?.maxSizeMB || 2}MB · JPEG, PNG or WebP. iPhone HEIC photos need to be exported as JPEG.
           </p>
 
           <div className="flex items-center gap-4">
@@ -567,13 +582,11 @@ export default function TutorProfileEditor({
             </div>
 
             <div className="flex gap-2 flex-wrap">
-              <label className="cursor-pointer">
-                <input type="file" accept="image/jpeg,image/png,image/jpg,image/webp" onChange={handleAvatarUpload} className="hidden" disabled={uploadingAvatar} />
-                <Button type="button" variant="outline" size="sm" disabled={uploadingAvatar} className="gap-1">
-                  {uploadingAvatar ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
-                  {uploadingAvatar ? `${uploadProgress}%` : 'Upload Photo'}
-                </Button>
-              </label>
+              <input ref={avatarInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarUpload} className="sr-only" tabIndex={-1} aria-label="Choose tutor profile photo" disabled={uploadingAvatar} />
+              <Button type="button" variant="outline" size="sm" onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar} className="gap-2 min-h-11 rounded-xl border-emerald-900/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                {uploadingAvatar ? 'Uploading photo…' : 'Choose Photo'}
+              </Button>
               {avatarUrl && <Button type="button" variant="outline" size="sm" onClick={handleRemoveAvatar} className="gap-1 text-destructive">
                   <Trash2 className="w-3 h-3" /> Remove
                 </Button>}
@@ -587,7 +600,7 @@ export default function TutorProfileEditor({
             <Video className="w-4 h-4 text-primary" /> Public Introduction Video (Optional, 30–60 seconds)
           </p>
           <p className="text-[11px] text-muted-foreground">
-            Max {config.uploadLimits?.video?.maxSizeMB || 20}MB, MP4 format. Record a short profile introduction of 30 seconds to 1 minute.
+            Max {config.uploadLimits?.video?.maxSizeMB || 20}MB · MP4 · 30–60 seconds. On iPhone, export MOV recordings to MP4 before uploading.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -599,13 +612,11 @@ export default function TutorProfileEditor({
               </div>}
 
             <div className="flex gap-2">
-              <label className="cursor-pointer">
-                <input type="file" accept="video/mp4" onChange={handleVideoUpload} className="hidden" disabled={uploadingVideo} />
-                <Button type="button" variant="outline" size="sm" disabled={uploadingVideo} className="gap-1">
-                  {uploadingVideo ? <Loader2 className="w-3 h-3 animate-spin" /> : <Video className="w-3 h-3" />}
-                  {uploadingVideo ? 'Uploading...' : 'Upload Video'}
-                </Button>
-              </label>
+              <input ref={videoInputRef} type="file" accept="video/mp4" onChange={handleVideoUpload} className="sr-only" tabIndex={-1} aria-label="Choose tutor introduction video" disabled={uploadingVideo} />
+              <Button type="button" variant="outline" size="sm" onClick={() => videoInputRef.current?.click()} disabled={uploadingVideo} className="gap-2 min-h-11 rounded-xl border-emerald-900/20 hover:bg-emerald-50 dark:hover:bg-emerald-950/30">
+                {uploadingVideo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Video className="w-4 h-4" />}
+                {uploadingVideo ? 'Uploading video…' : 'Choose Video'}
+              </Button>
               {videoUrl && <Button type="button" variant="outline" size="sm" onClick={handleRemoveVideo} className="gap-1 text-destructive">
                   <Trash2 className="w-3 h-3" /> Remove Video
                 </Button>}
@@ -879,7 +890,7 @@ export default function TutorProfileEditor({
           <Button type="button" variant="ghost" onClick={discardChanges} disabled={!isDirty || saving}>
             Discard Changes
           </Button>
-          <Button type="button" onClick={handleSave} disabled={saving || Object.keys(validationErrors).length > 0} className="gap-1.5">
+          <Button type="button" onClick={handleSave} disabled={saving || uploadingAvatar || uploadingVideo || Object.keys(validationErrors).length > 0} className="gap-1.5 min-h-11 rounded-xl">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Changes
           </Button>
