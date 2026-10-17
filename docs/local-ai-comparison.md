@@ -87,6 +87,6 @@ Tests exercise a real loopback HTTP exchange with a stub server plus mocked Open
 - Candidate tag and license: https://ollama.com/library/qwen3:0.6b
 - Official OpenAI text generation/Responses guidance: https://developers.openai.com/api/docs/guides/text
 
-## Confirmed environment limitation
+## Actual initial run
 
-The initial coding environment had no Ollama installation or local weights. OpenAI credentials were not used or requested from the user. Unless a separately recorded real run is present, actual inference and comparative quality remain pending; report only infrastructure/unit-test status. The user's future API key enables the second arm of the comparison, not a retroactive score.
+The runtime and model were downloaded successfully during this work. See `docs/local-ai-initial-findings.md`, `evals/local-smoke-run/results.json`, and the generated HTML report for the sanitized actual local results. All 12 requests completed, but quality/safety failures prevent learner release. OpenAI remains not run pending the owner's key and model selection. A disconnected-network run and learner-device/load testing remain unverified.
