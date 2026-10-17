@@ -1,4 +1,5 @@
 import { parseTutorRate, rateLabel } from '@/lib/tutor-pricing';
+import { tutorDraftKey, createTutorDraft, readTutorDraft } from '@/lib/tutor-profile-draft';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { Linkedin, Twitter, Shield, AlertCircle } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
@@ -83,7 +84,6 @@ const useProfileConfig = () => {
 const TEACHING_LANGUAGES = ['English', 'Afrikaans', 'isiZulu', 'isiXhosa', 'Sesotho', 'Setswana', 'Sepedi', 'Xitsonga', 'Other'];
 const GRADES = ['Grade 10', 'Grade 11', 'Grade 12'];
 const STUDY_YEARS = ['1st Year', '2nd Year', '3rd Year', '4th Year', 'Honours', 'Masters', 'PhD', 'Graduated', 'N/A'];
-const getDraftKey = email => `tutor_profile_draft_${email}`;
 const profileForm = profile => ({
     bio: profile?.bio || '',
     institution: profile?.institution || '',
@@ -190,43 +190,57 @@ export default function TutorProfileEditor({
     return () => clearInterval(interval);
   }, []);
   useEffect(() => {
-    if (!autoSaveEnabled || !user?.email || !isDirty || saving) return;
+    const draftKey = tutorDraftKey(user?.id);
+    if (!autoSaveEnabled || !draftKey || !isDirty || saving) return;
     const autoSaveInterval = setInterval(() => {
-      const draftData = {
-        form,
-        socialLinks,
-        avatarUrl,
-        videoUrl,
-        updatedAt: new Date().toISOString()
-      };
-      const draftKey = getDraftKey(user.email);
-      localStorage.setItem(draftKey, JSON.stringify(draftData));
-      setLastAutoSave(new Date());
-      console.log('📝 Profile draft auto-saved');
+      try {
+        const draftData = createTutorDraft({ form, socialLinks, avatarUrl, videoUrl });
+        localStorage.setItem(draftKey, JSON.stringify(draftData));
+        setLastAutoSave(new Date());
+      } catch {
+        // Storage can be disabled or full on mobile browsers. Never block editing.
+        console.warn('Profile draft could not be saved on this device.');
+      }
     }, (config.autoSave?.intervalSeconds || 30) * 1000);
     return () => clearInterval(autoSaveInterval);
-  }, [form, socialLinks, avatarUrl, videoUrl, autoSaveEnabled, isDirty, saving, user?.email, config.autoSave?.intervalSeconds]);
+  }, [form, socialLinks, avatarUrl, videoUrl, autoSaveEnabled, isDirty, saving, user?.id, config.autoSave?.intervalSeconds]);
+
   useEffect(() => {
-    if (!user?.email || profile?.id) return;
-    const draftKey = getDraftKey(user.email);
-    const savedDraft = localStorage.getItem(draftKey);
-    if (savedDraft) {
-      const draft = JSON.parse(savedDraft);
-      if (window.confirm('You have an unsaved draft from your last session. Load it?')) {
-        setForm(draft.form || form);
-        setSocialLinks(draft.socialLinks || socialLinks);
+    const draftKey = tutorDraftKey(user?.id);
+    if (!draftKey) return;
+    try {
+      // Remove old email-keyed drafts, which could contain SACE credentials.
+      if (user?.email) localStorage.removeItem(`tutor_profile_draft_${user.email}`);
+      const raw = localStorage.getItem(draftKey);
+      if (!raw) return;
+      const draft = readTutorDraft(raw);
+      if (!draft) {
+        localStorage.removeItem(draftKey);
+        return;
+      }
+      if (window.confirm('You have an unsaved profile draft from this device. Restore it?')) {
+        // Keep verified registration details from the server, not browser drafts.
+        setForm(current => ({ ...current, ...draft.form, sace_number: current.sace_number }));
+        setSocialLinks(current => ({ ...current, ...draft.socialLinks }));
         if (draft.avatarUrl) setAvatarUrl(draft.avatarUrl);
         if (draft.videoUrl) setVideoUrl(draft.videoUrl);
-        toast.info('Draft loaded');
+        setIsDirty(true);
+        toast.info('Draft restored. Review and save to publish changes.');
+      } else {
+        localStorage.removeItem(draftKey);
       }
+    } catch {
+      console.warn('Saved profile draft is unavailable on this device.');
     }
-  }, [user?.email, profile?.id]);
+  }, [user?.id, user?.email]);
+
   const clearDraft = useCallback(() => {
-    if (!user?.email) return;
-    const draftKey = getDraftKey(user.email);
-    localStorage.removeItem(draftKey);
+    const draftKey = tutorDraftKey(user?.id);
+    if (draftKey) {
+      try { localStorage.removeItem(draftKey); } catch { /* storage may be unavailable */ }
+    }
     setIsDirty(false);
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     const handleBeforeUnload = e => {
       if (isDirty) {
