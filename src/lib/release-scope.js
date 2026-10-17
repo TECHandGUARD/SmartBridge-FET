@@ -21,8 +21,8 @@ export const RELEASE_FEATURES = Object.freeze({
 export const isReleaseFeatureEnabled = key => RELEASE_FEATURES[key] === true;
 export function isDashboardSectionEnabled(role, key) {
   const deferred = {
-    student: ['messages'],
-    tutor: ['students', 'earnings', 'messages'],
+    student: [],
+    tutor: ['students', 'earnings'],
     parent: [],
   };
   return !!deferred[role] && !deferred[role].includes(key);

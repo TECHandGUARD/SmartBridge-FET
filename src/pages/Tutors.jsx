@@ -267,7 +267,7 @@ export default function Tutors() {
       {chatTutor && (
         <LiveTutorChat
           user={user}
-          tutorEmail={chatTutor.user_email}
+          tutorId={chatTutor.user_id}
           tutorName={chatTutor.full_name}
           onClose={() => setChatTutor(null)}
         />

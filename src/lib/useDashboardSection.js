@@ -2,7 +2,7 @@ import { useSearchParams } from 'react-router-dom';
 import { isDashboardSectionEnabled } from './release-scope';
 const SECTIONS = {
   student: ['subjects', 'progress', 'ai', 'goals', 'simulations', 'bookmarks', 'messages', 'applications'],
-  parent: ['child', 'progress', 'subjects', 'tutors', 'reports', 'premium'],
+  parent: ['child', 'progress', 'subjects', 'tutors', 'reports', 'premium', 'messages'],
   tutor: ['upload', 'availability', 'students', 'earnings', 'messages', 'bookings', 'reviews', 'sessions'],
 };
 /** @returns {[string|null, (key:string)=>void]} */

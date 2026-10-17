@@ -1,3 +1,4 @@
+import MessagingInbox from '@/components/messaging/MessagingInbox';
 import { CounselorSharing } from '@/components/counselor/CounselorAccess';
 import { appConfig } from '@/lib/config';
 import ReleaseGate from '@/components/operations/ReleaseGate';
@@ -27,7 +28,6 @@ import SimulationLab from '@/components/simulations/SimulationLab';
 import ResourceBookmarks from '@/components/student/ResourceBookmarks';
 import MilestoneBadges from '@/components/student/MilestoneBadges';
 import StudyHeatmap from '@/components/student/StudyHeatmap';
-import LiveTutorChat from '@/components/tutor/LiveTutorChat';
 import AIStudyPlanner from '@/components/student/AIStudyPlanner';
 import WeeklyGoals from '@/components/student/WeeklyGoals';
 import StudyGamification from '@/components/student/StudyGamification';
@@ -35,7 +35,6 @@ import InteractiveFlashcards from '@/components/student/InteractiveFlashcards';
 import AIStudyAssistant from '@/components/student/AIStudyAssistant';
 import StudentProgressDashboard from '@/components/student/StudentProgressDashboard';
 import SyllabusTopicTracker from '@/components/student/SyllabusTopicTracker';
-import DiscussionBoard from '@/components/discussion/DiscussionBoard';
 import ApplicationTracker from '@/components/opportunities/ApplicationTracker';
 import CounselorChat from '@/components/counselor/CounselorChat';
 import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
@@ -45,7 +44,6 @@ export default function StudentDashboard() {
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   const [resources, setResources] = useState([]);
   const [tutors, setTutors] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
   const [counselorInfo, setCounselorInfo] = useState(null);
   const [counselorChat, setCounselorChat] = useState(false);
   const [activeSection, toggleSection] = useDashboardSection('student');
@@ -345,41 +343,8 @@ export default function StudentDashboard() {
               </Card>
             )}
 
-            {/* Message a Tutor */}
-            <Card className="border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-playfair flex items-center gap-2">
-                  <MessageCircle className="w-5 h-5 text-primary" /> Message a Tutor
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {tutors.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No verified tutors available yet.</p>
-                ) : (
-                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {tutors.map(t => (
-                      <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 hover:bg-muted transition-colors">
-                        <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                          {t.full_name?.[0] || 'T'}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{t.full_name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{t.subjects?.slice(0, 2).join(', ') || 'General'}</p>
-                        </div>
-                        <Button size="sm" variant="outline" className="h-8 text-xs gap-1 flex-shrink-0"
-                          onClick={() => setActiveChat({ email: t.user_email, name: t.full_name })}>
-                          <MessageCircle className="w-3.5 h-3.5" /> Chat
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Discussion Board">
-              <DiscussionBoard user={user} />
-            </DashboardPremiumGate>
+            <MessagingInbox user={user}/>
+            <Link className="text-sm underline" to="/forum">Open the free community forum</Link>
           </div>
         )}
 
@@ -485,9 +450,6 @@ export default function StudentDashboard() {
       </div>
 
       {/* Floating chats */}
-      {activeChat && (
-        <LiveTutorChat user={user} tutorEmail={activeChat.email} tutorName={activeChat.name} onClose={() => setActiveChat(null)} />
-      )}
       {counselorChat && counselorInfo && (
         <CounselorChat user={user} counselorEmail={counselorInfo.email} counselorName={counselorInfo.name}
           schoolName={counselorInfo.schoolName} onClose={() => setCounselorChat(false)} />

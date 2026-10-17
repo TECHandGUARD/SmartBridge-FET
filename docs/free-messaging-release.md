@@ -1,0 +1,11 @@
+# Free communication release
+
+Learner, tutor and parent dashboards expose Messages without a subscription or AI request. The tutor directory Chat button opens the same inbox. Text messages persist in the database, show unread counts and read receipts, and refresh every five seconds while the inbox is visible. Failed sends keep the draft and reuse a request ID, including when a response is lost after the server saved the message.
+
+Learners and parents may contact active, verified tutors. Tutors can reply to enquiries and contact their existing booked learners and those learners' approved parents. Parent–learner messaging requires an approved link; revocation prevents new messages. Conversations remain visible to their participants as read-only when eligibility ends. Unrelated users cannot read conversations, edit messages, forge senders or mark another person's messages as read. The inbox offers text only; legacy attachment and AI chat features remain disabled.
+
+Forum replies use an authenticated, rate-limited operation that derives the author and updates the reply count atomically. Retries cannot create duplicate replies. Forum posts and replies are free and do not use AI. Replies refresh while the discussion is open, including when a Realtime connection is unavailable. Existing study rooms remain free, with manual administrator review before posts and replies appear; they are not an instant group chat.
+
+Deploy `20261017075541_free_direct_messaging.sql` before the frontend. The migration adds a separate protected message store and a nullable request ID to existing forum comments; it does not alter payment, pricing, sponsorship or existing message content.
+
+Verification includes SQL authorization and parent-consent checks, real disposable Auth/PostgREST exchanges in CI, and separate browser sessions for all three roles. Browser checks cover mobile and desktop layouts, lost acknowledgements, draft preservation, duplicate prevention, persistence after reload, read receipts, and free forum replies. Existing tutor-editor and study-room suites must also pass. After deployment, repeat a short exchange using consenting real accounts and check tutor edits after reload; do not claim that this automated release check constitutes a real-user acceptance test.

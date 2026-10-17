@@ -27,15 +27,15 @@ export function getNavigation(user) {
   if (user?.role === 'school_counselor') return { primary: [dashboard, resources], secondary: [item('Home', '/', 'home')] };
   if (user?.role === 'parent') return {
     primary: [dashboard, tutors, item('Opportunities', '/opportunities', 'book'), forum],
-    secondary: [item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
+    secondary: [item('Messages', '/parent-dashboard?section=messages', 'forum'), item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
   };
   if (TUTOR_ROLES.includes(user?.role)) return {
     primary: [dashboard, resources, item('CAPS Docs', '/resources-library', 'book'), forum],
-    secondary: [subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
+    secondary: [item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
   };
   return {
     primary: [dashboard, subjects, item('Practice', '/quiz', 'practice'), tutors],
-    secondary: [resources, item('Bookings', '/bookings', 'users'), forum, item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book'), ...common],
+    secondary: [item('Messages', '/student-dashboard?section=messages', 'forum'), resources, item('Bookings', '/bookings', 'users'), forum, item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book'), ...common],
   };
 }
 export function isNavigationActive(location, path) {
