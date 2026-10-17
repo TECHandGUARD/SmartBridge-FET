@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
@@ -51,6 +51,13 @@ export default function AppLayout() {
     <main id="main-content" ref={main} tabIndex={-1} className="app-main flex-1 outline-none">
       <motion.div key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
     </main>
+    <nav aria-label="Mobile legal and company information" className="lg:hidden mx-auto w-full max-w-7xl px-4 pt-6 pb-24 text-xs text-muted-foreground" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t pt-5">
+        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/terms">Legal documents</Link>
+        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/privacy">Privacy policy</Link>
+        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/about-tech-guard">About Tech &amp; GUARD</Link>
+      </div>
+    </nav>
     <div className="lg:hidden"><MobileBottomTabs user={user} /></div>
     <div className="hidden lg:block"><Footer /></div>
   </div>;
