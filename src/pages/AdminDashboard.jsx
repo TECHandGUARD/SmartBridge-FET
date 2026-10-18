@@ -779,7 +779,7 @@ export default function AdminDashboard() {
               {ADMIN_MOBILE_SECTIONS.map(section=><option key={section.value} value={section.value}>{section.label}</option>)}
             </select>
           </div>
-          <TabsList className="mb-6 hidden h-auto flex-wrap gap-1 lg:flex">
+          <TabsList className="mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
             <TabsTrigger value="verification" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Tutor Verification</TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Users</TabsTrigger>
