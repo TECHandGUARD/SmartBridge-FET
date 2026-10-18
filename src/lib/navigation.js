@@ -30,8 +30,8 @@ export function getNavigation(user) {
     secondary: [item('Messages', '/parent-dashboard?section=messages', 'forum'), item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
   };
   if (TUTOR_ROLES.includes(user?.role)) return {
-    primary: [dashboard, resources, item('CAPS Docs', '/resources-library', 'book'), forum],
-    secondary: [item('Assessments', '/assessments', 'practice'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
+    primary: [dashboard, item('Assessments', '/assessments', 'practice'), resources, forum],
+    secondary: [item('CAPS Docs', '/resources-library', 'book'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
   };
   return {
     primary: [dashboard, subjects, item('Assessments', '/assessments', 'practice'), tutors],
