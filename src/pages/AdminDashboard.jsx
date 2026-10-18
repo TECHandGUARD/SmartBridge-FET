@@ -214,6 +214,7 @@ import UserRegistrationsPanel from '@/components/admin/UserRegistrationsPanel';
 import AdminUserViewer from '@/components/admin/AdminUserViewer';
 import FeatureFlagPanel from '@/components/admin/FeatureFlagPanel';
 import ContentModerationPanel from '@/components/admin/ContentModerationPanel';
+import AssessmentModerationPanel from '@/components/admin/AssessmentModerationPanel';
 import AnnouncementManager from '@/components/admin/AnnouncementManager';
 import KnowledgeBaseManager from '@/components/admin/KnowledgeBaseManager';
 import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
@@ -754,6 +755,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
             <TabsTrigger value="operations">Operations</TabsTrigger>
             <TabsTrigger value="study-moderation">Study moderation</TabsTrigger>
+            <TabsTrigger value="assessment-moderation">Assessment approvals</TabsTrigger>
             <TabsTrigger value="university-directory">Universities</TabsTrigger>
             <TabsTrigger value="financial" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Financial</TabsTrigger>
             <TabsTrigger value="activity" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
@@ -1084,6 +1086,10 @@ export default function AdminDashboard() {
             <SafeSubComponent>
               <AnnouncementManager />
             </SafeSubComponent>
+          </TabsContent>
+
+          <TabsContent value="assessment-moderation">
+            <SafeSubComponent><AssessmentModerationPanel /></SafeSubComponent>
           </TabsContent>
 
           <TabsContent value="moderation">
