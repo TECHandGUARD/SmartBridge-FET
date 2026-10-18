@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import Navbar from './Navbar';
@@ -52,6 +52,11 @@ export default function AppLayout() {
     <main id="main-content" ref={main} tabIndex={-1} className="app-main min-w-0 flex-1 outline-none">
       <motion.div className="min-w-0" key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
     </main>
+    <nav aria-label="Mobile legal and company information" className="lg:hidden mx-auto flex w-full max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-2 px-4 pt-6 text-xs text-muted-foreground">
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/terms">Legal documents</Link>
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/privacy">Privacy policy</Link>
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/about-tech-guard">About Tech &amp; GUARD</Link>
+    </nav>
     <div className="lg:hidden"><MobileAppFooter user={user} /></div>
     <div className="lg:hidden"><MobileBottomTabs user={user} /></div>
     <div className="hidden lg:block"><Footer /></div>
