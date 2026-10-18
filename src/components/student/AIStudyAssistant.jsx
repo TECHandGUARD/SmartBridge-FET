@@ -1,4 +1,3 @@
-import { LOCAL_AI_LANGUAGE_NOTICE } from '@/lib/local-ai-language';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -325,13 +324,5 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
 }
 
 export default function AIStudyAssistant(props) {
- return <div className="space-y-3">
-  <aside aria-label="Local AI experiment status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-   <p className="font-semibold">Local AI experiment · English only</p>
-   <p className="mt-1">{LOCAL_AI_LANGUAGE_NOTICE}</p>
-   <p className="mt-1">The local model is not connected to live chat yet. This notice applies to the local experiment.</p>
-  </aside>
-  <ReleaseGate feature="externalAi"><AIStudyAssistantImplementation {...props} /></ReleaseGate>
- </div>;
+ return <ReleaseGate feature="externalAi"><AIStudyAssistantImplementation {...props} /></ReleaseGate>;
 }
-
