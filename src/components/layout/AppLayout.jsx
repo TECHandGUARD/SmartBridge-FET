@@ -7,6 +7,7 @@ import NotificationInbox from '@/components/operations/NotificationInbox';
 import Footer from './Footer';
 import MobileHeader from './MobileHeader';
 import MobileBottomTabs from './MobileBottomTabs';
+import MobileAppFooter from './MobileAppFooter';
 import { useAuth } from '@/lib/AuthContext';
 import { withTimeout } from '@/lib/auth-utils';
 import TutorPendingScreen from '@/components/tutor/TutorPendingScreen';
@@ -43,21 +44,20 @@ export default function AppLayout() {
     if (tutorVerified === null) return <div className="p-8 text-center" role="status">Checking tutor verification…</div>;
     if (!tutorVerified) return <TutorPendingScreen onRefresh={fetchUser} />;
   }
-  return <div className="min-h-screen bg-background flex flex-col">
+  return <div className="mobile-app-shell flex min-h-screen min-w-0 flex-col bg-background">
     <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:p-3 focus:text-primary-foreground">Skip to content</a>
     <div className="hidden lg:block"><Navbar user={user} /></div>
     <div className="lg:hidden"><MobileHeader user={user} /></div>
     {user?.id && <NotificationInbox userId={user.id} />}
-    <main id="main-content" ref={main} tabIndex={-1} className="app-main flex-1 outline-none">
-      <motion.div key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
+    <main id="main-content" ref={main} tabIndex={-1} className="app-main min-w-0 flex-1 outline-none">
+      <motion.div className="min-w-0" key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
     </main>
-    <nav aria-label="Mobile legal and company information" className="lg:hidden mx-auto w-full max-w-7xl px-4 pt-6 pb-24 text-xs text-muted-foreground" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
-      <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-3 border-t pt-5">
-        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/terms">Legal documents</Link>
-        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/privacy">Privacy policy</Link>
-        <Link className="min-h-11 inline-flex items-center underline underline-offset-4 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary" to="/about-tech-guard">About Tech &amp; GUARD</Link>
-      </div>
+    <nav aria-label="Mobile legal and company information" className="lg:hidden mx-auto flex w-full max-w-7xl flex-wrap items-center justify-center gap-x-5 gap-y-2 px-4 pt-6 text-xs text-muted-foreground">
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/terms">Legal documents</Link>
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/privacy">Privacy policy</Link>
+      <Link className="inline-flex min-h-11 items-center underline underline-offset-4" to="/about-tech-guard">About Tech &amp; GUARD</Link>
     </nav>
+    <div className="lg:hidden"><MobileAppFooter user={user} /></div>
     <div className="lg:hidden"><MobileBottomTabs user={user} /></div>
     <div className="hidden lg:block"><Footer /></div>
   </div>;
