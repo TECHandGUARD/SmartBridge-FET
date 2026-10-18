@@ -21,7 +21,7 @@ export default function MobileHeader({ user }) {
       {location.pathname !== dashboard ? <Link to={dashboard} aria-label="Back to dashboard" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl hover:bg-muted"><ChevronLeft className="h-5 w-5" /></Link> : <span className="w-11 shrink-0" />}
       <Link to="/" className="flex min-w-0 flex-1 items-center justify-center gap-2"><BookOpen className="h-5 w-5 shrink-0 text-primary" aria-hidden="true" /><span className="truncate font-playfair font-bold">SmartBridge FET</span></Link>
       <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild><Button variant="ghost" className="h-11 w-11 shrink-0 p-0" aria-label="Open all SmartBridge pages"><Menu className="h-5 w-5" /></Button></SheetTrigger>
+        <SheetTrigger asChild><Button variant="ghost" className="h-11 w-11 shrink-0 p-0" aria-label="Open navigation menu"><Menu className="h-5 w-5" /></Button></SheetTrigger>
         <SheetContent side="right" className="flex h-full w-[min(92vw,380px)] flex-col p-0">
           <SheetHeader className="shrink-0 border-b px-5 pb-4 pt-7 text-left">
             <SheetTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5 text-primary" /> SmartBridge FET</SheetTitle>
