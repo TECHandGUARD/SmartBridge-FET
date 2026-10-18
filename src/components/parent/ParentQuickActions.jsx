@@ -42,12 +42,12 @@ export default function ParentQuickActions({
   onAction,
   activeSection
 }) {
-  return <Card className="border-border bg-card/95 backdrop-blur-sm">
-      <CardContent className="pt-4 pb-3">
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+  return <Card className="min-w-0 border-border bg-card/95 backdrop-blur-sm">
+      <CardContent className="px-3 pt-4 pb-3 sm:px-6">
+        <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
           {actions.map(a => {
           const isActive = activeSection === a.key;
-          return <button key={a.key} aria-pressed={isActive} onClick={() => onAction(a.key)} className={`flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all group ${isActive ? 'bg-muted ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
+          return <button key={a.key} aria-pressed={isActive} onClick={() => onAction(a.key)} className={`flex flex-col items-center min-h-24 min-w-0 gap-1.5 p-3 rounded-xl transition-all group ${isActive ? 'bg-muted ring-1 ring-primary/30' : 'hover:bg-muted/50'}`}>
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${isActive ? a.activeColor : a.color}`}>
                   <a.icon className="w-5 h-5" />
                 </div>

@@ -492,3 +492,26 @@
 /* Reserve fixed mobile navigation and device safe areas. */
 .app-main { padding-top: calc(3.5rem + env(safe-area-inset-top)); padding-bottom: calc(4rem + env(safe-area-inset-bottom)); }
 @media (min-width: 1024px) { .app-main { padding-top: 0; padding-bottom: 0; } }
+
+/* Mobile-app layout foundation shared by all SmartBridge pages and roles.
+   Preserve every desktop feature; narrow content reflows or scrolls locally. */
+@media (max-width: 1023.98px) {
+  html, body, #root { width: 100%; min-width: 0; max-width: 100%; }
+  .mobile-app-shell, .app-main, .app-main > div { min-width: 0; max-width: 100%; }
+  .app-main :is(.grid, .flex, [role="tabpanel"], .rounded-xl, .rounded-lg) { min-width: 0; }
+  .app-main :is(img, video, canvas, iframe, svg) { max-width: 100%; }
+  .app-main :is(input, select, textarea) { max-width: 100%; }
+  .app-main :is(h1, h2, h3, h4, p) { overflow-wrap: anywhere; }
+  .app-main :is(table, [role="table"]) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .app-main :is(pre, .overflow-x-auto) { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .app-main [data-radix-scroll-area-viewport] { max-width: 100%; }
+  .app-main :is(button, [role="button"]) { touch-action: manipulation; }
+}
+@media (max-width: 359px) {
+  .mobile-app-footer nav { grid-template-columns: minmax(0, 1fr); }
+}

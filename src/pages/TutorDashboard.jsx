@@ -202,12 +202,12 @@ export default function TutorDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
+      <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
-            <h1 className="font-playfair text-3xl font-bold text-foreground">
+            <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
               Welcome back, {user.full_name?.split(' ')[0] || 'Tutor'} 👋
             </h1>
             <p className="text-muted-foreground mt-1">Your professional tutoring workspace — everything in one place.</p>

@@ -28,6 +28,39 @@ import { toast } from 'sonner';
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
+const ADMIN_MOBILE_SECTIONS = [
+  { value: 'registrations', label: 'Registrations' },
+  { value: 'verification', label: 'Tutor Verification' },
+  { value: 'users', label: 'Users' },
+  { value: 'tutors', label: 'Tutor Analytics' },
+  { value: 'earnings', label: 'Earnings' },
+  { value: 'payouts', label: 'Payouts' },
+  { value: 'leaderboard', label: 'Leaderboard' },
+  { value: 'reports', label: 'Parent Reports' },
+  { value: 'content', label: 'Content' },
+  { value: 'sponsorship', label: 'Sponsored tutoring' },
+  { value: 'subscription-pricing', label: 'Subscription Prices' },
+  { value: 'legal-documents', label: 'Legal documents' },
+  { value: 'payment-gateways', label: 'Payment Gateways' },
+  { value: 'operations', label: 'Operations' },
+  { value: 'study-moderation', label: 'Study moderation' },
+  { value: 'assessment-moderation', label: 'Assessment approvals' },
+  { value: 'university-directory', label: 'Universities' },
+  { value: 'financial', label: 'Financial' },
+  { value: 'activity', label: 'Activity' },
+  { value: 'ratings', label: 'Ratings' },
+  { value: 'caps', label: 'CAPS Docs' },
+  { value: 'documents', label: 'Doc Verification' },
+  { value: 'opportunities', label: 'Opportunities' },
+  { value: 'user-viewer', label: 'User Viewer' },
+  { value: 'knowledge', label: 'Knowledge Base' },
+  { value: 'announcements', label: 'Announcements' },
+  { value: 'moderation', label: 'Moderation' },
+  { value: 'feature-flags', label: 'Feature Flags' },
+  { value: 'ai-config', label: 'AI Config' },
+  { value: 'system', label: 'System Test' }
+];
+
 const CONFIG = {
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
 
@@ -224,6 +257,7 @@ import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 // ============================================================
 
 export default function AdminDashboard() {
+  const [activeAdminTab, setActiveAdminTab] = useState('registrations');
   const { user, isAdmin } = useAuth();
 
   // ---------- State ----------
@@ -738,8 +772,14 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs Grid Navigation */}
-        <Tabs defaultValue="registrations">
-          <TabsList className="mb-6 flex-wrap h-auto gap-1">
+        <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
+          <div className="mb-4 lg:hidden">
+            <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
+            <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e=>setActiveAdminTab(e.target.value)}>
+              {ADMIN_MOBILE_SECTIONS.map(section=><option key={section.value} value={section.value}>{section.label}</option>)}
+            </select>
+          </div>
+          <TabsList className="mb-6 hidden h-auto flex-wrap gap-1 lg:flex">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
             <TabsTrigger value="verification" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Tutor Verification</TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Users</TabsTrigger>
