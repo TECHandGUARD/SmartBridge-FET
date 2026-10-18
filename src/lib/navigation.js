@@ -31,10 +31,10 @@ export function getNavigation(user) {
   };
   if (TUTOR_ROLES.includes(user?.role)) return {
     primary: [dashboard, resources, item('CAPS Docs', '/resources-library', 'book'), forum],
-    secondary: [item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
+    secondary: [item('Assessments', '/assessments', 'practice'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
   };
   return {
-    primary: [dashboard, subjects, item('Practice', '/quiz', 'practice'), tutors],
+    primary: [dashboard, subjects, item('Assessments', '/assessments', 'practice'), tutors],
     secondary: [item('Messages', '/student-dashboard?section=messages', 'forum'), resources, item('Bookings', '/bookings', 'users'), forum, item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book'), ...common],
   };
 }

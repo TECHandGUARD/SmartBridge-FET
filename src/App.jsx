@@ -35,6 +35,7 @@ const OnboardingRoute = () => {
 };
 const ResourceSearch = lazy(() => import('./pages/ResourceSearch'));
 const PracticeQuiz = lazy(() => import('./pages/PracticeQuiz'));
+const AssessmentCentre = lazy(() => import('./pages/AssessmentCentre'));
 const Bookings = lazy(() => import('./pages/Bookings'));
 const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
 const VideoLessons = lazy(() => import('./pages/VideoLessons'));
@@ -184,6 +185,7 @@ const AuthenticatedApp = () => {
           {/* Shared learning tool: no tutor role or learner-data permissions required. */}
           <Route path="/stem-lab" element={<RequireAuthAndOnboarding><StemLab /></RequireAuthAndOnboarding>} />
 
+          <Route path="/assessments" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['student','sace_tutor','student_tutor','tutor']}><AssessmentCentre /></ProtectedRoute></RequireAuthAndOnboarding>} />
           {/* 📊 STUDENT DASHBOARD */}
           <Route
             path="/student-dashboard"
