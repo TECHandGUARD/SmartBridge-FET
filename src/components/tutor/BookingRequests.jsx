@@ -64,6 +64,7 @@ export default function BookingRequests({
   onBookingUpdate = undefined
 }) {
   const [introTimes, setIntroTimes] = useState({});
+  const [meetingChoices, setMeetingChoices] = useState({});
   const [bookings, setBookings] = useState([]);
   const [tutorProfile, setTutorProfile] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -137,7 +138,9 @@ export default function BookingRequests({
   const accept = async booking => {
     if (!bookingFundingReady(booking) || booking.proposed_date) { toast.error('Verified payment or acceptance of the proposed time is required.'); return; }
     setProcessing(booking.id);
-    const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || '';
+    const selectedPlatform = meetingChoices[booking.id] || 'smartbridge';
+    const sessionLink = selectedPlatform === 'smartbridge' ? `${window.location.origin}/live-classroom/${booking.id}` : selectedPlatform === 'zoom' ? tutorProfile?.zoom_link : tutorProfile?.teams_link;
+    if (!sessionLink) { toast.error('Add your '+selectedPlatform+' meeting link in Live Session Links first.'); setProcessing(null); return; }
     const overlapping = checkOverlap(booking);
     if (overlapping) {
       toast.error(`This time overlaps with another session (${overlapping.time} - ${overlapping.subject})`);
@@ -506,7 +509,7 @@ export default function BookingRequests({
 
                       <div className="flex gap-2 flex-wrap">
                         {}
-                        {b.status === 'confirmed' && sessionLink && (!isPast || isToday) && <a href={sessionLink} target="_blank" rel="noopener noreferrer">
+                        {b.status === 'confirmed' && b.session_link && (!isPast || isToday) && <a href={b.session_link} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-green-600 hover:bg-green-700 text-white">
                               <ExternalLink className="w-3.5 h-3.5" /> Join Session
                             </Button>
@@ -530,6 +533,13 @@ export default function BookingRequests({
 
                         {}
                         {b.status === 'pending' && <>
+                            <label className="flex flex-col gap-1 text-xs font-semibold">Classroom platform
+                              <select aria-label="Choose session platform" className="h-8 rounded-lg border bg-background px-2 text-xs" value={meetingChoices[b.id] || 'smartbridge'} onChange={e=>setMeetingChoices(v=>({...v,[b.id]:e.target.value}))}>
+                                <option value="smartbridge">SmartBridge Live (pilot)</option>
+                                <option value="zoom" disabled={!tutorProfile?.zoom_link}>Zoom {!tutorProfile?.zoom_link ? '(add link first)' : ''}</option>
+                                <option value="teams" disabled={!tutorProfile?.teams_link}>Microsoft Teams {!tutorProfile?.teams_link ? '(add link first)' : ''}</option>
+                              </select>
+                            </label>
                             <Button size="sm" variant="outline" className="text-xs gap-1 h-8 text-red-700 border-red-200 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20" disabled={isProcessing} onClick={() => decline(b)}>
                               {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                               Decline
