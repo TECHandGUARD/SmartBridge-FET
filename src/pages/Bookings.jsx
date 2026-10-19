@@ -1,3 +1,4 @@
+import { bookingSessionLink } from '@/lib/booking-session';
 import BookingPaymentStatus from '@/components/tutor/BookingPaymentStatus';
 import BookingLearnerChoice from '@/components/parent/BookingLearnerChoice';
 import SponsorshipChoice from '@/components/student/SponsorshipChoice';
@@ -356,8 +357,8 @@ export default function Bookings() {
                       <div className="flex gap-2 flex-wrap">
                         {b.status === 'pending' && b.amount > 0 && ['pending','failed'].includes(b.payment_status) && <Button size="sm" onClick={()=>payForBooking(b).catch(error=>toast.error(error.message))} disabled={!b.hold_expires_at || new Date(b.hold_expires_at)<=new Date()}>Pay R{Number(b.amount).toFixed(2)} securely</Button>}
                         {b.status === 'pending' && b.is_intro && b.proposed_date && <div className="text-sm"><p>Tutor proposes {b.proposed_date} at {b.proposed_time} (South Africa time).</p><Button size="sm" onClick={()=>arrangeIntroduction(b.id,'accept_proposal').then(fetchBookingDashboardData).catch(error=>toast.error(error.message))}>Accept proposed introduction</Button></div>}
-                        {b.status === 'confirmed' && b.session_link && (
-                          <a href={b.session_link} target="_blank" rel="noopener noreferrer">
+                        {bookingSessionLink(b) && (
+                          <a href={bookingSessionLink(b)} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
                               <ExternalLink className="w-3.5 h-3.5" /> Join Session
                             </Button>
