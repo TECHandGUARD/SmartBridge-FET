@@ -127,7 +127,7 @@ const Footer = React.memo(function Footer() {
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> CAPS Aligned</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> Tutor Profiles</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> POPIA Compliant</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> Privacy Policy Available</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> DBE Guidelines</li>
             </ul>
           </div>
