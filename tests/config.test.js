@@ -20,19 +20,14 @@ test('missing connection fails clearly; public keys and legacy anon work, privil
   assert.ok(readPublicConfig({...connection, VITE_OPENAI_API_KEY:'private-value'}).errors.length);
 });
 
-test('optional checkout fails closed, staging uses its own origin, and prices share validated values', () => {
+test('manual payment links are removed, staging uses its own origin, and prices share validated values', () => {
   const blank = readPublicConfig(connection, 'https://staging.example.test').config;
   assert.equal(blank.appBaseUrl, 'https://staging.example.test');
-  assert.equal(blank.checkout.student, '');
+  assert.equal('checkout' in blank, false);
   assert.equal(blank.bank, null);
-  const configured = readPublicConfig({...connection, VITE_YOCO_STUDENT_URL:'https://pay.yoco.com/r/test', VITE_STUDENT_MONTHLY_PRICE:'30'});
+  const configured = readPublicConfig({...connection, VITE_STUDENT_MONTHLY_PRICE:'30'});
   assert.equal(configured.config.prices.student, 30);
-  assert.equal(configured.config.checkout.student, 'https://pay.yoco.com/r/test');
-  for (const url of ['javascript:alert(1)', 'https://pay.yoco.com.evil.test/r/test', 'https://user:pass@pay.yoco.com/r/test', 'http://pay.yoco.com/r/test']) {
-    const result = readPublicConfig({...connection, VITE_YOCO_STUDENT_URL:url});
-    assert.equal(result.config.checkout.student, '');
-    assert.ok(result.errors.length);
-  }
+  assert.equal('checkout' in configured.config, false);
   assert.ok(readPublicConfig({...connection, VITE_EFT_ACCOUNT_NUMBER:'123'}).errors.length);
   assert.ok(readPublicConfig({...connection, VITE_STUDENT_MONTHLY_PRICE:'-1'}).errors.length);
 });
