@@ -1,3 +1,4 @@
+import {dispatchMeetingNotifications} from '@/lib/action-notifications';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
 import {createMeetingCall} from '@/lib/meeting-call';
@@ -58,7 +59,7 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
     }catch(e){await stopSharing().catch(()=>{});setError(e.message);}finally{sharePending.current=false;}
   };
   const close=async()=>{
-    setBusy(true);try{const {error:closeError}=await supabase.rpc('close_virtual_meeting',{meeting_key:meeting.id,decision:'ended'});if(closeError)throw closeError;stop();await onRefresh();}catch(e){setError(e.message);}finally{setBusy(false);}
+    setBusy(true);try{const {error:closeError}=await supabase.rpc('close_virtual_meeting',{meeting_key:meeting.id,decision:'ended'});if(closeError)throw closeError;stop();await dispatchMeetingNotifications(meeting.id);await onRefresh();}catch(e){setError(e.message);}finally{setBusy(false);}
   };
   return <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-6" aria-label="Meeting room">
     <p className="text-sm text-muted-foreground">Private meeting · up to 6 participants · no recording</p>

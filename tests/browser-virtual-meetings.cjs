@@ -6,7 +6,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   for(let n=0;n<100;n++){try{await fetch('http://127.0.0.1:5183/login');break;}catch{await new Promise(r=>setTimeout(r,100));}}
   browser=await chromium.launch({headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required'],...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{})});
   const people=['admin','tutor','parent','tutor','parent'].map((role,i)=>({id:`00000000-0000-4000-8000-00000000020${i+1}`,email:`meeting${i}@example.test`,role,full_name:`Meeting Person ${i}`,is_super_admin:role==='admin',is_active:true,onboarding_complete:true}));
-  const meetings=[],signals=[],errors=[];let failRead=false;
+  const meetings=[],signals=[],errors=[];let failRead=false;const emailDispatches=[];
   const details=(m,person)=>({...m,can_join:m.status==='scheduled'&&m.participants.some(p=>p.user_id===person.id&&p.response==='accepted')});
   async function open(person){
    const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='parent'?390:1280,height:1000}});
@@ -29,6 +29,8 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
      assert.ok(['admin','tutor'].includes(person.role));assert.ok(args.client_request_id);let m=meetings.find(m=>m.request_id===args.client_request_id);
      if(!m){m={id:randomUUID(),host_id:person.id,title:args.meeting_title,purpose:args.meeting_purpose,agenda:args.meeting_agenda,starts_at:args.scheduled_start,ends_at:new Date(new Date(args.scheduled_start).getTime()+args.duration_minutes*60000).toISOString(),status:'scheduled',request_id:args.client_request_id,participants:[{user_id:person.id,full_name:person.full_name,role:person.role,response:'accepted'},...args.invite_emails.map(email=>{const p=people.find(p=>p.email===email);assert.ok(p);return{user_id:p.id,full_name:p.full_name,role:p.role,response:'invited'};})]};meetings.push(m);}data=m.id;
     }
+    if(rpc==='meeting_notification_ids'){assert.ok(args.meeting_key);data=[args.meeting_key];}
+    if(url.pathname==='/functions/v1/dispatch-notifications'){assert.equal(args.event_ids.length,1);emailDispatches.push(args.event_ids[0]);data={accepted:1,failed:0};}
     if(rpc==='virtual_meeting_details') {const m=meetings.find(m=>m.id===args.meeting_key);if(!m?.participants.some(p=>p.user_id===person.id)){status=403;data={message:'This meeting is available to invited participants only'};}else data=details(m,person);}
     if(rpc==='respond_virtual_meeting'){const m=meetings.find(m=>m.id===args.meeting_key);m.participants.find(p=>p.user_id===person.id).response=args.decision;data=true;}
     if(rpc==='close_virtual_meeting'){const m=meetings.find(m=>m.id===args.meeting_key);assert.equal(m.host_id,person.id);m.status=args.decision;data=true;}
@@ -47,7 +49,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   assert.equal(await parent.getByRole('button',{name:'Send meeting invitations',exact:true}).count(),0);
   await admin.getByLabel('Meeting title',{exact:true}).fill('Parent and tutor support conference');await admin.getByLabel(/Invite account emails/).fill([people[1].email,people[2].email,people[3].email].join(', '));
   await admin.getByLabel('Start (South Africa time)',{exact:true}).fill(new Date(Date.now()+2*3600000+60000).toISOString().slice(0,16));await admin.getByLabel('Agenda (optional)',{exact:true}).fill('Support and reflection goals');await admin.getByRole('button',{name:'Send meeting invitations',exact:true}).click();await admin.getByRole('heading',{name:'Parent and tutor support conference',exact:true}).waitFor();
-  const m=meetings[0];assert.equal(m.participants.length,4);
+  const m=meetings[0];assert.equal(m.participants.length,4);assert.deepEqual(emailDispatches,[m.id]);await admin.getByRole('status').filter({hasText:'Invitation emails accepted for sending'}).waitFor();
   await outsider.goto('http://127.0.0.1:5183/meetings/'+m.id);await outsider.getByRole('alert').filter({hasText:'invited participants only'}).waitFor();assert.equal(await outsider.getByRole('button',{name:'Join meeting',exact:true}).count(),0);
   for(const page of [tutor,parent,peer]){await page.goto('http://127.0.0.1:5183/meetings/'+m.id);assert.equal(await page.getByRole('button',{name:'Join meeting',exact:true}).isDisabled(),true);await page.getByRole('button',{name:'Accept invitation',exact:true}).click();await page.getByRole('button',{name:'Join meeting',exact:true}).waitFor();}
   await admin.getByRole('link',{name:'Open meeting',exact:true}).click();

@@ -34,3 +34,24 @@ test('an authenticated administrator cannot become a background job when the job
  const req=new Request('https://example.test/dispatch',{method:'POST',headers:{Authorization:'Bearer test','x-job-secret':'forged','Content-Type':'application/json'},body:'{"job":true}'});
  assert.equal((await runtime.handle(req)).status,401);assert.equal(client.calls.some(c=>c.table==='pending_action_notification_ids'),false);
 });
+
+test('meeting email uses the stored meeting link and SAST time',async()=>{
+ const client=clientFor({...claimed,meeting_id:eventId,message:'Support meeting. Start: 20 Oct 2026 14:00 SAST.'});let payload;
+ const runtime=edgeRuntime('dispatchNotifications',{client,fetch:async(_url,options)=>{payload=JSON.parse(options.body);return Response.json({id:'meeting-message'});}});
+ assert.equal((await runtime.handle(request({event_ids:[eventId]}))).status,200);
+ assert.ok(payload.text.includes('https://staging.example.test/meetings/'+eventId));assert.ok(payload.text.includes('14:00 SAST'));
+});
+test('single-use meeting worker credential is checked before preparing reminders',async()=>{
+ let valid=true;const client=fakeClient(undefined,call=>({data:call.table==='consume_meeting_mail_token'?valid:[],error:null}));
+ const runtime=edgeRuntime('dispatchNotifications',{client});
+ const job=()=>new Request('https://example.test/dispatch',{method:'POST',headers:{'x-meeting-job-token':'one-use-test-credential','Content-Type':'application/json'},body:'{}'});
+ const first=await runtime.handle(job());assert.equal(first.status,200);assert.equal((await first.json()).email_configured,true);
+ assert.ok(client.calls.some(c=>c.table==='prepare_meeting_emails'));valid=false;client.calls.length=0;
+ assert.equal((await runtime.handle(job())).status,401);assert.equal(client.calls.some(c=>c.table==='prepare_meeting_emails'),false);
+});
+test('meeting worker surfaces missing sender configuration even when no emails are due',async()=>{
+ const client=fakeClient(undefined,call=>({data:call.table==='consume_meeting_mail_token',error:null}));
+ const runtime=edgeRuntime('dispatchNotifications',{client,env:{EMAIL_FROM:'',FROM_EMAIL:''}});
+ const response=await runtime.handle(new Request('https://example.test/dispatch',{method:'POST',headers:{'x-meeting-job-token':'test','Content-Type':'application/json'},body:'{}'}));
+ assert.equal(response.status,503);assert.equal(client.calls.some(c=>c.table==='prepare_meeting_emails'),false);
+});
