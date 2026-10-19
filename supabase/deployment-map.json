@@ -109,7 +109,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -139,7 +139,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -169,7 +169,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -277,7 +277,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -310,7 +310,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -417,13 +417,13 @@
         "supabase/shared/research.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/grounding.ts": "2618fc5ff83ba8fa5a8001a3d7e51fbe99f39ee3e093c76e80e4fbb201ea6825",
-        "supabase/shared/research.ts": "870e7c93cd062663558a10b6a075b6024425075774979bfdce0bf2c0902ecfdc"
+        "supabase/shared/research.ts": "5d652c5b5d21e87309455b4c55205899c0148ba6661912edfaa3e46ed2d6956f"
       },
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
@@ -1102,7 +1102,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "f37b510983bbd7cf7601bd74257b7ac46fd51ac491b0ed97d0397c3b4e60f173",
+        "supabase/shared/ai.ts": "2d99d349323509755dfafd51f6e467f2748492cbddd1d61a3352b8aa98333ff2",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",

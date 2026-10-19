@@ -145,7 +145,15 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
           user_id: user?.id || null
         }
       });
-      if (invokeError) throw invokeError;
+      if (invokeError) {
+        let message = 'The AI service is temporarily unavailable. Please try again shortly.';
+        try {
+          const details = await invokeError.context?.json();
+          const allowed = ['The AI provider has reached its usage allowance. Please try again later.', 'Usage limit reached. Try again later.', 'AI provider is not configured', 'Provider busy. Try again later.', 'Provider temporarily unavailable'];
+          if (allowed.includes(details?.error)) message = details.error;
+        } catch { /* Keep the safe fallback message. */ }
+        throw new Error(message);
+      }
       const response = data?.response || 'Sorry, I could not generate a response. Please try again.';
       setMessages(prev => [...prev, {
         role: 'assistant',
@@ -167,11 +175,12 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
       }
     } catch (err) {
       console.error('LLM error:', err);
-      setError('Failed to get response. Please try again.');
-      toast.error('Failed to get response. Please try again.');
+      const message = err.message || 'The AI service is temporarily unavailable. Please try again shortly.';
+      setError(message);
+      toast.error(message);
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again in a moment.'
+        content: message
       }]);
     } finally {
       setLoading(false);
