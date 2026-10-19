@@ -22,7 +22,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
     if(url.pathname==='/auth/v1/user')data=auth;
     if(url.pathname==='/auth/v1/token')data=session;
     if(url.pathname==='/rest/v1/users')data=req.headers().accept?.includes('vnd.pgrst.object')?person:[person];
-    if(url.pathname==='/rest/v1/tutor_profiles')data={is_verified:true};
+    if(url.pathname==='/rest/v1/tutor_profiles')data=req.headers().accept?.includes('vnd.pgrst.object')?{is_verified:true}:[];
     const rpc=url.pathname.split('/rpc/')[1];
     if(rpc==='list_virtual_meetings')data=meetings.filter(m=>m.participants.some(p=>p.user_id===person.id)).map(m=>details(m,person));
     if(rpc==='create_virtual_meeting'){
@@ -41,7 +41,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
    });
    const page=await context.newPage();page.setDefaultTimeout(25000);page.on('pageerror',e=>errors.push(e.message));
    await page.goto('http://127.0.0.1:5183/login');await page.getByPlaceholder('Email address').fill(person.email);await page.getByPlaceholder('Password',{exact:true}).fill('TestPassword123');await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForURL('**/'+(person.role==='admin'?'admin':person.role+'-dashboard'));
-   await page.getByRole('link',{name:'Virtual Meetings →',exact:true}).click();await page.waitForURL('**/meetings');return page;
+   try{await page.getByRole('link',{name:'Virtual Meetings →',exact:true}).click();}catch(e){console.error('Dashboard fixture failed for '+person.role,await page.locator('body').innerText(),errors);throw e;}await page.waitForURL('**/meetings');return page;
   }
   const pages=[];for(const person of people)pages.push(await open(person));const [admin,tutor,parent,peer,outsider]=pages;
   assert.equal(await parent.getByRole('button',{name:'Send meeting invitations',exact:true}).count(),0);
