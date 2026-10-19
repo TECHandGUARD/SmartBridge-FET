@@ -1,6 +1,6 @@
 import MessagingInbox from '@/components/messaging/MessagingInbox';
 import { CounselorSharing } from '@/components/counselor/CounselorAccess';
-import { appConfig } from '@/lib/config';
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import ParentChildLink from '@/components/parent/ParentChildLink';
@@ -41,6 +41,9 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function StudentDashboard() {
   const { user } = useAuth() || {};
+  const subscriptionPrices = useSubscriptionPrices();
+  const studentPrice = subscriptionPrices.data?.find(item => item.product === 'student')?.amount_cents / 100;
+  const priceLabel = Number.isFinite(studentPrice) ? `R${studentPrice}/month` : 'View current price';
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   const [resources, setResources] = useState([]);
   const [tutors, setTutors] = useState([]);
@@ -215,7 +218,7 @@ export default function StudentDashboard() {
             ) : (
               <Link to="/premium">
                 <Button size="sm" className="gap-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                  <Crown className="w-4 h-4" /> Upgrade — R{appConfig.prices.student}/month
+                  <Crown className="w-4 h-4" /> Upgrade — {priceLabel}
                 </Button>
               </Link>
             )}
@@ -402,10 +405,10 @@ export default function StudentDashboard() {
               <div className="bg-gradient-to-br from-primary to-green-dark rounded-2xl p-5 text-primary-foreground">
                 <Star className="w-6 h-6 fill-secondary text-secondary mb-2" />
                 <p className="font-playfair font-bold text-lg mb-1">Go Premium</p>
-                <p className="text-sm text-primary-foreground/80 mb-3">Unlock all resources, AI tools, past papers & more — R{appConfig.prices.student}/month.</p>
+                <p className="text-sm text-primary-foreground/80 mb-3">Unlock all resources, AI tools, past papers & more — {priceLabel}.</p>
                 <Link to="/premium">
                   <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full">
-                    Upgrade Now — R{appConfig.prices.student}/month
+                    Upgrade Now — {priceLabel}
                   </Button>
                 </Link>
                 <p className="text-xs text-primary-foreground/60 mt-2">Use your email as payment reference. Access starts after payment is confirmed.</p>
