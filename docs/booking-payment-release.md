@@ -25,6 +25,6 @@ Local database replay includes ownership, price/amount, test/live isolation, rep
 3. Complete a Yoco test payment and verify the test receipt on student, tutor and administrator screens. The tutor accepts the funded request separately.
 4. Request a free introduction. As tutor, accept/decline, or propose another time; as learner, accept the proposal.
 5. Repeat a booking as a parent with an approved learner link.
-6. Cancel an eligible paid test booking and use Admin → Booking Payments to exercise provider refund handling.
+6. Cancel the test booking and confirm Admin → Booking Payments explains that Yoco refunds require live payments. No test-refund button should appear. Verify a live refund only after live-mode readiness is confirmed and a real payment is explicitly authorized; test-mode checkout cannot validate provider refund settlement.
 
 Real tutor bank transfers are outside checkout: this release tracks the verified transfer reference; it does not initiate bank payouts. Test payments do not activate real subscription entitlements.

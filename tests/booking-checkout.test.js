@@ -26,9 +26,9 @@ test('booking checkout rejects a client price and refunds require administrator 
  assert.equal(client.calls.some(call=>call.table==='prepare_booking_refund'),false);
 });
 for(const scenario of ['succeeded','pending','rejected','mismatch','unavailable'])test(`booking refund ${scenario} preserves provider confirmation boundary`,async()=>{
- const client=fakeClient({id:'user-id',role:'admin',is_active:true},call=>call.table==='prepare_booking_refund'?{data:{id,checkout_id:'ch-test',amount_cents:15000,mode:'test',currency:'ZAR',refund_status:'requested'},error:null}:{data:true,error:null});
+ const client=fakeClient({id:'user-id',role:'admin',is_active:true},call=>call.table==='payment_orders'?{data:{mode:'live'},error:null}:call.table==='prepare_booking_refund'?{data:{id,checkout_id:'ch-test',amount_cents:15000,mode:'live',currency:'ZAR',refund_status:'requested'},error:null}:{data:true,error:null});
  let key;
- const runtime=edgeRuntime('createCheckout',{client,env,fetch:async(url,options)=>{
+ const runtime=edgeRuntime('createCheckout',{client,env:{...env,YOCO_LIVE_SECRET_KEY:'sk_live_fixture',YOCO_LIVE_WEBHOOK_SECRET:'whsec_fixture'},fetch:async(url,options)=>{
   key=options.headers['Idempotency-Key'];assert.equal(JSON.parse(options.body).amount,15000);
   if(scenario==='unavailable')throw new Error('network');
   if(scenario==='rejected')return Response.json({code:'refund_unavailable'},{status:422});
@@ -40,4 +40,12 @@ for(const scenario of ['succeeded','pending','rejected','mismatch','unavailable'
  if(['succeeded','pending'].includes(scenario)){
   assert.equal(result.status,200);assert.equal(settle.data.settled,scenario==='succeeded');
  }else{assert.equal(result.status,scenario==='unavailable'?503:502);assert.equal(settle,undefined);}
+});
+
+test('test payments cannot trigger provider refunds or refund settlement',async()=>{
+ const client=fakeClient({id:'user-id',role:'admin',is_active:true},call=>call.table==='payment_orders'?{data:{mode:'test'},error:null}:call.table==='prepare_booking_refund'?{data:{id,mode:'test',refund_status:'requested'},error:null}:{data:true,error:null});
+ const result=await edgeRuntime('createCheckout',{client,env}).handle(request({action:'refund_booking',booking_id:id}));
+ assert.equal(result.status,409);assert.match(await result.text(),/Test payments cannot be refunded/);
+ assert.equal(client.calls.some(call=>call.table==='settle_booking_refund'),false);
+ assert.equal(client.calls.some(call=>call.table==='prepare_booking_refund'),false);
 });

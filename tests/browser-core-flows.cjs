@@ -413,10 +413,13 @@ const assert=require('node:assert/strict');
  await page.goto('http://127.0.0.1:5173/admin');
  // A canceled test payment stays visible, without becoming real income or a confirmed refund.
  bookingRows=[{id:'test-booking',tutor_email:profile.email,tutor_id:profile.id,student_email:'learner@example.test',subject:'Tourism',status:'cancelled',amount:150,payment_status:'test_paid',payment_mode:'test',date:'2099-12-01',time:'10:00',duration_hours:1}];
- paymentOrderRows=[{id:'test-order',product:'booking',status:'paid',mode:'test',amount_cents:15000,refund_status:'requested'}];
+ paymentOrderRows=[{id:'test-order',product:'booking',booking_id:'test-booking',status:'paid',mode:'test',amount_cents:15000,refund_status:'requested'}];
  await page.goto('http://127.0.0.1:5173/admin');
  await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
- await page.getByText('Test refunds confirmed: R0.00 · 1 awaiting provider confirmation',{exact:true}).waitFor();
+ await page.getByText('Test refunds confirmed: R0.00 · 0 awaiting provider confirmation',{exact:true}).waitFor();
+ await page.locator('#admin-mobile-section').selectOption('payouts');
+ await page.getByText('Yoco refunds require a payment made in live mode.',{exact:false}).waitFor();
+ assert.equal(await page.getByRole('button',{name:/Refund full test/}).count(),0);
  for(const section of ['earnings','financial']){
   await page.locator('#admin-mobile-section').selectOption(section);
   await page.getByText('1 bookings · 0 currently confirmed · 0 completed · 1 canceled',{exact:true}).waitFor();

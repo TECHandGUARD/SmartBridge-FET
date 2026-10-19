@@ -13,8 +13,14 @@ serve(withHttp(async (request) => {
         const body = await readJson(request);
         if (body.action === 'refund_booking') {
             await authorize(request,client,'admin');
-            const {data:refund,error:refundError}=await client.rpc('prepare_booking_refund',{actor_id:user.id,booking_key:uuid(body.booking_id,'booking_id')});
+            const bookingKey=uuid(body.booking_id,'booking_id');
+            const {data:original,error:orderError}=await client.from('payment_orders').select('mode').eq('booking_id',bookingKey).maybeSingle();
+            if(orderError) failure(503,'Payment mode could not be verified');
+            if(!original) failure(409,'Booking payment not found');
+            if(original.mode !== 'live') failure(409,'Yoco refunds require a live payment. Test payments cannot be refunded.');
+            const {data:refund,error:refundError}=await client.rpc('prepare_booking_refund',{actor_id:user.id,booking_key:bookingKey});
             if(refundError || !refund) failure(409,'This booking is not eligible for an automatic full refund');
+            if(refund.mode !== 'live') failure(409,'Yoco refunds require a live payment. Test payments cannot be refunded.');
             if(['refunded','pending'].includes(refund.refund_status)) return json({status:refund.refund_status});
             const credentials=gatewayCredentials('yoco',refund.mode);
             let response: Response;

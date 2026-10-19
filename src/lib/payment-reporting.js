@@ -11,7 +11,7 @@ export function paymentOrderSummary(orders) {
     testPayments: test.length,
     testPaymentValue: sum(test),
     testRefundedValue: sum(test.filter(order => order.refund_status === 'refunded')),
-    testRefundsAwaitingConfirmation: test.filter(order => ['requested', 'pending'].includes(order.refund_status)).length,
+    testRefundsAwaitingConfirmation: 0 // Yoco does not process refunds for test checkouts.,
   };
 }
 export function bookingActivitySummary(bookings) {

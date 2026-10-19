@@ -33,6 +33,6 @@ export default function PaymentGatewayPanel(){
     <div className="text-sm"><p className="font-medium">Provider callback address</p><p className="break-all text-muted-foreground">{appConfig.supabaseUrl}/functions/v1/{item.webhook}</p></div>
    </CardContent></Card>;
   })}
-  <p className="text-sm text-muted-foreground">Yoco and Paystack are supported. Additional gateways can be added as your business grows. One-off premium payments are supported; recurring billing, refunds and tutor payouts require separate setup.</p>
+  <p className="text-sm text-muted-foreground">Yoco and Paystack are supported. Additional gateways can be added as your business grows. One-off premium payments and eligible full live booking refunds are supported. The payment webhook also receives refund confirmations. Recurring billing and tutor bank transfers are not automated.</p>
  </div>;
 }
