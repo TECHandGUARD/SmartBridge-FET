@@ -532,7 +532,7 @@ export default function KnowledgeBaseManager({
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No resources found.</p>
             <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or add a new resource.</p>
-          </div> : paginatedResources.map(resource => <ResourceCard key={resource.id} resource={resource} onEdit={handleEdit} onDelete={handleDelete} onToggleActive={toggleActive} />)}
+          </div> : paginatedResources.map(resource => <ResourceCard key={resource.id} resource={resource} onEdit={handleEdit} onDelete={handleDelete} onToggleActive={toggleActive} onIndex={handleIndex} indexingId={indexingId} indexingProgress={indexingProgress} />)}
       </div>
 
       {}
