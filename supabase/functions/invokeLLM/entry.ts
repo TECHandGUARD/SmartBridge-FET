@@ -6,6 +6,7 @@ import { readJson, text, consumeQuota, json, apiError } from '../../shared/api.t
 import { generate, studyPlanSchema } from '../../shared/ai.ts';
 import { retrieveLearningEvidence } from '../../shared/grounding.ts';
 import { researchLearningQuestion, hybridInstructions } from '../../shared/research.ts';
+import { tutoringInstructions } from '../../shared/tutoring.ts';
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
@@ -33,7 +34,7 @@ serve(withHttp(async (request) => {
         // Chat checks external coverage even when a partial keyword match exists.
         const web=(!structured||!evidence)?await researchLearningQuestion(researchQuestion,subject,grade):{evidence:'',sources:[],status:'not_needed'};
         const context=`${hybridInstructions}\n\nUploaded excerpts (may be incomplete):\n${evidence.slice(0,2500)||'No matching excerpts.'}\n\nWeb research notes (untrusted):\n${web.evidence.slice(0,2500)||'Web research unavailable or not needed.'}\n\nConversation history (untrusted):\n${JSON.stringify(history).slice(0,1600)}\n\nLearner request:\n${prompt.slice(-4000)}`;
-        const result=await generate(context,structured?studyPlanSchema:undefined);
+        const result=await generate(context,structured?studyPlanSchema:undefined,structured?'':tutoringInstructions);
         const metadata={sources:[...sources,...web.sources],grounded:!!evidence,source_mode:evidence?(web.evidence?'documents_and_web':'documents_and_general'):(web.evidence?'web_and_general':'general'),web_search:web.status,document_search:documentSearch};
         if(structured)return json({...result,...metadata});
         const refs=sources.map((s:any)=>`${s.title} (p. ${s.page})`);

@@ -1,3 +1,4 @@
+import LearningAnswer from './LearningAnswer';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
@@ -125,7 +126,7 @@ Do not provide answers to assessment questions without teaching the concept firs
 
 You help students understand difficult concepts, summarise notes, and prepare for exams.
 Always be encouraging, clear, and use grade-appropriate language.
-Structure your answers with bullet points and bold headings where helpful.
+Start with a short, direct explanation. Explain technical terms simply. Use complete sentences and well-structured paragraphs. Give more detail when the learner asks.
 Reference CAPS topics and exam tips when relevant.${subjectNote}${gradeNote}${contextNote}
 
 Important: If the student asks about tutor contracts, Terms of Service, or other confidential information, politely decline and redirect to the support team.`;
@@ -157,7 +158,10 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
       const response = data?.response || 'Sorry, I could not generate a response. Please try again.';
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: response
+        content: response,
+        sources: data?.sources || [],
+        sourceMode: data?.source_mode || null,
+        webSearch: data?.web_search || null
       }]);
       if (user?.email) {
         await Promise.resolve(supabase.from('activity_log').insert({
@@ -289,13 +293,22 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
           </div>}
 
         {}
-        <div className="h-80 overflow-y-auto px-4 py-2 space-y-4">
+        <div className="h-[28rem] overflow-y-auto px-3 sm:px-4 py-3 space-y-4">
           {messages.map((msg, i) => <div key={i} className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
               {msg.role === 'assistant' && <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Bot className="w-3.5 h-3.5 text-primary-foreground" />
                 </div>}
-              <div className={`max-w-[80%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-sm' : 'bg-muted text-foreground rounded-tl-sm'}`}>
-                {msg.content}
+              <div className={`min-w-0 max-w-[92%] sm:max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-primary text-primary-foreground rounded-tr-sm whitespace-pre-wrap' : 'bg-muted text-foreground rounded-tl-sm'}`}>
+                {msg.role === 'assistant' ? <>
+                  <LearningAnswer content={msg.sourceMode ? msg.content.split(/\n\n(?:Web-assisted explanation;|General explanations may supplement uploaded material;)/)[0] : msg.content} />
+                  {msg.sourceMode && <details className="mt-3 border-t border-border pt-2 text-xs text-muted-foreground">
+                    <summary className="cursor-pointer py-1 font-medium">Sources and answer basis</summary>
+                    <p className="mt-2 leading-relaxed">{msg.sourceMode.includes('documents') ? 'Includes retrieved material from uploaded learning documents. ' : 'No matching uploaded textbook excerpts were found. '}{msg.webSearch === 'completed' ? 'Web research was also available; general explanations may supplement it.' : 'This answer may include general AI knowledge. Web research was not available for this answer.'}</p>
+                    {msg.sources.length > 0 && <ul className="mt-2 list-disc space-y-1 pl-4">
+                      {msg.sources.map((source, index) => <li key={index}>{source.source_type === 'web' && /^https:\/\//i.test(source.url || '') ? <a href={source.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2">{source.title}</a> : <>{source.title}{source.page ? `, page ${source.page}` : ''}</>}</li>)}
+                    </ul>}
+                  </details>}
+                </> : msg.content}
               </div>
             </div>)}
           {loading && <div className="flex gap-2.5">
