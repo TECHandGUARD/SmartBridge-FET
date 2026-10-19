@@ -41,6 +41,7 @@ const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
 const VideoLessons = lazy(() => import('./pages/VideoLessons'));
 const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
 const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
+const LearningIndexAdmin = lazy(() => import('./pages/LearningIndexAdmin'));
 const PayoutLog = lazy(() => import('./pages/PayoutLog'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
@@ -338,6 +339,10 @@ const AuthenticatedApp = () => {
 
           {/* Admin only routes */}
           <Route
+            path="/learning-index-admin"
+            element={<ProtectedRoute allowedRoles={['admin']}><LearningIndexAdmin /></ProtectedRoute>}
+          />
+        <Route
             path="/caps-admin"
             element={
               <RequireAuthAndOnboarding>
