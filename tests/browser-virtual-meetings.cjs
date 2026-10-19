@@ -10,11 +10,12 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   const details=(m,person)=>({...m,can_join:m.status==='scheduled'&&m.participants.some(p=>p.user_id===person.id&&p.response==='accepted')});
   async function open(person,invitationPath=null){
    const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='parent'?390:1280,height:1000}});
-   await context.addInitScript(()=>{
+   await context.addInitScript(({screenSharing})=>{
     window.testPeers=[];window.testTracks=[];const Original=window.RTCPeerConnection;window.RTCPeerConnection=class extends Original{constructor(...args){super(...args);window.testPeers.push(this);}};
     const media=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async options=>{const s=await media(options);window.testTracks.push(...s.getTracks());return s;};
-    navigator.mediaDevices.getDisplayMedia=async()=>{const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const s=canvas.captureStream(10);window.testTracks.push(...s.getTracks());return s;};
-   });
+    navigator.mediaDevices.getDisplayMedia=async()=>{if(window.testCancelScreenShare){window.testCancelScreenShare=false;throw new DOMException('Cancelled','NotAllowedError');}const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const s=canvas.captureStream(10);window.testTracks.push(...s.getTracks());return s;};
+    if(!screenSharing)navigator.mediaDevices.getDisplayMedia=undefined;
+   },{screenSharing:person.role!=='parent'});
    const auth={...person,user_metadata:{full_name:person.full_name},aud:'authenticated',role:'authenticated'};const session={access_token:'eyJhbGciOiJIUzI1NiJ9.'+Buffer.from(JSON.stringify({sub:person.id,exp:4102444800,role:'authenticated'})).toString('base64url')+'.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:auth};
    await context.routeWebSocket('**/realtime/**',ws=>ws.close());
    await context.route('https://smartbridge-test.supabase.co/**',async route=>{
@@ -56,6 +57,8 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   await admin.getByRole('link',{name:'Open meeting',exact:true}).click();
   for(const page of [parent,tutor,admin,peer]){if(page===tutor)failRead=true;await page.getByRole('button',{name:'Join meeting',exact:true}).click();await page.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();}
   async function connected(){for(const page of [admin,tutor,parent,peer])await page.waitForFunction(async()=>{const pcs=window.testPeers.filter(p=>p.connectionState==='connected');if(pcs.length!==3)return false;for(const pc of pcs){const stats=await pc.getStats();if(![...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0)||![...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0))return false;}return true;},{},{timeout:45000});}
+  assert.equal(await parent.getByRole('button',{name:'Share screen',exact:true}).count(),0);await parent.getByText('Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.').waitFor();assert.equal(await parent.getByRole('alert').count(),0);
+  await tutor.evaluate(()=>{window.testCancelScreenShare=true;});await tutor.getByRole('button',{name:'Share screen',exact:true}).click();assert.equal(await tutor.getByRole('alert').count(),0);
   await connected();console.log('PASS: administrator + two tutors + parent exchange real audio/video in all twelve directions, with WebSockets disabled and a failed REST read');
   await parent.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await parent.evaluate(()=>window.testTracks.find(t=>t.kind==='audio').enabled),false);await parent.getByRole('button',{name:'Camera off',exact:true}).click();
   await tutor.getByRole('button',{name:'Share screen',exact:true}).click();await tutor.getByRole('button',{name:'Stop sharing',exact:true}).click();await tutor.getByRole('button',{name:'Share screen',exact:true}).waitFor();assert.ok(await tutor.evaluate(()=>window.testPeers.filter(p=>p.connectionState==='connected').every(p=>p.getSenders().find(s=>s.track?.kind==='video').track===window.testTracks.find(t=>t.kind==='video'))));

@@ -24,6 +24,7 @@ export default function LiveClassroom() {
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
+  const [canShare,setCanShare]=useState(()=>typeof navigator.mediaDevices?.getDisplayMedia==='function');
   const [sharing, setSharing] = useState(false);
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
@@ -284,7 +285,8 @@ export default function LiveClassroom() {
   const shareScreen = async () => {
     if (!peer.current || !localStream.current) return;
     if (screenStream.current) { await stopSharing(); return; }
-    if (!navigator.mediaDevices?.getDisplayMedia) { setError('Screen sharing is not available on this device.'); return; }
+    if (!canShare) return;
+    setError('');
     try {
       const attempt = generation.current;
       const stream = await navigator.mediaDevices.getDisplayMedia({ video:true });
@@ -296,7 +298,7 @@ export default function LiveClassroom() {
       await sender.replaceTrack(track);
       setSharing(true);
       track.onended = stopSharing;
-    } catch (e) { await stopSharing(); setError(errors(e)); }
+    } catch (e) { await stopSharing(); if(e.name==='NotSupportedError')setCanShare(false);else if(!['NotAllowedError','AbortError'].includes(e.name))setError(errors(e)); }
   };
 
   return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7">
@@ -317,11 +319,12 @@ export default function LiveClassroom() {
       </div>
       <p role="status" className="text-center text-sm font-medium">{status}</p>
       {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+      {joined&&!canShare&&<p className="text-center text-sm text-muted-foreground">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
       <div className="flex flex-wrap justify-center gap-2">
         {!joined ? <button type="button" disabled={!authorized || connecting} onClick={join} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Video size={18}/> {connecting ? 'Connecting…' : 'Join classroom'}</button> : <>
           <button type="button" onClick={toggleMic} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{muted?<MicOff size={18}/>:<Mic size={18}/>} {muted?'Unmute':'Mute'}</button>
           <button type="button" onClick={toggleCamera} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{cameraOff?<CameraOff size={18}/>:<Camera size={18}/>} {cameraOff?'Camera on':'Camera off'}</button>
-          <button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>
+          {canShare&&<button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>}
           <button type="button" onClick={leave} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white"><PhoneOff size={18}/> Leave</button>
         </>}
         {joined && <button type="button" onClick={()=>{leave();setStatus('Ready to reconnect');}} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><RefreshCw size={18}/> Reset</button>}
