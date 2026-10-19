@@ -3,7 +3,7 @@ import React from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { Link } from 'react-router-dom';
 import {
-  GraduationCap, BookOpen, Users, Shield,
+  GraduationCap, BookOpen, Users, Star, Shield,
   Award, CheckCircle, Clock, Globe, MapPin,
   Twitter, Linkedin, Instagram, Facebook, Mail
 } from 'lucide-react';
