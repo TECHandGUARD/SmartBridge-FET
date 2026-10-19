@@ -43,7 +43,6 @@ const initial = () => ({
   assessment: 'One independent exit-ticket question, marked against the learning objective.',
   followup: '', stages: TEMPLATES['Explain → practise → check'].map(s => ({ ...s }))
 });
-const safe = value => String(value || '').trim();
 export function lessonPlanText(plan) {
   const lines = [
     'SMARTBRIDGE FET — TUTOR LESSON PLAN',
