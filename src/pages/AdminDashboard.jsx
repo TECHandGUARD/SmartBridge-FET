@@ -784,7 +784,7 @@ export default function AdminDashboard() {
             <p className="font-semibold">Test payments: {CONFIG.CURRENCY}{paymentSummary.testPaymentValue.toFixed(2)} · {paymentSummary.testPayments} verified</p>
             <p className="text-sm">Test refunds confirmed: {CONFIG.CURRENCY}{paymentSummary.testRefundedValue.toFixed(2)} · {paymentSummary.testRefundsAwaitingConfirmation} awaiting provider confirmation</p>
           </>}
-          <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded.</p>
+          <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded. Yoco refunds require live payments; test payments cannot be refunded.</p>
         </div>
         {/* Tabs Grid Navigation */}
         <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
