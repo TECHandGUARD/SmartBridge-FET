@@ -315,8 +315,8 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
         {}
         <div className="px-4 py-1.5 border-t border-border/50">
           <p className="text-[9px] text-muted-foreground text-center">
-            🔒 Your conversations are private and used only for educational purposes.
-            {user?.email && ` · ${user.email}`}
+            Do not share personal information. AI answers can be inaccurate; verify with your teacher.
+
           </p>
         </div>
       </CardContent>
