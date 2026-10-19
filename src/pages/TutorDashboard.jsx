@@ -31,6 +31,7 @@ import TutorVerificationBadge from '@/components/tutor/TutorVerificationBadge';
 import SimulationLab from '@/components/simulations/SimulationLab';
 import QuizBuilder from '@/components/quiz/QuizBuilder';
 import LessonPlanner from '@/components/tutor/LessonPlanner';
+import TutorLessonStudio from '@/components/tutor/TutorLessonStudio';
 import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
@@ -253,6 +254,9 @@ export default function TutorDashboard() {
         </div>
 
         {/* ===== SECTIONS — only active section is shown ===== */}
+
+        {/* Free lesson design workspace — independent of tutor Pro subscription */}
+        {activeSection === 'lesson-studio' && <div className="mb-6"><TutorLessonStudio /></div>}
 
         {/* Upload Resource (template system) */}
         {activeSection === 'upload' && (
