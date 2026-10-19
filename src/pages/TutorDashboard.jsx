@@ -256,7 +256,7 @@ export default function TutorDashboard() {
         {/* ===== SECTIONS — only active section is shown ===== */}
 
         {/* Free lesson design workspace — independent of tutor Pro subscription */}
-        {activeSection === 'lesson-studio' && <div className="mb-6"><TutorLessonStudio /></div>}
+        {activeSection === 'lesson-studio' && <div id="tutor-panel-lesson-studio" role="region" aria-label="Lesson Studio" className="mb-6 scroll-mt-24"><TutorLessonStudio /></div>}
 
         {/* Upload Resource (template system) */}
         {activeSection === 'upload' && (
