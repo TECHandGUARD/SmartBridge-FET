@@ -256,6 +256,8 @@ export default function TutorDashboard() {
 
         {/* ===== SECTIONS — only active section is shown ===== */}
 
+        {activeSection === 'classroom' && <div className="mb-6" id="tutor-panel-classroom"><TutorLiveClassroomHub user={user} onOpenBookings={() => toggleSection('bookings')} /></div>}
+
         {/* Free lesson design workspace — independent of tutor Pro subscription */}
         {activeSection === 'lesson-studio' && <div id="tutor-panel-lesson-studio" role="region" aria-label="Lesson Studio" className="mb-6 scroll-mt-24"><TutorLessonStudio /></div>}
 
