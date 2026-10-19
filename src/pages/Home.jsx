@@ -163,6 +163,7 @@ const Footer = React.memo(function Footer() {
           <p className="text-xs text-muted-foreground">© {CONFIG.CURRENT_YEAR} {CONFIG.APP_NAME}. {CONFIG.MESSAGES.FOOTER_LEGAL}</p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/account-deletion" className="hover:text-foreground transition-colors">Delete account</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             <Link to="/about-tech-guard" className="hover:text-foreground transition-colors">About</Link>
             <span className="flex items-center gap-1">🇿🇦 {CONFIG.MESSAGES.FOOTER_DEVELOPED}</span>
