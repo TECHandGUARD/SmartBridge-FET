@@ -3,7 +3,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { serverConnection, appUrl } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
-import { readJson, text, uuid, consumeQuota, json, apiError, profileFor, providerJson } from '../../shared/api.ts';
+import { readJson, text, uuid, consumeQuota, json, apiError, profileFor } from '../../shared/api.ts';
 import { planAmount, checkoutUrl } from '../../shared/payments.ts';
 serve(withHttp(async (request) => {
     try {
@@ -17,8 +17,27 @@ serve(withHttp(async (request) => {
             if(refundError || !refund) failure(409,'This booking is not eligible for an automatic full refund');
             if(['refunded','pending'].includes(refund.refund_status)) return json({status:refund.refund_status});
             const credentials=gatewayCredentials('yoco',refund.mode);
-            const result=await providerJson(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(refund.checkout_id)}/refund`,{method:'POST',headers:{Authorization:`Bearer ${credentials.key}`,'Content-Type':'application/json','Idempotency-Key':`smartbridge-refund-${refund.id}`},body:JSON.stringify({amount:refund.amount_cents})});
-            if(result.id!==refund.checkout_id || !result.refundId || !['succeeded','pending'].includes(result.status)) failure(502,'Refund requires reconciliation');
+            let response: Response;
+            try {
+                response=await fetch(`https://payments.yoco.com/api/checkouts/${encodeURIComponent(refund.checkout_id)}/refund`,{method:'POST',headers:{Authorization:`Bearer ${credentials.key}`,'Content-Type':'application/json','Idempotency-Key':`smartbridge-refund-${refund.id}`},body:JSON.stringify({amount:refund.amount_cents}),signal:AbortSignal.timeout(20000)});
+            } catch {
+                console.error('booking_refund_provider_unavailable',JSON.stringify({order_id:refund.id,mode:refund.mode}));
+                failure(503,'Refund provider unavailable; check provider status before retrying');
+            }
+            const result=await response.json().catch(()=>null);
+            if(!response.ok){
+                const code=result?.errorCode || result?.code || result?.error?.code;
+                const errorType=result?.errorType;
+                // Provider descriptions explain validation failures. Redact credentials and identifiers before logging.
+                const rawDescription=typeof result?.description==='string'?result.description:typeof result?.message==='string'?result.message:'';
+                const description=rawDescription.split(credentials.key).join('[redacted]').replace(/[\w.+-]+@[\w.-]+/g,'[redacted]').replace(/(?:sk_|pk_|whsec_)[a-zA-Z0-9_-]+/g,'[redacted]').replace(/[a-zA-Z0-9_-]{24,}/g,'[redacted]').replace(/[\r\n]/g,' ').slice(0,300);
+                console.error('booking_refund_provider_rejected',JSON.stringify({order_id:refund.id,mode:refund.mode,http_status:response.status,code:typeof code==='string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(code)?code:null,error_type:typeof errorType==='string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(errorType)?errorType:null,description}));
+                failure(502,'Refund provider rejected the request; check provider status before retrying');
+            }
+            if(!result || result.id!==refund.checkout_id || !result.refundId || !['succeeded','pending'].includes(result.status)) {
+                console.error('booking_refund_response_unverified',JSON.stringify({order_id:refund.id,http_status:response.status,checkout_matches:result?.id===refund.checkout_id,has_refund_id:typeof result?.refundId==='string',status:['succeeded','pending','failed'].includes(result?.status)?result.status:'unknown'}));
+                failure(502,'Refund requires reconciliation');
+            }
             const {error:settleError}=await client.rpc('settle_booking_refund',{checkout_key:refund.checkout_id,refund_key:result.refundId,refund_amount:refund.amount_cents,refund_mode:refund.mode,refund_currency:refund.currency,settled:result.status==='succeeded'});
             if(settleError)failure(503,'Provider accepted refund; recording requires retry');
             return json({status:result.status==='succeeded'?'refunded':'pending'});

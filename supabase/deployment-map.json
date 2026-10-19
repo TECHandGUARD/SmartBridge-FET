@@ -58,11 +58,11 @@
       "access": "user",
       "verify_jwt": true,
       "provider": "Yoco/Paystack",
-      "deployed_version": 12,
+      "deployed_version": 14,
       "deployed_verify_jwt": true,
-      "deployed_bundle_sha256": "6d6377480f2bc6b4f1ebf70cfc3a05d4a228d377b47c32acb73b88f195bc2e22",
+      "deployed_bundle_sha256": "ccbec97e667c496793d42e0c9ab32c0d4eb7782bd48b17e5ba95605008550882",
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "9d047b116aaeb8800168e8fb80dee28270cfc25db47a1608f1c88d37df5d5181",
+      "reconciled_entrypoint_sha256": "776dbcd1292c4385c91129d8588ebc3ec25108f843ed1da935f221e1123a8efc",
       "dependencies": [
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
@@ -1131,3 +1131,4 @@
     "supabase/migrations/20261014065749_admin_subscription_pricing.sql"
   ]
 }
+

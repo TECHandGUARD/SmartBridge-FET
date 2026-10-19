@@ -1,3 +1,5 @@
+import BookingActivitySummary from '@/components/tutor/BookingActivitySummary';
+import {paymentOrderSummary, loadPaymentOrders} from '@/lib/payment-reporting';
 import SponsorshipPanel from '@/components/admin/SponsorshipPanel';
 import LegalDocumentsPanel from '@/components/admin/LegalDocumentsPanel';
 import SubscriptionPricingPanel from '@/components/admin/SubscriptionPricingPanel';
@@ -270,6 +272,8 @@ export default function AdminDashboard() {
   const [resources, setResources] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [paymentOrders, setPaymentOrders] = useState([]);
+  const [paymentError, setPaymentError] = useState(false);
   const [logs, setLogs] = useState([]);
   const [bannerClicks, setBannerClicks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -347,14 +351,16 @@ export default function AdminDashboard() {
         { data: subsData, error: subsError },
         { data: bookingsData, error: bookingsError },
         { data: logsData, error: logsError },
-        { data: bannerData, error: bannerError }
+        { data: bannerData, error: bannerError },
+        paymentResult
       ] = await Promise.all([
         supabase.from('tutor_profiles').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('resources').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('subscriptions').select('*').eq('status', 'active').limit(200),
         supabase.from('tutor_bookings').select('*').order('created_at', { ascending: false }).limit(200),
         supabase.from('activity_log').select('*').order('created_at', { ascending: false }).limit(100),
-        supabase.from('banner_clicks').select('*').order('click_timestamp', { ascending: false }).limit(1000)
+        supabase.from('banner_clicks').select('*').order('click_timestamp', { ascending: false }).limit(1000),
+        loadPaymentOrders(supabase).then(data => ({data, error: null})).catch(error => ({data: [], error}))
       ]);
 
       if (isMountedRef.current) {
@@ -362,6 +368,8 @@ export default function AdminDashboard() {
         setResources(resourcesData || []);
         setSubscriptions(subsData || []);
         setBookings(bookingsData || []);
+        setPaymentOrders(paymentResult.data);
+        setPaymentError(!!paymentResult.error);
         setLogs(logsData || []);
         setBannerClicks(bannerData || []);
       }
@@ -450,6 +458,11 @@ export default function AdminDashboard() {
       supabase
         .channel('admin-bookings')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_bookings' }, handleRealtimeUpdate)
+        .subscribe(),
+
+      supabase
+        .channel('admin-payments')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payment_orders' }, handleRealtimeUpdate)
         .subscribe(),
 
       supabase
@@ -683,15 +696,10 @@ export default function AdminDashboard() {
   };
 
   // ---------- Metrics Calculations ----------
-  const premiumRevenue = subscriptions
-    .filter(s => s.plan === 'premium' || s.plan_type === 'premium')
-    .reduce((sum, s) => sum + (s.amount_paid || 20), 0);
-
-  const bookingRevenue = bookings
-    .filter(b => b.status === 'confirmed' || b.status === 'completed')
-    .reduce((sum, b) => sum + (b.total_amount || b.amount || 0), 0);
-
-  const totalRevenue = premiumRevenue + bookingRevenue;
+  const paymentSummary = paymentOrderSummary(paymentOrders);
+  const premiumRevenue = paymentSummary.liveSubscriptionReceipts;
+  const bookingRevenue = paymentSummary.liveBookingReceipts;
+  const totalRevenue = paymentSummary.liveReceipts;
 
   const tutorLeaderboard = tutors.map(t => ({
     ...t,
@@ -756,7 +764,7 @@ export default function AdminDashboard() {
             { label: 'Total Users', value: totalUserCount.toLocaleString(), icon: Users, color: 'bg-blue-100 text-blue-700' },
             { label: 'Premium Subs', value: subscriptions.filter(s => s.status === 'active').length, icon: TrendingUp, color: 'bg-amber-100 text-amber-700' },
             { label: 'Total Resources', value: resources.length, icon: BookOpen, color: 'bg-primary/10 text-primary' },
-            { label: `Revenue (${CONFIG.CURRENCY})`, value: `${CONFIG.CURRENCY}${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'bg-green-100 text-green-700' },
+            { label: `Live payment receipts (${CONFIG.CURRENCY})`, value: paymentError ? 'Unavailable' : `${CONFIG.CURRENCY}${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'bg-green-100 text-green-700' },
             { label: 'Banner Clicks', value: bannerClicks.length, icon: TrendingUp, color: 'bg-purple-100 text-purple-700' }
           ].map(({ label, value, icon: Icon, color }) => (
             <Card key={label} className="border-border">
@@ -771,6 +779,13 @@ export default function AdminDashboard() {
           ))}
         </div>
 
+        <div className="mb-6 rounded-xl border p-4 space-y-1">
+          {paymentError ? <p role="alert">Payment totals could not load. Refresh to retry.</p> : <>
+            <p className="font-semibold">Test payments: {CONFIG.CURRENCY}{paymentSummary.testPaymentValue.toFixed(2)} · {paymentSummary.testPayments} verified</p>
+            <p className="text-sm">Test refunds confirmed: {CONFIG.CURRENCY}{paymentSummary.testRefundedValue.toFixed(2)} · {paymentSummary.testRefundsAwaitingConfirmation} awaiting provider confirmation</p>
+          </>}
+          <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded.</p>
+        </div>
         {/* Tabs Grid Navigation */}
         <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
           <div className="mb-4 lg:hidden">
@@ -889,6 +904,7 @@ export default function AdminDashboard() {
           <TabsContent value="earnings">
             <SafeSubComponent>
               <div className="space-y-4">
+                <BookingActivitySummary bookings={bookings} recent />
                 <TutorEarningsTable tutors={tutors} bookings={bookings} />
 
                 <Card>
@@ -1002,13 +1018,14 @@ export default function AdminDashboard() {
           <TabsContent value="university-directory"><SafeSubComponent><UniversityDirectoryAdmin /></SafeSubComponent></TabsContent>
           <TabsContent value="financial">
             <SafeSubComponent>
-              <div className="grid sm:grid-cols-2 gap-6">
+              <BookingActivitySummary bookings={bookings} recent />
+              <div className="grid sm:grid-cols-2 gap-6 mt-4">
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="font-playfair text-lg">Premium Subscriptions</CardTitle>
+                    <CardTitle className="font-playfair text-lg">Live subscription receipts</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="font-playfair text-4xl font-bold text-primary">{CONFIG.CURRENCY}{premiumRevenue.toFixed(2)}</p>
+                    <p className="font-playfair text-4xl font-bold text-primary">{CONFIG.CURRENCY}{paymentError ? 'Unavailable' : premiumRevenue.toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground mt-1">
                       {subscriptions.filter(s => s.status === 'active').length} active subscriptions
                     </p>
@@ -1024,12 +1041,12 @@ export default function AdminDashboard() {
                 </Card>
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="font-playfair text-lg">Tutor Bookings</CardTitle>
+                    <CardTitle className="font-playfair text-lg">Live booking receipts</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="font-playfair text-4xl font-bold text-primary">{CONFIG.CURRENCY}{bookingRevenue.toFixed(2)}</p>
+                    <p className="font-playfair text-4xl font-bold text-primary">{CONFIG.CURRENCY}{paymentError ? 'Unavailable' : bookingRevenue.toFixed(2)}</p>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {bookings.filter(b => b.status === 'confirmed' || b.status === 'completed').length} confirmed sessions
+                      {bookings.filter(b => b.status === 'confirmed').length} currently confirmed · {bookings.filter(b => b.status === 'completed').length} completed (latest 200)
                     </p>
                     <div className="mt-4 space-y-2">
                       {bookings.slice(0, 8).map(b => (

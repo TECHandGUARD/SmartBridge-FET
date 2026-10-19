@@ -25,3 +25,19 @@ test('booking checkout rejects a client price and refunds require administrator 
  assert.equal((await runtime.handle(request({action:'refund_booking',booking_id:id}))).status,403);
  assert.equal(client.calls.some(call=>call.table==='prepare_booking_refund'),false);
 });
+for(const scenario of ['succeeded','pending','rejected','mismatch','unavailable'])test(`booking refund ${scenario} preserves provider confirmation boundary`,async()=>{
+ const client=fakeClient({id:'user-id',role:'admin',is_active:true},call=>call.table==='prepare_booking_refund'?{data:{id,checkout_id:'ch-test',amount_cents:15000,mode:'test',currency:'ZAR',refund_status:'requested'},error:null}:{data:true,error:null});
+ let key;
+ const runtime=edgeRuntime('createCheckout',{client,env,fetch:async(url,options)=>{
+  key=options.headers['Idempotency-Key'];assert.equal(JSON.parse(options.body).amount,15000);
+  if(scenario==='unavailable')throw new Error('network');
+  if(scenario==='rejected')return Response.json({code:'refund_unavailable'},{status:422});
+  return Response.json({id:scenario==='mismatch'?'other-checkout':'ch-test',refundId:'rfd-test',status:scenario==='pending'?'pending':'succeeded'});
+ }});
+ const result=await runtime.handle(request({action:'refund_booking',booking_id:id}));
+ assert.equal(key,`smartbridge-refund-${id}`);
+ const settle=client.calls.find(call=>call.table==='settle_booking_refund');
+ if(['succeeded','pending'].includes(scenario)){
+  assert.equal(result.status,200);assert.equal(settle.data.settled,scenario==='succeeded');
+ }else{assert.equal(result.status,scenario==='unavailable'?503:502);assert.equal(settle,undefined);}
+});
