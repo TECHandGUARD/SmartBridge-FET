@@ -23,6 +23,8 @@ serve(withHttp(async (request) => {
             return json({ order_id: order.id, status: 'paid' });
         if (order.checkout_id && order.redirect_url)
             return json({ order_id: order.id, redirect_url: checkoutUrl(order.redirect_url,provider), amount_cents: order.amount_cents, mode: order.mode,gateway:provider });
+        // Fail with a clear configuration error rather than an unhandled 500.
+        if (!Deno.env.get('APP_BASE_URL')?.trim() && !Deno.env.get('APP_URL')?.trim()) failure(503, 'Payment return URL is not configured');
         const profile=await profileFor(client,user.id);
         const checkout=await initializeGateway(provider,settings,order,profile.email);
         const redirect=checkout.redirect;
@@ -32,6 +34,7 @@ serve(withHttp(async (request) => {
         return json({ order_id: order.id, redirect_url: redirect, amount_cents: order.amount_cents, mode: settings.mode, gateway:provider });
     }
     catch (error) {
+        if (!Number.isInteger(error?.status)) console.error('checkout_unexpected_failure', error instanceof Error ? error.message : 'unknown');
         return apiError(error);
     }
 }, 'create-checkout'));
