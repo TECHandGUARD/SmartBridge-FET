@@ -329,6 +329,7 @@ export default function TutorDashboard() {
         {/* Live Sessions */}
         {activeSection === 'sessions' && (
           <div className="mb-6 space-y-4">
+            <TutorLiveClassroomHub user={user} onOpenBookings={() => toggleSection('bookings')} />
             <UpcomingSessionsWidget user={user} />
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
               <LessonPlanner user={user} />
