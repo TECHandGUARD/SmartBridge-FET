@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Download, Printer, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
+import LessonDesignSheet, { LESSON_THEMES } from './LessonDesignSheet';
 
 const STORAGE_KEY = 'smartbridge:tutor-lesson-studio:v1';
 const METHODS = {
@@ -36,7 +37,7 @@ const TEMPLATES = {
 };
 const initial = () => ({
   subject: 'Mathematics', grade: 'Grade 11', topic: '', duration: 55,
-  template: 'Explain → practise → check', method: 'Worked example',
+  template: 'Explain → practise → check', method: 'Worked example', designTheme: 'ocean',
   objective: '', misconception: '', success: '', resources: '',
   support: 'Use shorter questions, an annotated example and a visual scaffold.',
   stretch: 'Ask the learner to create and explain a harder example.',
@@ -89,7 +90,7 @@ export default function TutorLessonStudio() {
       if (!data) return;
       const p = JSON.parse(data);
       if (p && Array.isArray(p.stages) && TEMPLATES[p.template] && METHODS[p.method]) {
-        setPlan({ ...initial(), ...p });
+        setPlan({ ...initial(), ...p, designTheme: LESSON_THEMES[p.designTheme] ? p.designTheme : 'ocean' });
         setSaved(true);
       }
     } catch { /* corrupted local draft is ignored */ }
@@ -100,7 +101,7 @@ export default function TutorLessonStudio() {
     setPlan(p => ({ ...p, stages: p.stages.map((s, i) => i === index ? { ...s, [key]: value } : s) }));
     setSaved(false);
   };
-  const applyTemplate = value => setPlan(p => ({ ...p, template: value, stages: TEMPLATES[value].map(s => ({ ...s })), duration: 55 }));
+  const applyTemplate = value => { setPlan(p => ({ ...p, template: value, stages: TEMPLATES[value].map(s => ({ ...s })), duration: 55 })); setSaved(false); };
   const saveDraft = () => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(plan));
@@ -123,7 +124,7 @@ export default function TutorLessonStudio() {
   const field = (key, title, hint, rows = 2) => <label className="block space-y-1 text-sm font-medium">{title}<textarea rows={rows} value={plan[key]} onChange={e => set(key, e.target.value)} placeholder={hint} maxLength={2000} className="block w-full rounded-lg border bg-background p-3 text-sm font-normal" /></label>;
   return <section className="space-y-5 rounded-xl border bg-card p-4 sm:p-6" aria-label="Tutor Lesson Studio">
     <div className="flex flex-wrap items-start justify-between gap-3">
-      <div><h2 className="text-xl font-bold flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary"/>Tutor Lesson Studio</h2><p className="text-sm text-muted-foreground">A free editable lesson template, visual teaching ideas, differentiation and assessment — no AI credits required.</p></div>
+      <div><h2 className="text-xl font-bold flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary"/>Tutor Lesson Studio</h2><p className="text-sm text-muted-foreground">Create, style and print a colorful lesson plan with editable activities and visual teaching ideas — no AI credits required.</p></div>
       <div className="flex flex-wrap gap-2">
         <button type="button" onClick={saveDraft} className="rounded-lg border px-3 py-2 text-sm inline-flex items-center gap-1"><Save size={15}/> {saved ? 'Saved locally' : 'Save draft'}</button>
         <button type="button" onClick={exportText} className="rounded-lg border px-3 py-2 text-sm inline-flex items-center gap-1"><Download size={15}/> Export</button>
@@ -131,7 +132,22 @@ export default function TutorLessonStudio() {
       </div>
     </div>
     <p className="text-xs text-muted-foreground">Privacy: This studio does not collect learner names. Saved drafts remain in this browser, not in your SmartBridge account. Avoid entering personal learner information on shared devices.</p>
-    {preview ? <div className="space-y-4"><pre className="whitespace-pre-wrap break-words rounded-xl bg-muted/40 p-4 text-sm font-sans">{lessonPlanText(plan)}</pre><button type="button" onClick={() => window.print()} className="rounded-lg bg-primary px-4 py-2 text-primary-foreground inline-flex items-center gap-2"><Printer size={16}/> Print plan</button></div> : <>
+    <div className="space-y-3 rounded-2xl border bg-muted/20 p-4 sm:p-5">
+      <div><h3 className="font-bold text-base">Choose your lesson plan design</h3><p className="text-xs text-muted-foreground">Four original colorful layouts. Switch designs without losing lesson content. Your selection is saved with your draft.</p></div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4" role="group" aria-label="Lesson plan color theme">
+        {Object.entries(LESSON_THEMES).map(([key, theme]) => <button type="button" key={key} aria-pressed={plan.designTheme === key} onClick={() => set('designTheme', key)} className={`overflow-hidden rounded-xl border-2 bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${plan.designTheme === key ? 'border-primary ring-2 ring-primary/20' : 'border-border'}`}>
+          <div className="h-16 p-2" style={{ background: `linear-gradient(125deg, ${theme.accent}, ${theme.secondary})` }}><div className="h-2 w-2/3 rounded-full bg-white/85"/><div className="mt-2 h-1.5 w-1/2 rounded-full bg-white/50"/><div className="mt-2 flex gap-1"><span className="h-3 w-7 rounded bg-white/70"/><span className="h-3 w-7 rounded bg-white/35"/></div></div>
+          <div className="p-2.5"><span className="block text-sm font-bold">{theme.name}</span><span className="block text-xs text-muted-foreground">{theme.description}</span>{plan.designTheme === key && <span className="mt-1 block text-xs font-semibold text-primary">Selected ✓</span>}</div>
+        </button>)}
+      </div>
+    </div>
+    {preview ? <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-muted/30 p-3">
+        <p className="text-sm text-muted-foreground">Your designed lesson plan is ready to print or save as PDF. Choose another color theme below at any time.</p>
+        <button type="button" onClick={() => window.print()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground inline-flex items-center gap-2"><Printer size={16}/> Print / Save PDF</button>
+      </div>
+      <LessonDesignSheet plan={plan} theme={plan.designTheme} />
+    </div> : <>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <label className="text-sm font-medium">Subject<input className="mt-1 w-full rounded-lg border bg-background p-2" maxLength={80} value={plan.subject} onChange={e => set('subject',e.target.value)}/></label>
         <label className="text-sm font-medium">Grade<select className="mt-1 w-full rounded-lg border bg-background p-2" value={plan.grade} onChange={e => set('grade',e.target.value)}>{[10,11,12].map(n=><option key={n}>Grade {n}</option>)}</select></label>
