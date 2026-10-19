@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+import ConnectivityNotice from './components/operations/ConnectivityNotice';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PageNotFound from './lib/PageNotFound';
 
@@ -41,8 +42,10 @@ const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
 const VideoLessons = lazy(() => import('./pages/VideoLessons'));
 const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
 const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
+const LearningIndexAdmin = lazy(() => import('./pages/LearningIndexAdmin'));
 const PayoutLog = lazy(() => import('./pages/PayoutLog'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const AboutTechAndGuard = lazy(() => import('./pages/AboutTechAndGuard'));
 const StudentOpportunities = lazy(() => import('./pages/StudentOpportunities'));
@@ -121,6 +124,7 @@ const AuthenticatedApp = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/account-deletion" element={<AccountDeletion />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/TermsOfService" element={<Navigate to="/terms" replace />} />
         <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
@@ -336,6 +340,10 @@ const AuthenticatedApp = () => {
 
           {/* Admin only routes */}
           <Route
+            path="/learning-index-admin"
+            element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin']}><LearningIndexAdmin /></ProtectedRoute></RequireAuthAndOnboarding>}
+          />
+        <Route
             path="/caps-admin"
             element={
               <RequireAuthAndOnboarding>
@@ -384,6 +392,7 @@ export default function App() {
     <QueryClientProvider client={queryClientInstance}>
       <AuthProvider>
         <Router>
+          <ConnectivityNotice />
           <AuthenticatedApp />
           <Toaster />
           <SonnerToaster position="top-right" richColors closeButton />

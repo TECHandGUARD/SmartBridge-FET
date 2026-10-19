@@ -1134,6 +1134,7 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="knowledge">
+            <a href="/learning-index-admin" className="mb-4 inline-flex rounded-lg border px-4 py-2 text-sm font-semibold hover:bg-muted">Index approved learning PDFs for the AI assistant</a>
             <SafeSubComponent>
               <KnowledgeBaseManager user={user} />
             </SafeSubComponent>

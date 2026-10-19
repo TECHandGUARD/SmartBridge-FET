@@ -3,6 +3,8 @@
   "short_name": "SmartBridge",
   "description": "CAPS-aligned learning platform for Grade 10–12 students, tutors, and parents.",
   "start_url": "/",
+  "id": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2d8a6e",

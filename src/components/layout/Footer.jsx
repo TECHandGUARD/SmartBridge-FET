@@ -25,6 +25,9 @@ export default function Footer() {
       label: 'Terms of Service',
       path: '/terms'
     }, {
+      label: 'Delete my account',
+      path: '/account-deletion'
+    }, {
       label: 'About Tech & GUARD',
       path: '/about-tech-guard'
     }]

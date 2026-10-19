@@ -35,7 +35,7 @@ export default function PremiumBanner() {
               </h2>
               <p className="text-primary-foreground/80 mb-6 leading-relaxed">
                 View the latest student, parent and tutor prices on the Premium page.
-                Get full access to premium resources, past papers, tutor notes, and more.
+                Review the currently available resources and plan details before upgrading.
               </p>
               <Link to="/premium">
                 <Button size="lg" className="bg-secondary hover:bg-secondary/90 text-secondary-foreground gap-2">
@@ -46,10 +46,10 @@ export default function PremiumBanner() {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { icon: Download, text: 'Unlimited Downloads' },
-                { icon: Shield, text: 'Ad-Free Experience' },
-                { icon: Zap, text: 'Premium Tutor Notes' },
-                { icon: Star, text: 'Priority Support' },
+                { icon: Download, text: 'Published Resources' },
+                { icon: Shield, text: 'Learning Dashboard' },
+                { icon: Zap, text: 'Learning Tools' },
+                { icon: Star, text: 'Plan Options' },
               ].map(({ icon: Icon, text }) => (
                 <div key={text} className="bg-white/10 rounded-xl p-4 backdrop-blur-sm">
                   <Icon className="w-5 h-5 text-secondary mb-2" />

@@ -23,7 +23,7 @@ import { fetchApprovedResources, fetchTutors } from '@/lib/supabaseClient';
 const CONFIG = {
   COMPANY_NAME: import.meta.env.VITE_COMPANY_NAME || 'Tech & GUARD Pty Ltd',
   APP_NAME: import.meta.env.VITE_APP_NAME || 'SmartBridge FET',
-  REGISTRATION_NUMBER: import.meta.env.VITE_CIPC_REGISTRATION || '2026/15509/07',
+  REGISTRATION_NUMBER: import.meta.env.VITE_CIPC_REGISTRATION || '2026/155090/07',
   SUPPORT_EMAIL: import.meta.env.VITE_SUPPORT_EMAIL || 'aneleq@techandguard.co.za',
   CORPORATE_WEBSITE: import.meta.env.VITE_CORPORATE_WEBSITE || 'https://www.techandguard.co.za',
 
@@ -51,9 +51,9 @@ const CONFIG = {
 // ============================================================
 const ComplianceBadges = React.memo(function ComplianceBadges() {
   const badges = [
-    { label: 'CAPS Aligned', icon: BookOpen, color: 'bg-blue-500/10 text-blue-600 border-blue-200' },
-    { label: 'SACE Verified', icon: Shield, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-200' },
-    { label: 'POPIA Compliant', icon: CheckCircle, color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
+    { label: 'Grade 10–12 Resources', icon: BookOpen, color: 'bg-blue-500/10 text-blue-600 border-blue-200' },
+    { label: 'Tutor Profiles', icon: Shield, color: 'bg-emerald-500/10 text-emerald-600 border-emerald-200' },
+    { label: 'Privacy Policy Available', icon: CheckCircle, color: 'bg-purple-500/10 text-purple-600 border-purple-200' },
     { label: 'DBE Guidelines', icon: Award, color: 'bg-amber-500/10 text-amber-600 border-amber-200' },
   ];
 
@@ -126,7 +126,7 @@ const Footer = React.memo(function Footer() {
             <h4 className="font-semibold text-sm text-foreground mb-3">Compliance</h4>
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> CAPS Aligned</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> SACE Verified Tutors</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> Tutor Profiles</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> POPIA Compliant</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> DBE Guidelines</li>
             </ul>
@@ -163,6 +163,7 @@ const Footer = React.memo(function Footer() {
           <p className="text-xs text-muted-foreground">© {CONFIG.CURRENT_YEAR} {CONFIG.APP_NAME}. {CONFIG.MESSAGES.FOOTER_LEGAL}</p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/account-deletion" className="hover:text-foreground transition-colors">Delete account</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors">Terms of Service</Link>
             <Link to="/about-tech-guard" className="hover:text-foreground transition-colors">About</Link>
             <span className="flex items-center gap-1">🇿🇦 {CONFIG.MESSAGES.FOOTER_DEVELOPED}</span>
@@ -193,8 +194,8 @@ function PublicLandingView() {
       <div className="bg-muted/30 border-y border-border/50 py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-muted-foreground">
-            <span className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Trusted by South African learners</span>
-            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Rated 4.8/5 by students</span>
+            <span className="flex items-center gap-2"><Users className="w-4 h-4 text-primary" /> Designed for South African learners</span>
+            <span className="flex items-center gap-2"><Star className="w-4 h-4 text-amber-500" /> Built for Grades 10–12</span>
             <span className="flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> 24/7 Access</span>
             <span className="flex items-center gap-2"><Globe className="w-4 h-4 text-primary" /> Available Nationwide</span>
           </div>
