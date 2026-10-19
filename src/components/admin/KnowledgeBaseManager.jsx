@@ -50,7 +50,10 @@ const ResourceCard = ({
   resource,
   onEdit,
   onDelete,
-  onToggleActive
+  onToggleActive,
+  onIndex,
+  indexingId,
+  indexingProgress
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -87,6 +90,7 @@ const ResourceCard = ({
                 <ExternalLink className="w-3.5 h-3.5" />
               </span>
             </FileLink>}
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!resource.is_active || indexingId!==null} onClick={() => onIndex(resource)} title="Extract PDF pages for AI search">{indexingId===resource.id?<><Loader2 className="w-3 h-3 animate-spin mr-1"/>Indexing {indexingProgress}</>:'Index for AI'}</Button>
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onEdit(resource)} title="Edit Resource">
             <Edit className="w-3 h-3 mr-1" /> Edit
           </Button>
@@ -257,6 +261,8 @@ export default function KnowledgeBaseManager({
   user
 }) {
   const [resources, setResources] = useState([]);
+  const [indexingId, setIndexingId] = useState(null);
+  const [indexingProgress, setIndexingProgress] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -370,6 +376,28 @@ export default function KnowledgeBaseManager({
       toast.error(`Failed to save: ${err.message}`);
     } finally {
       setSaving(false);
+    }
+  };
+  const handleIndex = async resource => {
+    setIndexingId(resource.id);
+    setIndexingProgress('starting');
+    let page=1;
+    try {
+      for(let batch=0;batch<40;batch++){
+        const {data,error}=await supabase.functions.invoke('index-learning-documents',{body:{source_type:'educational_resources',source_id:resource.id,start_page:page}});
+        if(error)throw error;
+        if(data?.error)throw new Error(data.error);
+        setIndexingProgress(`${Math.min((data.next_page||data.total_pages+1)-1,data.total_pages)}/${data.total_pages} pages`);
+        if(data?.complete){toast.success(`Indexed ${resource.title} for grounded AI answers`);return;}
+        if(!Number.isInteger(data?.next_page)||data.next_page<=page)throw new Error('Indexing did not advance');
+        page=data.next_page;
+      }
+      throw new Error('Document exceeds the supported indexing batches');
+    }catch(err){
+      toast.error(`Indexing stopped at page ${page}. ${err.message||'Please try again'}`);
+    }finally{
+      setIndexingId(null);
+      setIndexingProgress('');
     }
   };
   const handleEdit = resource => {
