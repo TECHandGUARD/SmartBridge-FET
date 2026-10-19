@@ -5,7 +5,14 @@ import { dispatchNotifications, dispatchBookingNotifications } from './action-no
 
 // Both booking screens use this one contract. Keep the same request ID on retry.
 export async function createBooking(tutor, form, requestId) {
-  const sponsored = form.sponsorship_allocation_id && !form.is_intro && bookingEstimate(tutor,form)>0;
+  const estimated = bookingEstimate(tutor, form);
+  if (estimated === null) throw new Error('Tutor price is unavailable.');
+  // Shared fail-closed rule for every booking entry point, not just the modal.
+  // A paid session must never be submitted without a verified checkout flow.
+  if (estimated > 0 && !form.is_intro && !form.sponsorship_allocation_id) {
+    throw new Error('Paid tutor checkout is not ready. No booking has been created or paid.');
+  }
+  const sponsored = form.sponsorship_allocation_id && !form.is_intro && estimated>0;
   const { data, error } = await withTimeout(supabase.rpc(sponsored ? 'create_sponsored_booking' : 'create_booking', {
     ...(sponsored ? {allocation: form.sponsorship_allocation_id} : {}),
     profile_id: tutor.id, chosen_subject: form.subject, chosen_date: form.date,
