@@ -7,6 +7,7 @@ import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import AppLayout from './components/layout/AppLayout';
+import ConnectivityNotice from './components/operations/ConnectivityNotice';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import PageNotFound from './lib/PageNotFound';
 
@@ -391,6 +392,7 @@ export default function App() {
     <QueryClientProvider client={queryClientInstance}>
       <AuthProvider>
         <Router>
+          <ConnectivityNotice />
           <AuthenticatedApp />
           <Toaster />
           <SonnerToaster position="top-right" richColors closeButton />
