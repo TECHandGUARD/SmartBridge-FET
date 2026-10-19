@@ -4,7 +4,7 @@ import { serverConnection } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
 import { readJson, text, consumeQuota, json, apiError } from '../../shared/api.ts';
 import { generate, studyPlanSchema } from '../../shared/ai.ts';
-import { retrieveLearningEvidence, groundedInstructions, noLearningEvidence } from '../../shared/grounding.ts';
+import { retrieveLearningEvidence, groundedInstructions } from '../../shared/grounding.ts';
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
@@ -23,13 +23,13 @@ serve(withHttp(async (request) => {
         const grade=['Grade 10','Grade 11','Grade 12'].includes(body.grade)?body.grade:'';
         const question=typeof body.question==='string'&&body.question.trim()?text(body.question,'question',2000):prompt;
         const {evidence,sources}=await retrieveLearningEvidence(client,question,subject,grade);
-        if(!structured&&!evidence)return json({response:noLearningEvidence,sources:[],grounded:false});
+
         await consumeQuota(client, user.id, 'ai');
-        const augmented=evidence?`${groundedInstructions}\n\nReference excerpts:\n${evidence}\n\nLearner request:\n${prompt}`:`${prompt}\nNo relevant indexed learning excerpts were available. For study planning, provide scheduling guidance only and do not claim document-grounded educational facts.`;
+        const augmented=evidence?`${groundedInstructions}\n\nReference excerpts:\n${evidence}\n\nLearner request:\n${prompt}`:`${prompt}\n\nNo matching SmartBridge documents were found. Explain using general educational knowledge, clearly disclose that this answer is not verified against SmartBridge learning documents, and never invent CAPS or textbook citations. Acknowledge uncertainty where appropriate.`;
         const result=await generate(augmented,structured?studyPlanSchema:undefined);
         if(structured)return json({...result,sources,grounded:!!evidence});
         const refs=[...new Set(sources.map((s:any)=>`${s.title} (p. ${s.page})`))];
-        return json({response:result.response+(refs.length?'\n\nSources: '+refs.join('; '):''),sources,grounded:true});
+        return json({response:result.response+(refs.length?'\n\nSources: '+refs.join('; '):'\n\nSource: General AI knowledge (not verified against uploaded textbooks).'),sources,grounded:!!evidence});
     }
     catch (error) {
         return apiError(error);
