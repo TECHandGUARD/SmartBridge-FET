@@ -36,21 +36,27 @@ serve(withHttp(async request => {
       const { data: event, error } = await client.rpc('claim_action_notification', { event_id: id, caller_id: actor.id });
       if (error) failure(403, 'Notification unavailable');
       if (!event) continue;
+      let deliveryCode = 'delivery_configuration_or_provider_failure';
       try {
         const settings = emailSettings();
+        if (event.meeting_id) {
+          const { data: sender, error: senderError } = await client.rpc('meeting_email_sender');
+          if (senderError || typeof sender !== 'string' || !/^[^<>\r\n]*<?[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}>?$/.test(sender)) throw new Error('Meeting sender unavailable');
+          settings.from = sender;
+        }
         const response = await emailFetch({ method: 'POST', headers: { Authorization: `Bearer ${settings.apiKey}`, 'Content-Type': 'application/json' },
           body: JSON.stringify({ from: settings.from, to: [event.to], subject: event.subject,
             text: `${event.message}\n\n${event.meeting_id ? `Open meeting: ${appUrl('/meetings/' + uuid(event.meeting_id))}` : `Sign in: ${appUrl('/login')}`}\nReference: ${event.id}\nSmartBridge FET / Tech & GUARD (Pty) Ltd` }) }, client);
-        if (!response.ok) throw new Error('provider_rejected');
+        if (!response.ok) { deliveryCode = `provider_http_${response.status}`; throw new Error('provider_rejected'); }
         const result = await response.json();
         const finished = await client.rpc('finish_action_notification', { event_id: id, message_id: result.id, error_code: null });
         if (finished.error) throw new Error('receipt_pending');
         accepted++;
       } catch {
-        await client.rpc('finish_action_notification', { event_id: id, message_id: null, error_code: 'delivery_configuration_or_provider_failure' });
+        await client.rpc('finish_action_notification', { event_id: id, message_id: null, error_code: deliveryCode });
         failed++;
       }
     }
-    return json({ accepted, failed, status: failed ? 'queued' : accepted ? 'accepted' : 'pending', delivered: false });
+    return json({ accepted, failed, status: failed ? 'queued' : accepted ? 'accepted' : 'pending', delivered: false }, meetingJob && failed ? 503 : 200);
   } catch (error) { return apiError(error); }
 }, 'dispatch-notifications'));

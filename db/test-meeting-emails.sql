@@ -39,10 +39,15 @@ do $$declare k uuid;invite uuid;reminder uuid;token text;begin
  select n.id into reminder from public.action_notifications n join smartbridge_private.notification_outbox o on o.id=n.id
  where n.meeting_id=k and n.recipient_id='00000000-0000-4000-8000-000000007603' and split_part(o.event_key,':',4)='60';
  if public.claim_action_notification(reminder,null) is not null then raise exception 'Stale one-hour reminder sent at thirty minutes';end if;
+ -- Simulate a worker dying after acquiring a thirty-minute reminder lease.
+ select id into reminder from public.action_notifications where meeting_id=k and kind='meeting-reminder' and subject='Meeting reminder: 30 minutes' and recipient_id='00000000-0000-4000-8000-000000007602';
+ if public.claim_action_notification(reminder,null) is null then raise exception 'Lease fixture missing';end if;
+ update smartbridge_private.notification_outbox set lease_until=now()-interval '1 second' where id=reminder;
  update public.virtual_meetings set status='cancelled' where id=k;
  for invite in select id from public.action_notifications where meeting_id=k and email_status='pending' loop
   if public.claim_action_notification(invite,null) is not null then raise exception 'Cancelled meeting sent an invitation/reminder';end if;
  end loop;
+ if exists(select 1 from smartbridge_private.notification_outbox where id=reminder and state='sending') then raise exception 'Cancelled stale lease kept blocking the worker';end if;
  perform public.prepare_meeting_emails();
  if (select count(*) from public.action_notifications where meeting_id=k and kind='meeting-reminder')<>5 then raise exception 'Cancellation queued more reminders';end if;
  -- A newly created short-notice meeting must not generate past thresholds.

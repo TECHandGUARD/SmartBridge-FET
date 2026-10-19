@@ -188,7 +188,8 @@
       "provider": "resend",
       "required_migrations": [
         "supabase/migrations/20261013234334_legal_notifications_tutor_profiles.sql",
-        "supabase/migrations/20261019203658_meeting_email_reminders.sql"
+        "supabase/migrations/20261019203658_meeting_email_reminders.sql",
+        "supabase/migrations/20261019204658_verified_meeting_email_sender.sql"
       ],
       "dependencies": [
         "supabase/shared/api.ts",
@@ -197,7 +198,7 @@
         "supabase/shared/http.ts",
         "supabase/shared/monitoring.ts"
       ],
-      "reconciled_entrypoint_sha256": "2eb93ab286af3212f8dab51809434e60f7fcd22fdab11ca31996b00d08659e57",
+      "reconciled_entrypoint_sha256": "1df2de3a018a5eea5c9c9f30e7370942e1bbada5acec623b5a03e07b81ebf174",
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",

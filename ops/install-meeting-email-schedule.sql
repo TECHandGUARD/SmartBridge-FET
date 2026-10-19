@@ -2,8 +2,9 @@
 -- No other application jobs are enabled by this script. No long-lived secret is required.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
-revoke all on table net.http_request_queue,net._http_response from public,anon,authenticated;
-revoke all on all sequences in schema net from public,anon,authenticated;
+-- Supabase owns pg_net: REVOKE as postgres does not remove its PUBLIC grants.
+-- Keep net out of the Data API exposed schemas. Trusted database login roles can
+-- read queued headers; single-use credentials limit them to this meeting worker.
 create or replace function smartbridge_private.enqueue_meeting_mail() returns bigint
 language plpgsql security definer set search_path='' as $$
 declare credential text;request bigint;project_url text;
