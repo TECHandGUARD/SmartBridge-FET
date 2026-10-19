@@ -92,6 +92,7 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/join_study_room') data=true;
   if(url.pathname==='/rest/v1/study_room_posts') {assert.equal(url.searchParams.get('select').includes('author_email'),false);data=roomPosts;}
   if(url.pathname==='/rest/v1/study_room_replies') data=roomReplies;
+  if(url.pathname==='/functions/v1/invoke-llm') data={response:'## Female reproductive system\n\nThe **ovaries** produce ova.\n\n- The uterus supports development.\n- The vagina is the birth canal.\n\n| Organ | Function |\n| --- | --- |\n| Ovary | Produces ova |\n\nMaths example: $x^2 = 4$.',sources:[{title:'Life Sciences textbook',page:12}],source_mode:'documents_and_general',web_search:'unavailable'};
   if(url.pathname==='/functions/v1/check-rate-limit') {if(denyStudyQuota){denyStudyQuota=false;status=503;data={error:'Unavailable'};}else{status=200;data={allowed:true};}}
   if(url.pathname==='/functions/v1/moderate-post') {studyCalls.push(req.postDataJSON());if(failStudyPost){failStudyPost=false;status=503;data={error:'Unavailable'};}else{status=200;data={id:'00000000-0000-4000-8000-000000000203',status:'pending',approved:false};roomPosts=[...roomPosts,{...req.postDataJSON(),...data,author_id:profile.id,author_name:profile.full_name,moderation_status:'pending',created_at:'2026-10-13T10:01:00Z'}];}}
   if(url.pathname==='/functions/v1/moderate-reply') {status=200;data={id:'00000000-0000-4000-8000-000000000204',status:'pending',approved:false};roomReplies=[{...req.postDataJSON(),...data,author_name:profile.full_name,moderation_status:'pending'}];}
@@ -193,6 +194,20 @@ const assert=require('node:assert/strict');
  console.log('PASS: reminders and weekly goals use real schema fields and ownership IDs');
  hasPremium=true;
  await page.goto('http://127.0.0.1:5173/student-dashboard?section=ai');
+ const chatInput=page.getByPlaceholder('Ask about a CAPS concept, request a summary, or get practice questions…');
+ await chatInput.fill('Explain the female reproductive system');
+ await chatInput.press('Enter');
+ await page.getByRole('heading',{name:'Female reproductive system',exact:true}).waitFor();
+ const learningAnswer=page.getByTestId('learning-answer').filter({hasText:'The ovaries produce ova.'});
+ assert.equal(await learningAnswer.locator('strong').innerText(),'ovaries');
+ assert.equal(await learningAnswer.locator('li').count(),2);
+ assert.equal(await learningAnswer.getByRole('table').count(),1);
+ assert.equal(await learningAnswer.locator('.katex').count(),1);
+ assert.doesNotMatch(await learningAnswer.innerText(),/\*\*ovaries\*\*|## Female|\| ---/);
+ await page.getByText('Sources and answer basis',{exact:true}).click();
+ await page.getByText('Life Sciences textbook, page 12',{exact:true}).waitFor();
+ console.log('PASS: learner chat renders headings, emphasis, lists, tables, maths and separate source details');
+
  await page.getByText('Upcoming Exams / Tests',{exact:true}).waitFor();
  await page.getByText('Upcoming Exams / Tests',{exact:true}).locator('..').getByRole('button',{name:'Add',exact:true}).click();
  await page.getByRole('combobox').filter({hasText:'Select subject'}).click();

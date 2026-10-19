@@ -13,3 +13,12 @@ The Groq native tool returns final text rather than a local tool-call event. AI 
 Validation: `npm test`, `npm run lint`, `npm run typecheck`, `npm run check:edge`, `npm run check:api`, `npm run check:db`, deployment bundle hash validation, and a production build. Live learner acceptance should include a topic absent from uploaded books, a matching textbook topic, and a short follow-up. Successful deployment alone does not prove live Groq browser search works for a learner account.
 
 Live provider repair: the old default `llama-3.1-8b-instant` returned `model_not_found` for this account. The answer service now defaults to GPT-OSS 120B, falls back to Qwen 3.8 27B on provider model errors or capacity limits, and reports exhausted allowances explicitly. Web research also uses the accessible GPT-OSS 120B model because the 20B model reached its daily allowance. A live server-side sample successfully answered the Grade 12 female reproductive system question; this is distinct from a signed-in browser acceptance test.
+
+
+## Teaching and presentation
+
+Study chat receives a server-owned FET teaching policy, separate from learner instructions and research excerpts. Initial concept explanations target 100–180 words, define terminology, and teach through short steps or examples. Requested essays and detailed explanations may be longer. The policy covers the subject categories in the app and adapts to the learner’s requested language; it does not guarantee exhaustive knowledge or correctness.
+
+The assistant renderer displays actual headings, emphasis, lists, GFM tables and KaTeX maths. Raw HTML and remote images are excluded. Tables and display equations scroll within the message on narrow screens. Answer-basis and retrieved source metadata appear separately in a collapsed details panel. The existing plain-text source footer is hidden only when structured source metadata is available, preserving compatibility with the API response contract.
+
+Tests cover rendered output and unsafe content, teaching-policy attachment, and the learner chat browser flow with headings, bullets, a table, maths and source details.
