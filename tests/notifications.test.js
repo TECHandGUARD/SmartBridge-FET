@@ -4,7 +4,7 @@ import {edgeRuntime,fakeClient} from './helpers/edge-runtime.js';
 const eventId='00000000-0000-4000-8000-000000003011';
 const request=body=>new Request('https://example.test/dispatch',{method:'POST',headers:{Authorization:'Bearer test','Content-Type':'application/json'},body:JSON.stringify(body)});
 const claimed={id:eventId,to:'stored-recipient@example.test',subject:'Account approved',message:'Your account is ready.'};
-function clientFor(event=claimed){return fakeClient({id:'user-id',role:'admin',is_active:true},call=>({data:call.table==='claim_action_notification'?event:call.table==='finish_action_notification'?true:[],error:null}));}
+function clientFor(event=claimed){return fakeClient({id:'user-id',role:'admin',is_active:true},call=>({data:call.table==='claim_action_notification'?event:call.table==='finish_action_notification'?true:call.table==='meeting_email_sender'?'SmartBridge FET <meetings@verified.example.test>':[],error:null}));}
 test('notification recipients and text come from the leased DB event, not the request',async()=>{
  const client=clientFor();let payload;
  const runtime=edgeRuntime('dispatchNotifications',{client,fetch:async(_url,options)=>{payload=JSON.parse(options.body);return Response.json({id:'provider-message'});}});
@@ -39,7 +39,7 @@ test('meeting email uses the stored meeting link and SAST time',async()=>{
  const client=clientFor({...claimed,meeting_id:eventId,message:'Support meeting. Start: 20 Oct 2026 14:00 SAST.'});let payload;
  const runtime=edgeRuntime('dispatchNotifications',{client,fetch:async(_url,options)=>{payload=JSON.parse(options.body);return Response.json({id:'meeting-message'});}});
  assert.equal((await runtime.handle(request({event_ids:[eventId]}))).status,200);
- assert.ok(payload.text.includes('https://staging.example.test/meetings/'+eventId));assert.ok(payload.text.includes('14:00 SAST'));
+ assert.ok(payload.text.includes('https://staging.example.test/meetings/'+eventId));assert.ok(payload.text.includes('14:00 SAST'));assert.equal(payload.from,'SmartBridge FET <meetings@verified.example.test>');
 });
 test('single-use meeting worker credential is checked before preparing reminders',async()=>{
  let valid=true;const client=fakeClient(undefined,call=>({data:call.table==='consume_meeting_mail_token'?valid:[],error:null}));
@@ -54,4 +54,11 @@ test('meeting worker surfaces missing sender configuration even when no emails a
  const runtime=edgeRuntime('dispatchNotifications',{client,env:{EMAIL_FROM:'',FROM_EMAIL:''}});
  const response=await runtime.handle(new Request('https://example.test/dispatch',{method:'POST',headers:{'x-meeting-job-token':'test','Content-Type':'application/json'},body:'{}'}));
  assert.equal(response.status,503);assert.equal(client.calls.some(c=>c.table==='prepare_meeting_emails'),false);
+});
+
+test('provider rejection records its HTTP status while preserving retryable mail',async()=>{
+ const client=clientFor({...claimed,meeting_id:eventId});
+ const runtime=edgeRuntime('dispatchNotifications',{client,fetch:async()=>Response.json({name:'validation_error'},{status:403})});
+ const result=await (await runtime.handle(request({event_ids:[eventId]}))).json();assert.equal(result.failed,1);
+ assert.equal(client.calls.find(c=>c.table==='finish_action_notification').data.error_code,'provider_http_403');
 });
