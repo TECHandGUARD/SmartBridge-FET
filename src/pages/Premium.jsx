@@ -79,16 +79,32 @@ export default function Premium() {
   const [gateway,setGateway]=useState('');
   const [gatewayError,setGatewayError]=useState('');
   const [gatewaysLoading,setGatewaysLoading]=useState(false);
+  const [checkoutActive,setCheckoutActive]=useState(false);
+  const [gatewayRefresh,setGatewayRefresh]=useState(0);
+  // Trust the authenticated server gateway catalog, not a stale build-time flag.
   useEffect(()=>{
-    if(!appConfig.paymentsApiEnabled||!user?.id)return;
-    let alive=true;setGatewaysLoading(true);setGatewayError('');
-    supabase.functions.invoke('payment-gateways',{body:{action:'list'}}).then(({data,error})=>{if(!alive)return;if(error){setGatewayError('Payment options are unavailable. Please try again later.');setGateways([]);setGateway('');}else{setGateways(data?.gateways||[]);setGateway(data?.gateways?.[0]?.provider||'');}}).catch(()=>{if(alive)setGatewayError('Payment options are unavailable.');}).finally(()=>{if(alive)setGatewaysLoading(false);});
+    let alive=true;
+    setGateways([]);setGateway('');setCheckoutActive(false);setGatewayError('');
+    if(!user?.id){setGatewaysLoading(false);return()=>{alive=false;};}
+    setGatewaysLoading(true);
+    supabase.functions.invoke('payment-gateways',{body:{action:'list'}}).then(({data,error})=>{
+      if(!alive)return;
+      if(error)throw error;
+      const active=data?.checkout_active===true;
+      const available=Array.isArray(data?.gateways)?data.gateways.filter(item=>['yoco','paystack'].includes(item.provider)&&item.ready===true&&item.enabled===true):[];
+      setCheckoutActive(active);setGateways(active?available:[]);setGateway(active?available[0]?.provider||'':'');
+    }).catch(()=>{
+      if(!alive)return;
+      setGatewayError('Could not check online payment availability. Retry to refresh.');
+      setCheckoutActive(false);setGateways([]);setGateway('');
+    }).finally(()=>{if(alive)setGatewaysLoading(false);});
     return()=>{alive=false;};
-  },[user?.id]);
+  },[user?.id,gatewayRefresh]);
 
   const beginCheckout = async (plan) => {
     if(!user?.id) { toast.error('Please sign in first.'); return; }
-    if(!gateway) { toast.error('Choose an available payment gateway.'); return; }
+    if(!checkoutActive || !gateways.some(item=>item.provider===gateway)) { toast.error('Online checkout is unavailable. Refresh payment options.'); return; }
+    if(!canBuyPlan(plan.id)) { toast.error('This plan is not available for your account.'); return; }
     setCheckingOut(true);
     const storageKey = `smartbridge-checkout:${appConfig.supabaseUrl}:${user.id}:${plan.id}:${gateway}:${plan.price}`;
     if(!paymentIntent.current) {
@@ -152,6 +168,10 @@ export default function Premium() {
 
   const isPremium = subscription?.plan === 'premium' && subscription?.status === 'active' && subscription.end_date >= new Date().toISOString().slice(0, 10);
   const plan = PLANS.find((p) => p.id === selectedPlan) || PLANS[0];
+  const canBuyPlan = product => product==='student' ? user?.role==='student'
+    : product==='parent' ? user?.role==='parent'
+    : product==='tutor_pro' && ['tutor','sace_tutor','student_tutor'].includes(user?.role) && user?.is_verified===true;
+  const onlineCheckout=checkoutActive && gateways.length>0;
 
   const copyRef = async (text) => {
     try { await navigator.clipboard.writeText(text); toast.success('Copied to clipboard.'); }
@@ -263,13 +283,15 @@ export default function Premium() {
                   <CardContent className="pt-5 pb-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-primary" />
-                      <p className="font-playfair text-lg font-bold">{appConfig.paymentsApiEnabled?'Pay online':'Pay via Yoco'}</p>
+                      <p className="font-playfair text-lg font-bold">{onlineCheckout?'Pay online':'Pay via Yoco'}</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{appConfig.paymentsApiEnabled ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after payment verification.` : `Click below to pay R${plan.price} via Yoco. Use your account email as the reference. An administrator will confirm payment before activating access.`}</p>
-                    {appConfig.paymentsApiEnabled && <div className="space-y-2">
-                      {gatewaysLoading?<p role="status">Loading payment options…</p>:gatewayError?<p role="alert">{gatewayError}</p>:gateways.length?<label className="block text-sm">Payment gateway<select className="block w-full border rounded-md p-2 mt-1 bg-background" value={gateway} onChange={event=>setGateway(event.target.value)}>{gateways.map(item=><option key={item.provider} value={item.provider}>{item.name}{item.mode==='test'?' — test mode':''}</option>)}</select></label>:<p role="status">No online payment gateway is currently available.</p>}
+                    <p className="text-xs text-muted-foreground">{onlineCheckout ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after verified live payment.` : `Click below to pay R${plan.price} via Yoco. Use your account email as the reference. An administrator will confirm payment before activating access.`}</p>
+                    {user && <div className="space-y-2">
+                      {gatewaysLoading?<p role="status">Loading payment options…</p>:gatewayError?<p role="alert">{gatewayError}</p>:onlineCheckout?<label className="block text-sm">Payment gateway<select className="block w-full border rounded-md p-2 mt-1 bg-background" value={gateway} onChange={event=>setGateway(event.target.value)}>{gateways.map(item=><option key={item.provider} value={item.provider}>{item.name}{item.mode==='test'?' — test mode':''}</option>)}</select></label>:<p role="status">No online payment gateway is currently available.</p>}
+                      {!gatewaysLoading && <Button variant="outline" size="sm" onClick={()=>setGatewayRefresh(value=>value+1)}>Refresh payment options</Button>}
                     </div>}
-                    {appConfig.paymentsApiEnabled ? <Button className="w-full" disabled={!user || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : YOCO_LINKS[plan.id] && plan.price === appConfig.prices[plan.id] ? <a
+                    {user && !canBuyPlan(plan.id) && <p role="status" className="text-sm text-amber-800">This plan is not available for your account. Tutor Pro requires a verified tutor profile.</p>}
+                    {onlineCheckout ? <Button className="w-full" disabled={!user || !canBuyPlan(plan.id) || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : !checkoutActive && !gatewayError && !gatewaysLoading && canBuyPlan(plan.id) && YOCO_LINKS[plan.id] && plan.price === appConfig.prices[plan.id] ? <a
                       href={YOCO_LINKS[plan.id]}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -278,7 +300,7 @@ export default function Premium() {
                       <ExternalLink className="w-4 h-4" /> Pay R{plan.price} on Yoco Portal
                     </a> : <p role="status" className="text-sm text-muted-foreground">Online payment is currently unavailable. Please contact support.</p>}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed">
-                      {appConfig.paymentsApiEnabled ? 'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.' : <>Payment is processed by <strong>Tech &amp; GUARD</strong> on behalf of SmartBridge FET. Use your account email as the reference. An administrator will verify it during business hours.</>}
+                      {onlineCheckout ? (gateways.find(item=>item.provider===gateway)?.mode==='test' ? 'TEST MODE: No real charge or premium activation occurs. Use only provider test cards.':'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.') : <>Payment is processed by <strong>Tech &amp; GUARD</strong> on behalf of SmartBridge FET. Use your account email as the reference. An administrator will verify it during business hours.</>}
                     </div>
                   </CardContent>
                 </Card>
