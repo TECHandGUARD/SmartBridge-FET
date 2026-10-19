@@ -43,6 +43,7 @@ const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
 const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
 const PayoutLog = lazy(() => import('./pages/PayoutLog'));
 const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const AccountDeletion = lazy(() => import('./pages/AccountDeletion'));
 const TermsOfService = lazy(() => import('./pages/TermsOfService'));
 const AboutTechAndGuard = lazy(() => import('./pages/AboutTechAndGuard'));
 const StudentOpportunities = lazy(() => import('./pages/StudentOpportunities'));
@@ -121,6 +122,7 @@ const AuthenticatedApp = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/account-deletion" element={<AccountDeletion />} />
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/TermsOfService" element={<Navigate to="/terms" replace />} />
         <Route path="/about-tech-guard" element={<AboutTechAndGuard />} />
