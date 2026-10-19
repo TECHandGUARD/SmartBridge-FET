@@ -14,6 +14,7 @@ export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) 
       if(specifier.includes('/http/server.ts'))return {serve:fn=>{handler=fn;}};
       if(specifier.includes('@supabase/supabase-js'))return {createClient:()=>client};
       if(specifier.includes('jszip'))return {default:class {}};
+      if(specifier.startsWith('npm:unpdf'))return {getDocumentProxy:async()=>{throw new Error('PDF extraction not used in auth preflight tests');}};
       if(specifier.startsWith('.'))return load(path.resolve(path.dirname(file),specifier));
       throw new Error(`Unsupported test dependency: ${specifier}`);
     }};
