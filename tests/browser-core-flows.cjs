@@ -24,7 +24,7 @@ const assert=require('node:assert/strict');
  const deferredRequests=[];
  const deferredTables=['simulations','sim_quizzes','flashcards','weak_concepts','student_analytics','forum_answers','chat_rooms','chat_typing_status','tutor_applications','student_requests','tutor_verification_requests','school_subject_averages','booking_reschedule_requests'];
  const tutor={id:'tutor-1',user_id:'tutor-user',user_email:'tutor@example.test',full_name:'Test Tutor',hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,rating:5};
- const bookingCalls=[];let links=[];let bookingRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];let roomPosts=[{id:'00000000-0000-4000-8000-000000000201',room_id:'math',author_id:'00000000-0000-4000-8000-000000000202',author_name:'Other learner',type:'Note',title:'Approved note',body:'Safe study content',moderation_status:'approved',created_at:'2026-10-13T10:00:00Z'}];const studyCalls=[];let denyStudyQuota=true,failStudyPost=true,roomReplies=[];
+ const bookingCalls=[];let links=[];let bookingRows=[];let paymentOrderRows=[];let sessionCalls=[];let sessions=0;let reminderRows=[];let goalRows=[];const contractWrites=[];let roomPosts=[{id:'00000000-0000-4000-8000-000000000201',room_id:'math',author_id:'00000000-0000-4000-8000-000000000202',author_name:'Other learner',type:'Note',title:'Approved note',body:'Safe study content',moderation_status:'approved',created_at:'2026-10-13T10:00:00Z'}];const studyCalls=[];let denyStudyQuota=true,failStudyPost=true,roomReplies=[];
 
  // Keep browser fixtures isolated from live providers and third-party embeds.
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
@@ -76,6 +76,7 @@ const assert=require('node:assert/strict');
   }
   if(url.pathname==='/rest/v1/tutor_directory') data=[tutor];
   if(url.pathname==='/rest/v1/tutor_bookings') data=bookingRows;
+  if(url.pathname==='/rest/v1/payment_orders') data=paymentOrderRows;
   if(url.pathname==='/rest/v1/study_progress') data=sessions ? [{id:'progress-1',subject:'Mathematics',grade:'Grade 12',study_sessions:sessions,last_access:'2026-10-11'}] : [];
   if(url.pathname==='/rest/v1/rpc/create_booking') {
     const body=req.postDataJSON();bookingCalls.push(body);
@@ -410,6 +411,24 @@ const assert=require('node:assert/strict');
  console.log('PASS: legacy legal route redirects to actual content; staff roster/search/queued reminder/revocation and learner sharing controls');
  profile={...profile,role:'admin',is_super_admin:true};
  await page.goto('http://127.0.0.1:5173/admin');
+ // A canceled test payment stays visible, without becoming real income or a confirmed refund.
+ bookingRows=[{id:'test-booking',tutor_email:profile.email,tutor_id:profile.id,student_email:'learner@example.test',subject:'Tourism',status:'cancelled',amount:150,payment_status:'test_paid',payment_mode:'test',date:'2099-12-01',time:'10:00',duration_hours:1}];
+ paymentOrderRows=[{id:'test-order',product:'booking',status:'paid',mode:'test',amount_cents:15000,refund_status:'requested'}];
+ await page.goto('http://127.0.0.1:5173/admin');
+ await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
+ await page.getByText('Test refunds confirmed: R0.00 · 1 awaiting provider confirmation',{exact:true}).waitFor();
+ for(const section of ['earnings','financial']){
+  await page.locator('#admin-mobile-section').selectOption(section);
+  await page.getByText('1 bookings · 0 currently confirmed · 0 completed · 1 canceled',{exact:true}).waitFor();
+  await page.getByText('0 test refunds confirmed',{exact:true}).waitFor();
+ }
+ profile={...profile,role:'sace_tutor',is_super_admin:false};
+ await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=earnings');
+ await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
+ await page.getByText('1 bookings · 0 currently confirmed · 0 completed · 1 canceled',{exact:true}).waitFor();
+ profile={...profile,role:'admin',is_super_admin:true};bookingRows=[];paymentOrderRows=[];
+ await page.goto('http://127.0.0.1:5173/admin');
+ console.log('PASS: canceled test payment activity stays visible in admin financial, earnings and tutor summaries');
  await page.getByRole('tab',{name:'Subscription Prices',exact:true}).click();
  await page.getByLabel('New monthly price (ZAR)',{exact:true}).first().waitFor();
  await page.locator('#price-student').fill('37.50');
@@ -456,4 +475,3 @@ const assert=require('node:assert/strict');
   throw error;
  } finally { if(browser) await browser.close(); server.kill(); }
 })().catch(e=>{console.error(e);process.exit(1)});
-
