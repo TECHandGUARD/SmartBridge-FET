@@ -154,7 +154,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
           event_type: 'ai_assistant_query',
           user_email: user.email,
           user_id: user.id || null,
-          description: `AI Assistant query: ${sanitizedInput.slice(0, 100)}${sanitizedInput.length > 100 ? '...' : ''}`,
+          description: 'AI Assistant query',
           metadata: {
             subject: subject || null,
             grade: grade || null,
