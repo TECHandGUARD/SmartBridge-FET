@@ -26,8 +26,12 @@ serve(withHttp(async (request) => {
             }
             const result=await response.json().catch(()=>null);
             if(!response.ok){
-                const code=result?.code || result?.error?.code;
-                console.error('booking_refund_provider_rejected',JSON.stringify({order_id:refund.id,mode:refund.mode,http_status:response.status,code:typeof code==='string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(code)?code:null}));
+                const code=result?.errorCode || result?.code || result?.error?.code;
+                const errorType=result?.errorType;
+                // Provider descriptions explain validation failures. Redact credentials and identifiers before logging.
+                const rawDescription=typeof result?.description==='string'?result.description:typeof result?.message==='string'?result.message:'';
+                const description=rawDescription.split(credentials.key).join('[redacted]').replace(/[\w.+-]+@[\w.-]+/g,'[redacted]').replace(/(?:sk_|pk_|whsec_)[a-zA-Z0-9_-]+/g,'[redacted]').replace(/[a-zA-Z0-9_-]{24,}/g,'[redacted]').replace(/[\r\n]/g,' ').slice(0,300);
+                console.error('booking_refund_provider_rejected',JSON.stringify({order_id:refund.id,mode:refund.mode,http_status:response.status,code:typeof code==='string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(code)?code:null,error_type:typeof errorType==='string' && /^[a-zA-Z0-9_.-]{1,80}$/.test(errorType)?errorType:null,description}));
                 failure(502,'Refund provider rejected the request; check provider status before retrying');
             }
             if(!result || result.id!==refund.checkout_id || !result.refundId || !['succeeded','pending'].includes(result.status)) {
