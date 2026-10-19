@@ -4,6 +4,7 @@ import { serverConnection } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
 import { readJson, text, consumeQuota, json, apiError } from '../../shared/api.ts';
 import { generate, studyPlanSchema } from '../../shared/ai.ts';
+import { retrieveLearningEvidence, groundedInstructions, noLearningEvidence } from '../../shared/grounding.ts';
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
@@ -18,8 +19,17 @@ serve(withHttp(async (request) => {
             failure(400, 'Unknown AI task');
         if (body.response_json_schema && !structured)
             failure(400, 'Choose the study-plan task for structured output');
+        const subject=typeof body.subject==='string'&&body.subject.length<=100?body.subject:'';
+        const grade=['Grade 10','Grade 11','Grade 12'].includes(body.grade)?body.grade:'';
+        const question=typeof body.question==='string'&&body.question.trim()?text(body.question,'question',2000):prompt;
+        const {evidence,sources}=await retrieveLearningEvidence(client,question,subject,grade);
+        if(!structured&&!evidence)return json({response:noLearningEvidence,sources:[],grounded:false});
         await consumeQuota(client, user.id, 'ai');
-        return json(await generate(prompt, structured ? studyPlanSchema : undefined));
+        const augmented=evidence?`${groundedInstructions}\n\nReference excerpts:\n${evidence}\n\nLearner request:\n${prompt}`:`${prompt}\nNo relevant indexed learning excerpts were available. For study planning, provide scheduling guidance only and do not claim document-grounded educational facts.`;
+        const result=await generate(augmented,structured?studyPlanSchema:undefined);
+        if(structured)return json({...result,sources,grounded:!!evidence});
+        const refs=[...new Set(sources.map((s:any)=>`${s.title} (p. ${s.page})`))];
+        return json({response:result.response+(refs.length?'\n\nSources: '+refs.join('; '):''),sources,grounded:true});
     }
     catch (error) {
         return apiError(error);
