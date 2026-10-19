@@ -137,6 +137,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
         body: {
           prompt: `${systemContext}\n\nStudent question: ${userText}`,
           question: userText,
+          history: messages.slice(-6).map(({ role, content }) => ({ role, content: content.slice(0, 700) })),
           task: 'study-assistant',
           user_email: user?.email,
           subject: subject || null,

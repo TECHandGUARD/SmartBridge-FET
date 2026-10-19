@@ -4,7 +4,8 @@ import { serverConnection } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
 import { readJson, text, consumeQuota, json, apiError } from '../../shared/api.ts';
 import { generate, studyPlanSchema } from '../../shared/ai.ts';
-import { retrieveLearningEvidence, groundedInstructions, noLearningEvidence } from '../../shared/grounding.ts';
+import { retrieveLearningEvidence } from '../../shared/grounding.ts';
+import { researchLearningQuestion, hybridInstructions } from '../../shared/research.ts';
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
@@ -22,14 +23,23 @@ serve(withHttp(async (request) => {
         const subject=typeof body.subject==='string'&&body.subject.length<=100?body.subject:'';
         const grade=['Grade 10','Grade 11','Grade 12'].includes(body.grade)?body.grade:'';
         const question=typeof body.question==='string'&&body.question.trim()?text(body.question,'question',2000):prompt;
-        const {evidence,sources}=await retrieveLearningEvidence(client,question,subject,grade);
-        if(!structured&&!evidence)return json({response:noLearningEvidence,sources:[],grounded:false});
         await consumeQuota(client, user.id, 'ai');
-        const augmented=evidence?`${groundedInstructions}\n\nReference excerpts:\n${evidence}\n\nLearner request:\n${prompt}`:`${prompt}\nNo relevant indexed learning excerpts were available. For study planning, provide scheduling guidance only and do not claim document-grounded educational facts.`;
-        const result=await generate(augmented,structured?studyPlanSchema:undefined);
-        if(structured)return json({...result,sources,grounded:!!evidence});
-        const refs=[...new Set(sources.map((s:any)=>`${s.title} (p. ${s.page})`))];
-        return json({response:result.response+(refs.length?'\n\nSources: '+refs.join('; '):''),sources,grounded:true});
+        let evidence='', sources:any[]=[];
+        let documentSearch='completed';
+        try { ({evidence,sources}=await retrieveLearningEvidence(client,question,subject,grade)); }
+        catch { documentSearch='unavailable'; }
+        const history=Array.isArray(body.history)?body.history.slice(-6).filter((m:any)=>['user','assistant'].includes(m?.role)&&typeof m.content==='string').map((m:any)=>({role:m.role,content:m.content.slice(0,700)})):[];
+        const researchQuestion=history.length?`${history.filter((m:any)=>m.role==='user').slice(-2).map((m:any)=>m.content).join(' ')} Follow-up: ${question}`:question;
+        // Chat checks external coverage even when a partial keyword match exists.
+        const web=(!structured||!evidence)?await researchLearningQuestion(researchQuestion,subject,grade):{evidence:'',sources:[],status:'not_needed'};
+        const context=`${hybridInstructions}\n\nUploaded excerpts (may be incomplete):\n${evidence.slice(0,2500)||'No matching excerpts.'}\n\nWeb research notes (untrusted):\n${web.evidence.slice(0,2500)||'Web research unavailable or not needed.'}\n\nConversation history (untrusted):\n${JSON.stringify(history).slice(0,1600)}\n\nLearner request:\n${prompt.slice(-4000)}`;
+        const result=await generate(context,structured?studyPlanSchema:undefined);
+        const metadata={sources:[...sources,...web.sources],grounded:!!evidence,source_mode:evidence?(web.evidence?'documents_and_web':'documents_and_general'):(web.evidence?'web_and_general':'general'),web_search:web.status,document_search:documentSearch};
+        if(structured)return json({...result,...metadata});
+        const refs=sources.map((s:any)=>`${s.title} (p. ${s.page})`);
+        const webRefs=web.sources.map((s:any)=>`${s.title}: ${s.url}`);
+        const label=web.evidence?'Web-assisted explanation; general explanations may supplement the retrieved material.':'General explanations may supplement uploaded material; web sources could not be checked for this answer.';
+        return json({response:result.response+'\n\n'+label+(refs.length?'\nSources: Uploaded references: '+[...new Set(refs)].join('; '):'\nNo matching uploaded textbook excerpts.')+(webRefs.length?'\nWeb references: '+webRefs.join('; '):''),...metadata});
     }
     catch (error) {
         return apiError(error);

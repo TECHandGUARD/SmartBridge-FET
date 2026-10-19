@@ -3,7 +3,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 import { webcrypto } from 'node:crypto';
 import ts from 'typescript';
-export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) {
+export function edgeRuntime(name, {client, env={}, fetch, research, Date: Clock=Date}={}) {
   let handler;const cache=new Map();
   const values={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-test-key',APP_BASE_URL:'https://staging.example.test',RESEND_API_KEY:'email-test-key',EMAIL_FROM:'SmartBridge <noreply@example.test>',GROQ_API_KEY:'model-test-key',GROQ_MODEL:'llama-3.1-8b-instant',...env};
   function load(file) {
@@ -11,6 +11,8 @@ export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) 
     const exports={};cache.set(file,exports);
     const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText;
     const context={exports,module:{exports},Request,Response,Headers,URL,Date:Clock,TextEncoder,TextDecoder,Uint8Array,AbortSignal,atob,btoa,crypto:webcrypto,Deno:{env:{get:key=>values[key]}},console:{log(){},warn(){},error(){}},setTimeout:(fn)=>{fn();return 1;},fetch:fetch || (()=>{throw new Error('Unexpected network request');}),require(specifier){
+      if(specifier.startsWith('npm:ai@'))return {generateText:research || (async()=>{throw new Error('Search unavailable in this test');})};
+      if(specifier.startsWith('npm:@ai-sdk/groq@'))return {createGroq:()=>Object.assign((model)=>({model}),{tools:{browserSearch:()=>({})}})};
       if(specifier.includes('/http/server.ts'))return {serve:fn=>{handler=fn;}};
       if(specifier.includes('@supabase/supabase-js'))return {createClient:()=>client};
       if(specifier.includes('jszip'))return {default:class {}};

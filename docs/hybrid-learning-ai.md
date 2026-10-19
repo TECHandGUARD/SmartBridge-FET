@@ -1,0 +1,13 @@
+# Hybrid learning chat
+
+The study assistant retains uploaded-document search, adds Groq browser research through the pinned Vercel AI SDK, and supplements missing coverage with clearly labelled general educational explanations. A partial keyword match does not prevent supplementation. Up to six bounded messages are sent for follow-ups. Study plans use research when document retrieval is empty; quiz and tutor lesson generators retain their existing evidence requirements.
+
+Research uses Groq's `openai/gpt-oss-20b` with the server's existing `GROQ_API_KEY`. No frontend key or Vercel hosting migration is needed. Search is time-bounded to 18 seconds, has no retries, and occurs after authentication and quota checks. Only the educational question and recent learner question context are sent to browser research; account details and uploaded textbook contents are excluded. Obvious email, phone and URL strings are redacted. This is not a guarantee that arbitrary personal information is detected.
+
+The search prompt prioritises official curriculum and reputable educational sources; this is a preference, not a technical domain allowlist. Structured provider retrieval metadata supplies displayed web URLs; model-generated URLs alone do not establish a citation. Web-assisted explanations are not described as guaranteed accurate or CAPS-certified. Browser research and structured schedule generation are separate calls.
+
+If document search or external research fails, the assistant continues with general explanations and discloses the limitation. If the generation provider itself fails, existing API error handling applies.
+
+The Groq native tool returns final text rather than a local tool-call event. AI SDK 7 validates `toolChoice: required` against local tool-call events. The provider fetch adapter therefore requires search on the outgoing Groq request while SDK-side choice remains `auto`. An integration test runs the actual pinned SDK and provider packages with a mocked HTTP boundary to verify this behaviour and source metadata preservation.
+
+Validation: `npm test`, `npm run lint`, `npm run typecheck`, `npm run check:edge`, `npm run check:api`, `npm run check:db`, deployment bundle hash validation, and a production build. Live learner acceptance should include a topic absent from uploaded books, a matching textbook topic, and a short follow-up. Successful deployment alone does not prove live Groq browser search works for a learner account.
