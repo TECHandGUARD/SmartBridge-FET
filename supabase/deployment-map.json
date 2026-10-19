@@ -58,11 +58,11 @@
       "access": "user",
       "verify_jwt": true,
       "provider": "Yoco/Paystack",
-      "deployed_version": null,
-      "deployed_verify_jwt": null,
-      "deployed_bundle_sha256": null,
+      "deployed_version": 12,
+      "deployed_verify_jwt": true,
+      "deployed_bundle_sha256": "6d6377480f2bc6b4f1ebf70cfc3a05d4a228d377b47c32acb73b88f195bc2e22",
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "ec6d8c2f73cd2fe505209d5c38df660db61e69cb9bed6e43c0e9afdf3420522b",
+      "reconciled_entrypoint_sha256": "9d047b116aaeb8800168e8fb80dee28270cfc25db47a1608f1c88d37df5d5181",
       "dependencies": [
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
@@ -75,7 +75,7 @@
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
-        "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
+        "supabase/shared/gateways.ts": "65967981c1ff11244397b594080426090a1ad3cd53965ad06f97755d460e8d78",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/payments.ts": "df200e6744f3f5855fbc06dbe206b3fea869e17d8dfaf2fd4ebdd3c72d124b86",
@@ -85,7 +85,9 @@
         "supabase/migrations/20261013093805_api_integrations.sql",
         "supabase/migrations/20261013103838_payment_gateway_settings.sql",
         "supabase/migrations/20261013123603_operational_integrations.sql",
-        "supabase/migrations/20261014065749_admin_subscription_pricing.sql"
+        "supabase/migrations/20261014065749_admin_subscription_pricing.sql",
+        "supabase/migrations/20261019035605_booking_checkout_and_introductions.sql",
+        "supabase/migrations/20261019040908_protect_booking_financial_receipts.sql"
       ]
     },
     {
@@ -638,7 +640,7 @@
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
-        "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
+        "supabase/shared/gateways.ts": "65967981c1ff11244397b594080426090a1ad3cd53965ad06f97755d460e8d78",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/payments.ts": "df200e6744f3f5855fbc06dbe206b3fea869e17d8dfaf2fd4ebdd3c72d124b86",
@@ -673,7 +675,7 @@
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
-        "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
+        "supabase/shared/gateways.ts": "65967981c1ff11244397b594080426090a1ad3cd53965ad06f97755d460e8d78",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/payments.ts": "df200e6744f3f5855fbc06dbe206b3fea869e17d8dfaf2fd4ebdd3c72d124b86",
@@ -1058,11 +1060,11 @@
       "access": "signed-webhook",
       "verify_jwt": false,
       "provider": "Yoco",
-      "deployed_version": null,
-      "deployed_verify_jwt": null,
-      "deployed_bundle_sha256": null,
+      "deployed_version": 10,
+      "deployed_verify_jwt": false,
+      "deployed_bundle_sha256": "24b06c3e265ae9c39013154fce852d432e6ab4f0131cb023a702eeca3769b560",
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "b70eb04ac7bce543673bbab493956067c66843eacee475acd70b29b02c359549",
+      "reconciled_entrypoint_sha256": "05468f7755bfccc5260f751ca42c3ea735b612c3b65c2679458297451d682458",
       "dependencies": [
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
@@ -1075,7 +1077,7 @@
       "dependency_sha256": {
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
-        "supabase/shared/gateways.ts": "c2ae73ca266794fb54b8f0faa401fa1e69edacc15d9268a3d4dc81af4d1f29b9",
+        "supabase/shared/gateways.ts": "65967981c1ff11244397b594080426090a1ad3cd53965ad06f97755d460e8d78",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
         "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
         "supabase/shared/payments.ts": "df200e6744f3f5855fbc06dbe206b3fea869e17d8dfaf2fd4ebdd3c72d124b86",
@@ -1084,7 +1086,9 @@
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
         "supabase/migrations/20261013103838_payment_gateway_settings.sql",
-        "supabase/migrations/20261013123603_operational_integrations.sql"
+        "supabase/migrations/20261013123603_operational_integrations.sql",
+        "supabase/migrations/20261019035605_booking_checkout_and_introductions.sql",
+        "supabase/migrations/20261019040908_protect_booking_financial_receipts.sql"
       ]
     },
     {
@@ -1113,7 +1117,7 @@
       }
     }
   ],
-  "updated_date": "2026-10-13",
+  "updated_date": "2026-10-19",
   "ordered_migrations": [
     "supabase/migrations/20260822153131_create_tech_guard_website_tables.sql",
     "supabase/migrations/20260822153132_capture_live_schema_baseline.sql",

@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Star, CheckCircle, Shield, Users, Loader2, CreditCard, GraduationCap, Briefcase, Copy, ExternalLink } from 'lucide-react';
+import { Star, CheckCircle, Shield, Users, Loader2, CreditCard, GraduationCap, Briefcase, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PLAN_TEMPLATES = [
@@ -63,8 +63,6 @@ const PLAN_TEMPLATES = [
     'Branded tutor profile page'
   ]
 }];
-
-const YOCO_LINKS = appConfig.checkout;
 
 export default function Premium() {
   const { user } = useAuth() || {};
@@ -278,29 +276,22 @@ export default function Premium() {
                   </div>
                 )}
 
-                {/* Option 1: Yoco Payment Link */}
+                {/* Provider-hosted checkout (no manual payment links) */}
                 <Card className="border-border shadow-md">
                   <CardContent className="pt-5 pb-5 space-y-3">
                     <div className="flex items-center gap-2">
                       <CreditCard className="w-5 h-5 text-primary" />
-                      <p className="font-playfair text-lg font-bold">{onlineCheckout?'Pay online':'Pay via Yoco'}</p>
+                      <p className="font-playfair text-lg font-bold">Pay securely online</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{onlineCheckout ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after verified live payment.` : `Click below to pay R${plan.price} via Yoco. Use your account email as the reference. An administrator will confirm payment before activating access.`}</p>
+                    <p className="text-xs text-muted-foreground">{onlineCheckout ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after verified live payment.` : 'Online checkout will be available once the payment gateway is configured.'}</p>
                     {user && <div className="space-y-2">
                       {gatewaysLoading?<p role="status">Loading payment options…</p>:gatewayError?<p role="alert">{gatewayError}</p>:onlineCheckout?<label className="block text-sm">Payment gateway<select className="block w-full border rounded-md p-2 mt-1 bg-background" value={gateway} onChange={event=>setGateway(event.target.value)}>{gateways.map(item=><option key={item.provider} value={item.provider}>{item.name}{item.mode==='test'?' — test mode':''}</option>)}</select></label>:<p role="status">No online payment gateway is currently available.</p>}
                       {!gatewaysLoading && <Button variant="outline" size="sm" onClick={()=>setGatewayRefresh(value=>value+1)}>Refresh payment options</Button>}
                     </div>}
                     {user && !canBuyPlan(plan.id) && <p role="status" className="text-sm text-amber-800">This plan is not available for your account. Tutor Pro requires a verified tutor profile.</p>}
-                    {onlineCheckout ? <Button className="w-full" disabled={!user || !canBuyPlan(plan.id) || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : !checkoutActive && !gatewayError && !gatewaysLoading && canBuyPlan(plan.id) && YOCO_LINKS[plan.id] && plan.price === appConfig.prices[plan.id] ? <a
-                      href={YOCO_LINKS[plan.id]}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg py-3 text-sm font-semibold transition-colors"
-                    >
-                      <ExternalLink className="w-4 h-4" /> Pay R{plan.price} on Yoco Portal
-                    </a> : <p role="status" className="text-sm text-muted-foreground">Online payment is currently unavailable. Please contact support.</p>}
+                    {onlineCheckout ? <Button className="w-full" disabled={!user || !canBuyPlan(plan.id) || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : <p role="status" className="text-sm text-muted-foreground">Online payment is currently unavailable. Please contact support.</p>}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed">
-                      {onlineCheckout ? (gateways.find(item=>item.provider===gateway)?.mode==='test' ? 'TEST MODE: No real charge or premium activation occurs. Use only provider test cards.':'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.') : <>Payment is processed by <strong>Tech &amp; GUARD</strong> on behalf of SmartBridge FET. Use your account email as the reference. An administrator will verify it during business hours.</>}
+                      {onlineCheckout ? (gateways.find(item=>item.provider===gateway)?.mode==='test' ? 'TEST MODE: No real charge or premium activation occurs. Use only provider test cards.':'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.') : 'Online checkout is unavailable. No payment has been taken.'}
                     </div>
                   </CardContent>
                 </Card>

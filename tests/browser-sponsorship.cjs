@@ -57,7 +57,7 @@ const assert=require('node:assert/strict');
   await modal.getByLabel('Session funding').selectOption('allocation-1');
   await modal.locator('input[type=date]').fill('2099-02-20');
   await modal.getByRole('button',{name:'Request Booking',exact:true}).click();
-  await modal.getByText('Booking Sent!',{exact:true}).waitFor();
+  await modal.getByText('Request Sent!',{exact:true}).waitFor();
   assert.equal(bookingCalls.at(-1).allocation,'allocation-1');
   assert.equal('amount' in bookingCalls.at(-1),false);
   await modal.getByRole('button',{name:'Close',exact:true}).click();

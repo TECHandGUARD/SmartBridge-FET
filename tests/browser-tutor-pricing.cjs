@@ -18,7 +18,7 @@ const assert=require('node:assert/strict');
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
 
  let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,metadata:{}};
- const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let bookingRows=[];
+ const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let bookingRows=[];const checkoutCalls=[];
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**',async route=>{
   const req=route.request(),url=new URL(req.url());let data=[],status=200;
@@ -38,11 +38,16 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/tutor_bookings') data=bookingRows;
   if(url.pathname==='/rest/v1/rpc/create_booking') {
     const body=req.postDataJSON();bookingCalls.push(body);assert.equal('amount' in body,false);
-    data={id:'booking-'+bookingCalls.length,tutor_name:tutorProfile.full_name,subject:body.chosen_subject,date:body.chosen_date,time:body.chosen_time,duration_hours:body.hours,is_intro:!!body.free_intro,amount:body.free_intro?0:20*body.hours,status:'pending'};bookingRows.push(data);
+    data={id:'booking-'+bookingCalls.length,tutor_name:tutorProfile.full_name,subject:body.chosen_subject,date:body.chosen_date,time:body.chosen_time,duration_hours:body.hours,is_intro:!!body.free_intro,amount:body.free_intro?0:20*body.hours,status:'pending',student_id:profile.id,payment_status:'pending',hold_expires_at:'2099-01-20T00:00:00Z'};bookingRows.push(data);
   }
-  if(url.pathname.startsWith('/functions/')) {status=404;data={error:'Not available'};}
+  if(url.pathname.startsWith('/functions/')) {
+   status=404;data={error:'Not available'};
+   if(url.pathname.endsWith('/payment-gateways')){status=200;data={checkout_active:true,gateways:[{provider:'yoco',ready:true,enabled:true,mode:'test'}]};}
+   if(url.pathname.endsWith('/create-checkout')){status=200;const body=req.postDataJSON();checkoutCalls.push(body);const booking=bookingRows.find(b=>b.id===body.booking_id);assert.equal(body.product,'booking');assert.equal('amount' in body,false);data={amount_cents:booking.amount*100,mode:'test',redirect_url:'https://c.yoco.com/checkout/test-booking'};}
+  }
   await route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
  });
+ await context.route('https://c.yoco.com/**',route=>route.fulfill({contentType:'text/html',body:'<h1>Hosted checkout fixture</h1>'}));
  await page.goto('http://127.0.0.1:5173/login');
  await page.getByPlaceholder('Email address').fill(profile.email);
  await page.getByPlaceholder('Password',{exact:true}).fill('TestPassword123');
@@ -89,24 +94,36 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Book',exact:true}).click();
  const modal=page.getByRole('dialog');
  await modal.getByText('R20.00',{exact:true}).waitFor();
- await modal.getByRole('checkbox',{name:/Free 30-minute/}).check();
+ await modal.getByRole('checkbox',{name:/[Ff]ree 30-minute/}).check();
  await modal.getByText('Free',{exact:true}).waitFor();
  assert.equal(await modal.getByRole('combobox').nth(1).isDisabled(),true);
  await modal.locator('input[type=date]').fill('2099-01-20');
- await modal.getByRole('button',{name:'Request Booking',exact:true}).click();
- await modal.getByText('Booking Sent!',{exact:true}).waitFor();
+ await modal.getByRole('button',{name:'Request Free Introduction',exact:true}).click();
+ await modal.getByText('Request Sent!',{exact:true}).waitFor();
  assert.equal(bookingCalls.at(-1).free_intro,true);assert.equal(bookingCalls.at(-1).hours,0.5);
  await modal.getByRole('button',{name:'Close',exact:true}).click();
  await page.goto('http://127.0.0.1:5173/bookings');
  await page.getByRole('button',{name:'Schedule New Session'}).click();
  await page.getByRole('combobox').nth(0).click();await page.getByRole('option',{name:/Test Tutor/}).click();
  await page.getByText('R20.00',{exact:true}).waitFor();
- await page.getByRole('checkbox',{name:/Free 30-minute/}).check();
+ await page.getByRole('checkbox',{name:/[Ff]ree 30-minute/}).check();
  await page.getByText('Free',{exact:true}).waitFor();
  await page.locator('input[type=date]').fill('2099-01-21');
  await page.getByRole('button',{name:'Request Booking',exact:true}).click();
  await page.getByText('Booking request sent. Your tutor will confirm shortly.',{exact:true}).waitFor();
  assert.equal(bookingCalls.at(-1).free_intro,true);assert.equal(bookingCalls.at(-1).hours,0.5);
+ await page.goto('http://127.0.0.1:5173/tutors');
+ await page.getByRole('button',{name:'Book',exact:true}).click();
+ await page.getByRole('dialog').locator('input[type=date]').fill('2099-01-22');
+ await page.getByRole('button',{name:'Continue to secure payment',exact:true}).click();
+ await page.waitForURL('https://c.yoco.com/**');
+ assert.equal(checkoutCalls.length,1);
+ await page.goto('http://127.0.0.1:5173/bookings?payment=cancelled');
+ await page.getByText('Awaiting payment',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Pay R20.00 securely',exact:true}).click();
+ await page.waitForURL('https://c.yoco.com/**');
+ assert.equal(checkoutCalls.length,2);assert.equal(checkoutCalls[0].booking_id,checkoutCalls[1].booking_id);
+ console.log('PASS: paid booking opens hosted checkout and cancelled checkout retries the same reservation');
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS: mobile and desktop tutor editing, failed-save retry, unrestricted and subject rates, intro opt-in, discard, unset preview and zero persistence');
  console.log('PASS: both learner booking entry points show subject cost, offer a 30-minute intro and submit no client price');

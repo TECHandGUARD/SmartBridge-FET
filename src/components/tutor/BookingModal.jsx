@@ -1,3 +1,4 @@
+import BookingLearnerChoice from '@/components/parent/BookingLearnerChoice';
 import SponsorshipChoice from '@/components/student/SponsorshipChoice';
 import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
@@ -17,13 +18,13 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
     date: '',
     time: '09:00',
     duration_hours: 1,
-    message: '', is_intro: false, sponsorship_allocation_id: ''
+    message: '', learner_id: '', is_intro: false, sponsorship_allocation_id: ''
   });
   const bookingRequest = useRef(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   useEffect(() => {
-    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',is_intro:false,sponsorship_allocation_id:''}); bookingRequest.current=null; }
+    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',learner_id:'',is_intro:false,sponsorship_allocation_id:''}); bookingRequest.current=null; }
   }, [open, tutor?.id]);
 
   const rate = tutorRate(tutor, form.subject);
@@ -45,6 +46,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
     try {
       bookingRequest.current = prepareRequest(bookingRequest.current, tutor, form);
       const booking = await createBooking(tutor, form, bookingRequest.current.id);
+      if (booking.redirecting) return;
       bookingRequest.current = null;
       setDone(true);
       setLoading(false);
@@ -68,12 +70,13 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
         {done ? (
           <div className="text-center py-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
-            <p className="font-playfair text-xl font-bold mb-1">Booking Sent!</p>
-            <p className="text-sm text-muted-foreground">Your request has been sent. The tutor will confirm shortly.</p>
+            <p className="font-playfair text-xl font-bold mb-1">Request Sent!</p>
+            <p className="text-sm text-muted-foreground">Your request has been sent. This is not a payment confirmation. The tutor will confirm shortly.</p>
             <Button className="mt-4 w-full bg-primary" onClick={onClose}>Close</Button>
           </div>
         ) : (
           <div className="space-y-4">
+<BookingLearnerChoice user={user} value={form.learner_id} onChange={value=>setForm(f=>({...f,learner_id:value}))} />
             {/* Subject Selection */}
             <div>
               <Label>Subject *</Label>
@@ -91,7 +94,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
 
             {tutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
               <input type="checkbox" checked={form.is_intro} className="mt-1" onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? 0.5 : 1}))} />
-              <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
+              <span>Request a free 30-minute introduction<span className="block text-xs text-muted-foreground">A tutor must accept and arrange the introduction. No payment is collected.</span></span>
             </label>}
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-3">
@@ -134,7 +137,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
               </Select>
             </div>
 
-            <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimate===0} refreshKey={String(open)} />
+            {user?.role !== 'parent' && <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimate===0} refreshKey={String(open)} />}
             {/* Message */}
             <div>
               <Label>Message (optional)</Label>
@@ -155,11 +158,11 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
             {/* Submit Button */}
             <Button
               onClick={submit}
-              disabled={loading || !form.date || !form.subject || estimate === null}
+              disabled={loading || !form.date || !form.subject || estimate === null || (user?.role === 'parent' && !form.learner_id)}
               className="w-full bg-primary gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarDays className="w-4 h-4" />}
-              {loading ? 'Sending...' : 'Request Booking'}
+              {loading ? 'Opening...' : estimate > 0 && !form.sponsorship_allocation_id ? 'Continue to secure payment' : form.is_intro ? 'Request Free Introduction' : 'Request Booking'}
             </Button>
           </div>
         )}

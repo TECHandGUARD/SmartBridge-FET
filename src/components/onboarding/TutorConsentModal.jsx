@@ -1,3 +1,4 @@
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { appConfig } from '@/lib/config';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,9 @@ const AGREEMENT_VERSION = '1.0.0';
 const AGREEMENT_EFFECTIVE_DATE = '2025-01-01';
 
 export default function TutorConsentModal({ open, onAccept, onDecline }) {
+  const prices = useSubscriptionPrices();
+  const price = prices.data?.find(row => row.product === 'tutor_pro')?.amount_cents;
+  const proLabel = Number.isInteger(price) ? `R${(price/100).toFixed(2)}/month` : 'View current price on Premium';
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const scrollArea = useRef(null);
 
@@ -94,10 +98,10 @@ export default function TutorConsentModal({ open, onAccept, onDecline }) {
                 </ul>
               </div>
               <div className="bg-primary/5 border border-primary/20 rounded-xl p-4">
-                <p className="font-semibold text-foreground mb-1">Pro Plan — R150/month</p>
+                <p className="font-semibold text-foreground mb-1">Pro Plan — {proLabel}</p>
                 <ul className="text-muted-foreground text-xs space-y-0.5">
                   <li>• <strong>0% commission</strong> — Tutor retains 100% of booking fees</li>
-                  <li>• Monthly subscription of R150 paid via Yoco or EFT to Tech &amp; GUARD Pty Ltd</li>
+                  <li>• Monthly subscription: {proLabel}, paid to Tech &amp; GUARD Pty Ltd</li>
                   <li>• Standard Yoco gateway fees (≈2.5%) may apply to payment processing</li>
                 </ul>
               </div>

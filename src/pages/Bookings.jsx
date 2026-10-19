@@ -1,9 +1,11 @@
+import BookingPaymentStatus from '@/components/tutor/BookingPaymentStatus';
+import BookingLearnerChoice from '@/components/parent/BookingLearnerChoice';
 import SponsorshipChoice from '@/components/student/SponsorshipChoice';
 import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
-import { createBooking, cancelBooking } from '@/lib/bookings';
+import { createBooking, cancelBooking, payForBooking, arrangeIntroduction } from '@/lib/bookings';
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
@@ -45,12 +47,13 @@ export default function Bookings() {
     date: '',
     time: '14:00',
     duration_hours: '1',
-    message: '', is_intro: false, sponsorship_allocation_id: ''
+    message: '', learner_id: '', is_intro: false, sponsorship_allocation_id: ''
   });
 
   useEffect(() => {
     if (!user?.email) return;
     fetchBookingDashboardData();
+    const timer = setInterval(()=>fetchBookingDashboardData(true), 15000);
 
     // Setup native Supabase realtime websocket channel subscription
     const bookingStreamChannel = supabase
@@ -58,7 +61,7 @@ export default function Bookings() {
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'tutor_bookings' },
         (payload) => {
-          if (payload.new && ('student_id' in payload.new ? payload.new.student_id : null) === user.id) {
+          if (user.role === 'parent' || payload.new && ('student_id' in payload.new ? payload.new.student_id : null) === user.id) {
             fetchBookingDashboardData();
           }
         }
@@ -66,16 +69,17 @@ export default function Bookings() {
       .subscribe();
 
     return () => {
+      clearInterval(timer);
       supabase.removeChannel(bookingStreamChannel);
     };
   }, [user?.email]);
 
-  const fetchBookingDashboardData = async () => {
+  const fetchBookingDashboardData = async (quiet=false) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
 
       const [bookingsQuery, tutorsQuery] = await Promise.all([
-        supabase.from('tutor_bookings').select('*').eq('student_id', user.id).order('created_at', { ascending: false }),
+        (user.role === 'parent' ? supabase.from('tutor_bookings').select('*') : supabase.from('tutor_bookings').select('*').eq('student_id', user.id)).order('created_at', { ascending: false }),
         supabase.from('tutor_directory').select('*').eq('is_verified', true)
       ]);
 
@@ -97,18 +101,19 @@ export default function Bookings() {
 
   const handleCreateBooking = async () => {
     if (isSaving) return;
-    if (!selectedTutor?.user_id || !form.date) {
+    if (!selectedTutor?.user_id || !form.date || (user.role === 'parent' && !form.learner_id)) {
       toast.error('Choose a tutor and session date.');
       return;
     }
     try {
       setIsSaving(true);
       bookingRequest.current = prepareRequest(bookingRequest.current, selectedTutor, form);
-      await createBooking(selectedTutor, form, bookingRequest.current.id);
+      const result = await createBooking(selectedTutor, form, bookingRequest.current.id);
+      if (result.redirecting) return;
       bookingRequest.current = null;
 
       toast.success('Booking request sent. Your tutor will confirm shortly.');
-      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '', is_intro: false, sponsorship_allocation_id: '' });
+      setForm({ tutor_email: '', subject: 'Mathematics', date: '', time: '14:00', duration_hours: '1', message: '', learner_id: '', is_intro: false, sponsorship_allocation_id: '' });
       setShowForm(false);
       await fetchBookingDashboardData();
     } catch (err) {
@@ -163,9 +168,11 @@ export default function Bookings() {
           </Button>
         </div>
 
+        {new URLSearchParams(window.location.search).has('payment') && <p role="status" className="rounded-lg border p-3 text-sm">Returning from checkout does not confirm payment. The verified payment status below updates automatically. Cancelled or failed payments can be retried while the reservation is active.</p>}
         {/* Booking Creation Accordion Form Panel Wrapper */}
         {showForm && (
           <Card className="border-slate-200 shadow-xl bg-white overflow-hidden">
+<BookingLearnerChoice user={user} value={form.learner_id} onChange={value=>setForm(f=>({...f,learner_id:value}))} />
             <CardHeader className="pb-3 border-b border-slate-50 bg-slate-50/50">
               <CardTitle className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-blue-600" /> Request a tutoring session
@@ -263,7 +270,7 @@ export default function Bookings() {
                 </div>
               </div>
 
-              <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimatedCost===0} refreshKey={String(showForm)} />
+              {user?.role !== 'parent' && <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimatedCost===0} refreshKey={String(showForm)} />}
               {selectedTutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
                 <input type="checkbox" className="mt-1" checked={form.is_intro} onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? '0.5' : '1'}))} />
                 <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
@@ -296,7 +303,7 @@ export default function Bookings() {
                   {isSaving ? (
                     <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Sending...</>
                   ) : (
-                    'Request Booking'
+                    estimatedCost > 0 && !form.sponsorship_allocation_id ? 'Continue to secure payment' : 'Request Booking'
                   )}
                 </Button>
               </div>
@@ -343,9 +350,12 @@ export default function Bookings() {
                           {b.amount === 0 && !b.is_intro && <span>Free session</span>}
                           {b.amount > 0 && <span className="flex items-center gap-1 text-blue-600 font-bold">R{b.amount}</span>}
                         </div>
+                        <BookingPaymentStatus booking={b} />
                         {b.message && <p className="text-xs text-slate-400 mt-1 italic">"{b.message}"</p>}
                       </div>
                       <div className="flex gap-2 flex-wrap">
+                        {b.status === 'pending' && b.amount > 0 && ['pending','failed'].includes(b.payment_status) && <Button size="sm" onClick={()=>payForBooking(b).catch(error=>toast.error(error.message))} disabled={!b.hold_expires_at || new Date(b.hold_expires_at)<=new Date()}>Pay R{Number(b.amount).toFixed(2)} securely</Button>}
+                        {b.status === 'pending' && b.is_intro && b.proposed_date && <div className="text-sm"><p>Tutor proposes {b.proposed_date} at {b.proposed_time} (South Africa time).</p><Button size="sm" onClick={()=>arrangeIntroduction(b.id,'accept_proposal').then(fetchBookingDashboardData).catch(error=>toast.error(error.message))}>Accept proposed introduction</Button></div>}
                         {b.status === 'confirmed' && b.session_link && (
                           <a href={b.session_link} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white">

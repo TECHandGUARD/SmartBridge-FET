@@ -29,8 +29,8 @@ export default function SubscriptionPricingPanel(){
   }catch(failure){toast.error(failure.message||'Could not save price.');}finally{setSaving('');}
  };
  return <div className="space-y-5">
-  <div><h2 className="font-playfair text-2xl font-bold">Subscription pricing</h2><p className="text-sm text-muted-foreground mt-2">Set the ZAR price for one month of access. Saved prices apply to new integrated checkouts and the Premium page without a code change.</p></div>
-  <p className="rounded-xl border bg-muted/30 p-4 text-sm">Existing paid access and payment orders keep their original amounts. Fixed Yoco payment links are managed separately and are not updated here. Automatic recurring billing is not enabled.</p>
+  <div><h2 className="font-playfair text-2xl font-bold">Subscription pricing</h2><p className="text-sm text-muted-foreground mt-2">Set the ZAR price for one month of access. Saved prices apply to new integrated checkouts and all subscription displays without a code change.</p></div>
+  <p className="rounded-xl border bg-muted/30 p-4 text-sm">Existing paid access and payment orders keep their original amounts. Automatic recurring billing is not enabled.</p>
   <Button variant="outline" onClick={load} disabled={loading||!!saving}>Reload prices</Button>
   {loading?<p role="status">Loading prices…</p>:error?<p role="alert">{error}</p>:<div className="grid md:grid-cols-3 gap-4">{rows.map(row=>{
    const next=priceToCents(drafts[row.product]);

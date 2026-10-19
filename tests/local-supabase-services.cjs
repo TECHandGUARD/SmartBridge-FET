@@ -59,9 +59,17 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const booking=ok(await student.client.rpc('create_booking',bookingArgs));
  assert.equal(ok(await student.client.rpc('create_booking',bookingArgs)).id,booking.id);assert.equal(Number(booking.amount),100);
  assert.deepEqual(ok(await other.client.from('tutor_bookings').select('id').eq('id',booking.id)),[]);
+ assert.ok((await tutor.client.from('tutor_bookings').update({status:'confirmed'}).eq('id',booking.id)).error,'Unpaid booking must not be accepted');
+ const bookingOrder=ok(await admin.rpc('create_booking_payment_order',{actor_id:student.id,booking_key:booking.id,payment_mode:'test',provider_key:'yoco'}));
+ assert.equal(bookingOrder.amount_cents,10000);
+ const checkoutId='checkout-local-'+randomUUID(),paymentId='payment-local-'+randomUUID();
+ ok(await admin.from('payment_orders').update({checkout_id:checkoutId}).eq('id',bookingOrder.id));
+ ok(await admin.rpc('fulfill_gateway_payment',{event_key:randomUUID(),checkout_key:checkoutId,payment_key:paymentId,paid_amount:10000,paid_currency:'ZAR',paid_mode:'test',provider_key:'yoco'}));
+ const receipt=ok(await student.client.from('tutor_bookings').select('payment_status,amount_paid').eq('id',booking.id).single());
+ assert.equal(receipt.payment_status,'test_paid');assert.equal(Number(receipt.amount_paid),0);
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
- console.log('PASS: real booking retries, server price, ownership and tutor confirmation');
+ console.log('PASS: real booking retries, server price, ownership, unpaid rejection, verified test receipt and tutor confirmation');
 
  // Exercise flexible tutor prices through real PostgREST, not a mocked save response.
  const edited=ok(await tutor.client.from('tutor_profiles').update({study_year:null,hourly_rate:1250.50,subject_rates:{Mathematics:20,History:0},subjects:['Mathematics','History'],offers_free_intro:true})

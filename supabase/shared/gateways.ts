@@ -39,15 +39,16 @@ export async function enabledGateway(client: any, provider: 'yoco' | 'paystack')
     return gatewayCredentials(provider, data.mode);
 }
 export async function initializeGateway(provider: 'yoco' | 'paystack', credentials: any, order: any, email: string) {
+    const returnPath = order.product === 'booking' ? `/bookings?booking=${order.booking_id}&payment=` : '/Premium?payment=';
     const headers = { 'Authorization': `Bearer ${credentials.key}`, 'Content-Type': 'application/json' };
     if (provider === 'yoco') {
-        const result = await providerJson('https://payments.yoco.com/api/checkouts', { method: 'POST', headers: { ...headers, 'Idempotency-Key': `smartbridge-${order.id}` }, body: JSON.stringify({ amount: order.amount_cents, currency: 'ZAR', successUrl: appUrl('/Premium?payment=processing'), cancelUrl: appUrl('/Premium?payment=cancelled'), failureUrl: appUrl('/Premium?payment=failed'), metadata: { order_id: order.id }, externalId: order.id }) });
+        const result = await providerJson('https://payments.yoco.com/api/checkouts', { method: 'POST', headers: { ...headers, 'Idempotency-Key': `smartbridge-${order.id}` }, body: JSON.stringify({ amount: order.amount_cents, currency: 'ZAR', successUrl: appUrl(returnPath+'processing'), cancelUrl: appUrl(returnPath+'cancelled'), failureUrl: appUrl(returnPath+'failed'), metadata: { order_id: order.id }, externalId: order.id }) });
         if (!result.id || result.amount !== order.amount_cents || result.currency !== 'ZAR' || result.processingMode !== credentials.mode)
             failure(502, 'Checkout did not match the order');
         return { id: result.id, redirect: checkoutUrl(result.redirectUrl, provider) };
     }
     const reference = `sb-${credentials.mode}-${order.id}`;
-    const result = await providerJson('https://api.paystack.co/transaction/initialize', { method: 'POST', headers, body: JSON.stringify({ email, amount: order.amount_cents, currency: 'ZAR', reference, callback_url: appUrl('/Premium?payment=processing'), metadata: { order_id: order.id } }) });
+    const result = await providerJson('https://api.paystack.co/transaction/initialize', { method: 'POST', headers, body: JSON.stringify({ email, amount: order.amount_cents, currency: 'ZAR', reference, callback_url: appUrl(returnPath+'processing'), metadata: { order_id: order.id } }) });
     if (result.status !== true || result.data?.reference !== reference)
         failure(502, 'Checkout initialization failed');
     return { id: reference, redirect: checkoutUrl(result.data.authorization_url, provider) };

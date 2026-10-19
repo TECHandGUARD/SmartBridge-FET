@@ -1,5 +1,5 @@
 import MessagingInbox from '@/components/messaging/MessagingInbox';
-import { appConfig } from '@/lib/config';
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
@@ -21,6 +21,9 @@ import ParentProgressDashboard from '@/components/parent/ParentProgressDashboard
 
 export default function ParentDashboard() {
   const { user } = useAuth() || {};
+  const prices = useSubscriptionPrices();
+  const amount = prices.data?.find(row => row.product === 'parent')?.amount_cents;
+  const subscriptionLabel = Number.isInteger(amount) ? `R${(amount/100).toFixed(2)}/month` : 'View current price';
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   const [tutors, setTutors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +96,7 @@ export default function ParentDashboard() {
             ) : (
               <Link to="/premium">
                 <Button size="sm" className="gap-1.5 bg-secondary text-secondary-foreground hover:bg-secondary/90">
-                  <Crown className="w-4 h-4" /> Upgrade — R{appConfig.prices.parent}/month
+                  <Crown className="w-4 h-4" /> Upgrade — {subscriptionLabel}
                 </Button>
               </Link>
             )}
@@ -208,11 +211,11 @@ export default function ParentDashboard() {
               <Star className="w-10 h-10 fill-amber-400 text-amber-400 mb-3 mx-auto" />
               <p className="font-playfair font-bold text-xl text-foreground mb-2">Premium for Your Child</p>
               <p className="text-sm text-muted-foreground mb-4">
-                Give your child access to all premium study materials, past papers, AI tools and tutor notes — R{appConfig.prices.parent}/month for parents.
+                Give your child access to all premium study materials, past papers, AI tools and tutor notes — {subscriptionLabel} for parents.
               </p>
               <Link to="/premium">
                 <Button className="bg-primary hover:bg-primary/90 w-full mb-2">
-                  Upgrade to Parent Premium — R{appConfig.prices.parent}/month
+                  Upgrade to Parent Premium — {subscriptionLabel}
                 </Button>
               </Link>
               <p className="text-xs text-muted-foreground">Use your email as reference. Access starts after payment is confirmed.</p>
@@ -246,11 +249,11 @@ export default function ParentDashboard() {
                 <Star className="w-6 h-6 fill-amber-400 text-amber-400 mb-2" />
                 <p className="font-playfair font-bold text-lg text-foreground mb-1">Premium for Your Child</p>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Give your child access to all premium study materials, past papers & more — R{appConfig.prices.parent}/month.
+                  Give your child access to all premium study materials, past papers & more — {subscriptionLabel}.
                 </p>
                 <Link to="/premium">
                   <Button size="sm" className="bg-primary hover:bg-primary/90 w-full">
-                    Upgrade to Parent Premium — R{appConfig.prices.parent}/month
+                    Upgrade to Parent Premium — {subscriptionLabel}
                   </Button>
                 </Link>
                 <p className="text-xs text-muted-foreground mt-2">Use your email as reference. Access starts after payment is confirmed.</p>
