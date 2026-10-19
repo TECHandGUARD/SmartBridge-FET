@@ -104,10 +104,11 @@ export default function LiveClassroom() {
   const handleSignal = useCallback(async message => {
     if (!active.current || !peer.current || !booking || message.booking_id!==booking.id || message.sender_id!==recipientId || message.recipient_id!==user?.id) return;
     if (lastSignal.current?.has(message.id)) return;
-    lastSignal.current?.add(message.id);
     const payload = message.payload || {};
     if (!payload.session_id || retiredSessions.current.has(payload.session_id)) return;
     if (payload.target_session && payload.target_session !== sessionId.current) return;
+    if (message.kind !== 'ready' && (payload.target_session !== sessionId.current || payload.session_id !== remoteSession.current)) return;
+    lastSignal.current?.add(message.id);
     let pc = peer.current;
     try {
       if (message.kind==='ready') {
