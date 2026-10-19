@@ -34,7 +34,7 @@ const ADMIN_MOBILE_SECTIONS = [
   { value: 'users', label: 'Users' },
   { value: 'tutors', label: 'Tutor Analytics' },
   { value: 'earnings', label: 'Earnings' },
-  { value: 'payouts', label: 'Payouts' },
+  { value: 'payouts', label: 'Booking Payments' },
   { value: 'leaderboard', label: 'Leaderboard' },
   { value: 'reports', label: 'Parent Reports' },
   { value: 'content', label: 'Content' },
@@ -238,7 +238,7 @@ import TutorEarningsTable from '@/components/admin/TutorEarningsTable';
 import StudentLeaderboard from '@/components/admin/StudentLeaderboard';
 import AutoParentReports from '@/components/admin/AutoParentReports';
 import TutorVerificationHub from '@/components/admin/TutorVerificationHub';
-import AutomatedBillingPayouts from '@/components/admin/AutomatedBillingPayouts';
+import TutorPayoutDashboard from '@/components/admin/TutorPayoutDashboard';
 import CAPSDocumentManager from '@/components/admin/CAPSDocumentManager';
 import ResourceRatingsPanel from '@/components/admin/ResourceRatingsPanel';
 import OpportunitiesContentReview from '@/components/admin/OpportunitiesContentReview';
@@ -785,7 +785,7 @@ export default function AdminDashboard() {
             <TabsTrigger value="users" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="tutors" className="gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> Tutor Analytics</TabsTrigger>
             <TabsTrigger value="earnings" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Earnings</TabsTrigger>
-            <TabsTrigger value="payouts" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Payouts</TabsTrigger>
+            <TabsTrigger value="payouts" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Booking Payments</TabsTrigger>
             <TabsTrigger value="leaderboard" className="gap-1.5"><Trophy className="w-3.5 h-3.5" /> Leaderboard</TabsTrigger>
             <TabsTrigger value="reports" className="gap-1.5"><Mail className="w-3.5 h-3.5" /> Parent Reports</TabsTrigger>
             <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
@@ -915,7 +915,7 @@ export default function AdminDashboard() {
 
           <TabsContent value="payouts">
             <SafeSubComponent>
-              <AutomatedBillingPayouts />
+              <TutorPayoutDashboard />
             </SafeSubComponent>
           </TabsContent>
 

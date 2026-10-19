@@ -1,9 +1,8 @@
-import { cancelBooking } from '@/lib/bookings';
+import BookingPaymentStatus, {bookingFundingReady} from './BookingPaymentStatus';
+import { cancelBooking, arrangeIntroduction } from '@/lib/bookings';
 import { dispatchBookingNotifications } from '@/lib/action-notifications';
 import { Shield } from 'lucide-react';
 import { isReleaseFeatureEnabled } from '@/lib/release-scope';
-const PLATFORM_FEE_PERCENT = 0.10;
-const VAT_PERCENT = 0.15;
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -51,12 +50,6 @@ const formatDateTime = (dateStr, timeStr) => {
     return `${dateStr} at ${timeStr}`;
   }
 };
-const getNetEarnings = amount => {
-  if (!amount) return 0;
-  const fee = amount * PLATFORM_FEE_PERCENT;
-  const vatAmount = fee * VAT_PERCENT;
-  return amount - fee - vatAmount;
-};
 const hasOverlap = (booking1, booking2) => {
   const start1 = new Date(`${booking1.date}T${booking1.time}`);
   const end1 = new Date(start1.getTime() + booking1.duration_hours * 60 * 60 * 1000);
@@ -69,6 +62,7 @@ export default function BookingRequests({
   user,
   onBookingUpdate = undefined
 }) {
+  const [introTimes, setIntroTimes] = useState({});
   const [bookings, setBookings] = useState([]);
   const [tutorProfile, setTutorProfile] = useState(null);
   const [processing, setProcessing] = useState(null);
@@ -140,6 +134,7 @@ export default function BookingRequests({
   }, [user?.email, loadData]);
 
   const accept = async booking => {
+    if (!bookingFundingReady(booking) || booking.proposed_date) { toast.error('Verified payment or acceptance of the proposed time is required.'); return; }
     setProcessing(booking.id);
     const sessionLink = tutorProfile?.zoom_link || tutorProfile?.teams_link || '';
     const overlapping = checkOverlap(booking);
@@ -483,10 +478,12 @@ export default function BookingRequests({
                         {b.amount > 0 && <div className="flex items-center gap-2 mt-1">
                             <span className="text-xs font-medium text-primary">R{b.amount}</span>
                             <span className="text-[10px] text-muted-foreground">
-                              (net: R{getNetEarnings(b.amount).toFixed(0)})
+                              (net: R{Number(b.tutor_net || 0).toFixed(2)})
                             </span>
                           </div>}
 
+                        <BookingPaymentStatus booking={b} />
+                        {b.is_intro && b.status === 'pending' && <div className="flex flex-wrap gap-2 mt-2"><label className="text-xs">Propose date<input type="date" className="block border rounded p-1 bg-background" value={introTimes[b.id]?.date || ''} onChange={e=>setIntroTimes(v=>({...v,[b.id]:{...v[b.id],date:e.target.value}}))}/></label><label className="text-xs">Propose time<input type="time" className="block border rounded p-1 bg-background" value={introTimes[b.id]?.time || ''} onChange={e=>setIntroTimes(v=>({...v,[b.id]:{...v[b.id],time:e.target.value}}))}/></label><Button size="sm" variant="outline" onClick={()=>arrangeIntroduction(b.id,'propose',introTimes[b.id]?.date,introTimes[b.id]?.time).then(loadData).catch(error=>toast.error(error.message))}>Propose introduction time</Button>{b.proposed_date && <p>Awaiting learner approval: {b.proposed_date} at {b.proposed_time}</p>}</div>}
                         {b.message && <p className="text-xs text-muted-foreground mt-1 italic">"{b.message}"</p>}
                         {b.cancellation_reason && <p className="text-xs text-red-600 mt-1 dark:text-red-400">Cancelled: {b.cancellation_reason}</p>}
 

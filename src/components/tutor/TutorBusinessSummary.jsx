@@ -8,8 +8,6 @@ import { TrendingUp, TrendingDown, Minus, BarChart2, BookOpen, Loader2 } from 'l
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
-const PLATFORM_FEE_PERCENT = 0.10;
-const VAT_PERCENT = 0.15;
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const COLORS = ['#2563eb', '#16a34a', '#d97706', '#ea580c', '#7c3aed', '#db2777', '#059669', '#4f46e5', '#0891b2', '#84cc16'];
 function TrendIcon({
@@ -18,12 +16,6 @@ function TrendIcon({
   if (pct > 5) return <TrendingUp className="w-3.5 h-3.5 text-green-600" />;
   if (pct < -5) return <TrendingDown className="w-3.5 h-3.5 text-red-500" />;
   return <Minus className="w-3.5 h-3.5 text-muted-foreground" />;
-}
-function getNetEarnings(amount) {
-  if (!amount) return 0;
-  const fee = amount * PLATFORM_FEE_PERCENT;
-  const vatAmount = fee * VAT_PERCENT;
-  return amount - fee - vatAmount;
 }
 function MetricCard({
   icon: Icon,
@@ -104,7 +96,7 @@ export default function TutorBusinessSummary({
       supabase.removeChannel(channel);
     };
   }, [user?.email, loadBookings]);
-  const completed = useMemo(() => bookings.filter(b => b.status === 'completed'), [bookings]);
+  const completed = useMemo(() => bookings.filter(b => b.status === 'completed' && b.payment_status === 'paid' && b.payment_mode !== 'test'), [bookings]);
   const pending = useMemo(() => bookings.filter(b => b.status === 'pending'), [bookings]);
   const cancelled = useMemo(() => bookings.filter(b => b.status === 'cancelled'), [bookings]);
   const getMonthsToShow = useCallback(() => {
@@ -139,7 +131,7 @@ export default function TutorBusinessSummary({
       if (entry) {
         const amount = b.amount || 0;
         entry.revenue += amount;
-        entry.netRevenue += getNetEarnings(amount);
+        entry.netRevenue += Number(b.tutor_net || 0);
         entry.sessions++;
         if (b.student_email) entry.students.add(b.student_email);
       }
@@ -164,7 +156,7 @@ export default function TutorBusinessSummary({
     };
   }, [completed]);
   const totalRevenue = completed.reduce((s, b) => s + (b.amount || 0), 0);
-  const netRevenue = completed.reduce((s, b) => s + getNetEarnings(b.amount || 0), 0);
+  const netRevenue = completed.reduce((s, b) => s + Number(b.tutor_net || 0), 0);
   const avgSessionValue = completed.length > 0 ? totalRevenue / completed.length : 0;
   const totalSessions = completed.length;
   const uniqueStudents = new Set(completed.map(b => b.student_email)).size;

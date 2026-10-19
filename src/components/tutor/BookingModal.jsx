@@ -1,3 +1,4 @@
+import BookingLearnerChoice from '@/components/parent/BookingLearnerChoice';
 import SponsorshipChoice from '@/components/student/SponsorshipChoice';
 import { tutorRate, rateLabel, bookingEstimate } from '@/lib/tutor-pricing';
 import { bookingRequest as prepareRequest } from '@/lib/booking-request';
@@ -17,13 +18,13 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
     date: '',
     time: '09:00',
     duration_hours: 1,
-    message: '', is_intro: false, sponsorship_allocation_id: ''
+    message: '', learner_id: '', is_intro: false, sponsorship_allocation_id: ''
   });
   const bookingRequest = useRef(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   useEffect(() => {
-    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',is_intro:false,sponsorship_allocation_id:''}); bookingRequest.current=null; }
+    if (open) { setDone(false); setForm({subject: tutor?.subjects?.[0] || '',date:'',time:'09:00',duration_hours:1,message:'',learner_id:'',is_intro:false,sponsorship_allocation_id:''}); bookingRequest.current=null; }
   }, [open, tutor?.id]);
 
   const rate = tutorRate(tutor, form.subject);
@@ -40,17 +41,12 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
       return;
     }
 
-    // Paid bookings require a server-created payment order and verified Yoco webhook.
-    // Until that flow is deployed, do not create an unpaid booking as if it were confirmed.
-    if (!form.is_intro && !form.sponsorship_allocation_id && estimate > 0) {
-      toast.error('Paid tutor checkout is not available yet. No booking has been submitted.');
-      return;
-    }
     setLoading(true);
 
     try {
       bookingRequest.current = prepareRequest(bookingRequest.current, tutor, form);
       const booking = await createBooking(tutor, form, bookingRequest.current.id);
+      if (booking.redirecting) return;
       bookingRequest.current = null;
       setDone(true);
       setLoading(false);
@@ -80,6 +76,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
           </div>
         ) : (
           <div className="space-y-4">
+<BookingLearnerChoice user={user} value={form.learner_id} onChange={value=>setForm(f=>({...f,learner_id:value}))} />
             {/* Subject Selection */}
             <div>
               <Label>Subject *</Label>
@@ -140,7 +137,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
               </Select>
             </div>
 
-            <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimate===0} refreshKey={String(open)} />
+            {user?.role !== 'parent' && <SponsorshipChoice value={form.sponsorship_allocation_id || ""} onChange={v=>setForm(f=>({...f,sponsorship_allocation_id:v}))} disabled={form.is_intro || estimate===0} refreshKey={String(open)} />}
             {/* Message */}
             <div>
               <Label>Message (optional)</Label>
@@ -161,11 +158,11 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
             {/* Submit Button */}
             <Button
               onClick={submit}
-              disabled={loading || !form.date || !form.subject || estimate === null}
+              disabled={loading || !form.date || !form.subject || estimate === null || (user?.role === 'parent' && !form.learner_id)}
               className="w-full bg-primary gap-2"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <CalendarDays className="w-4 h-4" />}
-              {loading ? 'Sending...' : 'Request Booking'}
+              {loading ? 'Opening...' : estimate > 0 && !form.sponsorship_allocation_id ? 'Continue to secure payment' : form.is_intro ? 'Request Free Introduction' : 'Request Booking'}
             </Button>
           </div>
         )}

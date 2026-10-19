@@ -1,6 +1,6 @@
 import FileLink from '@/components/operations/FileLink';
 import { Link } from 'react-router-dom';
-import { appConfig } from '@/lib/config';
+import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
@@ -35,6 +35,9 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
   const { user, checkUser } = useAuth();
+  const prices = useSubscriptionPrices();
+  const price = prices.data?.find(row=>row.product==='tutor_pro')?.amount_cents;
+  const subscriptionLabel = Number.isInteger(price) ? `R${(price/100).toFixed(2)}/month` : 'View current price';
   const { isPremium, isOnTrial, trialDaysLeft, loading: premLoading } = usePremiumAccess(user);
   const [profile, setProfile] = useState(null);
   const [resources, setResources] = useState([]);
@@ -357,7 +360,7 @@ export default function TutorDashboard() {
             {profile && !profile.is_premium && (
               <div className="bg-gradient-to-r from-primary/10 to-green-dark/10 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex-1">
-                  <p className="font-playfair font-bold text-lg text-foreground">Go Tutor Pro — R{appConfig.prices.tutor_pro}/month</p>
+                  <p className="font-playfair font-bold text-lg text-foreground">Go Tutor Pro — {subscriptionLabel}</p>
                   <p className="text-sm text-muted-foreground mt-0.5">Eliminate the 10% platform commission on all your bookings. Featured listing + advanced analytics.</p>
                   <p className="text-xs text-muted-foreground mt-1">Use your email as reference on Yoco. Access starts after payment is confirmed.</p>
                 </div>

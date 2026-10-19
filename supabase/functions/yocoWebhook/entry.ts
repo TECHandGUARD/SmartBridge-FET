@@ -19,11 +19,19 @@ serve(withHttp(async (request) => {
         const mode=event.payload?.mode;
         const credentials=gatewayCredentials('yoco',mode);
         await verifySignedWebhook(request,raw,'YOCO_WEBHOOK_SECRET','webhook',180,credentials.webhookSecret);
-        if (!['payment.succeeded', 'payment.failed'].includes(event.type))
+        if (!['payment.succeeded', 'payment.failed', 'refund.succeeded'].includes(event.type))
             return json({ received: true, ignored: true });
         const payload = event.payload;
         if (!payload || payload.mode !== mode)
             failure(400, 'Payment mode mismatch');
+        if (event.type === 'refund.succeeded') {
+            if(payload.type!=='refund' || payload.status!=='succeeded' || !Number.isInteger(payload.amount))failure(400,'Invalid refund event');
+            const {url,key}=serverConnection();
+            const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
+            const {data,error}=await client.rpc('settle_booking_refund',{checkout_key:text(payload.metadata?.checkoutId,'checkout_id',200),refund_key:text(payload.id,'refund_id',200),refund_amount:payload.amount,refund_mode:payload.mode,refund_currency:payload.currency,settled:true});
+            if(error)failure(503,'Refund requires reconciliation');
+            return json({received:true,settled:data});
+        }
         if (event.type === 'payment.failed')
             return json({ received: true, failed: true });
         if (payload.status !== 'succeeded' || payload.type !== 'payment' || !Number.isInteger(payload.amount) || payload.amount < 100 || payload.currency !== 'ZAR')
