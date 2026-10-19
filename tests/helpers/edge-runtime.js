@@ -14,6 +14,7 @@ export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) 
       if(specifier.includes('/http/server.ts'))return {serve:fn=>{handler=fn;}};
       if(specifier.includes('@supabase/supabase-js'))return {createClient:()=>client};
       if(specifier.includes('jszip'))return {default:class {}};
+      if(specifier.startsWith('npm:unpdf'))return {getDocumentProxy:async()=>{throw new Error('PDF extraction not used in auth preflight tests');}};
       if(specifier.startsWith('.'))return load(path.resolve(path.dirname(file),specifier));
       throw new Error(`Unsupported test dependency: ${specifier}`);
     }};
@@ -26,7 +27,7 @@ export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) 
 }
 export function fakeClient(profile={id:'user-id',role:'student',is_active:true,is_super_admin:false}, resolve=()=>({data:[],error:null})) {
   const calls=[];
-  const client={calls,rpc:async(name,args)=>{const call={table:name,operation:'rpc',data:args};calls.push(call);return ['consume_api_quota','email_recipients_allowed','record_email_acceptance'].includes(name)?{data:true,error:null}:resolve(call);},auth:{getUser:async()=>({data:{user:{id:'user-id',email:'user@example.test',user_metadata:{role:'admin'}}},error:null})},from(table){
+  const client={calls,rpc:async(name,args)=>{const call={table:name,operation:'rpc',data:args};calls.push(call);return name==='search_learning_knowledge'?{data:[{title:'Approved Mathematics Textbook',page_number:12,source_type:'educational_resources',source_id:'00000000-0000-4000-8000-000000000001',content:'Algebra involves manipulating variables and solving equations. Quadratic equations are equations of degree two.'}],error:null}:['consume_api_quota','email_recipients_allowed','record_email_acceptance'].includes(name)?{data:true,error:null}:resolve(call);},auth:{getUser:async()=>({data:{user:{id:'user-id',email:'user@example.test',user_metadata:{role:'admin'}}},error:null})},from(table){
     const call={table,operation:'select',data:null,filters:[],single:false};
     const query={select(){return query;},eq(...args){call.filters.push(args);return query;},not(){return query;},order(){return query;},gte(){return query;},lte(){return query;},limit(){return query;},in(){return query;},maybeSingle(){call.single=true;return query;},single(){call.single=true;return query;},insert(data){call.operation='insert';call.data=data;return query;},update(data){call.operation='update';call.data=data;return query;},upsert(data){call.operation='upsert';call.data=data;return query;},then(ok,no){calls.push(call);return Promise.resolve(table==='users'?{data:typeof profile==='function'?profile(call):profile,error:null}:resolve(call)).then(ok,no);}};
     return query;

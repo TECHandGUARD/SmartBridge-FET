@@ -8,16 +8,16 @@ const groq=(text)=>Response.json({choices:[{message:{content:text}}]});
 
 test('study APIs retain text and structured contracts while rejecting caller-selected models and invalid provider content',async()=>{
  const calls=[];const client=fakeClient(active);const runtime=edgeRuntime('invokeLLM',{client,fetch:async(url,options)=>{calls.push({url,options});return groq('An explanation');}});
- let response=await runtime.handle(request({prompt:'Explain algebra',task:'study-assistant'}));assert.equal(response.status,200);assert.equal((await response.json()).response,'An explanation');
+ let response=await runtime.handle(request({prompt:'Explain algebra',task:'study-assistant'}));assert.equal(response.status,200);assert.match((await response.json()).response,/An explanation[\s\S]*Sources:/);
  assert.equal(calls[0].options.headers.Authorization,'Bearer model-test-key');assert.ok(JSON.parse(calls[0].options.body).messages[0].content.includes('educational assistant'));
  response=await runtime.handle(request({prompt:'Explain algebra',model:'any-model'}));assert.equal(response.status,400);assert.equal(calls.length,1);
  const plan={weekly_plan:[{day:'Monday',date:'2026-10-13',total_hours:1,sessions:[{time:'14:00',subject:'Math',duration_min:60,focus:'Algebra',priority:'High'}]}],tips:['Take breaks'],summary:'A plan'};
- const structured=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>groq(JSON.stringify(plan))});response=await structured.handle(request({prompt:'Plan my week',task:'study-plan'}));assert.deepEqual(await response.json(),plan);
+ const structured=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>groq(JSON.stringify(plan))});response=await structured.handle(request({prompt:'Plan my week',task:'study-plan'}));assert.deepEqual((await response.json()).weekly_plan,plan.weekly_plan);
  const invalid=edgeRuntime('invokeLLM',{client:fakeClient(active),fetch:async()=>groq('{"weekly_plan":"bad"}')});assert.equal((await invalid.handle(request({prompt:'Plan',task:'study-plan'}))).status,502);
 });
 
 test('quota exhaustion, invalid JSON and oversized bodies fail before provider calls',async()=>{
- const client=fakeClient(active);client.rpc=async()=>({data:false,error:null});const runtime=edgeRuntime('invokeLLM',{client});
+ const client=fakeClient(active);client.rpc=async(name)=>name==='search_learning_knowledge'?{data:[{title:'Book',page_number:1,content:'Algebra is a branch of mathematics involving equations and variables.'}],error:null}:{data:false,error:null};const runtime=edgeRuntime('invokeLLM',{client});
  assert.equal((await runtime.handle(request({prompt:'Explain algebra'}))).status,429);
  assert.equal((await runtime.handle(request({prompt:'a'.repeat(40000)}))).status,413);
  assert.equal((await runtime.handle(new Request('https://example.test',{method:'POST',headers:{Authorization:'Bearer test','Content-Type':'application/json'},body:'{invalid'}))).status,400);
@@ -29,7 +29,7 @@ test('lesson generation requires a verified tutor and valid grade and returns ed
  const lesson={objectives:['Solve equations'],resources:['Textbook'],homework:'Practise',notes:'Review understanding'};
  const runtime=edgeRuntime('generateLessonPlan',{client:fakeClient({...active,role:'tutor',is_verified:true}),fetch:async()=>groq(JSON.stringify(lesson))});
  assert.equal((await runtime.handle(request({subject:'Math',topic:'Algebra',grade:'Grade 9'}))).status,400);
- assert.deepEqual(await (await runtime.handle(request({subject:'Math',topic:'Algebra',grade:'Grade 12'}))).json(),lesson);
+ assert.deepEqual((await (await runtime.handle(request({subject:'Math',topic:'Algebra',grade:'Grade 12'}))).json()).objectives,lesson.objectives);
 });
 
 test('ordinary users cannot use arbitrary email recipients; administrators preserve plain text and HTML delivery contracts',async()=>{

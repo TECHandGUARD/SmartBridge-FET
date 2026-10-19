@@ -136,6 +136,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
       } = await supabase.functions.invoke('invoke-llm', {
         body: {
           prompt: `${systemContext}\n\nStudent question: ${userText}`,
+          question: userText,
           task: 'study-assistant',
           user_email: user?.email,
           subject: subject || null,
@@ -205,7 +206,7 @@ Important: If the student asks about tutor contracts, Terms of Service, or other
               <Bot className="w-4 h-4 text-primary-foreground" />
             </div>
             AI Study Assistant
-            <Badge className="bg-primary/10 text-primary text-xs">CAPS-Powered</Badge>
+            <Badge className="bg-primary/10 text-primary text-xs">Document-grounded when sources are available</Badge>
           </CardTitle>
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-[10px] text-muted-foreground flex items-center gap-1">

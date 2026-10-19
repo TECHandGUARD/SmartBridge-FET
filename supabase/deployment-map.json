@@ -181,6 +181,31 @@
       ]
     },
     {
+      "slug": "dispatch-notifications",
+      "entrypoint": "supabase/functions/dispatchNotifications/entry.ts",
+      "access": "user-or-job",
+      "verify_jwt": false,
+      "provider": "resend",
+      "required_migrations": [
+        "supabase/migrations/20261013234334_legal_notifications_tutor_profiles.sql"
+      ],
+      "dependencies": [
+        "supabase/shared/api.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/email.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts"
+      ],
+      "reconciled_entrypoint_sha256": "64bcafe624ee3d20c81d96c9697c5f33b7e05049ead2709286712213d1f3bb55",
+      "dependency_sha256": {
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+      }
+    },
+    {
       "slug": "download-caps-zip",
       "entrypoint": "supabase/functions/downloadCAPSZip/entry.ts",
       "access": "user",
@@ -242,11 +267,12 @@
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "b7cd9ab5115813830ef173cec8dea6051e484952877cc41a467ce99c3b3840a2",
+      "reconciled_entrypoint_sha256": "0edf15a43a768ecd7f00307eb11652a99f4ac5686f15c0c1b775ff9f0b2579ec",
       "dependencies": [
         "supabase/shared/ai.ts",
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
+        "supabase/shared/grounding.ts",
         "supabase/shared/http.ts",
         "supabase/shared/monitoring.ts"
       ],
@@ -255,11 +281,13 @@
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
-        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/grounding.ts": "2618fc5ff83ba8fa5a8001a3d7e51fbe99f39ee3e093c76e80e4fbb201ea6825"
       },
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
-        "supabase/migrations/20261013123603_operational_integrations.sql"
+        "supabase/migrations/20261013123603_operational_integrations.sql",
+        "supabase/migrations/20261019133000_learning_document_grounding.sql"
       ]
     },
     {
@@ -272,11 +300,12 @@
       "deployed_version": 7,
       "deployed_verify_jwt": true,
       "deployed_bundle_sha256": "18ce245f3e6ef2f0b3acde44865858d8da65105f07b8d7dc3cec688c456efbcd",
-      "reconciled_entrypoint_sha256": "9c316987e94ba5eb5c22a8f192cfcc4357517dc4769b6cbae23ac5bee804bbe2",
+      "reconciled_entrypoint_sha256": "8b1011d40eae8276485e7d0e1b310a2d9ee27b8ab1166a0c1225636a43687aff",
       "dependencies": [
         "supabase/shared/ai.ts",
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
+        "supabase/shared/grounding.ts",
         "supabase/shared/http.ts",
         "supabase/shared/monitoring.ts"
       ],
@@ -285,11 +314,13 @@
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
-        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/grounding.ts": "2618fc5ff83ba8fa5a8001a3d7e51fbe99f39ee3e093c76e80e4fbb201ea6825"
       },
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
-        "supabase/migrations/20261013123603_operational_integrations.sql"
+        "supabase/migrations/20261013123603_operational_integrations.sql",
+        "supabase/migrations/20261019133000_learning_document_grounding.sql"
       ]
     },
     {
@@ -343,6 +374,29 @@
       ]
     },
     {
+      "slug": "index-learning-documents",
+      "entrypoint": "supabase/functions/indexLearningDocuments/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": null,
+      "reconciled_entrypoint_sha256": "0aa8a554ce30c856d028d4bb6298e6d556880d83169242cfbbeba975881a238f",
+      "dependencies": [
+        "supabase/shared/api.ts",
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/monitoring.ts"
+      ],
+      "dependency_sha256": {
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+      },
+      "required_migrations": [
+        "supabase/migrations/20261019133000_learning_document_grounding.sql"
+      ]
+    },
+    {
       "slug": "invoke-llm",
       "entrypoint": "supabase/functions/invokeLLM/entry.ts",
       "access": "user",
@@ -352,11 +406,12 @@
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "3e8b3ad9026600f68a90d2a8bbfce8bb334b1bfbd01ddffc4c4cedfe33f4d044",
+      "reconciled_entrypoint_sha256": "00dd6399eeff4d84b61f76a933371519302a56e7d7194ef76f58fd212ac1c88a",
       "dependencies": [
         "supabase/shared/ai.ts",
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
+        "supabase/shared/grounding.ts",
         "supabase/shared/http.ts",
         "supabase/shared/monitoring.ts"
       ],
@@ -365,11 +420,13 @@
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
-        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/grounding.ts": "2618fc5ff83ba8fa5a8001a3d7e51fbe99f39ee3e093c76e80e4fbb201ea6825"
       },
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
-        "supabase/migrations/20261013123603_operational_integrations.sql"
+        "supabase/migrations/20261013123603_operational_integrations.sql",
+        "supabase/migrations/20261019133000_learning_document_grounding.sql"
       ]
     },
     {
@@ -1090,31 +1147,6 @@
         "supabase/migrations/20261019035605_booking_checkout_and_introductions.sql",
         "supabase/migrations/20261019040908_protect_booking_financial_receipts.sql"
       ]
-    },
-    {
-      "slug": "dispatch-notifications",
-      "entrypoint": "supabase/functions/dispatchNotifications/entry.ts",
-      "access": "user-or-job",
-      "verify_jwt": false,
-      "provider": "resend",
-      "required_migrations": [
-        "supabase/migrations/20261013234334_legal_notifications_tutor_profiles.sql"
-      ],
-      "dependencies": [
-        "supabase/shared/api.ts",
-        "supabase/shared/config.ts",
-        "supabase/shared/email.ts",
-        "supabase/shared/http.ts",
-        "supabase/shared/monitoring.ts"
-      ],
-      "reconciled_entrypoint_sha256": "64bcafe624ee3d20c81d96c9697c5f33b7e05049ead2709286712213d1f3bb55",
-      "dependency_sha256": {
-        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
-        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
-        "supabase/shared/email.ts": "ef93ab2c0f51cd006b0df4d28d76f2a9f1ab350aa156abd660e03b8100734723",
-        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
-        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
-      }
     }
   ],
   "updated_date": "2026-10-19",

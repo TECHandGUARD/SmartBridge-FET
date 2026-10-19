@@ -50,7 +50,10 @@ const ResourceCard = ({
   resource,
   onEdit,
   onDelete,
-  onToggleActive
+  onToggleActive,
+  onIndex,
+  indexingId,
+  indexingProgress
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -81,12 +84,13 @@ const ResourceCard = ({
             Added: {new Date(resource.created_at).toLocaleDateString()}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
           {resource.resource_url && <FileLink reference={resource.resource_url}>
               <span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </span>
             </FileLink>}
+          <Button size="sm" variant="outline" className="h-7 text-xs" disabled={!resource.is_active || indexingId!==null} onClick={() => onIndex(resource)} title="Extract PDF pages for AI search">{indexingId===resource.id?<><Loader2 className="w-3 h-3 animate-spin mr-1"/>Indexing {indexingProgress}</>:'Index for AI'}</Button>
           <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onEdit(resource)} title="Edit Resource">
             <Edit className="w-3 h-3 mr-1" /> Edit
           </Button>
@@ -257,6 +261,8 @@ export default function KnowledgeBaseManager({
   user
 }) {
   const [resources, setResources] = useState([]);
+  const [indexingId, setIndexingId] = useState(null);
+  const [indexingProgress, setIndexingProgress] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -370,6 +376,28 @@ export default function KnowledgeBaseManager({
       toast.error(`Failed to save: ${err.message}`);
     } finally {
       setSaving(false);
+    }
+  };
+  const handleIndex = async resource => {
+    setIndexingId(resource.id);
+    setIndexingProgress('starting');
+    let page=1;
+    try {
+      for(let batch=0;batch<40;batch++){
+        const {data,error}=await supabase.functions.invoke('index-learning-documents',{body:{source_type:'educational_resources',source_id:resource.id,start_page:page}});
+        if(error)throw error;
+        if(data?.error)throw new Error(data.error);
+        setIndexingProgress(`${Math.min((data.next_page||data.total_pages+1)-1,data.total_pages)}/${data.total_pages} pages`);
+        if(data?.complete){toast.success(`Indexed ${resource.title} for grounded AI answers`);return;}
+        if(!Number.isInteger(data?.next_page)||data.next_page<=page)throw new Error('Indexing did not advance');
+        page=data.next_page;
+      }
+      throw new Error('Document exceeds the supported indexing batches');
+    }catch(err){
+      toast.error(`Indexing stopped at page ${page}. ${err.message||'Please try again'}`);
+    }finally{
+      setIndexingId(null);
+      setIndexingProgress('');
     }
   };
   const handleEdit = resource => {
@@ -504,7 +532,7 @@ export default function KnowledgeBaseManager({
             <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
             <p className="text-muted-foreground">No resources found.</p>
             <p className="text-xs text-muted-foreground mt-1">Try adjusting your filters or add a new resource.</p>
-          </div> : paginatedResources.map(resource => <ResourceCard key={resource.id} resource={resource} onEdit={handleEdit} onDelete={handleDelete} onToggleActive={toggleActive} />)}
+          </div> : paginatedResources.map(resource => <ResourceCard key={resource.id} resource={resource} onEdit={handleEdit} onDelete={handleDelete} onToggleActive={toggleActive} onIndex={handleIndex} indexingId={indexingId} indexingProgress={indexingProgress} />)}
       </div>
 
       {}
