@@ -32,6 +32,7 @@ import SimulationLab from '@/components/simulations/SimulationLab';
 import QuizBuilder from '@/components/quiz/QuizBuilder';
 import LessonPlanner from '@/components/tutor/LessonPlanner';
 import TutorLessonStudio from '@/components/tutor/TutorLessonStudio';
+import TutorLiveClassroomHub from '@/components/tutor/TutorLiveClassroomHub';
 import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
