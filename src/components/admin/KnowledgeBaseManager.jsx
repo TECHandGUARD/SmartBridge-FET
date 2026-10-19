@@ -84,7 +84,7 @@ const ResourceCard = ({
             Added: {new Date(resource.created_at).toLocaleDateString()}
           </p>
         </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-1.5 flex-shrink-0 flex-wrap">
           {resource.resource_url && <FileLink reference={resource.resource_url}>
               <span>
                 <ExternalLink className="w-3.5 h-3.5" />
