@@ -356,10 +356,10 @@ export default function Bookings() {
                       <div className="flex gap-2 flex-wrap">
                         {b.status === 'pending' && b.amount > 0 && ['pending','failed'].includes(b.payment_status) && <Button size="sm" onClick={()=>payForBooking(b).catch(error=>toast.error(error.message))} disabled={!b.hold_expires_at || new Date(b.hold_expires_at)<=new Date()}>Pay R{Number(b.amount).toFixed(2)} securely</Button>}
                         {b.status === 'pending' && b.is_intro && b.proposed_date && <div className="text-sm"><p>Tutor proposes {b.proposed_date} at {b.proposed_time} (South Africa time).</p><Button size="sm" onClick={()=>arrangeIntroduction(b.id,'accept_proposal').then(fetchBookingDashboardData).catch(error=>toast.error(error.message))}>Accept proposed introduction</Button></div>}
-                        {b.status === 'confirmed' && b.session_link && (
-                          <a href={b.session_link} target="_blank" rel="noopener noreferrer">
+                        {b.status === 'confirmed' && (b.session_link || b.is_intro) && (
+                          <a href={b.session_link || `${window.location.origin}/live-classroom/${b.id}`} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-emerald-600 hover:bg-emerald-700 text-white">
-                              <ExternalLink className="w-3.5 h-3.5" /> Join Session
+                              <ExternalLink className="w-3.5 h-3.5" /> {b.is_intro ? "Join Free Introduction" : "Join Session"}
                             </Button>
                           </a>
                         )}

@@ -487,6 +487,7 @@ export default function BookingRequests({
                           </div>}
 
                         <BookingPaymentStatus booking={b} />
+                        {b.is_intro && b.status === 'confirmed' && !b.session_link && <p className="mt-2 text-xs text-muted-foreground">SmartBridge Live is ready for this free introduction. Both participants can join from their booking when the classroom opens, 20 minutes before the scheduled start.</p>}
                         {b.is_intro && b.status === 'pending' && <div className="flex flex-wrap gap-2 mt-2"><label className="text-xs">Propose date<input type="date" className="block border rounded p-1 bg-background" value={introTimes[b.id]?.date || ''} onChange={e=>setIntroTimes(v=>({...v,[b.id]:{...v[b.id],date:e.target.value}}))}/></label><label className="text-xs">Propose time<input type="time" className="block border rounded p-1 bg-background" value={introTimes[b.id]?.time || ''} onChange={e=>setIntroTimes(v=>({...v,[b.id]:{...v[b.id],time:e.target.value}}))}/></label><Button size="sm" variant="outline" onClick={()=>arrangeIntroduction(b.id,'propose',introTimes[b.id]?.date,introTimes[b.id]?.time).then(loadData).catch(error=>toast.error(error.message))}>Propose introduction time</Button>{b.proposed_date && <p>Awaiting learner approval: {b.proposed_date} at {b.proposed_time}</p>}</div>}
                         {b.message && <p className="text-xs text-muted-foreground mt-1 italic">"{b.message}"</p>}
                         {b.cancellation_reason && <p className="text-xs text-red-600 mt-1 dark:text-red-400">Cancelled: {b.cancellation_reason}</p>}
@@ -509,9 +510,9 @@ export default function BookingRequests({
 
                       <div className="flex gap-2 flex-wrap">
                         {}
-                        {b.status === 'confirmed' && b.session_link && (!isPast || isToday) && <a href={b.session_link} target="_blank" rel="noopener noreferrer">
+                        {b.status === 'confirmed' && (b.session_link || b.is_intro) && (!isPast || isToday) && <a href={b.session_link || `${window.location.origin}/live-classroom/${b.id}`} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-green-600 hover:bg-green-700 text-white">
-                              <ExternalLink className="w-3.5 h-3.5" /> Join Session
+                              <ExternalLink className="w-3.5 h-3.5" /> {b.is_intro ? "Join Free Introduction" : "Join Session"}
                             </Button>
                           </a>}
 
