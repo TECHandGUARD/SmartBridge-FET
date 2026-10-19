@@ -2,6 +2,7 @@ import {useCallback,useEffect,useRef,useState} from 'react';
 import {Link,useParams} from 'react-router-dom';
 import {useAuth} from '@/lib/AuthContext';
 import {supabase} from '@/lib/supabaseClient';
+import {dispatchMeetingNotifications} from '@/lib/action-notifications';
 import MeetingRoom from '@/components/meetings/MeetingRoom';
 
 const PURPOSES={parent_support:'Parent–tutor support',tutor_reflection:'Tutor reflection & development',staff_support:'Administrator & tutor support'};
@@ -29,13 +30,14 @@ export default function VirtualMeetings(){
     try{
       const args={meeting_title:form.title,meeting_purpose:form.purpose,meeting_agenda:form.agenda,scheduled_start:new Date(form.starts+':00+02:00').toISOString(),duration_minutes:Number(form.duration),invite_emails:form.emails.split(/[,;\n]/).map(s=>s.trim()).filter(Boolean)};
       const fingerprint=JSON.stringify(args);if(request.current?.fingerprint!==fingerprint)request.current={fingerprint,id:crypto.randomUUID()};
-      const {error:createError}=await supabase.rpc('create_virtual_meeting',{...args,client_request_id:request.current.id});if(createError)throw createError;
-      request.current=null;setForm({...form,title:'',agenda:'',emails:''});setNotice('Meeting requested. Invitations are available in each participant’s Virtual Meetings page.');await load();
+      const {data:createdId,error:createError}=await supabase.rpc('create_virtual_meeting',{...args,client_request_id:request.current.id});if(createError)throw createError;
+      const email=await dispatchMeetingNotifications(createdId);
+      request.current=null;setForm({...form,title:'',agenda:'',emails:''});setNotice(email.status==='accepted'?'Meeting requested. Invitation emails accepted for sending. Reminders are scheduled for 1 hour and 30 minutes before the start.':'Meeting requested. Invitation emails are queued for automatic delivery. Reminders are scheduled for 1 hour and 30 minutes before the start.');await load();
     }catch(e){setError(e.message);}finally{setBusy(false);}
   };
   const act=async(id,decision)=>{
     if(busy)return;setBusy(true);setError('');
-    try{const {error:actionError}=await supabase.rpc(['accepted','declined'].includes(decision)?'respond_virtual_meeting':'close_virtual_meeting',{meeting_key:id,decision});if(actionError)throw actionError;await load();}catch(e){setError(e.message);}finally{setBusy(false);}
+    try{const {error:actionError}=await supabase.rpc(['accepted','declined'].includes(decision)?'respond_virtual_meeting':'close_virtual_meeting',{meeting_key:id,decision});if(actionError)throw actionError;await dispatchMeetingNotifications(id);await load();}catch(e){setError(e.message);}finally{setBusy(false);}
   };
   const response=m=>m.participants?.find(p=>p.user_id===user.id)?.response;
   return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7">
@@ -52,7 +54,7 @@ export default function VirtualMeetings(){
         <label className="space-y-1 text-sm">Meeting purpose<select aria-label="Meeting purpose" value={form.purpose} onChange={e=>setForm({...form,purpose:e.target.value})} className="block w-full rounded-lg border bg-background p-2">{Object.entries(PURPOSES).map(([key,label])=><option key={key} value={key}>{label}</option>)}</select></label>
         <label className="space-y-1 text-sm">Start (South Africa time)<input type="datetime-local" required value={form.starts} onChange={e=>setForm({...form,starts:e.target.value})} className="block w-full rounded-lg border bg-background p-2"/></label>
         <label className="space-y-1 text-sm">Duration<select aria-label="Duration" value={form.duration} onChange={e=>setForm({...form,duration:e.target.value})} className="block w-full rounded-lg border bg-background p-2">{[15,30,45,60,90,120].map(n=><option key={n} value={n}>{n} minutes</option>)}</select></label></div>
-        <label className="block space-y-1 text-sm">Invite account emails<textarea required value={form.emails} onChange={e=>setForm({...form,emails:e.target.value})} className="block w-full rounded-lg border bg-background p-2" placeholder="parent@example.com, tutor@example.com"/><span className="block text-xs text-muted-foreground">Invite 1–5 people using their registered account emails, separated by commas. You are included as the host.</span></label>
+        <label className="block space-y-1 text-sm">Invite account emails<textarea required value={form.emails} onChange={e=>setForm({...form,emails:e.target.value})} className="block w-full rounded-lg border bg-background p-2" placeholder="parent@example.com, tutor@example.com"/><span className="block text-xs text-muted-foreground">Invite 1–5 people using their registered account emails, separated by commas. You are included as the host. Email invitations include the meeting link and time. Reminders go to the host and invitees who haven’t declined, 1 hour and 30 minutes before the start. For meetings requested at short notice, only future reminders are scheduled.</span></label>
         <label className="block space-y-1 text-sm">Agenda (optional)<textarea maxLength={2000} value={form.agenda} onChange={e=>setForm({...form,agenda:e.target.value})} className="block w-full rounded-lg border bg-background p-2"/></label>
         <button disabled={busy} className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50">{busy?'Requesting…':'Send meeting invitations'}</button>
       </form>:<p className="rounded-xl border p-4 text-sm">Administrators and verified tutors can invite you. Accept or decline your invitations below.</p>}

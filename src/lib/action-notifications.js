@@ -20,3 +20,13 @@ export async function dispatchBookingNotifications(bookingId) {
   if (error) return { status: 'queued' };
   return dispatchNotifications(data);
 }
+
+export async function dispatchMeetingNotifications(meetingId) {
+  try {
+    const { data, error } = await supabase.rpc('meeting_notification_ids', { meeting_key: meetingId });
+    if (error) return { status: 'queued' };
+    const results=[];
+    for (let i=0;i<(data?.length||0);i+=10) results.push(await dispatchNotifications(data.slice(i,i+10)));
+    return { status: results.some(result=>result.status==='queued')?'queued':results.some(result=>result.status==='accepted')?'accepted':'none' };
+  } catch { return { status: 'queued' }; }
+}
