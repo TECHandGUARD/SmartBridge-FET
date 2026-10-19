@@ -1,3 +1,4 @@
+import BookingActivitySummary from './BookingActivitySummary';
 import BookingPaymentStatus, {bookingFundingReady} from './BookingPaymentStatus';
 import { cancelBooking, arrangeIntroduction } from '@/lib/bookings';
 import { dispatchBookingNotifications } from '@/lib/action-notifications';
@@ -388,7 +389,7 @@ export default function BookingRequests({
         </CardContent>
       </Card>;
   }
-  return <Card className="border-border">
+  return <div className="space-y-4"><BookingActivitySummary bookings={bookings} /><Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="font-playfair text-lg flex items-center gap-2">
@@ -559,5 +560,5 @@ export default function BookingRequests({
             </div>
           </>}
       </CardContent>
-    </Card>;
+    </Card></div>;
 }

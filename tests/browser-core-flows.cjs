@@ -423,7 +423,7 @@ const assert=require('node:assert/strict');
   await page.getByText('0 test refunds confirmed',{exact:true}).waitFor();
  }
  profile={...profile,role:'sace_tutor',is_super_admin:false};
- await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=earnings');
+ await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=bookings');
  await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
  await page.getByText('1 bookings · 0 currently confirmed · 0 completed · 1 canceled',{exact:true}).waitFor();
  profile={...profile,role:'admin',is_super_admin:true};bookingRows=[];paymentOrderRows=[];

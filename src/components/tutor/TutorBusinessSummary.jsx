@@ -1,4 +1,3 @@
-import BookingActivitySummary from '@/components/tutor/BookingActivitySummary';
 import { Button } from '@/components/ui/button';
 import { Clock, Users, DollarSign, Shield, AlertCircle, Sparkles, Target, Zap, RefreshCw, Download } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -337,7 +336,6 @@ export default function TutorBusinessSummary({
         </div>}
 
       {}
-      <BookingActivitySummary bookings={bookings} />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <MetricCard icon={DollarSign} label="Revenue" value={`R${totalRevenue.toLocaleString()}`} sub={`Net: R${netRevenue.toLocaleString()}`} trend={momPct} color="bg-green-100 text-green-700 dark:bg-green-950/30 dark:text-green-300" />
         <MetricCard icon={Users} label="Students" value={uniqueStudents} sub={`Avg LTV: R${customerLTV.avgLTV}`} color="bg-blue-100 text-blue-700 dark:bg-blue-950/30 dark:text-blue-300" />
