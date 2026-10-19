@@ -13,7 +13,7 @@ test('missing textbooks trigger browser research, then an answer with provider s
  let search;
  const {runtime,prompts}=setup({research:async opts=>{search=opts;return {text:'Ovaries produce ova.',response:{body:{sources:[{title:'Education resource',url:'https://education.gov.za/biology'}]}}};}});
  const res=await runtime.handle(request({}));const body=await res.json();
- assert.equal(res.status,200);assert.equal(body.source_mode,'web_and_general');assert.equal(body.web_search,'completed');assert.match(body.response,/ovaries/);assert.equal(body.sources[0].url,'https://education.gov.za/biology');assert.equal(search.toolChoice,'auto');assert.equal(search.model.model,'openai/gpt-oss-20b');assert.match(prompts[0].messages[1].content,/Never stop solely/);
+ assert.equal(res.status,200);assert.equal(body.source_mode,'web_and_general');assert.equal(body.web_search,'completed');assert.match(body.response,/ovaries/);assert.equal(body.sources[0].url,'https://education.gov.za/biology');assert.equal(search.toolChoice,'auto');assert.equal(search.model.model,'openai/gpt-oss-120b');assert.match(prompts[0].messages[1].content,/Never stop solely/);
 });
 test('partial document matches do not block external research or follow-up context',async()=>{
  let query;
@@ -34,4 +34,13 @@ test('web search removes emails, numbers and links and does not forward document
  let query;const {runtime}=setup({research:async opts=>{query=opts.prompt;return {text:'Research',response:{body:{}}};}});
  await runtime.handle(request({question:'Explain cells email learner@example.com +27821234567 https://private.test/me'}));
  assert.doesNotMatch(query,/learner@example|27821234567|private.test/);
+});
+
+test('an inaccessible configured model falls back to the supported answer model',async()=>{
+ const calls=[];const runtime=edgeRuntime('invokeLLM',{client:fakeClient(),env:{GROQ_MODEL:'old-model'},fetch:async(_url,opts)=>{const body=JSON.parse(opts.body);calls.push(body);return calls.length===1?Response.json({error:{code:'model_not_found'}},{status:404}):Response.json({choices:[{message:{content:'Ovaries produce ova.'}}]});}});
+ const response=await runtime.handle(request({}));assert.equal(response.status,200);assert.equal(calls[0].model,'old-model');assert.equal(calls[1].model,'openai/gpt-oss-120b');assert.equal(calls[1].reasoning_effort,'low');
+});
+test('provider quota exhaustion tries another approved model and reports an honest final error',async()=>{
+ const calls=[];const runtime=edgeRuntime('invokeLLM',{client:fakeClient(),fetch:async(_url,opts)=>{calls.push(JSON.parse(opts.body).model);return Response.json({error:{code:'rate_limit_exceeded'}},{status:429});}});
+ const response=await runtime.handle(request({}));const body=await response.json();assert.equal(response.status,429);assert.match(body.error,/usage allowance/);assert.ok(calls.includes('qwen/qwen3.8-27b'));assert.doesNotMatch(JSON.stringify(body),/model-test-key/);
 });
