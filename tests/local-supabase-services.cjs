@@ -31,6 +31,22 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
 
+ // Adult meetings use the real Auth/PostgREST and RLS services, independently of payments.
+ const meetingArgs={meeting_title:'Local parent support',meeting_purpose:'parent_support',meeting_agenda:'Private support discussion',scheduled_start:new Date(Date.now()+60000).toISOString(),duration_minutes:30,invite_emails:[parent.email],client_request_id:randomUUID()};
+ const meetingId=ok(await tutor.client.rpc('create_virtual_meeting',meetingArgs));
+ assert.equal(ok(await tutor.client.rpc('create_virtual_meeting',meetingArgs)),meetingId);
+ assert.ok((await parent.client.rpc('create_virtual_meeting',{...meetingArgs,client_request_id:randomUUID()})).error);
+ assert.ok((await student.client.rpc('virtual_meeting_details',{meeting_key:meetingId})).error);
+ assert.equal(ok(await parent.client.rpc('virtual_meeting_details',{meeting_key:meetingId})).can_join,false);
+ ok(await parent.client.rpc('respond_virtual_meeting',{meeting_key:meetingId,decision:'accepted'}));
+ assert.equal(ok(await parent.client.rpc('virtual_meeting_details',{meeting_key:meetingId})).can_join,true);
+ ok(await parent.client.from('virtual_meeting_signals').insert({meeting_id:meetingId,sender_id:parent.id,recipient_id:tutor.id,kind:'ready',payload:{session_id:randomUUID()}}));
+ assert.equal(ok(await tutor.client.from('virtual_meeting_signals').select('id').eq('meeting_id',meetingId)).length,1);
+ assert.deepEqual(ok(await other.client.from('virtual_meetings').select('id').eq('id',meetingId)),[]);
+ ok(await tutor.client.rpc('close_virtual_meeting',{meeting_key:meetingId,decision:'ended'}));
+ assert.equal(ok(await parent.client.rpc('virtual_meeting_details',{meeting_key:meetingId})).can_join,false);
+ console.log('PASS: real adult meeting invitations, parent acceptance, sender/recipient RLS, outsider denial and host termination');
+
  // Verify legal-file controls against the actual Storage HTTP service.
  const legalId=randomUUID(), legalPath=randomUUID()+'.pdf';
  const pdf=Buffer.from('%PDF-1.7\nDisposable legal test fixture');

@@ -1,3 +1,4 @@
+import {Link} from 'react-router-dom';
 import BookingActivitySummary from '@/components/tutor/BookingActivitySummary';
 import {paymentOrderSummary, loadPaymentOrders} from '@/lib/payment-reporting';
 import SponsorshipPanel from '@/components/admin/SponsorshipPanel';
@@ -737,6 +738,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-4 rounded-xl border bg-card p-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">

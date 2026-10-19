@@ -22,16 +22,16 @@ export function getNavigation(user) {
   const common = [item('Home', '/', 'home'), item('Videos', '/videos', 'book'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
     primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
-    secondary: [...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), item('Practice', '/quiz', 'practice'), item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book')],
+    secondary: [item('Virtual meetings','/meetings','users'), ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), item('Practice', '/quiz', 'practice'), item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book')],
   };
   if (user?.role === 'school_counselor') return { primary: [dashboard, resources], secondary: [item('Home', '/', 'home')] };
   if (user?.role === 'parent') return {
     primary: [dashboard, tutors, item('Opportunities', '/opportunities', 'book'), forum],
-    secondary: [item('Messages', '/parent-dashboard?section=messages', 'forum'), item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
+    secondary: [item('Virtual meetings','/meetings','users'), item('Messages', '/parent-dashboard?section=messages', 'forum'), item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
   };
   if (TUTOR_ROLES.includes(user?.role)) return {
     primary: [dashboard, item('Assessments', '/assessments', 'practice'), resources, forum],
-    secondary: [item('CAPS Docs', '/resources-library', 'book'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
+    secondary: [...(user?.role !== 'tutor_pending' ? [item('Virtual meetings','/meetings','users')] : []), item('CAPS Docs', '/resources-library', 'book'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
   };
   return {
     primary: [dashboard, subjects, item('Assessments', '/assessments', 'practice'), tutors],
