@@ -19,14 +19,14 @@ const PLAN_TEMPLATES = [
   badge: 'bg-blue-100 text-blue-700',
   desc: 'For Grade 10–12 learners.',
   features: [
-    'Unlimited resource downloads',
-    'All past exam papers (2014–2024)',
-    'Premium tutor notes & summaries',
-    'Priority tutor matching',
-    'Ad-free experience',
-    'CAPS memo solutions',
-    'Exclusive Grade 12 exam prep bundle',
-    'Early access to new content'
+    'Access to published premium resources',
+    'Browse available past exam papers',
+    'Browse available tutor notes and summaries',
+    'Browse and compare available tutors',
+    'Learning dashboard access',
+    'Access available memo solutions',
+    'Explore available Grade 12 preparation material',
+    'See newly published resources'
   ]
 },
 {
@@ -39,11 +39,11 @@ const PLAN_TEMPLATES = [
   desc: 'For parents monitoring their child.',
   features: [
     'Full student progress dashboard',
-    'Automated weekly email reports',
+    'View available progress reports',
     'Direct tutor communication',
     'Session history & booking records',
-    'Premium resource access for child',
-    'Priority support'
+    'Review resources available to linked learners',
+    'Access account support'
   ]
 },
 {
@@ -55,12 +55,12 @@ const PLAN_TEMPLATES = [
   badge: 'bg-primary/10 text-primary',
   desc: 'For verified tutors. Zero commission.',
   features: [
-    '0% platform commission on bookings',
-    'Featured listing in tutor directory',
-    'Priority booking notifications',
-    'Advanced analytics dashboard',
-    'Unlimited resource uploads',
-    'Branded tutor profile page'
+    'Review published Tutor Pro commission terms',
+    'Tutor directory listing',
+    'Booking notifications when available',
+    'Review available tutor analytics',
+    'Manage tutor resources within account limits',
+    'Tutor profile management'
   ]
 }];
 
@@ -193,7 +193,7 @@ export default function Premium() {
             <Star className="w-8 h-8 fill-secondary text-secondary" />
           </div>
           <h1 className="font-playfair text-4xl sm:text-5xl font-bold text-foreground mb-3">SmartBridge Premium</h1>
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto">Unlock everything SmartBridge FET has to offer for your academic journey.</p>
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto">Compare account plans and available features before making a payment.</p>
         </div>
 
         {isPremium ? (
