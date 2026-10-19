@@ -1,6 +1,6 @@
 {
   "retrieved_date": "2026-10-11",
-  "production_changed": false,
+  "production_changed": true,
   "functions": [
     {
       "slug": "approve-opportunity-content",
@@ -95,7 +95,7 @@
       "entrypoint": "supabase/functions/discoverApplicationDeadlines/entry.ts",
       "access": "admin",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "retrieved_entrypoint_sha256": "f92949c504cc787ff52216dd830e33050f69969e14c43e7b5cc8a189e051c705",
       "deployed_version": 9,
       "deployed_verify_jwt": true,
@@ -109,7 +109,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -125,7 +125,7 @@
       "entrypoint": "supabase/functions/discoverOpportunityGuides/entry.ts",
       "access": "admin",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "retrieved_entrypoint_sha256": "0bd57d37f046d3f5d906e4d06de577f75cb074ddcbaeedb37245d05b42af21f3",
       "deployed_version": 8,
       "deployed_verify_jwt": true,
@@ -139,7 +139,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -155,7 +155,7 @@
       "entrypoint": "supabase/functions/discoverUniversityProspectuses/entry.ts",
       "access": "admin",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "retrieved_entrypoint_sha256": "d7d371693f4a915f2526ade2736ccb5fdf7f00308dd758f48a14d4c1e46fddb7",
       "deployed_version": 7,
       "deployed_verify_jwt": true,
@@ -169,7 +169,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -237,7 +237,7 @@
       "entrypoint": "supabase/functions/generateLessonPlan/entry.ts",
       "access": "verified-tutor",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "deployed_version": null,
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
@@ -251,7 +251,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -267,7 +267,7 @@
       "entrypoint": "supabase/functions/generateQuiz/entry.ts",
       "access": "user",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "retrieved_entrypoint_sha256": "2198000d130a07f61623a3f27138cb0025a936eff622fd3b9ebc09c37dd50f5c",
       "deployed_version": 7,
       "deployed_verify_jwt": true,
@@ -281,7 +281,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -347,7 +347,7 @@
       "entrypoint": "supabase/functions/invokeLLM/entry.ts",
       "access": "user",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "deployed_version": null,
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
@@ -361,7 +361,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
@@ -1029,7 +1029,7 @@
       "entrypoint": "supabase/functions/studentOpportunitiesAssistant/entry.ts",
       "access": "user",
       "verify_jwt": true,
-      "provider": "Gemini",
+      "provider": "Groq",
       "retrieved_entrypoint_sha256": "dec7dad9f8ce13d31e14ef6d1e4c030b559e4b7cc25e7509c5d7fecf69b50eff",
       "deployed_version": 7,
       "deployed_verify_jwt": true,
@@ -1043,7 +1043,7 @@
         "supabase/shared/monitoring.ts"
       ],
       "dependency_sha256": {
-        "supabase/shared/ai.ts": "bba5a132defeebb270274c3d87f97f521bb6cb2747b48e3fd687835662e09b8d",
+        "supabase/shared/ai.ts": "e3eeaa6df8d0a614d67e2d23137052cdc3326c49e7f89ebdaa3f9edc9df9ee0a",
         "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12",
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",

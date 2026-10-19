@@ -12,10 +12,10 @@ export const RELEASE_FEATURES = Object.freeze({
   bookingReschedule: false,
   attendance: false,
   counselorPortal: true,
-  externalAi: false,
+  externalAi: true,
   externalEmail: false,
-  lessonPlanning: false,
-  quizAuthoring: false,
+  lessonPlanning: true,
+  quizAuthoring: true,
   accountDeletion: false,
 });
 export const isReleaseFeatureEnabled = key => RELEASE_FEATURES[key] === true;

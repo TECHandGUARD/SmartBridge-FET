@@ -5,7 +5,7 @@ import { webcrypto } from 'node:crypto';
 import ts from 'typescript';
 export function edgeRuntime(name, {client, env={}, fetch, Date: Clock=Date}={}) {
   let handler;const cache=new Map();
-  const values={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-test-key',APP_BASE_URL:'https://staging.example.test',RESEND_API_KEY:'email-test-key',EMAIL_FROM:'SmartBridge <noreply@example.test>',OPENAI_API_KEY:'model-test-key',OPENAI_MODEL:'account-model',...env};
+  const values={SUPABASE_URL:'https://example.supabase.co',SUPABASE_SERVICE_ROLE_KEY:'server-test-key',APP_BASE_URL:'https://staging.example.test',RESEND_API_KEY:'email-test-key',EMAIL_FROM:'SmartBridge <noreply@example.test>',GROQ_API_KEY:'model-test-key',GROQ_MODEL:'llama-3.1-8b-instant',...env};
   function load(file) {
     if(cache.has(file))return cache.get(file);
     const exports={};cache.set(file,exports);
