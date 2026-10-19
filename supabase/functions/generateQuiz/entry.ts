@@ -1,4 +1,5 @@
 import { generate } from '../../shared/ai.ts';
+import { retrieveLearningEvidence, groundedInstructions } from '../../shared/grounding.ts';
 import {consumeQuota,readJson} from '../../shared/api.ts';
 import { serverConnection } from "../../shared/config.ts";
 import { withHttp, authorize } from "../../shared/http.ts";
@@ -12,6 +13,7 @@ serve(withHttp(async (req) => {
     const user = await authorize(req, supabase, 'user');
     await consumeQuota(supabase,user.id,'ai');
     const { subject, grade, topic, question_count = 5 } = await readJson(req);
+    if(typeof subject!=='string'||subject.length>100||typeof grade!=='string'||!['Grade 10','Grade 11','Grade 12'].includes(grade)||typeof topic!=='string'||topic.length>300||!Number.isInteger(question_count)||question_count<1||question_count>10)return new Response(JSON.stringify({error:'Invalid quiz parameters'}),{status:400,headers:{'Content-Type':'application/json'}});
 
     if (!subject || !grade || !topic) {
       return new Response(
@@ -20,39 +22,10 @@ serve(withHttp(async (req) => {
       );
     }
 
-    // Fetch guardrail and relevant resources in parallel
-    const [configs, allResources] = await Promise.all([
-      supabase
-        .from("system_configuration")
-        .select("*")
-        .eq("is_active", true),
-      supabase
-        .from("educational_resources")
-        .select("*")
-        .eq("is_active", true)
-    ]);
-
-    const configData = configs.data || [];
-    const resourcesData = allResources.data || [];
-
-    const guardrailConfig = configData.find((c: any) => c.key === "master_tutor_guardrail");
-    const guardrail = guardrailConfig?.value?.text ||
-      "You are a strict South African CAPS curriculum tutor. Only generate content that is factually correct, educationally appropriate, and aligned with the CAPS syllabus. Reject any non-educational content.";
-
-    // Filter resources for this subject/grade, prioritize exact matches then broader
-    const matchedResources = resourcesData
-      .filter((r: any) =>
-        (r.subject === subject || r.subject === "All Subjects") &&
-        (r.grade === grade || r.grade === "All Grades") &&
-        r.resource_url
-      )
-      .slice(0, 5);
-
-    const resourceContext = matchedResources.length > 0
-      ? `Use the following CAPS-aligned resources as your primary source:\n${matchedResources.map((r: any) =>
-          `- "${r.title}" (${r.caps_alignment_tag || topic}): ${r.description || ""} [URL: ${r.resource_url}]`
-        ).join("\n")}`
-      : `No uploaded resources found. Generate based on the official CAPS curriculum for ${subject}, ${grade}.`;
+    const {evidence,sources}=await retrieveLearningEvidence(supabase,String(topic),String(subject),String(grade));
+    if(!evidence)return new Response(JSON.stringify({error:'No indexed SmartBridge textbook excerpts found for this topic. Ask an administrator to index the uploaded PDFs.'}),{status:422,headers:{'Content-Type':'application/json'}});
+    const guardrail=groundedInstructions;
+    const resourceContext=evidence;
 
     const prompt = `${guardrail}
 
@@ -67,7 +40,7 @@ Rules:
 - Each explanation must clearly explain WHY the correct answer is right
 - Strictly follow CAPS curriculum scope for ${grade} ${subject}`;
 
-    // Call the server-configured OpenAI provider
+    // Call server-configured Groq using retrieved, approved textbook excerpts
     const { response: textResponse } = await generate(prompt);
 
     let result = { questions: [], topic_summary: "" };
@@ -83,8 +56,8 @@ Rules:
     } catch (parseError) {
       return new Response(
         JSON.stringify({
-          error: "Failed to parse Gemini response",
-          raw_response: textResponse
+          error: "Failed to parse AI response",
+          message: 'Please try a more specific topic.'
         }),
         { status: 500, headers: { "Content-Type": "application/json" } }
       );
@@ -94,10 +67,7 @@ Rules:
       JSON.stringify({
         questions: result.questions || [],
         topic_summary: result.topic_summary || "",
-        resources_used: matchedResources.map((r: any) => ({
-          title: r.title,
-          url: r.resource_url
-        }))
+        resources_used: sources.map((r:any)=>({title:r.title,page:r.page}))
       }),
       { headers: { "Content-Type": "application/json" } }
     );
