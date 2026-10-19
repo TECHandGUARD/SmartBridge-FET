@@ -61,11 +61,6 @@ export function readPublicConfig(env = {}, currentOrigin = '') {
       logoUrl: url('VITE_CORPORATE_LOGO_URL'),
     },
     prices: { student: price('VITE_STUDENT_MONTHLY_PRICE', 20), parent: price('VITE_PARENT_MONTHLY_PRICE', 50), tutor_pro: price('VITE_TUTOR_PRO_MONTHLY_PRICE', 150) },
-    checkout: {
-      student: url('VITE_YOCO_STUDENT_URL', '', 'pay.yoco.com'),
-      parent: url('VITE_YOCO_PARENT_URL', '', 'pay.yoco.com'),
-      tutor_pro: url('VITE_YOCO_TUTOR_PRO_URL', '', 'pay.yoco.com'),
-    },
     bank: bankValues.every(Boolean) ? bank : null,
   };
   return { config, errors, connectionErrors };
