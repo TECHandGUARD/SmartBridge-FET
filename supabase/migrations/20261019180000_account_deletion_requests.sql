@@ -14,6 +14,7 @@ create index if not exists account_deletion_requests_requested_at_idx
 alter table public.account_deletion_requests enable row level security;
 revoke all on public.account_deletion_requests from public,anon,authenticated;
 grant select on public.account_deletion_requests to authenticated;
+drop policy if exists account_deletion_request_read_own on public.account_deletion_requests;
 create policy account_deletion_request_read_own on public.account_deletion_requests
   for select to authenticated using (user_id = (select auth.uid()));
 create or replace function public.request_account_deletion()
