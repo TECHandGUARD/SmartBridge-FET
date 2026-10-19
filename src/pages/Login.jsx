@@ -22,9 +22,9 @@ const CONFIG = {
     FAILED_GOOGLE: import.meta.env.VITE_LOGIN_FAILED_GOOGLE_MSG || 'Failed to sign in with Google'
   }
 };
-import { getAccountDestination } from '@/lib/navigation';
+import {meetingSignInDestination,rememberMeetingReturn,pendingMeetingReturn,meetingReturnPath} from '@/lib/meeting-navigation';
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,15 +39,18 @@ export default function Login() {
     isLoadingAuth
   } = useAuth();
   const navigate = useNavigate();
+  const location=useLocation();
+  const meetingPath=meetingReturnPath(location.state?.meetingPath);
+  useEffect(()=>{if(meetingPath)rememberMeetingReturn(meetingPath);},[meetingPath]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    if (user && !isLoadingAuth) navigate(getAccountDestination(user), {
+    if (user && !isLoadingAuth) navigate(meetingSignInDestination(user,meetingPath||pendingMeetingReturn()), {
       replace: true
     });
-  }, [user, isLoadingAuth, navigate]);
+  }, [user, isLoadingAuth, navigate, meetingPath]);
   const handleSubmit = async e => {
     e.preventDefault();
     const trimmedEmail = email.trim();

@@ -1,5 +1,6 @@
+import {meetingReturnPath} from '@/lib/meeting-navigation';
 import React, { lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClientInstance } from '@/lib/query-client';
 import { Toaster } from "@/components/ui/toaster";
@@ -59,6 +60,7 @@ const BursaryFinder = lazy(() => import('./pages/BursaryFinder'));
 // 🔐 COMPONENT: Require Login + Onboarding (with Admin Bypass)
 // ============================================================
 const RequireAuthAndOnboarding = ({ children }) => {
+  const location=useLocation();
   const { user, isLoadingAuth, isAdmin } = useAuth();
 
   if (isLoadingAuth) {
@@ -70,7 +72,7 @@ const RequireAuthAndOnboarding = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{meetingPath:meetingReturnPath(location.pathname)}} replace />;
   }
 
   if (isAdmin) return children;

@@ -1,3 +1,4 @@
+import {clearMeetingReturn} from '@/lib/meeting-navigation';
 import {useCallback,useEffect,useRef,useState} from 'react';
 import {Link,useParams} from 'react-router-dom';
 import {useAuth} from '@/lib/AuthContext';
@@ -10,6 +11,7 @@ const formatTime=value=>new Intl.DateTimeFormat('en-ZA',{dateStyle:'medium',time
 const initialStart=()=>new Date(Date.now()+2*3600000+15*60000).toISOString().slice(0,16);
 export default function VirtualMeetings(){
   const {user}=useAuth();const {meetingId}=useParams();
+  useEffect(()=>{if(meetingId)clearMeetingReturn('/meetings/'+meetingId);},[meetingId]);
   const [meetings,setMeetings]=useState([]),[meeting,setMeeting]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const [form,setForm]=useState({title:'',purpose:'parent_support',agenda:'',starts:initialStart(),duration:'30',emails:''});
   const [notice,setNotice]=useState('');const request=useRef(null),generation=useRef(0);
