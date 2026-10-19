@@ -1,3 +1,4 @@
+import { bookingSessionLink } from '@/lib/booking-session';
 import BookingActivitySummary from './BookingActivitySummary';
 import BookingPaymentStatus, {bookingFundingReady} from './BookingPaymentStatus';
 import { cancelBooking, arrangeIntroduction } from '@/lib/bookings';
@@ -113,7 +114,7 @@ export default function BookingRequests({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.email,user?.id]);
   useEffect(() => {
     loadData();
     if (!user?.email) return;
@@ -148,13 +149,11 @@ export default function BookingRequests({
       return;
     }
     try {
-      const {
-        error
-      } = await supabase.from('tutor_bookings').update({
+      const { error } = await supabase.from('tutor_bookings').update({
         status: 'confirmed',
         session_link: sessionLink,
         updated_at: new Date().toISOString()
-      }).eq('id', booking.id);
+      }).eq('id', booking.id).eq('tutor_id', user.id).eq('status', booking.status).select('id').single();
       if (error) throw error;
       setBookings(prev => prev.map(b => b.id === booking.id ? {
         ...b,
@@ -162,7 +161,7 @@ export default function BookingRequests({
         session_link: sessionLink
       } : b));
       await dispatchBookingNotifications(booking.id);
-      toast.success('Booking confirmed.');
+      toast.success(booking.status === 'confirmed' ? 'Classroom updated. Learners can use the updated Join Session link.' : 'Booking confirmed.');
       if (onBookingUpdate) onBookingUpdate();
     } catch (err) {
       console.error('Error accepting booking:', err);
@@ -509,7 +508,7 @@ export default function BookingRequests({
 
                       <div className="flex gap-2 flex-wrap">
                         {}
-                        {b.status === 'confirmed' && b.session_link && (!isPast || isToday) && <a href={b.session_link} target="_blank" rel="noopener noreferrer">
+                        {bookingSessionLink(b) && (!isPast || isToday) && <a href={bookingSessionLink(b)} target="_blank" rel="noopener noreferrer">
                             <Button size="sm" className="text-xs gap-1 h-8 bg-green-600 hover:bg-green-700 text-white">
                               <ExternalLink className="w-3.5 h-3.5" /> Join Session
                             </Button>
@@ -532,7 +531,7 @@ export default function BookingRequests({
                           </div>}
 
                         {}
-                        {b.status === 'pending' && <>
+                        {['pending','confirmed'].includes(b.status) && <>
                             <label className="flex flex-col gap-1 text-xs font-semibold">Classroom platform
                               <select aria-label="Choose session platform" className="h-8 rounded-lg border bg-background px-2 text-xs" value={meetingChoices[b.id] || 'smartbridge'} onChange={e=>setMeetingChoices(v=>({...v,[b.id]:e.target.value}))}>
                                 <option value="smartbridge">SmartBridge Live (pilot)</option>
@@ -540,6 +539,9 @@ export default function BookingRequests({
                                 <option value="teams" disabled={!tutorProfile?.teams_link}>Microsoft Teams {!tutorProfile?.teams_link ? '(add link first)' : ''}</option>
                               </select>
                             </label>
+                            {b.status === 'confirmed' && <Button size="sm" variant="outline" disabled={isProcessing || !meetingChoices[b.id]} onClick={()=>accept(b)}>Update classroom</Button>}
+                          </>}
+                        {b.status === 'pending' && <>
                             <Button size="sm" variant="outline" className="text-xs gap-1 h-8 text-red-700 border-red-200 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/20" disabled={isProcessing} onClick={() => decline(b)}>
                               {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                               Decline

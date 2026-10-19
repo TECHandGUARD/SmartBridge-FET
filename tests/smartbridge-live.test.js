@@ -29,3 +29,14 @@ test('tutors choose among SmartBridge, Zoom and Teams for each booking', () => {
   assert.match(booking,/session_link: sessionLink/);
   assert.match(routes,/live-classroom\/:bookingId/);
 });
+
+
+test('confirmed introductory proposals get a classroom link without a saved URL', async () => {
+  const {bookingSessionLink} = await import('../src/lib/booking-session.js');
+  assert.equal(bookingSessionLink({id:'intro',status:'confirmed',session_link:null}), '/live-classroom/intro');
+  assert.equal(bookingSessionLink({id:'intro',status:'pending'}),null);
+  assert.equal(bookingSessionLink({id:'intro',status:'cancelled',session_link:'https://zoom.us/j/123'}),null);
+  for (const link of ['https://zoom.us/j/123','https://teams.microsoft.com/l/meetup-join/123']) {
+    assert.equal(bookingSessionLink({id:'intro',status:'confirmed',session_link:link}),link);
+  }
+});
