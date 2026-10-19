@@ -17,9 +17,9 @@ const visuals = {
   'Real-world scenario': ['Situation', 'Model', 'Solution']
 };
 
-function InfoBlock({ title, children, accent }) {
+function InfoBlock({ title, children }) {
   return <div className="lesson-design-block" style={{ borderColor: 'var(--lesson-border)' }}>
-    <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wider" style={{ color: accent || 'var(--lesson-accent)' }}>{title}</h3>
+    <h3 className="mb-1.5 text-[11px] font-extrabold uppercase tracking-wider" style={{ color: 'var(--lesson-accent)' }}>{title}</h3>
     <div className="whitespace-pre-wrap break-words text-sm leading-relaxed" style={{ color: 'var(--lesson-ink)' }}>{children}</div>
   </div>;
 }
