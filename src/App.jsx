@@ -40,6 +40,7 @@ const AssessmentCentre = lazy(() => import('./pages/AssessmentCentre'));
 const Bookings = lazy(() => import('./pages/Bookings'));
 const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
 const VideoLessons = lazy(() => import('./pages/VideoLessons'));
+const VirtualMeetings = lazy(() => import('./pages/VirtualMeetings'));
 const LiveClassroom = lazy(() => import('./pages/LiveClassroom'));
 const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
 const CAPSAdmin = lazy(() => import('./pages/CAPSAdmin'));
@@ -238,6 +239,9 @@ const AuthenticatedApp = () => {
               </RequireAuthAndOnboarding>
             }
           />
+
+          <Route path="/meetings" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','parent','tutor','sace_tutor','student_tutor']}><VirtualMeetings /></ProtectedRoute></RequireAuthAndOnboarding>} />
+          <Route path="/meetings/:meetingId" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','parent','tutor','sace_tutor','student_tutor']}><VirtualMeetings /></ProtectedRoute></RequireAuthAndOnboarding>} />
 
           {/* Booking-verified in-app classroom. The page independently checks the booking via RLS-backed RPC. */}
           <Route path="/live-classroom/:bookingId" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['student','sace_tutor','student_tutor','tutor']}><LiveClassroom /></ProtectedRoute></RequireAuthAndOnboarding>} />
