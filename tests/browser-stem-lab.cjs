@@ -37,6 +37,7 @@ const assert = require('node:assert/strict');
     await page.getByPlaceholder('Email address').fill(profile.email);
     await page.getByPlaceholder('Password', { exact: true }).fill('TestPassword123');
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await page.waitForURL('**/student-dashboard');
     await page.goto(base + '/stem-lab');
     await page.getByRole('heading', { name: 'Virtual STEM Lab', exact: true }).waitFor({ timeout: 15000 }).catch(error => { console.error('STEM route:', page.url()); throw error; });
     for (const width of [375, 1280]) {

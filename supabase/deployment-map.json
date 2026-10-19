@@ -58,9 +58,9 @@
       "access": "user",
       "verify_jwt": true,
       "provider": "Yoco/Paystack",
-      "deployed_version": null,
-      "deployed_verify_jwt": null,
-      "deployed_bundle_sha256": null,
+      "deployed_version": 12,
+      "deployed_verify_jwt": true,
+      "deployed_bundle_sha256": "6d6377480f2bc6b4f1ebf70cfc3a05d4a228d377b47c32acb73b88f195bc2e22",
       "retrieved_entrypoint_sha256": null,
       "reconciled_entrypoint_sha256": "9d047b116aaeb8800168e8fb80dee28270cfc25db47a1608f1c88d37df5d5181",
       "dependencies": [
@@ -85,7 +85,9 @@
         "supabase/migrations/20261013093805_api_integrations.sql",
         "supabase/migrations/20261013103838_payment_gateway_settings.sql",
         "supabase/migrations/20261013123603_operational_integrations.sql",
-        "supabase/migrations/20261014065749_admin_subscription_pricing.sql"
+        "supabase/migrations/20261014065749_admin_subscription_pricing.sql",
+        "supabase/migrations/20261019035605_booking_checkout_and_introductions.sql",
+        "supabase/migrations/20261019040908_protect_booking_financial_receipts.sql"
       ]
     },
     {
@@ -1058,9 +1060,9 @@
       "access": "signed-webhook",
       "verify_jwt": false,
       "provider": "Yoco",
-      "deployed_version": null,
-      "deployed_verify_jwt": null,
-      "deployed_bundle_sha256": null,
+      "deployed_version": 10,
+      "deployed_verify_jwt": false,
+      "deployed_bundle_sha256": "24b06c3e265ae9c39013154fce852d432e6ab4f0131cb023a702eeca3769b560",
       "retrieved_entrypoint_sha256": null,
       "reconciled_entrypoint_sha256": "05468f7755bfccc5260f751ca42c3ea735b612c3b65c2679458297451d682458",
       "dependencies": [
@@ -1084,7 +1086,9 @@
       "required_migrations": [
         "supabase/migrations/20261013093805_api_integrations.sql",
         "supabase/migrations/20261013103838_payment_gateway_settings.sql",
-        "supabase/migrations/20261013123603_operational_integrations.sql"
+        "supabase/migrations/20261013123603_operational_integrations.sql",
+        "supabase/migrations/20261019035605_booking_checkout_and_introductions.sql",
+        "supabase/migrations/20261019040908_protect_booking_financial_receipts.sql"
       ]
     },
     {
@@ -1113,7 +1117,7 @@
       }
     }
   ],
-  "updated_date": "2026-10-13",
+  "updated_date": "2026-10-19",
   "ordered_migrations": [
     "supabase/migrations/20260822153131_create_tech_guard_website_tables.sql",
     "supabase/migrations/20260822153132_capture_live_schema_baseline.sql",

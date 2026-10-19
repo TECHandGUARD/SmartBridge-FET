@@ -72,6 +72,13 @@ do $$declare b public.tutor_bookings;o jsonb;begin
  if (select payment_status from public.tutor_bookings where id=b.id)<>'refunded' then raise exception 'Refund not settled';end if;
  if exists(select 1 from public.subscriptions where user_id=b.student_id) then raise exception 'Booking activated subscription';end if;
 end $$;
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000009904","role":"authenticated"}',true);
+do $$declare booking_key uuid;begin
+ select id into booking_key from public.tutor_bookings where client_request_id='00000000-0000-4000-8000-000000009913';
+ begin update public.tutor_bookings set payment_status='paid' where id=booking_key;raise exception 'Admin forged receipt';exception when raise_exception then if sqlerrm='Admin forged receipt' then raise;end if;end;
+ begin perform public.record_tutor_payout(booking_key,'unverified-transfer');raise exception 'Refunded booking paid out';exception when raise_exception then if sqlerrm='Refunded booking paid out' then raise;end if;end;
+end $$;
 reset role;
 select set_config('request.jwt.claims','{}',true);
 select 'PASS: booking payment ownership, verified amounts, test/live separation, replay, introductory proposals, parent payer and refund settlement' result;
