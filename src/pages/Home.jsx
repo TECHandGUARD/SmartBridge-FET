@@ -127,7 +127,7 @@ const Footer = React.memo(function Footer() {
             <ul className="space-y-1.5 text-sm text-muted-foreground">
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> CAPS Aligned</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> Tutor Profiles</li>
-              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> POPIA Compliant</li>
+              <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> Privacy Policy Available</li>
               <li className="flex items-center gap-2"><CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" /> DBE Guidelines</li>
             </ul>
           </div>
@@ -202,6 +202,12 @@ function PublicLandingView() {
         </div>
       </div>
       <TechGuardBanner />
+      <section aria-label="Install SmartBridge on your phone" className="border-b bg-background px-4 py-5">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="font-semibold">SmartBridge on your phone — no app-store download required</h2>
+          <p className="mt-1 text-sm text-muted-foreground">On iPhone, open SmartBridge in Safari, tap Share and choose Add to Home Screen. On Android, open it in Chrome and select Install app or Add to Home screen from the browser menu when available. An internet connection is required for AI answers and bookings. SmartBridge is not yet listed in the app stores.</p>
+        </div>
+      </section>
       <SubjectsPreview />
       <RoleDashboardCards />
       <PremiumBanner />
