@@ -40,6 +40,12 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
       return;
     }
 
+    // Paid bookings require a server-created payment order and verified Yoco webhook.
+    // Until that flow is deployed, do not create an unpaid booking as if it were confirmed.
+    if (!form.is_intro && !form.sponsorship_allocation_id && estimate > 0) {
+      toast.error('Paid tutor checkout is not available yet. No booking has been submitted.');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -68,8 +74,8 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
         {done ? (
           <div className="text-center py-8">
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
-            <p className="font-playfair text-xl font-bold mb-1">Booking Sent!</p>
-            <p className="text-sm text-muted-foreground">Your request has been sent. The tutor will confirm shortly.</p>
+            <p className="font-playfair text-xl font-bold mb-1">Request Sent!</p>
+            <p className="text-sm text-muted-foreground">Your request has been sent. This is not a payment confirmation. The tutor will confirm shortly.</p>
             <Button className="mt-4 w-full bg-primary" onClick={onClose}>Close</Button>
           </div>
         ) : (
@@ -91,7 +97,7 @@ export default function BookingModal({ tutor, user, open, onClose, onBookingCrea
 
             {tutor?.offers_free_intro && <label className="flex items-start gap-3 rounded-xl border p-3 text-sm">
               <input type="checkbox" checked={form.is_intro} className="mt-1" onChange={e => setForm(f => ({...f, is_intro: e.target.checked, duration_hours: e.target.checked ? 0.5 : 1}))} />
-              <span>Free 30-minute introduction<span className="block text-xs text-muted-foreground">One per learner and tutor. Eligibility is checked when you submit.</span></span>
+              <span>Request a free 30-minute introduction<span className="block text-xs text-muted-foreground">A tutor must accept and arrange the introduction. No payment is collected.</span></span>
             </label>}
             {/* Date & Time */}
             <div className="grid grid-cols-2 gap-3">
