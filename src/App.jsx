@@ -340,7 +340,7 @@ const AuthenticatedApp = () => {
           {/* Admin only routes */}
           <Route
             path="/learning-index-admin"
-            element={<ProtectedRoute allowedRoles={['admin']}><LearningIndexAdmin /></ProtectedRoute>}
+            element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin']}><LearningIndexAdmin /></ProtectedRoute></RequireAuthAndOnboarding>}
           />
         <Route
             path="/caps-admin"
