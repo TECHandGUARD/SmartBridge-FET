@@ -5,7 +5,7 @@ export default function LearningIndexAdmin() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState('');
-  const [messages, setMessages] = useState({});
+  const [messages, setMessages] = useState({ error: '' });
 
   useEffect(() => {
     let active = true;
