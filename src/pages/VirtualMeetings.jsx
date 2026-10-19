@@ -17,7 +17,7 @@ export default function VirtualMeetings(){
     const attempt=generation.current;
     const {data,error:loadError}=await supabase.rpc(meetingId?'virtual_meeting_details':'list_virtual_meetings',meetingId?{meeting_key:meetingId}:undefined);
     if(attempt!==generation.current)return;
-    if(loadError){setError(loadError.message);setMeeting(null);setLoading(false);return;}
+    if(loadError){setError(loadError.message);if(['42501','P0001','PGRST301'].includes(loadError.code))setMeeting(null);setLoading(false);return;}
     if(meetingId)setMeeting(data);else setMeetings(data||[]);setLoading(false);
   },[meetingId]);
   useEffect(()=>{

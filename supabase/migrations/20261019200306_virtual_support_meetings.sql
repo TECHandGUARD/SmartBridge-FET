@@ -64,7 +64,7 @@ returns uuid language plpgsql security definer set search_path='' as $$
 declare actor public.users;meeting_key uuid;ids uuid[];email_count integer;recipient uuid;
 begin
  select * into actor from public.users where id=auth.uid();
- if not smartbridge_private.meeting_adult(auth.uid()) or actor.role='parent' then raise exception 'An administrator or verified tutor must request the meeting';end if;
+ if not smartbridge_private.meeting_adult(auth.uid()) or (actor.role='parent' and not coalesce(actor.is_super_admin,false)) then raise exception 'An administrator or verified tutor must request the meeting';end if;
  if client_request_id is null then raise exception 'Request ID required';end if;
  perform pg_advisory_xact_lock(hashtextextended('virtual-meeting:'||auth.uid()::text,0));
  select id into meeting_key from public.virtual_meetings where host_id=auth.uid() and request_id=client_request_id;
@@ -83,7 +83,7 @@ begin
  foreach recipient in array ids loop
  insert into public.virtual_meeting_participants(meeting_id,user_id) values(meeting_key,recipient);
  perform smartbridge_private.queue_notification('virtual-meeting:'||meeting_key||':invite:'||recipient,recipient,auth.uid(),'meeting-invitation','Virtual meeting invitation',
- actor.full_name||' invited you to '||btrim(meeting_title)||'. Accept or decline in Virtual Meetings: /meetings',null);
+ coalesce(nullif(actor.full_name,''),'A SmartBridge host')||' invited you to '||btrim(meeting_title)||'. Accept or decline in Virtual Meetings: /meetings',null);
  end loop;
  return meeting_key;
 end $$;

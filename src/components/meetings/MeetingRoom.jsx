@@ -31,7 +31,7 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
       if(accessError||!data?.can_join)throw new Error('Accept the invitation and join within the scheduled meeting window.');
       if(attempt!==generation.current)return;
       if(!navigator.mediaDevices?.getUserMedia||!window.RTCPeerConnection)throw new Error('Use a current browser with camera and microphone support.');
-      const media=await navigator.mediaDevices.getUserMedia({audio:true,video:true});
+      const media=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true},video:{width:{ideal:640},height:{ideal:360},frameRate:{ideal:15,max:20}}});
       if(attempt!==generation.current){media.getTracks().forEach(t=>t.stop());return;}
       stream.current=media;setLocal(media);
       call.current=createMeetingCall({client:supabase,meetingId:meeting.id,userId:user.id,stream:media,
