@@ -5,7 +5,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
  try{
   for(let n=0;n<100;n++){try{await fetch('http://127.0.0.1:5183/login');break;}catch{await new Promise(r=>setTimeout(r,100));}}
   browser=await chromium.launch({headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required'],...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{})});
-  const people=['admin','tutor','parent','tutor','parent'].map((role,i)=>({id:`00000000-0000-4000-8000-00000000020${i+1}`,email:`meeting${i}@example.test`,role,full_name:`Meeting Person ${i}`,is_active:true,onboarding_complete:true}));
+  const people=['admin','tutor','parent','tutor','parent'].map((role,i)=>({id:`00000000-0000-4000-8000-00000000020${i+1}`,email:`meeting${i}@example.test`,role,full_name:`Meeting Person ${i}`,is_super_admin:role==='admin',is_active:true,onboarding_complete:true}));
   const meetings=[],signals=[],errors=[];let failRead=false;
   const details=(m,person)=>({...m,can_join:m.status==='scheduled'&&m.participants.some(p=>p.user_id===person.id&&p.response==='accepted')});
   async function open(person){
