@@ -1,0 +1,148 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "SmartBridge authenticated call relay credential service",
+  "Parameters": {
+    "ExecutionRoleArn": {
+      "Type": "String",
+      "AllowedPattern": "^arn:aws:iam::[0-9]{12}:role/.+"
+    },
+    "ChannelArn": {
+      "Type": "String",
+      "AllowedPattern": "^arn:aws:kinesisvideo:.+"
+    },
+    "ProjectUrl": {
+      "Type": "String",
+      "AllowedPattern": "^https://[a-z]{20}\\.supabase\\.co$"
+    },
+    "PublishableKey": {
+      "Type": "String",
+      "AllowedPattern": "^sb_publishable_.+",
+      "Description": "Public browser key, not a server credential"
+    },
+    "AppOrigin": {
+      "Type": "String",
+      "AllowedPattern": "^https://[^/]+$"
+    }
+  },
+  "Resources": {
+    "RelayLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/smartbridge-call-relay",
+        "RetentionInDays": 14
+      }
+    },
+    "Relay": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "smartbridge-call-relay",
+        "Runtime": "python3.13",
+        "Architectures": [
+          "arm64"
+        ],
+        "Handler": "index.handler",
+        "Role": {
+          "Ref": "ExecutionRoleArn"
+        },
+        "MemorySize": 256,
+        "Timeout": 20,
+        "Code": {
+          "ZipFile": "__HANDLER_SOURCE__"
+        },
+        "Environment": {
+          "Variables": {
+            "CHANNEL_ARN": {
+              "Ref": "ChannelArn"
+            },
+            "SUPABASE_URL": {
+              "Ref": "ProjectUrl"
+            },
+            "SUPABASE_PUBLISHABLE_KEY": {
+              "Ref": "PublishableKey"
+            },
+            "APP_ORIGIN": {
+              "Ref": "AppOrigin"
+            }
+          }
+        }
+      }
+    },
+    "RelayUrl": {
+      "Type": "AWS::Lambda::Url",
+      "Properties": {
+        "TargetFunctionArn": {
+          "Ref": "Relay"
+        },
+        "AuthType": "NONE"
+      }
+    },
+    "UrlPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Relay"
+        },
+        "Action": "lambda:InvokeFunctionUrl",
+        "Principal": "*",
+        "FunctionUrlAuthType": "NONE"
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Relay"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "*",
+        "InvokedViaFunctionUrl": true
+      }
+    },
+    "CleanupSchedule": {
+      "Type": "AWS::Events::Rule",
+      "Properties": {
+        "ScheduleExpression": "rate(1 hour)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Fn::GetAtt": [
+                "Relay",
+                "Arn"
+              ]
+            },
+            "Id": "relay-cleanup"
+          }
+        ]
+      }
+    },
+    "CleanupPermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Relay"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "events.amazonaws.com",
+        "SourceArn": {
+          "Fn::GetAtt": [
+            "CleanupSchedule",
+            "Arn"
+          ]
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "RelayUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "RelayUrl",
+          "FunctionUrl"
+        ]
+      }
+    }
+  }
+}

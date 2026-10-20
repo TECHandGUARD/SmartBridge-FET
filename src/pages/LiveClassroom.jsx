@@ -1,3 +1,5 @@
+import {DEFAULT_ICE_SERVERS,getCallIceConfig,applyCallQuality,selectedCallRoute} from '@/lib/call-network';
+import CallNetworkControls from '@/components/live/CallNetworkControls';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, RefreshCw, ShieldCheck, Video } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
@@ -8,11 +10,11 @@ import {requestCallMedia,callMediaError} from '@/lib/call-media';
 import {useSlidePresentation} from '@/lib/use-slide-presentation';
 const SlidePresentation=lazy(()=>import('@/components/live/SlidePresentation'));
 
-const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
+
 const SIGNAL_KINDS = new Set(['offer','answer','ice','ready','leave']);
 const liveWindowMessage = 'The classroom opens 20 minutes before a confirmed session and closes 30 minutes after it ends.';
 const errors = error => error instanceof Error ? error.message : 'Unable to connect. Try again.';
-const getMedia = () => requestCallMedia();
+const getMedia = mode => requestCallMedia(mode);
 
 export default function LiveClassroom() {
   const { bookingId } = useParams();
@@ -26,6 +28,9 @@ export default function LiveClassroom() {
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
   const [canShare,setCanShare]=useState(()=>typeof navigator.mediaDevices?.getDisplayMedia==='function');
+  const [quality,setQuality]=useState('saver'),[relayOnly,setRelayOnly]=useState(false),[network,setNetwork]=useState(null),[route,setRoute]=useState(null);
+  const qualityRef=useRef('saver'),relayOnlyRef=useRef(false),receiveVideo=useRef(true),iceConfig=useRef({iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false}),networkResume=useRef(null),restartTimer=useRef(null),lastRestart=useRef(0),lastRotation=useRef(0);
+  relayOnlyRef.current=relayOnly;
   const [sharing, setSharing] = useState(false);
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
@@ -69,12 +74,12 @@ export default function LiveClassroom() {
     }
   }, []);
 
-  const makeOffer = useCallback(async () => {
+  const makeOffer = useCallback(async (restart=false) => {
     const pc = peer.current;
     if (!pc || sentOffer.current || !active.current) return;
     sentOffer.current = true;
     try {
-      const offer = await pc.createOffer();
+      const offer = await pc.createOffer({iceRestart:restart});
       await pc.setLocalDescription(offer);
       if (!active.current || peer.current !== pc) return;
       await send('offer',{ sdp: pc.localDescription?.sdp, type: 'offer' });
@@ -87,18 +92,20 @@ export default function LiveClassroom() {
     peer.current?.close();
     pendingIce.current = [];
     sentOffer.current = false;
-    const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+    const pc = new RTCPeerConnection({iceServers:iceConfig.current.iceServers,iceTransportPolicy:relayOnlyRef.current?'relay':'all'});
       peer.current = pc;
       transport.attach(pc,recipientId,role==='tutor');
       localStream.current.getTracks().forEach(track => pc.addTrack(
         track.kind === 'video' && screenStream.current ? screenStream.current.getVideoTracks()[0] : track,
         localStream.current));
+      for(const kind of ['audio','video'])if(!localStream.current.getTracks().some(track=>track.kind===kind))pc.addTransceiver(kind,{direction:kind==='video'&&!receiveVideo.current?'inactive':'recvonly'});
       pc.ontrack = event => { if (remoteVideo.current) remoteVideo.current.srcObject = event.streams[0]; setStatus('Connecting media…'); };
       pc.onicecandidate = event => { if (event.candidate && active.current && peer.current === pc) send('ice',{ candidate: event.candidate.toJSON() }).catch(e=>setError(errors(e))); };
       pc.onconnectionstatechange = () => {
         if (!active.current || peer.current !== pc) return;
-        if (pc.connectionState==='connected') { setError(''); setStatus('Live — secure peer-to-peer connection'); }
-        if (pc.connectionState==='failed') setError('Direct connection failed on this network. A TURN relay is required; ask the tutor to switch the booking to Zoom or Teams.');
+        if (pc.connectionState==='connected') { clearTimeout(restartTimer.current);restartTimer.current=null;applyCallQuality(pc,qualityRef.current);selectedCallRoute(pc).then(value=>{if(active.current&&peer.current===pc)setRoute(value);}).catch(()=>{});setError(''); setStatus('Live — secure peer-to-peer connection'); }
+        if(['failed','disconnected'].includes(pc.connectionState)&&!restartTimer.current)restartTimer.current=setTimeout(()=>{restartTimer.current=null;networkResume.current?.();},pc.connectionState==='failed'?500:3000);
+        if(pc.connectionState==='failed')setError('Reconnecting this call. Try relay connection mode or audio and slides if the network stays blocked.');
         if (pc.connectionState==='disconnected') setStatus('Connection interrupted. Trying to reconnect…');
       };
 
@@ -122,7 +129,7 @@ export default function LiveClassroom() {
           pc = createPeer();
         }
         if (!payload.ack) await send('ready', {ack:true});
-        if (role==='tutor') await makeOffer();
+        if (role==='tutor'){if(payload.restart)sentOffer.current=false;await makeOffer(!!payload.restart);}
       } else if (payload.target_session !== sessionId.current || payload.session_id !== remoteSession.current) {
         return;
       } else if (message.kind==='offer' && role==='learner') {
@@ -153,6 +160,7 @@ export default function LiveClassroom() {
 
   const stop = useCallback(() => {
     transport.reset();
+    clearTimeout(restartTimer.current);restartTimer.current=null;networkResume.current=null;setRoute(null);
     active.current = false;
     generation.current += 1;
     joining.current = false;
@@ -205,7 +213,9 @@ export default function LiveClassroom() {
     return () => { cancelled = true; stop(); };
   }, [bookingId,user?.id,stop]);
 
-  const join = async () => {
+  useEffect(()=>{qualityRef.current=quality;if(peer.current)applyCallQuality(peer.current,quality);},[quality]);
+  useEffect(()=>{const resume=()=>{if(active.current)networkResume.current?.();};const visible=()=>{if(document.visibilityState==='visible'&&peer.current?.connectionState!=='connected')resume();};const connection=/** @type {any} */(navigator).connection;window.addEventListener('online',resume);document.addEventListener('visibilitychange',visible);connection?.addEventListener?.('change',resume);return()=>{window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',visible);connection?.removeEventListener?.('change',resume);};},[]);
+  const join = async (mode='video') => {
     if (!authorized || !booking || joining.current || active.current) return;
     joining.current = true;
     setConnecting(true);
@@ -213,12 +223,14 @@ export default function LiveClassroom() {
     setError('');
     setStatus('Requesting camera and microphone…');
     try {
-      const stream = await getMedia();
+      const stream = await getMedia(mode==='audioSlides'?'audio':mode);receiveVideo.current=mode!=='audioSlides';
       if (attempt !== generation.current) { stream.getTracks().forEach(track => track.stop()); return; }
       localStream.current = stream;
       const { data: allowed, error: checkError } = await supabase.rpc('can_join_live_classroom', { booking_key: booking.id });
       if (checkError || !allowed) throw new Error(liveWindowMessage);
       if (attempt !== generation.current) return;
+      const config=await getCallIceConfig(supabase,'classroom',booking.id);setNetwork(config);if(attempt!==generation.current)return;if(relayOnly&&!config.relayAvailable)throw new Error('The relay is unavailable. Try automatic connection mode or retry shortly.');iceConfig.current=config;lastRotation.current=Date.now();
+      setMuted(!stream.getAudioTracks().length);setCameraOff(!stream.getVideoTracks().length);
       if (localVideo.current) localVideo.current.srcObject = stream;
       active.current = true;
       lastSignal.current = new Set();
@@ -226,6 +238,16 @@ export default function LiveClassroom() {
       remoteSession.current = null;
       signalQueue.current = Promise.resolve();
       createPeer();
+      networkResume.current=()=>{
+        if(!active.current||Date.now()-lastRestart.current<8000)return;lastRestart.current=Date.now();lastRotation.current=Date.now();
+        signalQueue.current=signalQueue.current.then(async()=>{
+          const pc=peer.current;if(!pc||!active.current)return;
+          const fresh=await getCallIceConfig(supabase,'classroom',booking.id,{force:true});if(!active.current||pc!==peer.current)return;
+          if(fresh.relayAvailable||!iceConfig.current.relayAvailable)iceConfig.current=fresh;
+          pc.setConfiguration({iceServers:iceConfig.current.iceServers,iceTransportPolicy:relayOnlyRef.current?'relay':'all'});
+          if(role==='tutor'&&pc.signalingState==='stable'){sentOffer.current=false;await makeOffer(true);}else if(role!=='tutor')await send('ready',{restart:true});
+        }).catch(e=>{if(active.current)setError(errors(e));});
+      };
       setJoined(true);
       setStatus('Waiting for the other participant…');
       // Serialize SDP and ICE operations; realtime and recovery may deliver duplicates.
@@ -260,6 +282,7 @@ export default function LiveClassroom() {
       accessTimer.current = setInterval(async () => {
         const { data: stillAllowed, error: accessError } = await supabase.rpc('can_join_live_classroom', {booking_key:booking.id});
         if (attempt !== generation.current) return;
+        if(Date.now()-lastRotation.current>35*60000)networkResume.current?.();
         if (accessError || !stillAllowed) { stop(); setAuthorized(false); setError('Classroom access ended. Refresh your booking before joining again.'); }
       }, 60000);
       await recover();
@@ -322,11 +345,13 @@ export default function LiveClassroom() {
           <span className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs">You · {role}</span>
         </div>
       </div>
+      <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||connecting} network={network} route={route}/>
       <p role="status" className="text-center text-sm font-medium">{status}</p>
       {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+      {!joined&&<div className="flex flex-wrap gap-2"><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('audio')}>Join classroom with microphone only</button><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('listen')}>Join classroom to watch and listen</button><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('audioSlides')}>Join classroom with audio and slides only</button></div>}
       {joined&&!canShare&&<p className="text-center text-sm text-muted-foreground">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
       <div className="flex flex-wrap justify-center gap-2">
-        {!joined ? <button type="button" disabled={!authorized || connecting} onClick={join} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Video size={18}/> {connecting ? 'Connecting…' : 'Join classroom'}</button> : <>
+        {!joined ? <button type="button" disabled={!authorized || connecting} onClick={()=>join()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Video size={18}/> {connecting ? 'Connecting…' : 'Join classroom'}</button> : <>
           <button type="button" onClick={toggleMic} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{muted?<MicOff size={18}/>:<Mic size={18}/>} {muted?'Unmute':'Mute'}</button>
           <button type="button" onClick={toggleCamera} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{cameraOff?<CameraOff size={18}/>:<Camera size={18}/>} {cameraOff?'Camera on':'Camera off'}</button>
           {canShare&&<button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>}
@@ -337,7 +362,7 @@ export default function LiveClassroom() {
     </div>
     <div className="grid gap-3 sm:grid-cols-2 text-sm">
       <div className="rounded-xl border p-4"><h2 className="font-semibold">Safety and privacy</h2><p className="mt-2 text-muted-foreground">Only the booked tutor and learner can enter. Do not share personal contact details or move lessons outside SmartBridge without guardian approval. The call is not recorded. If you feel unsafe, leave immediately and report the incident to SmartBridge support.</p></div>
-      <div className="rounded-xl border p-4"><h2 className="font-semibold">Free pilot limitations</h2><p className="mt-2 text-muted-foreground">This uses direct WebRTC with public STUN, without a paid TURN relay. Some school or mobile networks cannot connect. Zoom and Teams remain available through the tutor's existing meeting links.</p></div>
+      <div className="rounded-xl border p-4"><h2 className="font-semibold">Free pilot limitations</h2><p className="mt-2 text-muted-foreground">Calls try direct encrypted connections and can fall back to an authenticated relay. Data saver and audio-and-slides modes reduce mobile data use. School network administrators may still need to permit calling traffic.</p></div>
     </div>
   </main>;
 }

@@ -19,7 +19,8 @@ test('classroom offers video, audio, screen sharing and clean exit', () => {
   for (const token of ['RTCPeerConnection','requestCallMedia','getDisplayMedia','onicecandidate','setRemoteDescription','addIceCandidate','getTracks().forEach(track => track.stop())','can_join_live_classroom']) {
     assert.ok(classroom.includes(token),token);
   }
-  assert.match(classroom,/TURN relay is required/);
+  assert.match(classroom,/getCallIceConfig/);
+  assert.match(classroom,/iceTransportPolicy/);
 });
 
 test('tutors choose among SmartBridge, Zoom and Teams for each booking', () => {
