@@ -14,12 +14,12 @@ export default function VirtualMeetings(){
   useEffect(()=>{if(meetingId)clearMeetingReturn('/meetings/'+meetingId);},[meetingId]);
   const [meetings,setMeetings]=useState([]),[meeting,setMeeting]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(''),[busy,setBusy]=useState(false);
   const [form,setForm]=useState({title:'',purpose:'parent_support',agenda:'',starts:initialStart(),duration:'30',emails:''});
-  const [notice,setNotice]=useState('');const request=useRef(null),generation=useRef(0);
+  const [notice,setNotice]=useState('');const request=useRef(null),generation=useRef(0),loadSequence=useRef(0);
   const canCreate=user?.is_super_admin||['admin','tutor','sace_tutor','student_tutor'].includes(user?.role);
   const load=useCallback(async()=>{
-    const attempt=generation.current;
+    const attempt=generation.current,sequence=++loadSequence.current;
     const {data,error:loadError}=await supabase.rpc(meetingId?'virtual_meeting_details':'list_virtual_meetings',meetingId?{meeting_key:meetingId}:undefined);
-    if(attempt!==generation.current)return;
+    if(attempt!==generation.current||sequence!==loadSequence.current)return;
     if(loadError){setError(loadError.message);if(['42501','P0001','PGRST301'].includes(loadError.code))setMeeting(null);setLoading(false);return;}
     if(meetingId)setMeeting(data);else setMeetings(data||[]);setLoading(false);
   },[meetingId]);
@@ -43,7 +43,7 @@ export default function VirtualMeetings(){
   };
   const response=m=>m.participants?.find(p=>p.user_id===user.id)?.response;
   return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7">
-    <header><Link to="/meetings" className="text-sm text-primary">Virtual meetings</Link><h1 className="mt-2 text-2xl font-bold">{meetingId?meeting?.title||'Private virtual meeting':'Virtual Meetings'}</h1><p className="mt-2 text-sm text-muted-foreground">Parent support, tutor reflection and professional development. Free, invitation-only meetings for administrators, verified tutors and parents.</p></header>
+    <header><Link to="/meetings" className="text-sm text-primary">Virtual meetings</Link><h1 className="mt-2 text-2xl font-bold">{meetingId?meeting?.title||'Private virtual meeting':'Virtual Meetings'}</h1><p className="mt-2 text-sm text-muted-foreground">Parent support, tutor reflection and professional development. Free, invitation-only meetings for administrators, verified tutors and parents. Invitees can first join from the scheduled start until five minutes afterwards.</p></header>
     {error&&<p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
     {notice&&<p role="status" className="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-900">{notice}</p>}
     {meetingId?loading?<p>Loading meeting…</p>:meeting&&<>

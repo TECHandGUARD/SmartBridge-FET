@@ -1,6 +1,6 @@
 // Small-room mesh. Booking classrooms keep their independent access contract.
 const ICE_SERVERS = [{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}];
-export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError}) {
+export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation}) {
   const sessionId=crypto.randomUUID();
   /** @type {Map<string, any>} */
   const peers=new Map();
@@ -17,12 +17,13 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
       payload:{...payload,session_id:sessionId,target_session:kind==='ready'&&!payload.ack?null:peers.get(id)?.session}});
     if(error)throw error;
   };
-  const remove=id=>{const p=peers.get(id);p?.pc.close();peers.delete(id);onRemote(id,null,'Left');};
+  const remove=id=>{presentation?.detach(id);const p=peers.get(id);p?.pc.close();peers.delete(id);onRemote(id,null,'Left');};
   const makePeer=(id,remoteSession)=>{
     const previous=peers.get(id);
     if(previous){if(!retired.has(id))retired.set(id,new Set());retired.get(id).add(previous.session);remove(id);}
     const pc=new RTCPeerConnection({iceServers:ICE_SERVERS});
     const p={pc,session:remoteSession,pending:[],offered:false};peers.set(id,p);
+    presentation?.attach(pc,id,userId<id);
     stream.getTracks().forEach(track=>pc.addTrack(track.kind==='video'?videoTrack:track,stream));
     pc.ontrack=e=>{if(active&&peers.get(id)===p)onRemote(id,e.streams[0],'Connecting');};
     pc.onicecandidate=e=>{if(e.candidate&&active&&peers.get(id)===p)send(id,'ice',{candidate:e.candidate.toJSON()}).catch(report);};
