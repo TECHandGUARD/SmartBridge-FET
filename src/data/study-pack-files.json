@@ -1,0 +1,272 @@
+[
+  {
+    "id": "math-10",
+    "url": "/study-packs/smartbridge-math-10.pdf",
+    "bytes": 68663,
+    "sha256": "afc0347dc2abb942aa31c8f42d7ddefc08e2ea6efd706ba40b2b95a12763744b"
+  },
+  {
+    "id": "math-11",
+    "url": "/study-packs/smartbridge-math-11.pdf",
+    "bytes": 70055,
+    "sha256": "3df520c6b7a744f6b3b49c99d19bda6ef7682e436457733a4f0223f3cace27fc"
+  },
+  {
+    "id": "math-12",
+    "url": "/study-packs/smartbridge-math-12.pdf",
+    "bytes": 69431,
+    "sha256": "540976664c14aee826b733941e361b6505af73984f8295f24881f6a25e5daba8"
+  },
+  {
+    "id": "matlit-10",
+    "url": "/study-packs/smartbridge-matlit-10.pdf",
+    "bytes": 69044,
+    "sha256": "1be3f2fd8854f1f066f4ca9b40cda1a38775d68455652064c0840a156e7387a9"
+  },
+  {
+    "id": "matlit-11",
+    "url": "/study-packs/smartbridge-matlit-11.pdf",
+    "bytes": 68786,
+    "sha256": "860f4c94ce36b79dff2fab065702f0ac59287dc68d9c13acd813a401f57cdc53"
+  },
+  {
+    "id": "matlit-12",
+    "url": "/study-packs/smartbridge-matlit-12.pdf",
+    "bytes": 69165,
+    "sha256": "733817afbfa061fbb95f19bbc82f412f9c8d3d3c6fc6e5bd2db1efce09283865"
+  },
+  {
+    "id": "phsc-10",
+    "url": "/study-packs/smartbridge-phsc-10.pdf",
+    "bytes": 69243,
+    "sha256": "b7f0238cee63fa32e65d17c410daec28d314aac48bc4788d37bf90eb1779788d"
+  },
+  {
+    "id": "phsc-11",
+    "url": "/study-packs/smartbridge-phsc-11.pdf",
+    "bytes": 69040,
+    "sha256": "66c0583af5b21f7b5597baa3ae7b0b50f24ff2846f413bd3fff852f40dae4340"
+  },
+  {
+    "id": "phsc-12",
+    "url": "/study-packs/smartbridge-phsc-12.pdf",
+    "bytes": 69014,
+    "sha256": "fd392df13b10491eaeb3dd79a8ccc72b98e5dab6217b2e9311a4d7079f849c69"
+  },
+  {
+    "id": "lisc-10",
+    "url": "/study-packs/smartbridge-lisc-10.pdf",
+    "bytes": 68939,
+    "sha256": "9169c973f25d3ee8a1b739b56c543f7a35e3f41f3a4db570dda608fb52346148"
+  },
+  {
+    "id": "lisc-11",
+    "url": "/study-packs/smartbridge-lisc-11.pdf",
+    "bytes": 68908,
+    "sha256": "d1c15a0694c7ee91c7c170890b0cbfe11e2f2bb4ba0181146e103a2439719438"
+  },
+  {
+    "id": "lisc-12",
+    "url": "/study-packs/smartbridge-lisc-12.pdf",
+    "bytes": 68869,
+    "sha256": "d9b7ff80d21896b1b34a14956a4a5ad803088a9f84499922e89e16e1bcc596cc"
+  },
+  {
+    "id": "acc-10",
+    "url": "/study-packs/smartbridge-acc-10.pdf",
+    "bytes": 68782,
+    "sha256": "4e37293e1d9adab845e73037dc8c06ed0cc429797566bff814f0478ba504a32b"
+  },
+  {
+    "id": "acc-11",
+    "url": "/study-packs/smartbridge-acc-11.pdf",
+    "bytes": 68837,
+    "sha256": "65562c77b631dc1be623df58e0aadc290a05c5d08345d95c7c0736989d149a94"
+  },
+  {
+    "id": "acc-12",
+    "url": "/study-packs/smartbridge-acc-12.pdf",
+    "bytes": 69044,
+    "sha256": "8ba5d5330ccb035556f8a613c545fc260b866da27283cc5448998fbcdd134499"
+  },
+  {
+    "id": "bst-10",
+    "url": "/study-packs/smartbridge-bst-10.pdf",
+    "bytes": 68918,
+    "sha256": "8055b3d4e41bf9537368a0b3664263f7d63a4dc116cacc06d5523567435446fa"
+  },
+  {
+    "id": "bst-11",
+    "url": "/study-packs/smartbridge-bst-11.pdf",
+    "bytes": 69038,
+    "sha256": "007d899bb757a5fe3b2849d04a6e3499ae8b4ae0cdd54194ad2634b6d7c7f3e6"
+  },
+  {
+    "id": "bst-12",
+    "url": "/study-packs/smartbridge-bst-12.pdf",
+    "bytes": 68957,
+    "sha256": "5cf1661b6c81708b6b8510bf7b7154c7aa29a86f00abec60d6925ffa4481933b"
+  },
+  {
+    "id": "eco-10",
+    "url": "/study-packs/smartbridge-eco-10.pdf",
+    "bytes": 68818,
+    "sha256": "b443d811305f0f8d5c28359d4617e32b0a488eb27716a072097af0cec41877cc"
+  },
+  {
+    "id": "eco-11",
+    "url": "/study-packs/smartbridge-eco-11.pdf",
+    "bytes": 69137,
+    "sha256": "f772dc4b28571c1c1e99990ac2fa94ebb18083d35c90485124f5185e862a1a34"
+  },
+  {
+    "id": "eco-12",
+    "url": "/study-packs/smartbridge-eco-12.pdf",
+    "bytes": 68965,
+    "sha256": "abaf80f253a7a8b7b9250fe0bde66243eb48fafbfd2bbab95fd9b1b595f01fb6"
+  },
+  {
+    "id": "tour-10",
+    "url": "/study-packs/smartbridge-tour-10.pdf",
+    "bytes": 69039,
+    "sha256": "e6754a8f0ff3ced0471768b31c3bc7a654d277b4091a5ac67eaaefc3fe6b36c6"
+  },
+  {
+    "id": "tour-11",
+    "url": "/study-packs/smartbridge-tour-11.pdf",
+    "bytes": 69017,
+    "sha256": "75c8be828fc1c4d5cd671a553467a8c46095694bc6a550c4984d1af9fd5af420"
+  },
+  {
+    "id": "tour-12",
+    "url": "/study-packs/smartbridge-tour-12.pdf",
+    "bytes": 68704,
+    "sha256": "3ed814e89b3c5a44b07330cbdee4518fd7fb26526d99f54c684c697e148a2ca1"
+  },
+  {
+    "id": "hist-10",
+    "url": "/study-packs/smartbridge-hist-10.pdf",
+    "bytes": 69085,
+    "sha256": "4f6706eb585700a39031d65781b46bc818f7b85aa6dfbaded7e5026263d3a60a"
+  },
+  {
+    "id": "hist-11",
+    "url": "/study-packs/smartbridge-hist-11.pdf",
+    "bytes": 69062,
+    "sha256": "e964f897d94085a9e3ef74bd99cf01e5d669d8df82bede4ce934e11287030328"
+  },
+  {
+    "id": "hist-12",
+    "url": "/study-packs/smartbridge-hist-12.pdf",
+    "bytes": 69089,
+    "sha256": "de23fe86768b2e51961141ea3a3728449206812b7e64b608b94f88c8358db1a9"
+  },
+  {
+    "id": "geo-10",
+    "url": "/study-packs/smartbridge-geo-10.pdf",
+    "bytes": 68981,
+    "sha256": "00a7fb76e155c362716a3168d5bafd17d6b7962264e012485e17bc260d4e89bf"
+  },
+  {
+    "id": "geo-11",
+    "url": "/study-packs/smartbridge-geo-11.pdf",
+    "bytes": 68897,
+    "sha256": "592633ef7c193d8738c0375c653786e6f34ade9b47aad1e71321ce49f62279d6"
+  },
+  {
+    "id": "geo-12",
+    "url": "/study-packs/smartbridge-geo-12.pdf",
+    "bytes": 69092,
+    "sha256": "f4d87e8546a5ff5018f21a77aa3d880d3c709c34990a1862bd5a959c840642ee"
+  },
+  {
+    "id": "enhl-10",
+    "url": "/study-packs/smartbridge-enhl-10.pdf",
+    "bytes": 68984,
+    "sha256": "86b320c38bdcb064b098f6ea77daf7cb046e206d74acf125f2f4eac6c4ec01e5"
+  },
+  {
+    "id": "enhl-11",
+    "url": "/study-packs/smartbridge-enhl-11.pdf",
+    "bytes": 69248,
+    "sha256": "d7e3414f03fc76ece602fac443ccbd02d3719d585e76b5a379e8e0e45bfda75e"
+  },
+  {
+    "id": "enhl-12",
+    "url": "/study-packs/smartbridge-enhl-12.pdf",
+    "bytes": 69235,
+    "sha256": "5349dd4261795ab9e6c1a7449b256631d838bed60a80542b83f4a906040c05e6"
+  },
+  {
+    "id": "afhl-10",
+    "url": "/study-packs/smartbridge-afhl-10.pdf",
+    "bytes": 69097,
+    "sha256": "428e3227613f177762452ce9252d965b9f428d69f2b93b79663ec9f09d128a4a"
+  },
+  {
+    "id": "afhl-11",
+    "url": "/study-packs/smartbridge-afhl-11.pdf",
+    "bytes": 69268,
+    "sha256": "0f99c0aa6a5f9aa4ead32bc707bb20b241a00ee776b8978383f03f070cab0335"
+  },
+  {
+    "id": "afhl-12",
+    "url": "/study-packs/smartbridge-afhl-12.pdf",
+    "bytes": 69690,
+    "sha256": "6d5c1baf16b717505eed1bffb3af2bcc4eee872d341abbcbb50acfd513417749"
+  },
+  {
+    "id": "xhhl-10",
+    "url": "/study-packs/smartbridge-xhhl-10.pdf",
+    "bytes": 68801,
+    "sha256": "d9150600ccdbb8233c2e46e2e9c2864a2c1737748c132d74b6466cd7fa4e1213"
+  },
+  {
+    "id": "xhhl-11",
+    "url": "/study-packs/smartbridge-xhhl-11.pdf",
+    "bytes": 69058,
+    "sha256": "ec14a6bed037e0d1f56baa289e7c2c9267f9fdbc92379a8bbf81eaca72511223"
+  },
+  {
+    "id": "xhhl-12",
+    "url": "/study-packs/smartbridge-xhhl-12.pdf",
+    "bytes": 69063,
+    "sha256": "e0350af93f15159b46d18f512d51056675209e088b987ebebc46b702dd9e3d35"
+  },
+  {
+    "id": "zuhl-10",
+    "url": "/study-packs/smartbridge-zuhl-10.pdf",
+    "bytes": 68771,
+    "sha256": "ba1d4fecc827b7b85805951aa50d5f73d8b032a01b2a19815cf509e0e42cdde8"
+  },
+  {
+    "id": "zuhl-11",
+    "url": "/study-packs/smartbridge-zuhl-11.pdf",
+    "bytes": 69042,
+    "sha256": "48723debf4c77cb2f0da9b19c56febd3d06b5b2cc61056b159fa1729db1631fa"
+  },
+  {
+    "id": "zuhl-12",
+    "url": "/study-packs/smartbridge-zuhl-12.pdf",
+    "bytes": 68997,
+    "sha256": "5b2c1c3a02e62a280963bf7c55ab02290c6d963730fffe12fac3069db128d185"
+  },
+  {
+    "id": "lo-10",
+    "url": "/study-packs/smartbridge-lo-10.pdf",
+    "bytes": 69180,
+    "sha256": "3b59ec921ccc9b35830decb1a8b8dffa936c66a3e47c322ac13ad8e6dc0b5ef5"
+  },
+  {
+    "id": "lo-11",
+    "url": "/study-packs/smartbridge-lo-11.pdf",
+    "bytes": 68993,
+    "sha256": "e6871c1bf667fa3b52c096e2dd44aa3a722296f4f2760c6b7d518b68d964d493"
+  },
+  {
+    "id": "lo-12",
+    "url": "/study-packs/smartbridge-lo-12.pdf",
+    "bytes": 69067,
+    "sha256": "32fce820fd90f2f3a3ae858fcd442cdbfe26bf70bb873445885d1d380032bcdc"
+  }
+]

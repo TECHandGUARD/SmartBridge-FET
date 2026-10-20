@@ -1,0 +1,3126 @@
+[
+  {
+    "id": "math-10",
+    "code": "math",
+    "subject": "Mathematics",
+    "grade": 10,
+    "title": "Factorise, solve, check",
+    "capsTopic": "Algebraic expressions; equations and inequalities",
+    "goals": [
+      "Extract a common factor",
+      "Factorise a quadratic trinomial",
+      "Verify roots by substitution"
+    ],
+    "notes": [
+      "Factorising reverses multiplication. Always check for a common factor before trying brackets.",
+      "For x² + bx + c, find two numbers with sum b and product c. This shortcut assumes the coefficient of x² is 1.",
+      "The zero-product rule applies to a product equal to zero: AB = 0 implies A = 0 or B = 0."
+    ],
+    "visual": {
+      "title": "Build the brackets",
+      "columns": [
+        "Factor pair",
+        "Sum",
+        "Product"
+      ],
+      "rows": [
+        [
+          "1 and 6",
+          "7",
+          "6"
+        ],
+        [
+          "2 and 3",
+          "5",
+          "6"
+        ],
+        [
+          "−2 and −3",
+          "−5",
+          "6"
+        ]
+      ]
+    },
+    "example": "Solve x² − 5x + 6 = 0.",
+    "steps": [
+      "The numbers −2 and −3 have sum −5 and product 6.",
+      "Write (x − 2)(x − 3) = 0. Set each bracket equal to zero.",
+      "x = 2 or x = 3. Check: 4 − 10 + 6 = 0 and 9 − 15 + 6 = 0."
+    ],
+    "questions": [
+      "Factorise 6x² + 9x.",
+      "Solve x² + 7x + 12 = 0.",
+      "A learner says x² = 9 gives only x = 3. Correct the answer and explain."
+    ],
+    "answers": [
+      "3x(2x + 3). The common factor is 3x.",
+      "(x + 3)(x + 4) = 0, so x = −3 or −4.",
+      "x = 3 or −3, because squaring either number gives 9."
+    ],
+    "commonMistake": "Do not cancel terms across addition. Only common factors can be cancelled in a fraction.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20MATHEMATICS%20_%20GR%2010-12%20_%20Web_1133.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematics",
+    "pdfUrl": "/study-packs/smartbridge-math-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "math-11",
+    "code": "math",
+    "subject": "Mathematics",
+    "grade": 11,
+    "title": "Read a quadratic graph",
+    "capsTopic": "Functions: quadratic functions",
+    "goals": [
+      "Find intercepts and the turning point",
+      "Connect factors to roots",
+      "State a range using the turning point"
+    ],
+    "notes": [
+      "A quadratic graph has equation y = ax² + bx + c, with a ≠ 0. Positive a opens upwards; negative a opens downwards.",
+      "The axis of symmetry is x = −b/(2a). Substitute this x-value to find the turning point.",
+      "The y-intercept occurs at x = 0. The x-intercepts occur where y = 0; there may be two, one or no real roots."
+    ],
+    "visual": {
+      "title": "Symmetry around x = 2",
+      "columns": [
+        "x",
+        "y = x² − 4x + 3",
+        "Meaning"
+      ],
+      "rows": [
+        [
+          "0",
+          "3",
+          "y-intercept"
+        ],
+        [
+          "1",
+          "0",
+          "root"
+        ],
+        [
+          "2",
+          "−1",
+          "minimum"
+        ],
+        [
+          "3",
+          "0",
+          "root"
+        ],
+        [
+          "4",
+          "3",
+          "mirror of x = 0"
+        ]
+      ]
+    },
+    "example": "Sketch y = x² − 4x + 3 and state its range.",
+    "steps": [
+      "Factorise: y = (x − 1)(x − 3), giving roots 1 and 3.",
+      "The axis is x = 2; y(2) = −1. Mark (2; −1) and the y-intercept (0; 3).",
+      "Draw a smooth upward parabola through these points. The range is y ≥ −1."
+    ],
+    "questions": [
+      "Find the roots of y = x² − 6x + 8.",
+      "Find its turning point.",
+      "State its axis of symmetry and range."
+    ],
+    "answers": [
+      "(x − 2)(x − 4) gives x = 2 and x = 4.",
+      "x = 3; y = 9 − 18 + 8 = −1. Turning point (3; −1).",
+      "Axis x = 3; range y ≥ −1."
+    ],
+    "commonMistake": "The axis of symmetry is an equation x = k, not a single point or a y-value.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20MATHEMATICS%20_%20GR%2010-12%20_%20Web_1133.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematics",
+    "pdfUrl": "/study-packs/smartbridge-math-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "math-12",
+    "code": "math",
+    "subject": "Mathematics",
+    "grade": 12,
+    "title": "Differentiate and interpret",
+    "capsTopic": "Differential calculus: derivatives; cubic functions",
+    "goals": [
+      "Differentiate polynomial terms",
+      "Find stationary points",
+      "Use a sign test to classify turning points"
+    ],
+    "notes": [
+      "The derivative f′(x) describes the gradient of the tangent. For a power axⁿ, the derivative is anxⁿ⁻¹.",
+      "At a stationary point f′(x) = 0. Use f(x), not f′(x), to find the point’s y-coordinate.",
+      "A change in f′ from positive to negative indicates a local maximum; negative to positive indicates a local minimum."
+    ],
+    "visual": {
+      "title": "Gradient sign chart for f(x) = x³ − 3x",
+      "columns": [
+        "Interval",
+        "Sign of f′",
+        "Behaviour"
+      ],
+      "rows": [
+        [
+          "x < −1",
+          "+",
+          "increasing"
+        ],
+        [
+          "−1 < x < 1",
+          "−",
+          "decreasing"
+        ],
+        [
+          "x > 1",
+          "+",
+          "increasing"
+        ]
+      ]
+    },
+    "example": "Find and classify the stationary points of f(x) = x³ − 3x.",
+    "steps": [
+      "f′(x) = 3x² − 3. Set 3(x² − 1) = 0, so x = −1 or 1.",
+      "f(−1) = 2 and f(1) = −2. The points are (−1; 2) and (1; −2).",
+      "The derivative changes + to − at −1: local maximum. It changes − to + at 1: local minimum."
+    ],
+    "questions": [
+      "Differentiate 2x³ − 5x² + 4.",
+      "Find the gradient of its tangent at x = 2.",
+      "Find the tangent equation there."
+    ],
+    "answers": [
+      "6x² − 10x. The derivative of the constant is zero.",
+      "6(2)² − 10(2) = 4.",
+      "f(2) = 0, so y − 0 = 4(x − 2), giving y = 4x − 8."
+    ],
+    "commonMistake": "f′(a) is a gradient, not the height of the graph. Find f(a) separately.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20MATHEMATICS%20_%20GR%2010-12%20_%20Web_1133.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematics",
+    "pdfUrl": "/study-packs/smartbridge-math-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "matlit-10",
+    "code": "matlit",
+    "subject": "Mathematical Literacy",
+    "grade": 10,
+    "title": "A budget that balances",
+    "capsTopic": "Finance: income, expenditure and budgets",
+    "goals": [
+      "Distinguish income from expenditure",
+      "Calculate a budget balance",
+      "Explain a realistic spending adjustment"
+    ],
+    "notes": [
+      "A budget estimates money received and spent over the same period. Actual spending may differ from planned spending.",
+      "Fixed expenses are usually agreed amounts; variable expenses depend on use. A surplus is income minus expenses when the result is positive.",
+      "Compare like periods and units. Include transport, food and data before treating an apparent surplus as available savings."
+    ],
+    "visual": {
+      "title": "One learner’s monthly plan",
+      "columns": [
+        "Item",
+        "Rand",
+        "Type"
+      ],
+      "rows": [
+        [
+          "Income",
+          "1 200",
+          "income"
+        ],
+        [
+          "Transport",
+          "400",
+          "expense"
+        ],
+        [
+          "Food",
+          "350",
+          "expense"
+        ],
+        [
+          "Data",
+          "150",
+          "expense"
+        ],
+        [
+          "Other",
+          "100",
+          "expense"
+        ]
+      ]
+    },
+    "example": "Use the plan to calculate the balance and test whether saving R250 is feasible.",
+    "steps": [
+      "Expenses = 400 + 350 + 150 + 100 = R1 000.",
+      "Balance = R1 200 − R1 000 = R200.",
+      "Saving R250 needs another R50. Reduce an affordable expense or increase income; do not assume essential transport can disappear."
+    ],
+    "questions": [
+      "Income is R2 000 and expenses R1 750. Calculate the surplus.",
+      "Data spending rises from R150 to R180. Find the increase as a percentage.",
+      "A weekly expense is R50. Estimate its cost over a stated four-week month."
+    ],
+    "answers": [
+      "R250.",
+      "Increase R30; 30 ÷ 150 × 100 = 20%.",
+      "R200 for four weeks. A calendar month is not always exactly four weeks."
+    ],
+    "commonMistake": "A surplus is a money amount. A percentage increase uses the original amount as its denominator.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=q8-SkGy43rw%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematical Literacy",
+    "pdfUrl": "/study-packs/smartbridge-matlit-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "matlit-11",
+    "code": "matlit",
+    "subject": "Mathematical Literacy",
+    "grade": 11,
+    "title": "Compare tariffs fairly",
+    "capsTopic": "Finance: tariffs and financial documents",
+    "goals": [
+      "Calculate a bill with a fixed and variable part",
+      "Compare two tariffs",
+      "Interpret a break-even point in context"
+    ],
+    "notes": [
+      "A tariff may have a fixed fee plus a charge per unit. Write down both parts before calculating.",
+      "Use the same usage and billing period for each option. A cheaper per-unit rate may still cost more at low usage.",
+      "A mathematical break-even value is a comparison tool; actual contracts may also have limits, taxes and once-off fees."
+    ],
+    "visual": {
+      "title": "Illustrative data tariffs — not network offers",
+      "columns": [
+        "Usage (GB)",
+        "A: R50 + R10/GB",
+        "B: R20/GB"
+      ],
+      "rows": [
+        [
+          "2",
+          "R70",
+          "R40"
+        ],
+        [
+          "5",
+          "R100",
+          "R100"
+        ],
+        [
+          "8",
+          "R130",
+          "R160"
+        ]
+      ]
+    },
+    "example": "Which plan costs less at 8 GB? At what usage do the bills match?",
+    "steps": [
+      "A costs 50 + 10 × 8 = R130. B costs 20 × 8 = R160.",
+      "At break-even, 50 + 10u = 20u, so u = 5 GB and both cost R100.",
+      "Below 5 GB B is cheaper; above 5 GB A is cheaper, under these simplified tariff rules."
+    ],
+    "questions": [
+      "Calculate A at 12 GB.",
+      "How much is saved using A instead of B at 12 GB?",
+      "Why should a buyer still inspect the full contract?"
+    ],
+    "answers": [
+      "R50 + R120 = R170.",
+      "B costs R240, so the saving is R70.",
+      "Possible fair-use limits, coverage, fees, expiry and contract terms may affect the decision."
+    ],
+    "commonMistake": "Do not multiply the fixed fee by the number of units.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=q8-SkGy43rw%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematical Literacy",
+    "pdfUrl": "/study-packs/smartbridge-matlit-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "matlit-12",
+    "code": "matlit",
+    "subject": "Mathematical Literacy",
+    "grade": 12,
+    "title": "Interpret financial growth",
+    "capsTopic": "Finance: interest and inflation",
+    "goals": [
+      "Distinguish simple and compound interest",
+      "Calculate annual compound growth",
+      "Explain purchasing power"
+    ],
+    "notes": [
+      "Simple interest is calculated on the original principal. Compound interest adds interest to the balance before the next period.",
+      "For annual compounding use A = P(1 + i)ⁿ, with i as a decimal and n in years. A different compounding period needs a matching rate and number of periods.",
+      "Inflation describes rising prices. A higher money balance does not guarantee greater purchasing power; compare growth over the same period."
+    ],
+    "visual": {
+      "title": "R1 000 at an illustrative 10% per year",
+      "columns": [
+        "Year",
+        "Simple balance",
+        "Compound balance"
+      ],
+      "rows": [
+        [
+          "0",
+          "R1 000",
+          "R1 000"
+        ],
+        [
+          "1",
+          "R1 100",
+          "R1 100"
+        ],
+        [
+          "2",
+          "R1 200",
+          "R1 210"
+        ],
+        [
+          "3",
+          "R1 300",
+          "R1 331"
+        ]
+      ]
+    },
+    "example": "Calculate the balance on R2 000 at 8% compounded annually for two years.",
+    "steps": [
+      "P = 2 000, i = 0.08 and n = 2.",
+      "A = 2 000(1.08)² = R2 332.80.",
+      "Interest earned = 2 332.80 − 2 000 = R332.80. This example excludes fees and tax."
+    ],
+    "questions": [
+      "Calculate simple interest on R2 000 at 8% for two years.",
+      "A basket rises from R500 to R540. Calculate inflation for that basket.",
+      "If income stays R5 000 while prices rise, what happens to purchasing power?"
+    ],
+    "answers": [
+      "I = 2 000 × 0.08 × 2 = R320; total R2 320.",
+      "40 ÷ 500 × 100 = 8%.",
+      "It falls: the same income buys fewer goods, assuming the price changes apply to those goods."
+    ],
+    "commonMistake": "8% must be entered as 0.08 in a growth formula, not as 8.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=q8-SkGy43rw%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Mathematical Literacy",
+    "pdfUrl": "/study-packs/smartbridge-matlit-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "phsc-10",
+    "code": "phsc",
+    "subject": "Physical Sciences",
+    "grade": 10,
+    "title": "Motion in one dimension",
+    "capsTopic": "Mechanics: instantaneous speed and velocity; acceleration",
+    "goals": [
+      "Distinguish distance from displacement",
+      "Calculate average velocity",
+      "Interpret a straight position–time graph"
+    ],
+    "notes": [
+      "Distance is total path length, a scalar. Displacement is final position minus initial position, a vector with a chosen positive direction.",
+      "Average velocity equals displacement divided by elapsed time. Average speed uses total distance instead.",
+      "On a position–time graph, gradient represents velocity. A horizontal line means the position is constant, not necessarily zero."
+    ],
+    "visual": {
+      "title": "A walker returns towards the start; east is positive",
+      "columns": [
+        "Time (s)",
+        "Position (m east)",
+        "Interval velocity"
+      ],
+      "rows": [
+        [
+          "0",
+          "0",
+          "—"
+        ],
+        [
+          "2",
+          "4",
+          "+2 m·s⁻¹"
+        ],
+        [
+          "4",
+          "0",
+          "−2 m·s⁻¹"
+        ]
+      ]
+    },
+    "example": "The walker moves 4 m east in 2 s, then 4 m west in 2 s. Find average speed and velocity.",
+    "steps": [
+      "Distance = 4 + 4 = 8 m; displacement = 0 − 0 = 0 m.",
+      "Elapsed time = 4 s, so average speed = 8 ÷ 4 = 2 m·s⁻¹.",
+      "Average velocity = 0 ÷ 4 = 0 m·s⁻¹. Motion occurred even though net displacement is zero."
+    ],
+    "questions": [
+      "A cyclist travels 30 m east in 5 s. Find average velocity.",
+      "Velocity changes from 2 to 8 m·s⁻¹ east in 3 s. Find acceleration.",
+      "Explain the gradient of a downward-sloping position–time line."
+    ],
+    "answers": [
+      "6 m·s⁻¹ east.",
+      "a = (8 − 2)/3 = 2 m·s⁻² east.",
+      "Velocity is negative relative to the chosen positive direction; it does not automatically mean slowing down."
+    ],
+    "commonMistake": "Use m·s⁻² for acceleration. A negative velocity describes direction, not automatically a decrease in speed.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=uVcOcx728Y8%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Physical Sciences",
+    "pdfUrl": "/study-packs/smartbridge-phsc-10.pdf",
+    "minutes": 30,
+    "furtherReading": "Siyavula Grade 10 Physical Sciences Learner Book, chapter 21: speed and velocity (indexed PDF page 412; printed page 396). Available in the signed-in resource search. Original publisher attribution retained."
+  },
+  {
+    "id": "phsc-11",
+    "code": "phsc",
+    "subject": "Physical Sciences",
+    "grade": 11,
+    "title": "Forces and Newton’s second law",
+    "capsTopic": "Mechanics: Newton’s laws and application",
+    "goals": [
+      "Draw a free-body diagram",
+      "Calculate a net horizontal force",
+      "Apply Fnet = ma with a sign convention"
+    ],
+    "notes": [
+      "A free-body diagram isolates one object and shows forces acting on it, not forces it exerts on other objects.",
+      "Choose a positive direction. Resolve and add forces along that axis before applying Fnet = ma.",
+      "On a horizontal surface with no vertical acceleration, normal force balances weight if there are no other vertical forces. Friction acts against relative motion or its tendency."
+    ],
+    "visual": {
+      "title": "Free-body inventory: 5 kg crate pulled horizontally",
+      "columns": [
+        "Force",
+        "Direction",
+        "Magnitude"
+      ],
+      "rows": [
+        [
+          "Pull",
+          "right",
+          "20 N"
+        ],
+        [
+          "Friction",
+          "left",
+          "5 N"
+        ],
+        [
+          "Weight",
+          "down",
+          "49 N"
+        ],
+        [
+          "Normal",
+          "up",
+          "49 N"
+        ]
+      ]
+    },
+    "example": "Find the horizontal acceleration of the crate. Use g = 9.8 m·s⁻².",
+    "steps": [
+      "Take right as positive. Vertical resultant = 49 − 49 = 0 N.",
+      "Horizontal resultant = 20 − 5 = 15 N right.",
+      "a = Fnet/m = 15/5 = 3 m·s⁻² right."
+    ],
+    "questions": [
+      "A 4 kg trolley has a net force of 12 N left. Find acceleration.",
+      "What resultant force keeps an object at constant velocity?",
+      "Are weight and normal force a Newton’s third-law pair? Explain."
+    ],
+    "answers": [
+      "3 m·s⁻² left.",
+      "Zero resultant force; individual forces may still act.",
+      "No. They act on the same object. A third-law pair acts on two different objects."
+    ],
+    "commonMistake": "Never use the applied force alone in Fnet = ma when friction or other forces also act.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=uVcOcx728Y8%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Physical Sciences",
+    "pdfUrl": "/study-packs/smartbridge-phsc-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "phsc-12",
+    "code": "phsc",
+    "subject": "Physical Sciences",
+    "grade": 12,
+    "title": "Momentum and collisions",
+    "capsTopic": "Mechanics: momentum and impulse",
+    "goals": [
+      "Calculate signed momentum",
+      "Apply conservation to a closed system",
+      "Relate impulse to force and time"
+    ],
+    "notes": [
+      "Momentum p = mv is a vector. Select a positive direction and give opposite velocities opposite signs.",
+      "The total momentum of an isolated system is conserved. In a collision, use the condition of negligible net external impulse.",
+      "Impulse equals change in momentum: FnetΔt = Δp. Momentum conservation does not imply kinetic energy conservation in an inelastic collision."
+    ],
+    "visual": {
+      "title": "Two trolleys stick together; right is positive",
+      "columns": [
+        "Object",
+        "Mass",
+        "Velocity before",
+        "Momentum before"
+      ],
+      "rows": [
+        [
+          "A",
+          "2 kg",
+          "+3 m·s⁻¹",
+          "+6 kg·m·s⁻¹"
+        ],
+        [
+          "B",
+          "1 kg",
+          "0",
+          "0"
+        ],
+        [
+          "Together",
+          "3 kg",
+          "+2 m·s⁻¹ after",
+          "+6 kg·m·s⁻¹ after"
+        ]
+      ]
+    },
+    "example": "A 2 kg trolley moving right at 3 m·s⁻¹ sticks to a stationary 1 kg trolley. Find their final velocity.",
+    "steps": [
+      "Before: total momentum = 2(3) + 1(0) = 6 kg·m·s⁻¹.",
+      "After: the combined mass is 3 kg, so 6 = 3v and v = 2 m·s⁻¹ right.",
+      "Initial kinetic energy is 9 J; final kinetic energy is 6 J. The 3 J difference becomes other energy forms."
+    ],
+    "questions": [
+      "Find the momentum of a 0.5 kg ball moving left at 4 m·s⁻¹, taking right as positive.",
+      "It rebounds right at 6 m·s⁻¹. Find Δp.",
+      "If contact lasts 0.1 s, find the average net force."
+    ],
+    "answers": [
+      "−2 kg·m·s⁻¹.",
+      "Final momentum = +3; change = 3 − (−2) = +5 kg·m·s⁻¹.",
+      "Fnet = 5/0.1 = 50 N right."
+    ],
+    "commonMistake": "Change means final minus initial. Reversing direction requires a negative initial or final velocity.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=uVcOcx728Y8%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Physical Sciences",
+    "pdfUrl": "/study-packs/smartbridge-phsc-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "lisc-10",
+    "code": "lisc",
+    "subject": "Life Sciences",
+    "grade": 10,
+    "title": "Cells: structure explains function",
+    "capsTopic": "Life at the molecular, cellular and tissue level: cells",
+    "goals": [
+      "Identify cell structures",
+      "Relate an organelle to its function",
+      "Compare typical plant and animal cells"
+    ],
+    "notes": [
+      "Cells are the basic structural and functional units of living organisms. A cell membrane controls movement of substances into and out of the cell.",
+      "The nucleus contains genetic material. Mitochondria are sites of aerobic cellular respiration; they transfer energy into usable chemical forms.",
+      "Typical plant cells have a cellulose cell wall and a large central vacuole. Photosynthetic plant cells contain chloroplasts; not every plant cell has chloroplasts."
+    ],
+    "visual": {
+      "title": "Compare structures, not just outlines",
+      "columns": [
+        "Structure",
+        "Typical plant cell",
+        "Typical animal cell"
+      ],
+      "rows": [
+        [
+          "Cell membrane",
+          "present",
+          "present"
+        ],
+        [
+          "Cellulose cell wall",
+          "present",
+          "absent"
+        ],
+        [
+          "Chloroplasts",
+          "in photosynthetic cells",
+          "absent"
+        ],
+        [
+          "Mitochondria",
+          "present",
+          "present"
+        ]
+      ]
+    },
+    "example": "A micrograph shows a rigid outer layer and many chloroplasts. Explain the most likely cell type.",
+    "steps": [
+      "The rigid outer layer is consistent with a cell wall.",
+      "Chloroplasts support photosynthesis, indicating a photosynthetic plant cell.",
+      "Use the observed structures as evidence; a rectangular shape alone is not enough to identify a cell reliably."
+    ],
+    "questions": [
+      "Name the structure that controls movement across a cell boundary.",
+      "Explain why muscle cells need many mitochondria.",
+      "A drawing is 40 mm long and the actual cell is 0.1 mm. Calculate magnification."
+    ],
+    "answers": [
+      "The cell membrane.",
+      "Muscle contraction needs energy; mitochondria support aerobic respiration and ATP production.",
+      "Magnification = drawing size / actual size = 40/0.1 = 400 times."
+    ],
+    "commonMistake": "Do not say mitochondria create energy. They transfer energy during cellular respiration.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=_yUNfV0A_8o%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Sciences",
+    "pdfUrl": "/study-packs/smartbridge-lisc-10.pdf",
+    "minutes": 30,
+    "furtherReading": "Siyavula Grade 10 Life Sciences Learner Book, chapter 3: cell structures (indexed PDF pages 79–81). Available in the signed-in resource search. Original publisher attribution retained."
+  },
+  {
+    "id": "lisc-11",
+    "code": "lisc",
+    "subject": "Life Sciences",
+    "grade": 11,
+    "title": "Photosynthesis: test an explanation",
+    "capsTopic": "Life processes in plants and animals: photosynthesis",
+    "goals": [
+      "State the inputs and products",
+      "Interpret a limiting factor",
+      "Plan a controlled investigation"
+    ],
+    "notes": [
+      "Photosynthesis uses light energy to make glucose from carbon dioxide and water, releasing oxygen. Chlorophyll absorbs light in chloroplasts.",
+      "A limiting factor restricts the rate even when other requirements are available. Increasing light may eventually stop increasing the rate if another factor becomes limiting.",
+      "A fair investigation changes one independent variable, measures a dependent variable and controls other relevant conditions. Repeat measurements to improve reliability."
+    ],
+    "visual": {
+      "title": "Illustrative pondweed results",
+      "columns": [
+        "Lamp distance (cm)",
+        "Bubbles per minute",
+        "Interpretation"
+      ],
+      "rows": [
+        [
+          "10",
+          "24",
+          "higher light"
+        ],
+        [
+          "20",
+          "15",
+          "lower light"
+        ],
+        [
+          "30",
+          "7",
+          "lowest light"
+        ]
+      ]
+    },
+    "example": "Interpret the results and identify one weakness of counting bubbles.",
+    "steps": [
+      "As lamp distance increases, bubble count falls, suggesting reduced photosynthesis as light decreases.",
+      "Distance is changed; bubble count is measured. Keep plant size, water temperature and carbon dioxide availability controlled.",
+      "Bubble sizes vary, so counts are an imperfect estimate of oxygen volume. Measuring gas volume over time gives a stronger comparison."
+    ],
+    "questions": [
+      "Name two raw materials of photosynthesis.",
+      "Why might a lamp heat confound the investigation?",
+      "Why does a rate plateau not mean that photosynthesis has stopped?"
+    ],
+    "answers": [
+      "Carbon dioxide and water.",
+      "Temperature also affects enzyme-controlled reactions, so the result may reflect two changing variables.",
+      "The rate can remain positive but constant because another factor limits further increase."
+    ],
+    "commonMistake": "Glucose is a product; sunlight supplies energy and is not a raw material with mass in the equation.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=_yUNfV0A_8o%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Sciences",
+    "pdfUrl": "/study-packs/smartbridge-lisc-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "lisc-12",
+    "code": "lisc",
+    "subject": "Life Sciences",
+    "grade": 12,
+    "title": "Monohybrid inheritance",
+    "capsTopic": "Genetics and inheritance: monohybrid crosses",
+    "goals": [
+      "Distinguish genotype and phenotype",
+      "Construct a Punnett square",
+      "Interpret probability without promising outcomes"
+    ],
+    "notes": [
+      "Alleles are alternative forms of a gene. In a simple complete-dominance model, one dominant allele is enough for the dominant phenotype.",
+      "Genotype describes the allele combination; phenotype is the observable characteristic. A heterozygote has two different alleles.",
+      "Each fertilisation is a new probability event. Expected ratios describe many offspring, not a guaranteed sequence within one family."
+    ],
+    "visual": {
+      "title": "Tt × Tt: each parent forms T and t gametes",
+      "columns": [
+        "Gamete",
+        "T",
+        "t"
+      ],
+      "rows": [
+        [
+          "T",
+          "TT",
+          "Tt"
+        ],
+        [
+          "t",
+          "Tt",
+          "tt"
+        ]
+      ]
+    },
+    "example": "In a hypothetical plant, T is dominant for tall growth and t is recessive for short growth. Cross two heterozygotes.",
+    "steps": [
+      "Parents: Tt × Tt. Each produces T and t gametes.",
+      "The combinations are TT, Tt, Tt and tt: genotype ratio 1 : 2 : 1.",
+      "Tall offspring probability = 3/4; short = 1/4. Phenotype ratio is 3 tall : 1 short under the stated model."
+    ],
+    "questions": [
+      "Cross Tt with tt and list the offspring genotypes.",
+      "State the probability of short offspring in that cross.",
+      "Explain why two tall parents can produce a short offspring."
+    ],
+    "answers": [
+      "Tt, tt, Tt, tt: 1 Tt : 1 tt.",
+      "1/2, or 50%.",
+      "Both may be heterozygous and each may contribute a recessive t allele, producing tt."
+    ],
+    "commonMistake": "Dominant does not mean more common, stronger or better. State the inheritance model before interpreting a ratio.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=_yUNfV0A_8o%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Sciences",
+    "pdfUrl": "/study-packs/smartbridge-lisc-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "acc-10",
+    "code": "acc",
+    "subject": "Accounting",
+    "grade": 10,
+    "title": "Keep the accounting equation in balance",
+    "capsTopic": "Financial accounting: accounting equation and double entry",
+    "goals": [
+      "Classify assets, equity and liabilities",
+      "Analyse a cash transaction",
+      "Check the accounting equation"
+    ],
+    "notes": [
+      "The accounting equation is Assets = Owner’s equity + Liabilities. Every transaction must preserve this relationship.",
+      "Assets are controlled resources; liabilities are obligations. Capital contributed increases owner’s equity; drawings decrease it.",
+      "Buying an asset for cash changes the mix of assets without necessarily changing total assets. A loan increases both cash and liabilities."
+    ],
+    "visual": {
+      "title": "A new business: transaction effects",
+      "columns": [
+        "Transaction",
+        "Assets change",
+        "Equity change",
+        "Liabilities change"
+      ],
+      "rows": [
+        [
+          "Owner invests R10 000",
+          "+10 000",
+          "+10 000",
+          "0"
+        ],
+        [
+          "Buy equipment for R3 000 cash",
+          "0 net",
+          "0",
+          "0"
+        ],
+        [
+          "Borrow R2 000",
+          "+2 000",
+          "0",
+          "+2 000"
+        ]
+      ]
+    },
+    "example": "Calculate the balances after all three transactions in the table.",
+    "steps": [
+      "Cash = 10 000 − 3 000 + 2 000 = R9 000; equipment = R3 000.",
+      "Total assets = R12 000. Equity = R10 000 and liabilities = R2 000.",
+      "Check: 12 000 = 10 000 + 2 000. Equipment was not an expense in this purchase."
+    ],
+    "questions": [
+      "The owner withdraws R500 cash for personal use. State the equation effects.",
+      "The business pays R200 cash for electricity. State the effects.",
+      "Why is a bank loan not income?"
+    ],
+    "answers": [
+      "Assets decrease R500; equity decreases R500 through drawings; liabilities unchanged.",
+      "Assets and equity each decrease R200; electricity is an expense.",
+      "It must be repaid and creates a liability, rather than earned revenue."
+    ],
+    "commonMistake": "Cash received is not always income: it can be capital, a loan or payment of an existing debtor.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=IIU4LUlZBFM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Accounting",
+    "pdfUrl": "/study-packs/smartbridge-acc-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "acc-11",
+    "code": "acc",
+    "subject": "Accounting",
+    "grade": 11,
+    "title": "Partnership profit appropriation",
+    "capsTopic": "Financial accounting: partnerships",
+    "goals": [
+      "Distinguish expenses from appropriations",
+      "Calculate a residual profit share",
+      "Apply a partnership agreement consistently"
+    ],
+    "notes": [
+      "In a school partnership appropriation calculation, partners’ salaries and interest on capital allocate profit according to the agreement.",
+      "Deduct the agreed appropriations from net profit to find residual profit. Divide the residual using the agreed profit-sharing ratio.",
+      "A partner’s drawings are not a business operating expense. Keep capital, current accounts and cash movements distinct."
+    ],
+    "visual": {
+      "title": "Illustrative agreement and annual allocation",
+      "columns": [
+        "Allocation",
+        "Partner A",
+        "Partner B"
+      ],
+      "rows": [
+        [
+          "Salary",
+          "R30 000",
+          "R20 000"
+        ],
+        [
+          "Interest on capital",
+          "R5 000",
+          "R3 000"
+        ],
+        [
+          "Residual ratio",
+          "3 parts",
+          "2 parts"
+        ]
+      ]
+    },
+    "example": "Net profit is R100 000. Use the table to calculate each partner’s total appropriation.",
+    "steps": [
+      "Total salary and interest = 30 000 + 20 000 + 5 000 + 3 000 = R58 000.",
+      "Residual = 100 000 − 58 000 = R42 000. A gets 3/5 × 42 000 = R25 200; B gets R16 800.",
+      "A total = R60 200; B total = R39 800. Their totals reconcile to R100 000."
+    ],
+    "questions": [
+      "Calculate 10% interest on capital of R80 000 for a full year.",
+      "Split residual profit R25 000 in the ratio 2 : 3.",
+      "Why should partner drawings not reduce net profit?"
+    ],
+    "answers": [
+      "R8 000.",
+      "R10 000 and R15 000 respectively.",
+      "Drawings are withdrawals by owners, not costs incurred to earn business revenue."
+    ],
+    "commonMistake": "Do not apply the residual sharing ratio to the whole net profit before the agreed salaries and interest.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=IIU4LUlZBFM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Accounting",
+    "pdfUrl": "/study-packs/smartbridge-acc-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "acc-12",
+    "code": "acc",
+    "subject": "Accounting",
+    "grade": 12,
+    "title": "Use ratios to explain performance",
+    "capsTopic": "Financial accounting: companies; analysis and interpretation",
+    "goals": [
+      "Calculate gross profit and liquidity ratios",
+      "Interpret a change with evidence",
+      "Recognise a ratio’s limits"
+    ],
+    "notes": [
+      "Gross profit is sales less cost of sales. Gross profit margin = gross profit / sales × 100; mark-up on cost uses cost of sales as denominator.",
+      "Current ratio = current assets / current liabilities. Acid-test ratio excludes inventory from current assets in the simplified school calculation.",
+      "Ratios need comparison with prior periods, targets or context. A high current ratio can include slow-moving stock and does not automatically mean cash is available."
+    ],
+    "visual": {
+      "title": "Illustrative company information",
+      "columns": [
+        "Item",
+        "Amount",
+        "Use"
+      ],
+      "rows": [
+        [
+          "Sales",
+          "R500 000",
+          "margin denominator"
+        ],
+        [
+          "Cost of sales",
+          "R300 000",
+          "gross profit calculation"
+        ],
+        [
+          "Current assets",
+          "R120 000",
+          "includes R40 000 inventory"
+        ],
+        [
+          "Current liabilities",
+          "R60 000",
+          "liquidity denominator"
+        ]
+      ]
+    },
+    "example": "Calculate gross profit margin, current ratio and acid-test ratio.",
+    "steps": [
+      "Gross profit = 500 000 − 300 000 = R200 000; margin = 200 000/500 000 × 100 = 40%.",
+      "Current ratio = 120 000 : 60 000 = 2 : 1.",
+      "Acid-test = (120 000 − 40 000) : 60 000 = 1.33 : 1, rounded to two decimals."
+    ],
+    "questions": [
+      "Calculate the mark-up on cost for the same company.",
+      "If inventory rises while cash falls by the same amount, what happens to current ratio?",
+      "Give one reason acid-test ratio may still overstate immediate cash availability."
+    ],
+    "answers": [
+      "200 000/300 000 × 100 = 66.67%.",
+      "It is unchanged if total current assets and liabilities stay the same, although asset quality changes.",
+      "Debtors may pay late or not pay; receivables are not immediately available cash."
+    ],
+    "commonMistake": "Always label the ratio and denominator. Gross profit margin and mark-up are different measures.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=IIU4LUlZBFM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Accounting",
+    "pdfUrl": "/study-packs/smartbridge-acc-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "bst-10",
+    "code": "bst",
+    "subject": "Business Studies",
+    "grade": 10,
+    "title": "Know the business environments",
+    "capsTopic": "Business environments: micro, market and macro",
+    "goals": [
+      "Classify a business influence",
+      "Explain levels of control",
+      "Suggest a practical response"
+    ],
+    "notes": [
+      "The micro environment is inside the business: its vision, resources and functions. Management usually has substantial control over it.",
+      "The market environment includes customers, suppliers and competitors. A business can influence relationships but cannot fully control these parties.",
+      "The macro environment includes wider economic, social, technological and other external forces. Businesses usually adapt to these rather than control them."
+    ],
+    "visual": {
+      "title": "Three lenses for a school stationery shop",
+      "columns": [
+        "Event",
+        "Environment",
+        "Possible response"
+      ],
+      "rows": [
+        [
+          "Poor staff scheduling",
+          "Micro",
+          "revise shifts"
+        ],
+        [
+          "Supplier delays",
+          "Market",
+          "find a second supplier"
+        ],
+        [
+          "Economy-wide cost increases",
+          "Macro",
+          "review budget and prices"
+        ]
+      ]
+    },
+    "example": "A stationery shop loses sales because staff arrive late and a competitor offers delivery. Classify and respond.",
+    "steps": [
+      "Late staff: micro environment. The owner can set attendance expectations and improve scheduling.",
+      "Competitor delivery: market environment. The owner can investigate customer needs and offer a feasible delivery option.",
+      "Explain why the response fits the cause instead of giving the same generic recommendation for both."
+    ],
+    "questions": [
+      "Classify a new internal staff training programme.",
+      "Classify a new competing shop.",
+      "Why can a small shop not simply eliminate economy-wide inflation?"
+    ],
+    "answers": [
+      "Micro: internal skills and staffing.",
+      "Market: a competitor operates in the external market.",
+      "Inflation is a wider economic influence beyond the individual firm’s control; the firm must adapt."
+    ],
+    "commonMistake": "An event outside the premises is not automatically macro. Customers and suppliers belong to the market environment.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=zLnOddukw-4%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Business Studies",
+    "pdfUrl": "/study-packs/smartbridge-bst-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "bst-11",
+    "code": "bst",
+    "subject": "Business Studies",
+    "grade": 11,
+    "title": "Turn a challenge into an action plan",
+    "capsTopic": "Business ventures: creative thinking and problem solving",
+    "goals": [
+      "Separate a symptom from a cause",
+      "Compare practical alternatives",
+      "Plan implementation and evaluation"
+    ],
+    "notes": [
+      "Problem solving begins by defining a specific problem and gathering evidence. A fall in sales is a symptom until its causes are investigated.",
+      "Generate alternatives before selecting one. Compare likely benefits, costs, time and risks instead of choosing the first idea.",
+      "Implementation needs an owner, deadline and measurable result. Review evidence afterwards and adjust if the solution does not work."
+    ],
+    "visual": {
+      "title": "A structured problem-solving cycle",
+      "columns": [
+        "Stage",
+        "Question",
+        "Example evidence"
+      ],
+      "rows": [
+        [
+          "Define",
+          "What is going wrong?",
+          "20 late orders this week"
+        ],
+        [
+          "Investigate",
+          "What causes it?",
+          "stock-outs on 15 orders"
+        ],
+        [
+          "Act and review",
+          "Did the change help?",
+          "late orders after new stock rule"
+        ]
+      ]
+    },
+    "example": "A small business has 20 late orders, 15 caused by stock-outs. Recommend a justified first intervention.",
+    "steps": [
+      "The evidence points to stock availability as the main measured cause, not necessarily unmotivated staff.",
+      "Compare a reorder-level system with holding much more stock. The first may reduce cash tied up but needs accurate records.",
+      "Assign the stock controller a two-week trial and compare the late-order count, while checking demand changes."
+    ],
+    "questions": [
+      "Why should customer complaints be analysed before selecting a solution?",
+      "Give one disadvantage of carrying excess stock.",
+      "Name a measurable indicator for a trial delivery improvement."
+    ],
+    "answers": [
+      "To identify patterns and causes instead of guessing from isolated symptoms.",
+      "It ties up cash and risks damage, obsolescence or storage costs.",
+      "Percentage of orders delivered on time over a stated period, compared with a baseline."
+    ],
+    "commonMistake": "A recommendation without a responsible person, time frame or success measure is incomplete as an action plan.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=zLnOddukw-4%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Business Studies",
+    "pdfUrl": "/study-packs/smartbridge-bst-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "bst-12",
+    "code": "bst",
+    "subject": "Business Studies",
+    "grade": 12,
+    "title": "Match a strategy to the challenge",
+    "capsTopic": "Business environments: business strategies; SWOT analysis",
+    "goals": [
+      "Distinguish internal and external SWOT factors",
+      "Choose a strategy from evidence",
+      "Justify and evaluate a recommendation"
+    ],
+    "notes": [
+      "Strengths and weaknesses are internal; opportunities and threats are external. A SWOT list should use specific evidence.",
+      "Strategy responds to the business situation. Options may include development, integration, diversification or defensive measures, depending on the case.",
+      "An exam response needs a clear recommendation and application to the scenario. Consider affordability, risk and likely outcomes rather than assuming expansion always works."
+    ],
+    "visual": {
+      "title": "SWOT for an illustrative tutoring publisher",
+      "columns": [
+        "Internal strengths",
+        "Internal weaknesses",
+        "External factors"
+      ],
+      "rows": [
+        [
+          "Strong maths authors",
+          "Slow delivery process",
+          "Opportunity: digital demand"
+        ],
+        [
+          "Clear brand identity",
+          "Limited cash reserves",
+          "Threat: new competitors"
+        ]
+      ]
+    },
+    "example": "The publisher has strong authors but slow delivery and little cash. Recommend a cautious response to demand for digital notes.",
+    "steps": [
+      "Use the author strength to pilot a small digital product rather than attempting every subject immediately.",
+      "A pilot can reduce delivery delays and limit upfront costs, but requires editing and reliable access.",
+      "Evaluate download completion, learner feedback and contribution to costs before expanding."
+    ],
+    "questions": [
+      "Classify a cash shortage in SWOT.",
+      "Classify a new competitor offering free content.",
+      "Give two criteria for evaluating the digital pilot."
+    ],
+    "answers": [
+      "Weakness: an internal resource limitation.",
+      "Threat: an external competitive influence.",
+      "For example, completed downloads and learner usefulness ratings; also compare costs with revenue or funding."
+    ],
+    "commonMistake": "Naming a strategy earns little without explaining why it addresses the specific challenge in the case.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=zLnOddukw-4%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Business Studies",
+    "pdfUrl": "/study-packs/smartbridge-bst-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "eco-10",
+    "code": "eco",
+    "subject": "Economics",
+    "grade": 10,
+    "title": "Follow the circular flow",
+    "capsTopic": "Macroeconomics: circular flow and economic participants",
+    "goals": [
+      "Identify households and firms",
+      "Distinguish real and money flows",
+      "Explain a simple interdependence"
+    ],
+    "notes": [
+      "In a simple closed two-sector model, households supply factors of production and firms produce goods and services.",
+      "Factor payments such as wages flow from firms to households. Consumption spending flows from households to firms.",
+      "Real flows and money flows move in opposite directions. This simplified model excludes government, financial and foreign sectors; real economies include them."
+    ],
+    "visual": {
+      "title": "Two markets connect households and firms",
+      "columns": [
+        "Market",
+        "Real flow",
+        "Money flow"
+      ],
+      "rows": [
+        [
+          "Factor market",
+          "households → firms: labour",
+          "firms → households: wages"
+        ],
+        [
+          "Goods market",
+          "firms → households: products",
+          "households → firms: spending"
+        ]
+      ]
+    },
+    "example": "A learner’s household earns R4 000 from a bakery and spends R600 on bread. Identify the flows.",
+    "steps": [
+      "Labour supplied to the bakery is a real factor flow from household to firm.",
+      "The R4 000 wage is a money flow from firm to household.",
+      "Bread moves from firm to household, while the R600 spending moves in the opposite direction."
+    ],
+    "questions": [
+      "Name two factors of production besides labour.",
+      "Is a wage a real flow or a money flow?",
+      "Explain why lower household spending may affect firms."
+    ],
+    "answers": [
+      "Land, capital or entrepreneurship; any two.",
+      "A money flow: payment for labour.",
+      "It can reduce firms’ sales revenue, which may affect production and demand for factors."
+    ],
+    "commonMistake": "In economics, capital as a production factor means produced tools and equipment, rather than simply any cash balance.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=Lv-97xKN0eM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Economics",
+    "pdfUrl": "/study-packs/smartbridge-eco-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "eco-11",
+    "code": "eco",
+    "subject": "Economics",
+    "grade": 11,
+    "title": "Price elasticity and related markets",
+    "capsTopic": "Microeconomics: price elasticity; relationships between markets",
+    "goals": [
+      "Calculate price elasticity of demand",
+      "Interpret an elastic response",
+      "Connect a cost change to a related market"
+    ],
+    "notes": [
+      "Price elasticity of demand measures how responsive quantity demanded is to a price change, other things equal. Use the magnitude of percentage change in quantity divided by percentage change in price.",
+      "Using original-value percentages, an elasticity greater than 1 is elastic; less than 1 is inelastic; equal to 1 is unit elastic. State the method used because different percentage conventions can produce different results.",
+      "Markets are linked. A rise in a key input price can increase production costs and reduce product supply, other things equal. A product’s own price change is a movement along its demand curve."
+    ],
+    "visual": {
+      "title": "Illustrative notebook market: original-value percentage method",
+      "columns": [
+        "Measure",
+        "Before",
+        "After",
+        "Percentage change"
+      ],
+      "rows": [
+        [
+          "Price",
+          "R10",
+          "R11",
+          "+10%"
+        ],
+        [
+          "Quantity demanded",
+          "100",
+          "80",
+          "−20%"
+        ],
+        [
+          "Total revenue",
+          "R1 000",
+          "R880",
+          "−12%"
+        ]
+      ]
+    },
+    "example": "Use the table to calculate price elasticity of demand and explain the revenue change.",
+    "steps": [
+      "Price change = (11 − 10)/10 × 100 = 10%. Quantity change = (80 − 100)/100 × 100 = −20%.",
+      "Elasticity magnitude = 20/10 = 2. Demand is elastic over this change using the stated method.",
+      "Revenue falls from 10 × 100 = R1 000 to 11 × 80 = R880 because the proportional quantity fall exceeds the price increase."
+    ],
+    "questions": [
+      "Price rises 5% and quantity demanded falls 2%. Calculate elasticity magnitude.",
+      "Classify the demand response in question 1.",
+      "Explain how a rise in paper prices can affect notebook supply."
+    ],
+    "answers": [
+      "2/5 = 0.4.",
+      "Inelastic, because the elasticity magnitude is less than 1.",
+      "Paper is an input. Higher input costs can reduce notebook supply, shifting its supply curve left, other things equal."
+    ],
+    "commonMistake": "Calculate percentage changes before dividing. Dividing raw quantities by rand amounts does not give price elasticity.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=Lv-97xKN0eM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Economics",
+    "pdfUrl": "/study-packs/smartbridge-eco-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "eco-12",
+    "code": "eco",
+    "subject": "Economics",
+    "grade": 12,
+    "title": "Interpret the multiplier",
+    "capsTopic": "Macroeconomics: circular flow; the multiplier",
+    "goals": [
+      "Calculate marginal propensity to consume",
+      "Use a simple multiplier",
+      "Explain model assumptions"
+    ],
+    "notes": [
+      "The marginal propensity to consume (MPC) is the share of additional income spent on consumption. In the simple model MPS = 1 − MPC.",
+      "The simple closed-economy multiplier is k = 1/(1 − MPC). An initial autonomous expenditure change has a modelled total income effect ΔY = kΔA.",
+      "This is a simplified model without taxes or imports and with capacity to expand output. It does not promise that any real policy achieves the calculated result."
+    ],
+    "visual": {
+      "title": "An initial R100 spending injection with MPC = 0.8",
+      "columns": [
+        "Round",
+        "Additional spending",
+        "Cumulative spending"
+      ],
+      "rows": [
+        [
+          "1",
+          "R100",
+          "R100"
+        ],
+        [
+          "2",
+          "R80",
+          "R180"
+        ],
+        [
+          "3",
+          "R64",
+          "R244"
+        ],
+        [
+          "All rounds",
+          "decreasing amounts",
+          "approaches R500"
+        ]
+      ]
+    },
+    "example": "MPC is 0.8 and autonomous investment increases by R20 million. Calculate the simple income effect.",
+    "steps": [
+      "MPS = 1 − 0.8 = 0.2.",
+      "k = 1/0.2 = 5. Therefore ΔY = 5 × R20 million = R100 million.",
+      "The result includes the original injection and later spending rounds; it is conditional on the model assumptions."
+    ],
+    "questions": [
+      "Calculate k when MPC = 0.75.",
+      "Calculate the effect of a R10 million injection using that k.",
+      "How would additional import leakages tend to affect the multiplier?"
+    ],
+    "answers": [
+      "k = 1/(1 − 0.75) = 4.",
+      "ΔY = 4 × 10 = R40 million.",
+      "They tend to reduce the domestic income multiplier because some spending goes abroad."
+    ],
+    "commonMistake": "The multiplier is not MPC itself, and the total effect must not be added to the initial injection a second time.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=Lv-97xKN0eM%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Economics",
+    "pdfUrl": "/study-packs/smartbridge-eco-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "tour-10",
+    "code": "tour",
+    "subject": "Tourism",
+    "grade": 10,
+    "title": "Understand the tourism system",
+    "capsTopic": "Tourism sectors; domestic tourism",
+    "goals": [
+      "Distinguish domestic and international travel",
+      "Connect tourism sectors",
+      "Build an inclusive visitor experience"
+    ],
+    "notes": [
+      "A domestic tourist travels within their country of residence outside their usual environment. International tourism crosses a national border.",
+      "Tourism relies on connected sectors such as transport, accommodation, attractions, food services and travel distribution.",
+      "Good planning considers accessibility, safety, realistic travel time and visitors’ needs. Do not assume all tourists have the same budget or physical access requirements."
+    ],
+    "visual": {
+      "title": "A domestic weekend trip",
+      "columns": [
+        "Stage",
+        "Sector",
+        "Visitor need"
+      ],
+      "rows": [
+        [
+          "Bus to destination",
+          "transport",
+          "accessible boarding"
+        ],
+        [
+          "Guesthouse stay",
+          "accommodation",
+          "confirmed booking"
+        ],
+        [
+          "Museum visit",
+          "attraction",
+          "opening hours"
+        ],
+        [
+          "Local café meal",
+          "food service",
+          "dietary information"
+        ]
+      ]
+    },
+    "example": "A family living in Gauteng visits a museum in the Western Cape and stays two nights. Classify the trip and identify three sectors.",
+    "steps": [
+      "The trip is domestic because residence and destination are within South Africa.",
+      "Transport gets the family there; accommodation provides the overnight stay; the museum is an attraction.",
+      "Check opening times and travel distance before promising an itinerary; actual prices and schedules must be verified."
+    ],
+    "questions": [
+      "A resident of Botswana visits South Africa. Is this domestic tourism for South Africa?",
+      "Name a tourism service supplied by a travel agent.",
+      "Give one way a local tourism business can support its community."
+    ],
+    "answers": [
+      "No; it is inbound international tourism for South Africa.",
+      "For example, arranging transport and accommodation bookings.",
+      "Employ locally, source suitable goods locally or partner fairly with community guides."
+    ],
+    "commonMistake": "Nationality and country of residence are different. Tourism classifications use the stated travel context.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QCDkiagAGeI%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Tourism",
+    "pdfUrl": "/study-packs/smartbridge-tour-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "tour-11",
+    "code": "tour",
+    "subject": "Tourism",
+    "grade": 11,
+    "title": "Build a responsible itinerary",
+    "capsTopic": "Tour planning; responsible and sustainable tourism",
+    "goals": [
+      "Arrange a feasible itinerary",
+      "Calculate a trip budget",
+      "Evaluate social and environmental choices"
+    ],
+    "notes": [
+      "An itinerary sequences travel, activities and rest with realistic buffers. Check actual access, opening times and booking requirements.",
+      "A budget separates per-person costs from shared costs. State the number of travellers, nights and any exclusions.",
+      "Responsible tourism aims to reduce harm and support local benefits while providing a good visitor experience. Claims should be tied to specific actions, not vague green labels."
+    ],
+    "visual": {
+      "title": "Illustrative one-night trip for two people",
+      "columns": [
+        "Item",
+        "Calculation",
+        "Total"
+      ],
+      "rows": [
+        [
+          "Transport shared",
+          "one vehicle",
+          "R600"
+        ],
+        [
+          "Room shared",
+          "one night",
+          "R800"
+        ],
+        [
+          "Activity per person",
+          "R120 × 2",
+          "R240"
+        ],
+        [
+          "Meals per person",
+          "R150 × 2",
+          "R300"
+        ]
+      ]
+    },
+    "example": "Calculate the total and per-person cost, then suggest one responsible choice.",
+    "steps": [
+      "Total = 600 + 800 + 240 + 300 = R1 940.",
+      "Shared equally, cost per person = 1 940/2 = R970; this excludes any unstated fees.",
+      "Use an appropriately qualified local guide and follow site rules; explain how the choice supports livelihoods or protects the destination."
+    ],
+    "questions": [
+      "Add a 10% contingency to the total.",
+      "Why must a four-hour journey not be scheduled as a one-hour transfer?",
+      "Name one measurable action that reduces waste."
+    ],
+    "answers": [
+      "R194 contingency; revised total R2 134.",
+      "It makes later activities infeasible and may encourage unsafe rushing.",
+      "For example, provide refillable water bottles and measure fewer single-use bottles used."
+    ],
+    "commonMistake": "Do not charge a shared room twice per person unless the quotation explicitly gives a per-person rate.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QCDkiagAGeI%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Tourism",
+    "pdfUrl": "/study-packs/smartbridge-tour-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "tour-12",
+    "code": "tour",
+    "subject": "Tourism",
+    "grade": 12,
+    "title": "Time zones without guesswork",
+    "capsTopic": "Map work and tour planning: time zones and travel calculations",
+    "goals": [
+      "Convert between UTC offsets",
+      "Account for flight duration",
+      "Check the calendar date"
+    ],
+    "notes": [
+      "UTC offsets state how far local time is ahead of or behind UTC. Convert departure time to UTC first, then add elapsed flight time.",
+      "Convert the arrival UTC time to the destination’s stated offset. Adjust the date whenever the calculation crosses midnight.",
+      "Use the offsets supplied in an exam. For real bookings verify the actual date-specific local time, because some destinations use seasonal clock changes."
+    ],
+    "visual": {
+      "title": "Worked route with stated offsets",
+      "columns": [
+        "Step",
+        "Calculation",
+        "Time"
+      ],
+      "rows": [
+        [
+          "Depart Johannesburg UTC+2",
+          "22:00 − 2 h",
+          "20:00 UTC"
+        ],
+        [
+          "Fly 10 hours",
+          "20:00 + 10 h",
+          "06:00 UTC next day"
+        ],
+        [
+          "Destination UTC+1",
+          "06:00 + 1 h",
+          "07:00 local next day"
+        ]
+      ]
+    },
+    "example": "A flight leaves Johannesburg at 22:00 on Monday, flies 10 hours and arrives at a destination on UTC+1. Find arrival time and day.",
+    "steps": [
+      "Departure is Monday 20:00 UTC.",
+      "Add 10 hours: Tuesday 06:00 UTC.",
+      "Add the destination’s 1-hour offset: Tuesday 07:00 local time."
+    ],
+    "questions": [
+      "A city is UTC−3. What is its time when UTC is 15:00?",
+      "A flight departs there at 12:00 and lasts 8 hours. Find arrival UTC.",
+      "Convert that arrival to Johannesburg at UTC+2."
+    ],
+    "answers": [
+      "12:00 on the same day.",
+      "Departure 15:00 UTC; arrival 23:00 UTC the same day.",
+      "01:00 the next day."
+    ],
+    "commonMistake": "Flight duration is elapsed time. Do not subtract it because you are travelling west.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QCDkiagAGeI%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Tourism",
+    "pdfUrl": "/study-packs/smartbridge-tour-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "hist-10",
+    "code": "hist",
+    "subject": "History",
+    "grade": 10,
+    "title": "Explain the French Revolution",
+    "capsTopic": "The French Revolution: causes and historical skills",
+    "goals": [
+      "Distinguish a long-term cause from a trigger",
+      "Build a causal explanation",
+      "Evaluate the limits of a source"
+    ],
+    "notes": [
+      "Before 1789, French society was divided into estates with unequal privileges. Social inequality and debates about political authority contributed to criticism of the old order.",
+      "State debt and a fiscal crisis increased pressure for reform. Harvest failures and high bread prices intensified popular hardship.",
+      "A revolution has interacting causes. A single event can trigger action without explaining the longer processes that made it possible."
+    ],
+    "visual": {
+      "title": "Selected sequence — not a complete chronology",
+      "columns": [
+        "Date",
+        "Event",
+        "Historical use"
+      ],
+      "rows": [
+        [
+          "Before 1789",
+          "fiscal and social tensions",
+          "longer-term context"
+        ],
+        [
+          "May 1789",
+          "Estates-General meets",
+          "political confrontation"
+        ],
+        [
+          "14 July 1789",
+          "Bastille stormed",
+          "popular action"
+        ],
+        [
+          "August 1789",
+          "Declaration of Rights",
+          "new political principles"
+        ]
+      ]
+    },
+    "example": "Explain how financial crisis and inequality could combine to weaken the monarchy.",
+    "steps": [
+      "Debt and difficulties raising revenue made the government seek fiscal and political solutions.",
+      "Unequal privileges made reform contentious and encouraged demands for fairer representation and taxation.",
+      "Connect these pressures: a financial problem opened a political confrontation in an already unequal society."
+    ],
+    "questions": [
+      "Name one long-term social cause.",
+      "Why is the storming of the Bastille insufficient as the only explanation for revolution?",
+      "What should you check before using a political cartoon as evidence?"
+    ],
+    "answers": [
+      "The unequal privileges and burdens of the estate system.",
+      "It describes an event but does not explain the prior social, fiscal and political conditions.",
+      "Creator, date, intended audience, purpose, symbols and what the cartoon can and cannot show."
+    ],
+    "commonMistake": "A source can be useful even when partisan; identify what its perspective reveals and corroborate factual claims.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20%20HISTORY%20GR%2010-12%20%20WeB.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: History",
+    "pdfUrl": "/study-packs/smartbridge-hist-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "hist-11",
+    "code": "hist",
+    "subject": "History",
+    "grade": 11,
+    "title": "Explain the Russian revolutions",
+    "capsTopic": "Communism in Russia, 1900–1940: revolutions of 1917",
+    "goals": [
+      "Sequence the two revolutions of 1917",
+      "Connect war and domestic pressures",
+      "Distinguish an event from an interpretation"
+    ],
+    "notes": [
+      "Russia’s involvement in the First World War intensified military, economic and political pressures. Food shortages and discontent weakened confidence in tsarist rule.",
+      "The February Revolution led to the abdication of Nicholas II. The Provisional Government faced continuing war and competing political authority.",
+      "In the October Revolution the Bolsheviks took power. Explaining this outcome requires attention to government weaknesses, political organisation and popular demands."
+    ],
+    "visual": {
+      "title": "Conventional names use the old Russian calendar",
+      "columns": [
+        "Stage",
+        "Key change",
+        "Question to ask"
+      ],
+      "rows": [
+        [
+          "February 1917",
+          "Tsar abdicates",
+          "why did support collapse?"
+        ],
+        [
+          "Between revolutions",
+          "Provisional Government",
+          "why did problems persist?"
+        ],
+        [
+          "October 1917",
+          "Bolsheviks take power",
+          "how did they gain support and act?"
+        ]
+      ]
+    },
+    "example": "Explain why ending tsarist rule did not immediately resolve Russia’s crisis.",
+    "steps": [
+      "The February Revolution changed political leadership but inherited war and shortages.",
+      "Continuing involvement in the war sustained hardship and discontent.",
+      "Rival centres of authority and competing programmes made effective government difficult; political change alone did not remove the underlying pressures."
+    ],
+    "questions": [
+      "Identify the ruler who abdicated in 1917.",
+      "Why should a historian compare a Bolshevik slogan with other evidence?",
+      "Give one reason not to merge February and October into a single event."
+    ],
+    "answers": [
+      "Nicholas II.",
+      "A slogan reveals political aims and persuasion, but not by itself actual support or implementation.",
+      "They removed different authorities and occurred in different political circumstances."
+    ],
+    "commonMistake": "The conventional February and October names refer to the Julian calendar then used in Russia; dates differ in the Gregorian calendar.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20%20HISTORY%20GR%2010-12%20%20WeB.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: History",
+    "pdfUrl": "/study-packs/smartbridge-hist-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "hist-12",
+    "code": "hist",
+    "subject": "History",
+    "grade": 12,
+    "title": "Civil resistance and historical argument",
+    "capsTopic": "Civil resistance in South Africa, 1970s–1980s",
+    "goals": [
+      "Connect protest to its historical context",
+      "Use evidence to support an argument",
+      "Assess source usefulness and limitation"
+    ],
+    "notes": [
+      "The Soweto uprising began on 16 June 1976 amid opposition to apartheid education, including the imposition of Afrikaans as a medium of instruction.",
+      "Black Consciousness encouraged psychological liberation and black self-reliance. Explain its influence without reducing a broad movement to one slogan.",
+      "Civil resistance involved multiple organisations, communities and methods. Historical arguments should show change over time and recognise different forms of mobilisation."
+    ],
+    "visual": {
+      "title": "Selected context and mobilisation",
+      "columns": [
+        "Period",
+        "Development",
+        "Connection to investigate"
+      ],
+      "rows": [
+        [
+          "Late 1960s–1970s",
+          "Black Consciousness",
+          "identity and political awareness"
+        ],
+        [
+          "1976",
+          "Soweto uprising",
+          "student resistance and repression"
+        ],
+        [
+          "1980s",
+          "broader civic mobilisation",
+          "community and organisational networks"
+        ]
+      ]
+    },
+    "example": "Plan a paragraph on why education became a focus of resistance in 1976.",
+    "steps": [
+      "Make a claim: unequal apartheid education and the language policy provoked student opposition.",
+      "Support it with relevant contextual evidence, including student mobilisation and the events beginning on 16 June.",
+      "Explain how the evidence supports the claim; do not imply that language was the only grievance or that all participants had identical motives."
+    ],
+    "questions": [
+      "Give the date associated with the start of the Soweto uprising.",
+      "Name one limitation of using a single later oral-history interview.",
+      "What distinguishes an argument from a list of events?"
+    ],
+    "answers": [
+      "16 June 1976.",
+      "Memory, later experience and the interview setting may shape the account; corroboration is needed.",
+      "An argument makes a defensible claim, selects relevant evidence and explains its significance."
+    ],
+    "commonMistake": "These notes are a topic introduction, not an exhaustive essay or a substitute for analysing the sources supplied in an exam.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20%20HISTORY%20GR%2010-12%20%20WeB.pdf",
+    "sourceLabel": "DBE CAPS, Grades 10–12: History",
+    "pdfUrl": "/study-packs/smartbridge-hist-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "geo-10",
+    "code": "geo",
+    "subject": "Geography",
+    "grade": 10,
+    "title": "Atmosphere: explain heating",
+    "capsTopic": "The atmosphere: heating of the atmosphere",
+    "goals": [
+      "Distinguish incoming and outgoing radiation",
+      "Explain the natural greenhouse effect",
+      "Interpret a simple energy pathway"
+    ],
+    "notes": [
+      "The Sun supplies mainly shortwave radiation. Some is reflected; some is absorbed by the atmosphere and surface.",
+      "The warmed Earth emits longwave infrared radiation. Greenhouse gases absorb and re-emit some outgoing infrared, helping warm the lower atmosphere and surface.",
+      "Albedo is reflectivity. A brighter surface generally reflects more incoming radiation, while a darker surface generally absorbs more under comparable conditions."
+    ],
+    "visual": {
+      "title": "Simplified energy pathway",
+      "columns": [
+        "Stage",
+        "Radiation or transfer",
+        "Result"
+      ],
+      "rows": [
+        [
+          "Sun → Earth",
+          "shortwave",
+          "surface absorbs some energy"
+        ],
+        [
+          "Surface → atmosphere/space",
+          "longwave infrared",
+          "surface loses energy"
+        ],
+        [
+          "Greenhouse gases",
+          "absorb and re-emit infrared",
+          "some energy returns towards surface"
+        ]
+      ]
+    },
+    "example": "Why might dark tar warm more than a pale painted surface in sunshine?",
+    "steps": [
+      "Compare surfaces under the same sunlight and other similar conditions.",
+      "Dark tar generally has a lower albedo and absorbs a larger share of incoming radiation.",
+      "More absorbed energy can raise its temperature; wind, moisture and material properties also affect actual temperatures."
+    ],
+    "questions": [
+      "Which has higher albedo: fresh snow or dark tar?",
+      "Name the radiation mainly emitted by the Earth.",
+      "Why is the greenhouse effect different from ozone depletion?"
+    ],
+    "answers": [
+      "Fresh snow.",
+      "Longwave infrared radiation.",
+      "The greenhouse effect concerns infrared absorption and re-emission; ozone depletion concerns reduced protection from harmful ultraviolet radiation."
+    ],
+    "commonMistake": "Do not explain global warming as the ozone hole letting in extra heat; these are different atmospheric processes.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20GEOGRAPHY%20_%20GR%2010-12%20_%20WEB_C9A9.pdf?ver=2015-01-27-154144-177",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Geography",
+    "pdfUrl": "/study-packs/smartbridge-geo-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "geo-11",
+    "code": "geo",
+    "subject": "Geography",
+    "grade": 11,
+    "title": "Use development indicators critically",
+    "capsTopic": "Development geography: indicators and development",
+    "goals": [
+      "Calculate a per-person average",
+      "Compare economic and social indicators",
+      "Explain why averages hide inequality"
+    ],
+    "notes": [
+      "Development involves changes in living conditions and opportunities, not only economic output.",
+      "GDP per capita divides output by population. It is an average and does not describe how income is distributed.",
+      "Use several indicators, such as life expectancy, education and access to services. Compare the same year, units and methods before drawing conclusions."
+    ],
+    "visual": {
+      "title": "Invented data for comparison practice",
+      "columns": [
+        "Indicator",
+        "Place A",
+        "Place B"
+      ],
+      "rows": [
+        [
+          "GDP per capita",
+          "R100 000",
+          "R80 000"
+        ],
+        [
+          "Life expectancy",
+          "62 years",
+          "72 years"
+        ],
+        [
+          "Access to safe water",
+          "70%",
+          "95%"
+        ]
+      ]
+    },
+    "example": "Can you conclude that A is more developed simply because its GDP per capita is higher?",
+    "steps": [
+      "A has the higher measured average output per person.",
+      "B has higher life expectancy and water access in this invented dataset.",
+      "A single indicator cannot justify the full conclusion. Assess distribution, social outcomes and data quality before comparing development."
+    ],
+    "questions": [
+      "Output is R600 million and population 10 000. Find output per person.",
+      "Why can two places with equal GDP per capita have different living standards?",
+      "Name one limitation of comparing indicators from different years."
+    ],
+    "answers": [
+      "R60 000 per person.",
+      "Distribution, public services, costs and other conditions may differ.",
+      "Economic or demographic changes can make the figures non-comparable over time."
+    ],
+    "commonMistake": "GDP per capita is not each person’s salary and does not prove that benefits are equally shared.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20GEOGRAPHY%20_%20GR%2010-12%20_%20WEB_C9A9.pdf?ver=2015-01-27-154144-177",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Geography",
+    "pdfUrl": "/study-packs/smartbridge-geo-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "geo-12",
+    "code": "geo",
+    "subject": "Geography",
+    "grade": 12,
+    "title": "Read a river’s long profile",
+    "capsTopic": "Geomorphology: fluvial processes; river profiles",
+    "goals": [
+      "Distinguish erosion, transport and deposition",
+      "Interpret a long profile",
+      "Connect gradient with channel processes"
+    ],
+    "notes": [
+      "A river’s long profile shows elevation along its course. It commonly becomes gentler downstream, although local geology and disturbances create exceptions.",
+      "Erosion removes material, transport moves it and deposition occurs when the river can no longer carry part of its load.",
+      "In a meander, faster flow commonly erodes the outer bank while slower flow deposits material on the inner bank. Distinguish this cross-sectional pattern from the river’s long profile."
+    ],
+    "visual": {
+      "title": "Simplified downstream pattern",
+      "columns": [
+        "Section",
+        "Typical gradient",
+        "Common tendency"
+      ],
+      "rows": [
+        [
+          "Upper course",
+          "steeper",
+          "vertical erosion"
+        ],
+        [
+          "Middle course",
+          "moderate",
+          "transport and lateral erosion"
+        ],
+        [
+          "Lower course",
+          "gentler",
+          "deposition where carrying capacity falls"
+        ]
+      ]
+    },
+    "example": "Explain why the outside and inside banks of a meander may change differently.",
+    "steps": [
+      "Flow is commonly faster and deeper near the outer bank, promoting erosion and a river cliff.",
+      "Slower flow near the inner bank encourages deposition and a slip-off slope.",
+      "Over time this can move the meander laterally. Real outcomes also depend on discharge, sediment and bank material."
+    ],
+    "questions": [
+      "Define deposition.",
+      "A river falls 120 m over 6 km. Calculate average gradient as a ratio in the same units.",
+      "Why does gentler gradient not always mean lower discharge?"
+    ],
+    "answers": [
+      "The laying down of sediment when transport capacity is insufficient to carry that load.",
+      "120 : 6 000 = 1 : 50.",
+      "Discharge depends on cross-sectional area and velocity; tributaries may increase volume downstream."
+    ],
+    "commonMistake": "Convert kilometres to metres before forming the gradient ratio. A profile is not a plan view of a winding river.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/Portals/0/CD/National%20Curriculum%20Statements%20and%20Vocational/CAPS%20FET%20_%20GEOGRAPHY%20_%20GR%2010-12%20_%20WEB_C9A9.pdf?ver=2015-01-27-154144-177",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Geography",
+    "pdfUrl": "/study-packs/smartbridge-geo-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "enhl-10",
+    "code": "enhl",
+    "subject": "English HL",
+    "grade": 10,
+    "title": "Read closely and quote with purpose",
+    "capsTopic": "Reading and viewing: comprehension; language in context",
+    "goals": [
+      "Identify literal information",
+      "Infer meaning from evidence",
+      "Explain a word choice in context"
+    ],
+    "notes": [
+      "Literal questions ask for information stated directly. Inference combines a textual clue with a reasonable explanation; it is not unsupported guessing.",
+      "A quotation supports a point only when you explain how its wording matters. Keep quotations short and relevant.",
+      "Tone is the speaker’s attitude. Use the language of the passage to justify your description rather than choosing a tone word from memory."
+    ],
+    "visual": {
+      "title": "From clue to explanation",
+      "columns": [
+        "Textual clue",
+        "Possible inference",
+        "Reasoning"
+      ],
+      "rows": [
+        [
+          "checked the empty road",
+          "expectation or worry",
+          "repeated attention to an arrival"
+        ],
+        [
+          "finally exhaled",
+          "relief",
+          "tension has eased"
+        ],
+        [
+          "warm light",
+          "comfort",
+          "positive sensory association"
+        ]
+      ]
+    },
+    "example": "Original text: “Lindi checked the empty road again. When the bus appeared, she finally exhaled and stepped into its warm light.” Explain Lindi’s likely feelings.",
+    "steps": [
+      "The word “again” suggests repeated checking, supporting an inference of anxious waiting.",
+      "“Finally exhaled” suggests relief when the bus arrives.",
+      "“Warm light” gives the ending a comforting mood. The text does not establish why she was waiting or where she is going."
+    ],
+    "questions": [
+      "What appears on the road?",
+      "Explain the effect of “again”.",
+      "Does the text prove that the bus was late? Justify."
+    ],
+    "answers": [
+      "A bus.",
+      "It suggests repeated action and can emphasise anticipation or worry.",
+      "No. It shows waiting but gives no timetable or expected arrival time."
+    ],
+    "commonMistake": "Do not invent a backstory. An inference must be supported by the words actually provided.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=WtjOh8RBcU0%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: English",
+    "pdfUrl": "/study-packs/smartbridge-enhl-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "enhl-11",
+    "code": "enhl",
+    "subject": "English HL",
+    "grade": 11,
+    "title": "Analyse persuasion, not just opinion",
+    "capsTopic": "Reading and viewing: critical language awareness",
+    "goals": [
+      "Distinguish assertion from evidence",
+      "Explain an appeal to emotion",
+      "Evaluate a persuasive message"
+    ],
+    "notes": [
+      "A persuasive text tries to influence an audience. Identify the intended audience, purpose and specific choices used to persuade.",
+      "An assertion states a claim. Evidence provides a basis for judging it; check whether it is relevant and credible.",
+      "Loaded language and rhetorical questions can shape emotion. Explain the likely effect in this particular text rather than merely naming a technique."
+    ],
+    "visual": {
+      "title": "Original poster: “Don’t let our library fade. Join Saturday’s book drive. A single book can open a hundred doors.”",
+      "columns": [
+        "Choice",
+        "Technique",
+        "Possible effect"
+      ],
+      "rows": [
+        [
+          "our library",
+          "inclusive language",
+          "shared ownership"
+        ],
+        [
+          "fade",
+          "emotive metaphor",
+          "sense of loss"
+        ],
+        [
+          "a hundred doors",
+          "figurative exaggeration",
+          "suggests many opportunities"
+        ]
+      ]
+    },
+    "example": "Explain how the poster encourages community participation.",
+    "steps": [
+      "“Our” includes readers in a shared community and frames the library as a collective responsibility.",
+      "The contrast between “fade” and “open” moves from possible loss to opportunity.",
+      "The clear instruction identifies an action, but readers still need practical details such as place, time and acceptable donations."
+    ],
+    "questions": [
+      "Identify the poster’s main request.",
+      "Is “a hundred doors” reliable numerical evidence? Explain.",
+      "Suggest one practical improvement to the poster."
+    ],
+    "answers": [
+      "Join Saturday’s book drive.",
+      "No. It is figurative language expressing opportunity, not a measured outcome.",
+      "Add a verified venue, time and contact or donation requirements."
+    ],
+    "commonMistake": "Identifying a device without explaining its effect does not complete a language-analysis response.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=WtjOh8RBcU0%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: English",
+    "pdfUrl": "/study-packs/smartbridge-enhl-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "enhl-12",
+    "code": "enhl",
+    "subject": "English HL",
+    "grade": 12,
+    "title": "Build a defensible literary paragraph",
+    "capsTopic": "Reading and viewing: literary response; writing and presenting",
+    "goals": [
+      "Make an interpretive claim",
+      "Integrate concise textual evidence",
+      "Explain form and meaning together"
+    ],
+    "notes": [
+      "A literary response develops a reading of a text. Start with a precise claim that can be defended using its language or structure.",
+      "Evidence must be followed by analysis: explain what a word, contrast, image or structural choice contributes to meaning.",
+      "For prescribed literature, use the school’s current text and edition. This original short poem is skills practice and is not presented as a prescribed poem."
+    ],
+    "visual": {
+      "title": "Original poem: “I fold the map. / The road remains. / Beyond the gate, / the morning waits.”",
+      "columns": [
+        "Detail",
+        "Interpretive possibility",
+        "Support"
+      ],
+      "rows": [
+        [
+          "fold the map",
+          "less reliance on planning",
+          "an action ends preparation"
+        ],
+        [
+          "road remains",
+          "uncertainty continues",
+          "contrast with folded map"
+        ],
+        [
+          "morning waits",
+          "new possibility",
+          "personification and open ending"
+        ]
+      ]
+    },
+    "example": "Write a paragraph explaining how the poem presents beginning a journey.",
+    "steps": [
+      "Claim: the poem presents beginning as a choice to act despite uncertainty.",
+      "Evidence: folding the map ends preparation, but “the road remains”, showing that the journey is still ahead.",
+      "Analysis: the personified morning “waits” makes possibility feel available; the open ending does not guarantee success."
+    ],
+    "questions": [
+      "Identify one example of personification.",
+      "Explain the contrast between the first two lines.",
+      "Why is “the speaker will definitely succeed” too strong?"
+    ],
+    "answers": [
+      "“The morning waits.”",
+      "The map can be folded and preparation ended, but the actual road and journey still exist.",
+      "The poem offers possibility but gives no outcome; that claim exceeds its evidence."
+    ],
+    "commonMistake": "Distinguish speaker from poet, and interpret from evidence rather than treating every image as having one fixed meaning.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=WtjOh8RBcU0%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: English",
+    "pdfUrl": "/study-packs/smartbridge-enhl-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "afhl-10",
+    "code": "afhl",
+    "subject": "Afrikaans HL",
+    "grade": 10,
+    "title": "Leesbegrip: van leidraad tot afleiding",
+    "capsTopic": "Lees en kyk: begrip; taal in konteks",
+    "goals": [
+      "Onderskei feite van afleidings",
+      "Gebruik teksbewyse",
+      "Verduidelik woordkeuse"
+    ],
+    "notes": [
+      "Letterlike vrae vra na inligting wat direk in die teks staan. ’n Afleiding verbind ’n leidraad met ’n logiese gevolgtrekking.",
+      "Haal kort en doelgerig aan. Verduidelik waarom die aangehaalde woord jou antwoord ondersteun.",
+      "Toon beskryf die spreker se houding. Kies ’n gepaste beskrywing en bewys dit uit die teks."
+    ],
+    "visual": {
+      "title": "Van teks na betekenis",
+      "columns": [
+        "Leidraad",
+        "Afleiding",
+        "Rede"
+      ],
+      "rows": [
+        [
+          "weer",
+          "herhaalde handeling",
+          "sy het reeds gewag"
+        ],
+        [
+          "uiteindelik",
+          "verligting",
+          "die spanning neem af"
+        ],
+        [
+          "warm lig",
+          "geborgenheid",
+          "positiewe sintuiglike beeld"
+        ]
+      ]
+    },
+    "example": "Oorspronklike teks: “Mia kyk weer na die leë straat. Toe die bus verskyn, haal sy uiteindelik diep asem en stap die warm lig binne.” Hoe verander haar gevoel?",
+    "steps": [
+      "“Weer” dui daarop dat Mia herhaaldelik kyk; dit kan afwagting of spanning suggereer.",
+      "“Uiteindelik” en die diep asemhaling ondersteun ’n gevoel van verligting.",
+      "“Warm lig” skep ’n gevoel van geborgenheid. Die teks sê nie waarom sy op die bus wag nie."
+    ],
+    "questions": [
+      "Wat verskyn in die straat?",
+      "Wat suggereer “weer”?",
+      "Bewys die teks dat die bus laat was? Motiveer."
+    ],
+    "answers": [
+      "’n Bus.",
+      "Dat Mia al voorheen gekyk het; dit beklemtoon haar afwagting.",
+      "Nee. Geen verwagte aankomstyd word gegee nie."
+    ],
+    "commonMistake": "Moenie ’n onbekende agtergrond uitdink nie. Jou afleiding moet op die teks berus.",
+    "language": "Afrikaans",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=mMkdIZmk3Ow%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Afrikaans",
+    "pdfUrl": "/study-packs/smartbridge-afhl-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "afhl-11",
+    "code": "afhl",
+    "subject": "Afrikaans HL",
+    "grade": 11,
+    "title": "Oorreding en kritiese taalbewustheid",
+    "capsTopic": "Lees en kyk: kritiese taalbewustheid",
+    "goals": [
+      "Identifiseer die teikengehoor",
+      "Verduidelik oorredingstegnieke",
+      "Evalueer ’n aanspraak"
+    ],
+    "notes": [
+      "’n Oorredende teks probeer die leser se houding of optrede beïnvloed. Bepaal die doel en teikengehoor.",
+      "’n Bewering is nie vanself bewys nie. Vra watter betroubare inligting die bewering ondersteun.",
+      "Emotiewe taal en beeldspraak kan gevoelens beïnvloed. Verduidelik die uitwerking in die spesifieke konteks."
+    ],
+    "visual": {
+      "title": "Oorspronklike plakkaat: “Moenie ons biblioteek laat verdwyn nie. Skenk Saterdag ’n boek. Een boek maak honderd deure oop.”",
+      "columns": [
+        "Woordkeuse",
+        "Tegniek",
+        "Uitwerking"
+      ],
+      "rows": [
+        [
+          "ons",
+          "inklusiewe taal",
+          "gedeelde verantwoordelikheid"
+        ],
+        [
+          "verdwyn",
+          "emotiewe taal",
+          "vrees vir verlies"
+        ],
+        [
+          "honderd deure",
+          "beeldspraak",
+          "baie geleenthede"
+        ]
+      ]
+    },
+    "example": "Hoe probeer die plakkaat mense tot deelname oorhaal?",
+    "steps": [
+      "“Ons” betrek die leser by die gemeenskap en biblioteek.",
+      "Die moontlike verlies word gekontrasteer met die geleenthede wat boeke bied.",
+      "Die opdrag is duidelik, maar die plek en tyd moet bygevoeg word sodat mense kan deelneem."
+    ],
+    "questions": [
+      "Wat moet die leser doen?",
+      "Is “honderd deure” ’n bewese statistiek? Verduidelik.",
+      "Noem een praktiese verbetering."
+    ],
+    "answers": [
+      "Saterdag ’n boek skenk.",
+      "Nee. Dit is figuurlik en stel baie geleenthede voor; geen telling word bewys nie.",
+      "Voeg ’n bevestigde plek, tyd of kontakbesonderhede by."
+    ],
+    "commonMistake": "Noem nie net die tegniek nie: verduidelik hoe dit die bedoelde leser kan beïnvloed.",
+    "language": "Afrikaans",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=mMkdIZmk3Ow%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Afrikaans",
+    "pdfUrl": "/study-packs/smartbridge-afhl-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "afhl-12",
+    "code": "afhl",
+    "subject": "Afrikaans HL",
+    "grade": 12,
+    "title": "Skryf ’n gemotiveerde literêre paragraaf",
+    "capsTopic": "Lees en kyk: literêre ontleding; skryf en aanbied",
+    "goals": [
+      "Formuleer ’n interpretasie",
+      "Ondersteun dit met teksbewyse",
+      "Verbind beeldspraak en betekenis"
+    ],
+    "notes": [
+      "’n Literêre paragraaf begin met ’n duidelike stelling oor die teks. Kies relevante bewyse en ontleed dit.",
+      "’n Kort aanhaling vervang nie jou verduideliking nie. Bespreek die betekenis van die spesifieke woord of beeld.",
+      "Gebruik jou skool se voorgeskrewe werke vir eksamenvoorbereiding. Hierdie oorspronklike oefengedig is nie ’n voorgeskrewe gedig nie."
+    ],
+    "visual": {
+      "title": "Oorspronklike gedig: “Ek vou die kaart. / Die pad bly oop. / Daar by die hek / wag môre nog.”",
+      "columns": [
+        "Beeld",
+        "Moontlike betekenis",
+        "Bewys"
+      ],
+      "rows": [
+        [
+          "kaart vou",
+          "voorbereiding eindig",
+          "doelbewuste handeling"
+        ],
+        [
+          "pad bly oop",
+          "geleenthede bestaan",
+          "kontras met die kaart"
+        ],
+        [
+          "môre wag",
+          "toekoms as moontlikheid",
+          "personifikasie"
+        ]
+      ]
+    },
+    "example": "Verduidelik hoe die gedig die toekoms as ’n moontlikheid voorstel.",
+    "steps": [
+      "Stelling: die spreker kan begin beweeg, al is die uitkoms onbekend.",
+      "Die kaart word gevou, maar die pad “bly oop”; voorbereiding en werklike optrede verskil.",
+      "“Wag môre” personifieer die toekoms en skep afwagting, sonder om sukses te waarborg."
+    ],
+    "questions": [
+      "Identifiseer personifikasie.",
+      "Verduidelik die kontras in die eerste twee reëls.",
+      "Waarom is ’n gewaarborgde gelukkige einde nie ’n veilige gevolgtrekking nie?"
+    ],
+    "answers": [
+      "“Wag môre nog.”",
+      "Die kaart word toegemaak, maar die pad en moontlikhede bly oop.",
+      "Die gedig gee geen uitkoms nie; dit laat die toekoms oop."
+    ],
+    "commonMistake": "Die spreker is nie noodwendig die digter nie. Meer as een interpretasie kan werk indien dit goed gemotiveer word.",
+    "language": "Afrikaans",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=mMkdIZmk3Ow%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Afrikaans",
+    "pdfUrl": "/study-packs/smartbridge-afhl-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "xhhl-10",
+    "code": "xhhl",
+    "subject": "isiXhosa HL",
+    "grade": 10,
+    "title": "Ukufunda ngokuqonda: sebenzisa ubungqina",
+    "capsTopic": "Ukufunda nokubukela: ukuqonda; ulwimi emxholweni",
+    "goals": [
+      "Chonga ulwazi oluthe ngqo",
+      "Yenza uthelekelelo oluxhaswayo",
+      "Cacisa ukhetho lwamagama"
+    ],
+    "notes": [
+      "Imibuzo yolwazi oluthe ngqo ifuna into ebhalwe ngokucacileyo kwisicatshulwa. Uthelekelelo kufuneka luxhaswe zizikhokelo ezikwisicatshulwa.",
+      "Xa ucaphula, khetha amagama ambalwa afanelekileyo. Cacisa indlela axhasa ngayo impendulo yakho.",
+      "Musa ukongeza iziganeko ezingekhoyo. Yahlula into esiyaziyo kwinto esicinga ukuba inokwenzeka."
+    ],
+    "visual": {
+      "title": "Ukusuka kwigama ukuya kwintsingiselo",
+      "columns": [
+        "Igama",
+        "Into eliyibonisayo",
+        "Ubungqina"
+      ],
+      "rows": [
+        [
+          "kwakhona",
+          "isenzo siyaphindwa",
+          "sele ejongile ngaphambili"
+        ],
+        [
+          "ekugqibeleni",
+          "ukulinda kuyaphela",
+          "ibhasi iyafika"
+        ],
+        [
+          "wancuma",
+          "uvuyo okanye ukukhululeka",
+          "indlela asabela ngayo"
+        ]
+      ]
+    },
+    "example": "Isicatshulwa sokuqala: “UNomsa wajonga indlela kwakhona. Ekugqibeleni yafika ibhasi. Wancuma waza wathatha ibhegi yakhe.” Yintoni ebonisa ukuba ebeyilindile ibhasi?",
+    "steps": [
+      "Igama elithi “kwakhona” libonisa ukuba uNomsa ebesele ejonga indlela.",
+      "“Ekugqibeleni” libonisa ukuphela kokulinda.",
+      "Ukuncuma kwakhe xa ibhasi ifika kuxhasa uluvo lokuba uyavuya okanye ukhululekile."
+    ],
+    "questions": [
+      "Yintoni eyafikayo?",
+      "Lithini igama elibonisa ukuphindwa kwesenzo?",
+      "Ngaba siyazi ukuba uNomsa uya phi? Xhasa impendulo."
+    ],
+    "answers": [
+      "Yibhasi.",
+      "“Kwakhona”.",
+      "Hayi. Isicatshulwa asiyichazi indawo aya kuyo."
+    ],
+    "commonMistake": "Uthelekelelo alusilo ibali elitsha. Kufuneka lubuyele kubungqina besicatshulwa.",
+    "language": "isiXhosa",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QsGQeCZMUxo%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiXhosa",
+    "pdfUrl": "/study-packs/smartbridge-xhhl-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "xhhl-11",
+    "code": "xhhl",
+    "subject": "isiXhosa HL",
+    "grade": 11,
+    "title": "Qonda indlela isibhengezo esicenga ngayo",
+    "capsTopic": "Ukufunda nokubukela: ukuqaphela ukusetyenziswa kolwimi",
+    "goals": [
+      "Chonga injongo nabaphulaphuli",
+      "Cacisa ulwimi olucengayo",
+      "Yahlula ibango kubungqina"
+    ],
+    "notes": [
+      "Isibhengezo esicengayo sifuna ukutshintsha indlela abantu abacinga okanye abenza ngayo. Buza ukuba sithetha nabani kwaye sifuna benze ntoni.",
+      "Amagama aquka wonke umntu anokwakha imvakalelo yobunye. Amagama achukumisa iimvakalelo anokwenza abantu baxhalabe okanye babe nethemba.",
+      "Ibango alilingani nobungqina. Vavanya ukuba kukho ulwazi oluthembekileyo oluxhasa oko kuthethwayo."
+    ],
+    "visual": {
+      "title": "Isibhengezo sokuqala: “Masikhusele ithala lethu leencwadi. Yiza nencwadi ngoMgqibelo. Incwadi enye ivula iingcango ezininzi.”",
+      "columns": [
+        "Ibinzana",
+        "Indlela",
+        "Isiphumo esinokwenzeka"
+      ],
+      "rows": [
+        [
+          "lethu",
+          "ukuquka abafundi",
+          "imvakalelo yobunye"
+        ],
+        [
+          "masikhusele",
+          "isicelo sokuthatha inyathelo",
+          "uxanduva oludibeneyo"
+        ],
+        [
+          "iingcango ezininzi",
+          "ulwimi olufuziselayo",
+          "amathuba amaninzi"
+        ]
+      ]
+    },
+    "example": "Sicenga njani esi sibhengezo abantu ukuba bathathe inxaxheba?",
+    "steps": [
+      "Igama elithi “lethu” libandakanya abantu kwithala leencwadi labo.",
+      "Ibinzana elithi “masikhusele” libiza abantu ukuba basebenze kunye.",
+      "“Iingcango ezininzi” limela amathuba okufunda; alithethi iingcango zesakhiwo kuphela."
+    ],
+    "questions": [
+      "Yintoni ekufuneka abantu beze nayo?",
+      "Ngaba “iingcango ezininzi” libalo eliqinisekisiweyo? Cacisa.",
+      "Loluphi ulwazi olusebenzisekayo olungekhoyo?"
+    ],
+    "answers": [
+      "Incwadi.",
+      "Hayi. Eli libinzana elifuziselayo elithetha amathuba.",
+      "Umzekelo: indawo, ixesha elichanekileyo okanye iinkcukacha zoqhagamshelwano."
+    ],
+    "commonMistake": "Ungachongi nje ubuchule bolwimi. Cacisa indlela obusebenza ngayo kwesi sibhengezo.",
+    "language": "isiXhosa",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QsGQeCZMUxo%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiXhosa",
+    "pdfUrl": "/study-packs/smartbridge-xhhl-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "xhhl-12",
+    "code": "xhhl",
+    "subject": "isiXhosa HL",
+    "grade": 12,
+    "title": "Yakha umhlathi wohlalutyo loncwadi",
+    "capsTopic": "Ukufunda nokubukela: uncwadi; ukubhala nokunikezela",
+    "goals": [
+      "Beka uluvo olucacileyo",
+      "Khetha ubungqina obufanelekileyo",
+      "Cacisa umfanekiso-ngqondweni"
+    ],
+    "notes": [
+      "Umhlathi wohlalutyo kufuneka ube noluvo, ubungqina kunye nengcaciso. Isicatshulwa masixhase into oyithethayo.",
+      "Ukucaphula kuphela akwanelanga. Cacisa intsingiselo yamagama nendlela anxulumana ngayo noluvo lwakho.",
+      "Lo mbongo wokuqala ngowokuziqhelanisa. Awuthathi indawo yeencwadi okanye imibongo emiselwe sisikolo sakho."
+    ],
+    "visual": {
+      "title": "Umbongo wokuqala: “Ndiyasonga imephu. / Indlela isavulekile. / Ngaphaya kwesango / kusasa kundilindile.”",
+      "columns": [
+        "Umfanekiso",
+        "Intsingiselo enokwenzeka",
+        "Indlela exhaswa ngayo"
+      ],
+      "rows": [
+        [
+          "imephu iyasongwa",
+          "ukulungiselela kuyaphela",
+          "isenzo sesithethi"
+        ],
+        [
+          "indlela ivulekile",
+          "amathuba asekhona",
+          "uhambo alukapheli"
+        ],
+        [
+          "kusasa kuyalinda",
+          "ithemba ngekamva",
+          "isimntwiso"
+        ]
+      ]
+    },
+    "example": "Cacisa indlela lo mbongo obonisa ngayo ukuqala kohambo.",
+    "steps": [
+      "Uluvo: isithethi sijonge amathuba angaphambili nangona isiphelo singaziwa.",
+      "Ukusongwa kwemephu kubonisa ukuphela kokulungiselela, kodwa indlela isavulekile.",
+      "Ukusa okulindileyo kunika ikamva isenzo somntu. Oku kudala ithemba, kungathembisi impumelelo eqinisekileyo."
+    ],
+    "questions": [
+      "Chonga umzekelo wesimntwiso.",
+      "Yahlula isithethi kumbhali.",
+      "Ngaba lo mbongo uqinisekisa impumelelo? Xhasa impendulo."
+    ],
+    "answers": [
+      "“Kusasa kundilindile.”",
+      "Isithethi lilizwi elithetha kumbongo; asisoloko singumbhali uqobo.",
+      "Hayi. Ubonisa ithuba lokuqala kodwa akasiniki isiphelo sohambo."
+    ],
+    "commonMistake": "Ingcaciso eyahlukileyo inokwamkeleka xa ixhaswa kakuhle bubungqina bombongo.",
+    "language": "isiXhosa",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=QsGQeCZMUxo%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiXhosa",
+    "pdfUrl": "/study-packs/smartbridge-xhhl-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "zuhl-10",
+    "code": "zuhl",
+    "subject": "isiZulu HL",
+    "grade": 10,
+    "title": "Ukufunda ngokuqondisisa",
+    "capsTopic": "Ukufunda nokubukela: ukuqondisisa; ulimi engqikithini",
+    "goals": [
+      "Thola ulwazi olushiwo ngqo",
+      "Yenza isiphetho esisekelwe ebufakazini",
+      "Chaza ukukhethwa kwamagama"
+    ],
+    "notes": [
+      "Imibuzo eqondile ifuna ulwazi olubhalwe ngokusobala. Isiphetho sidinga umkhondo ovela esiqeshini kanye nencazelo enengqondo.",
+      "Uma ucaphuna, khetha amagama ambalwa afanele. Chaza ukuthi ahlobana kanjani nempendulo yakho.",
+      "Ungaqambi izehlakalo ezingekho esiqeshini. Hlukanisa esikwaziyo kulokho esicabanga ukuthi kungenzeka."
+    ],
+    "visual": {
+      "title": "Kusukela egameni kuya emqondweni",
+      "columns": [
+        "Igama",
+        "Elikukhombisayo",
+        "Ubufakazi"
+      ],
+      "rows": [
+        [
+          "futhi",
+          "isenzo siyaphindwa",
+          "wayeseke wabheka"
+        ],
+        [
+          "ekugcineni",
+          "ukulinda kuyaphela",
+          "ibhasi liyafika"
+        ],
+        [
+          "wamamatheka",
+          "injabulo noma ukukhululeka",
+          "indlela asabela ngayo"
+        ]
+      ]
+    },
+    "example": "Isiqeshana sokuqala: “UNomsa wabheka umgwaqo futhi. Ekugcineni lafika ibhasi. Wamamatheka wathatha isikhwama sakhe.” Yini ekhombisa ukuthi ubelindile?",
+    "steps": [
+      "Igama elithi “futhi” likhombisa ukuthi uNomsa wayeseke wabheka umgwaqo.",
+      "“Ekugcineni” likhombisa ukuphela kokulinda.",
+      "Ukumamatheka kwakhe lapho ibhasi lifika kusekela umqondo wenjabulo noma wokukhululeka."
+    ],
+    "questions": [
+      "Yini eyafikayo?",
+      "Yiliphi igama elikhombisa ukuphindwa kwesenzo?",
+      "Siyazi yini ukuthi uNomsa uyaphi? Sekela impendulo."
+    ],
+    "answers": [
+      "Yibhasi.",
+      "“Futhi”.",
+      "Cha. Isiqeshana asiyisho indawo aya kuyo."
+    ],
+    "commonMistake": "Isiphetho asiyona indaba entsha. Kufanele sisekelwe emagameni esiqeshana.",
+    "language": "isiZulu",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=nZlas4HGdYI%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiZulu",
+    "pdfUrl": "/study-packs/smartbridge-zuhl-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "zuhl-11",
+    "code": "zuhl",
+    "subject": "isiZulu HL",
+    "grade": 11,
+    "title": "Hlaziya ulimi lokunxenxa",
+    "capsTopic": "Ukufunda nokubukela: ukuqaphela ukusetshenziswa kolimi",
+    "goals": [
+      "Thola inhloso nezethameli",
+      "Chaza indlela yokunxenxa",
+      "Hlukanisa isimangalo ebufakazini"
+    ],
+    "notes": [
+      "Umbhalo onxenxayo uzama ukuthonya indlela abantu abacabanga noma abenza ngayo. Buza ukuthi ukhuluma nobani nokuthi ufuna benzeni.",
+      "Amagama afaka wonke umuntu angakha ubunye. Ulimi oluthinta imizwa lungadala ukukhathazeka noma ithemba.",
+      "Isimangalo asibona ubufakazi ngokwaso. Bheka ukuthi kukhona yini ulwazi oluthembekile olusisekelayo."
+    ],
+    "visual": {
+      "title": "Isikhangiso sokuqala: “Masivikele umtapo wethu wezincwadi. Letha incwadi ngoMgqibelo. Incwadi eyodwa ivula iminyango eminingi.”",
+      "columns": [
+        "Ibinzana",
+        "Indlela",
+        "Umphumela ongaba khona"
+      ],
+      "rows": [
+        [
+          "wethu",
+          "ukufaka wonke umuntu",
+          "umuzwa wobunye"
+        ],
+        [
+          "masivikele",
+          "ukubiza abantu esenzweni",
+          "ukuzibophezela"
+        ],
+        [
+          "iminyango eminingi",
+          "ulimi olungokomfanekiso",
+          "amathuba amaningi"
+        ]
+      ]
+    },
+    "example": "Lesi sikhangiso sibanxenxa kanjani abantu ukuba babambe iqhaza?",
+    "steps": [
+      "Igama elithi “wethu” lifaka abafundi emphakathini womtapo wezincwadi.",
+      "“Masivikele” licela isenzo esihlanganyelwe.",
+      "“Iminyango eminingi” imele amathuba okufunda; ayisho iminyango yesakhiwo kuphela."
+    ],
+    "questions": [
+      "Yini okufanele abantu bayilethe?",
+      "Ingabe “iminyango eminingi” iyisibalo esiqinisekisiwe? Chaza.",
+      "Yiluphi ulwazi olusebenzisekayo olungekho?"
+    ],
+    "answers": [
+      "Incwadi.",
+      "Cha. Kuyinkulumo engokomfanekiso emele amathuba.",
+      "Isibonelo: indawo, isikhathi esiqondile noma imininingwane yokuxhumana."
+    ],
+    "commonMistake": "Ukusho igama lesu lokunxenxa kuphela akwanele; chaza ukuthi lisebenza kanjani kulo mbhalo.",
+    "language": "isiZulu",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=nZlas4HGdYI%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiZulu",
+    "pdfUrl": "/study-packs/smartbridge-zuhl-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "zuhl-12",
+    "code": "zuhl",
+    "subject": "isiZulu HL",
+    "grade": 12,
+    "title": "Bhala isigaba sokuhlaziya izinkondlo",
+    "capsTopic": "Ukufunda nokubukela: imibhalo yobuciko; ukubhala nokwethula",
+    "goals": [
+      "Veza umbono ocacile",
+      "Sebenzisa ubufakazi bombhalo",
+      "Chaza isithombe nomqondo"
+    ],
+    "notes": [
+      "Isigaba sokuhlaziya sidinga umbono, ubufakazi kanye nencazelo. Khetha ubufakazi obuhambisana nombono wakho.",
+      "Ukucaphuna akuthathi indawo yencazelo. Chaza ukuthi amagama noma izithombe zakha kanjani umqondo.",
+      "Le nkondlo yokuqala ingeyokuzijwayeza. Ayithathi indawo yezincwadi nezinkondlo ezimiswe yisikole sakho."
+    ],
+    "visual": {
+      "title": "Inkondlo yokuqala: “Ngigoqa ibalazwe. / Indlela isavulekile. / Ngale kwesango / ukusa kungilindile.”",
+      "columns": [
+        "Isithombe",
+        "Umqondo ongaba khona",
+        "Ubufakazi"
+      ],
+      "rows": [
+        [
+          "ibalazwe liyagoqwa",
+          "ukulungiselela kuyaphela",
+          "isenzo sesikhulumi"
+        ],
+        [
+          "indlela ivulekile",
+          "amathuba asekhona",
+          "uhambo lusengaphambili"
+        ],
+        [
+          "ukusa kuyalinda",
+          "ithemba ngekusasa",
+          "ukwenzasamuntu"
+        ]
+      ]
+    },
+    "example": "Chaza ukuthi inkondlo iveza kanjani ukuqala kohambo.",
+    "steps": [
+      "Umbono: isikhulumi sibona ithuba lokuqala, nakuba umphumela ungaziwa.",
+      "Ukugoqa ibalazwe kuqeda ukulungiselela, kodwa indlela ihlala ivulekile.",
+      "Ukusa okulindile kunikezwa isenzo somuntu; lokhu kwakha ithemba ngaphandle kokuqinisekisa impumelelo."
+    ],
+    "questions": [
+      "Thola isibonelo sokwenzasamuntu.",
+      "Hlukanisa isikhulumi nembongi.",
+      "Ingabe inkondlo iqinisekisa impumelelo? Sekela impendulo."
+    ],
+    "answers": [
+      "“Ukusa kungilindile.”",
+      "Isikhulumi yizwi elikhuluma enkondlweni; asihlali siyimbongi uqobo.",
+      "Cha. Inkondlo iveza amathuba kodwa ayisiniki isiphetho sohambo."
+    ],
+    "commonMistake": "Umbono ohlukile ungamukeleka uma usekelwa kahle ubufakazi obusembhalweni.",
+    "language": "isiZulu",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=nZlas4HGdYI%3d&tabid=570&portalid=0&mid=1555",
+    "sourceLabel": "DBE CAPS, Grades 10–12: IsiZulu",
+    "pdfUrl": "/study-packs/smartbridge-zuhl-12.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "lo-10",
+    "code": "lo",
+    "subject": "Life Orientation",
+    "grade": 10,
+    "title": "Set a goal you can act on",
+    "capsTopic": "Development of the self in society: self-awareness and goal setting",
+    "goals": [
+      "Turn an aspiration into an action",
+      "Identify support and constraints",
+      "Review progress without self-judgement"
+    ],
+    "notes": [
+      "A useful goal names a specific action and a realistic time frame. Link it to something you value rather than comparing yourself constantly with others.",
+      "Planning includes barriers such as transport, data, responsibilities and access to a quiet space. Choose supports that fit your situation.",
+      "Review what happened, identify an obstacle and adjust the plan. Reflection is evidence for a better next step, not proof of your worth as a person."
+    ],
+    "visual": {
+      "title": "From aspiration to a weekly action",
+      "columns": [
+        "Stage",
+        "Example",
+        "Check"
+      ],
+      "rows": [
+        [
+          "Aspiration",
+          "improve maths confidence",
+          "why it matters"
+        ],
+        [
+          "Action",
+          "practise three factorising questions on Tue/Thu",
+          "time and place"
+        ],
+        [
+          "Review",
+          "check answers on Friday",
+          "identify one error to discuss"
+        ]
+      ]
+    },
+    "example": "A learner wants to “do better” but has limited data. Turn this into a workable one-week plan.",
+    "steps": [
+      "Choose a small topic and download or print questions when Wi-Fi is available.",
+      "Set two short practice sessions and a Friday answer check, allowing for other responsibilities.",
+      "Ask a tutor or teacher about one specific error; adjust next week’s plan using the result."
+    ],
+    "questions": [
+      "Rewrite “I will study everything tomorrow” as a realistic action.",
+      "Name one support besides paid tutoring.",
+      "What should you do if the first plan was unrealistic?"
+    ],
+    "answers": [
+      "For example: complete three algebra questions after school on Tuesday and check them on Wednesday.",
+      "A teacher, peer study group, school library or trusted adult.",
+      "Identify the barrier, reduce or reschedule the action and review again."
+    ],
+    "commonMistake": "A plan is not effective merely because it is ambitious. It needs feasible actions, support and a way to review progress.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=aovsPAsVZao%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Orientation",
+    "pdfUrl": "/study-packs/smartbridge-lo-10.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "lo-11",
+    "code": "lo",
+    "subject": "Life Orientation",
+    "grade": 11,
+    "title": "Make an informed study-path decision",
+    "capsTopic": "Careers and career choices: requirements and opportunities",
+    "goals": [
+      "Connect interests with possible study paths",
+      "Compare entry requirements responsibly",
+      "Build an evidence-based next-step plan"
+    ],
+    "notes": [
+      "A career decision combines interests, strengths, values, subject choices and practical constraints. One test or mark should not define your whole future.",
+      "Entry requirements differ by institution, programme and year. Check official sources for subject requirements, selection rules and deadlines.",
+      "Meeting minimum requirements does not guarantee admission. Keep alternative pathways and investigate funding, accommodation and support."
+    ],
+    "visual": {
+      "title": "A comparison sheet to complete using official sources",
+      "columns": [
+        "Check",
+        "Option A",
+        "Option B"
+      ],
+      "rows": [
+        [
+          "Required subjects",
+          "record official details",
+          "record official details"
+        ],
+        [
+          "Selection and deadline",
+          "save source and date",
+          "save source and date"
+        ],
+        [
+          "Cost and support",
+          "tuition, travel, funding",
+          "tuition, travel, funding"
+        ]
+      ]
+    },
+    "example": "A learner enjoys science but has not checked programme requirements. What should they do before applying?",
+    "steps": [
+      "List two suitable programmes and identify each institution’s official admissions page.",
+      "Record required subjects, marks, selection steps and the current application deadline with the date checked.",
+      "Compare affordability and support, prepare documents and keep a realistic alternative pathway."
+    ],
+    "questions": [
+      "Why are social-media posts insufficient as the only admissions source?",
+      "Distinguish eligibility from acceptance.",
+      "Name two costs besides tuition to investigate."
+    ],
+    "answers": [
+      "Posts may be outdated, incomplete or unofficial; verify using the institution.",
+      "Eligibility meets stated entry conditions; acceptance is the institution’s actual offer after selection.",
+      "For example accommodation, transport, data, books or meals."
+    ],
+    "commonMistake": "Do not publish or reuse an old deadline as current. Always verify the programme and year directly.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=aovsPAsVZao%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Orientation",
+    "pdfUrl": "/study-packs/smartbridge-lo-11.pdf",
+    "minutes": 30
+  },
+  {
+    "id": "lo-12",
+    "code": "lo",
+    "subject": "Life Orientation",
+    "grade": 12,
+    "title": "Prepare for assessments sustainably",
+    "capsTopic": "Study skills: examination preparation and stress management",
+    "goals": [
+      "Use retrieval practice and feedback",
+      "Create a realistic revision cycle",
+      "Recognise when support is needed"
+    ],
+    "notes": [
+      "Retrieval practice means trying to recall or apply knowledge before checking notes. Checking errors afterwards helps choose the next revision task.",
+      "A balanced revision plan rotates subjects, includes breaks and protects sleep. Long hours alone do not prove that learning has occurred.",
+      "Stress can affect concentration. Use practical supports and talk to a trusted adult or qualified professional when distress is persistent or interferes with daily life."
+    ],
+    "visual": {
+      "title": "A repeatable revision cycle",
+      "columns": [
+        "Step",
+        "Action",
+        "Evidence"
+      ],
+      "rows": [
+        [
+          "Recall",
+          "answer a short set without notes",
+          "your first attempt"
+        ],
+        [
+          "Check",
+          "compare with a memo",
+          "identify the error type"
+        ],
+        [
+          "Repair",
+          "rework and explain the correction",
+          "correct reasoning"
+        ],
+        [
+          "Revisit",
+          "try again after a gap",
+          "independent recall"
+        ]
+      ]
+    },
+    "example": "A learner rereads notes for hours but struggles with questions. Suggest a stronger revision session.",
+    "steps": [
+      "Choose a short topic and attempt a few questions before looking at the notes.",
+      "Mark the attempt, classify errors as concept, calculation or interpretation, and explain one correction.",
+      "Return to a similar question after a gap and ask for help if the concept remains unclear."
+    ],
+    "questions": [
+      "Why is copying a memo not enough evidence of learning?",
+      "Name one adjustment that can reduce revision overload.",
+      "How can a learner use a teacher’s feedback?"
+    ],
+    "answers": [
+      "It does not show that the learner can recall or apply the reasoning independently.",
+      "Reduce session length, prioritise a specific topic, schedule breaks or seek help planning.",
+      "Identify a specific recurring error, practise the relevant skill and check the improvement."
+    ],
+    "commonMistake": "Peer advice and study plans do not replace professional support for persistent distress or significant health concerns.",
+    "language": "English",
+    "edition": "2026.1",
+    "scope": "Focused topic guide",
+    "reviewStatus": "Editorial draft — subject teacher review pending",
+    "sourceUrl": "https://www.education.gov.za/LinkClick.aspx?fileticket=aovsPAsVZao%3d&tabid=570&portalid=0&mid=1558",
+    "sourceLabel": "DBE CAPS, Grades 10–12: Life Orientation",
+    "pdfUrl": "/study-packs/smartbridge-lo-12.pdf",
+    "minutes": 30
+  }
+]

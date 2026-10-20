@@ -1,3 +1,4 @@
+import {StudyPackLinks} from './StudyPacks';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Lock, Star, X, ChevronDown, ChevronUp, AlertCircle, RefreshCw, Sparkles, Eye } from 'lucide-react';
@@ -236,6 +237,7 @@ export default function ResourceSearch() {
           <h1 className="font-playfair text-3xl font-bold mb-1 flex items-center gap-2">
             <Search className="w-7 h-7 text-primary" /> Study Resource Search
           </h1>
+<StudyPackLinks />
           <p className="text-muted-foreground">
             Search across all CAPS-aligned resources uploaded by verified tutors.
           </p>

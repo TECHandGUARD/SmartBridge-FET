@@ -30,6 +30,8 @@ jobs:
       - run: npm run prepare:edge -- /tmp/verified-edge
       - run: npm run build
       - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e:content
+      - run: npm run test:e2e:drafts
       - run: npm run test:e2e:presentations
       - run: npm run test:e2e:meetings
       - run: npm run test:e2e:live

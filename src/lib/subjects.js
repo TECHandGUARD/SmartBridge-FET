@@ -14,7 +14,7 @@
 // Configuration (Soft-coded for admin control)
 // ============================================================
 
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
+
 
 // ============================================================
 // Types (JSDoc)

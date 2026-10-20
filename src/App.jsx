@@ -16,6 +16,8 @@ import PageNotFound from './lib/PageNotFound';
 // 🚀 LAZY LOAD PAGES (Reduces initial bundle size)
 // ============================================================
 const StemLab = lazy(() => import('./pages/StemLab'));
+const StudyPacks = lazy(() => import('./pages/StudyPacks'));
+const StudyGuide = lazy(() => import('./pages/StudyPacks').then(m=>({default:m.StudyGuide})));
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
 const Register = lazy(() => import('./pages/Register'));
@@ -60,7 +62,7 @@ const BursaryFinder = lazy(() => import('./pages/BursaryFinder'));
 // ============================================================
 // 🔐 COMPONENT: Require Login + Onboarding (with Admin Bypass)
 // ============================================================
-const RequireAuthAndOnboarding = ({ children }) => {
+const RequireAuthAndOnboarding = ({ children, publicLanding = false }) => {
   const location=useLocation();
   const { user, isLoadingAuth, isAdmin } = useAuth();
 
@@ -73,7 +75,7 @@ const RequireAuthAndOnboarding = ({ children }) => {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{meetingPath:meetingReturnPath(location.pathname)}} replace />;
+    return <Navigate to={publicLanding ? "/learn" : "/login"} state={{meetingPath:meetingReturnPath(location.pathname)}} replace />;
   }
 
   if (isAdmin) return children;
@@ -123,6 +125,8 @@ const AuthenticatedApp = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* 🚪 PUBLIC ROUTES */}
+        <Route path="/learn" element={<StudyPacks />} />
+        <Route path="/study-packs/:packId" element={<StudyGuide />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
@@ -149,7 +153,7 @@ const AuthenticatedApp = () => {
           <Route
             path="/"
             element={
-              <RequireAuthAndOnboarding>
+              <RequireAuthAndOnboarding publicLanding>
                 <Home />
               </RequireAuthAndOnboarding>
             }

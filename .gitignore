@@ -72,3 +72,6 @@ coverage
 !.env.example
 !**/.env.example
 supabase/.temp
+
+# Reproducible content research and render previews
+tmp/
