@@ -1,78 +1,78 @@
 {
   "math-10": {
     "src": "/study-visuals/math-10.svg",
-    "alt": "Build the brackets. 1 and 6, 7, 6. 2 and 3, 5, 6. −2 and −3, −5, 6",
-    "caption": "Build the brackets"
+    "alt": "x squared minus 5x plus 6 equals zero becomes (x minus 2)(x minus 3) equals zero. Arrows split to the roots x equals 2 and x equals 3.",
+    "caption": "Factorising splits the equation into two roots"
   },
   "math-11": {
     "src": "/study-visuals/math-11.svg",
-    "alt": "Symmetry around x = 2. 0, 3, y-intercept. 1, 0, root. 2, −1, minimum. 3, 0, root. 4, 3, mirror of x = 0",
-    "caption": "Symmetry around x = 2"
+    "alt": "Upward parabola y equals x squared minus 4x plus 3. The labelled roots are (1; 0) and (3; 0), with minimum (2; minus 1).",
+    "caption": "Read the roots and turning point"
   },
   "math-12": {
     "src": "/study-visuals/math-12.svg",
-    "alt": "Gradient sign chart for f(x) = x³ − 3x. x < −1, +, increasing. −1 < x < 1, −, decreasing. x > 1, +, increasing",
-    "caption": "Gradient sign chart for f(x) = x³ − 3x"
+    "alt": "Cubic graph f(x) equals x cubed minus 3x. The local maximum is labelled (minus 1; 2), and the local minimum (1; minus 2).",
+    "caption": "Stationary points on the cubic graph"
   },
   "matlit-10": {
     "src": "/study-visuals/matlit-10.svg",
-    "alt": "One learner’s monthly plan. Income, 1 200, income. Transport, 400, expense. Food, 350, expense. Data, 150, expense. Other, 100, expense",
-    "caption": "One learner’s monthly plan"
+    "alt": "A R1 200 income bar is divided into transport R400, food R350, data R150, other R100 and surplus R200. Expenses total R1 000.",
+    "caption": "See where the monthly income goes"
   },
   "matlit-11": {
     "src": "/study-visuals/matlit-11.svg",
-    "alt": "Illustrative data tariffs — not network offers. 2, R70, R40. 5, R100, R100. 8, R130, R160",
-    "caption": "Illustrative data tariffs — not network offers"
+    "alt": "At 8 GB, illustrative plan A costs R130 and plan B R160. Bars start at the same baseline; plan B is longer because it costs R30 more.",
+    "caption": "Compare two tariffs at the same usage"
   },
   "matlit-12": {
     "src": "/study-visuals/matlit-12.svg",
-    "alt": "R1 000 at an illustrative 10% per year. 0, R1 000, R1 000. 1, R1 100, R1 100. 2, R1 200, R1 210. 3, R1 300, R1 331",
-    "caption": "R1 000 at an illustrative 10% per year"
+    "alt": "R1 000 at an illustrative annual rate of 10 percent reaches R1 300 with simple interest and R1 331 with annual compound interest after three years.",
+    "caption": "Simple and compound growth after three years"
   },
   "phsc-10": {
     "src": "/study-visuals/phsc-10.svg",
-    "alt": "A walker returns towards the start; east is positive. 0, 0, —. 2, 4, +2 m·s⁻¹. 4, 0, −2 m·s⁻¹",
-    "caption": "A walker returns towards the start; east is positive"
+    "alt": "A walker goes 4 metres east, then 4 metres west to the start. Opposing arrows show the two legs. Total distance is 8 metres; displacement is zero.",
+    "caption": "A return journey: distance and displacement"
   },
   "phsc-11": {
     "src": "/study-visuals/phsc-11.svg",
-    "alt": "Free-body inventory: 5 kg crate pulled horizontally. Pull, right, 20 N. Friction, left, 5 N. Weight, down, 49 N. Normal, up, 49 N",
-    "caption": "Free-body inventory: 5 kg crate pulled horizontally"
+    "alt": "Simplified force diagram, not drawn to force scale: a 5 kilogram crate has normal force 49 newtons up, weight 49 newtons down, pull 20 newtons right and friction 5 newtons left. The horizontal resultant is 15 newtons right.",
+    "caption": "Forces on the crate"
   },
   "phsc-12": {
     "src": "/study-visuals/phsc-12.svg",
-    "alt": "Two trolleys stick together; right is positive. A, 2 kg, +3 m·s⁻¹, +6 kg·m·s⁻¹. B, 1 kg, 0, 0. Together, 3 kg, +2 m·s⁻¹ after, +6 kg·m·s⁻¹ after",
-    "caption": "Two trolleys stick together; right is positive"
+    "alt": "Before: a 2 kilogram trolley moves right at 3 metres per second toward a stationary 1 kilogram trolley. After they stick together: the combined 3 kilograms move right at 2 metres per second.",
+    "caption": "Before and after a sticking collision"
   },
   "lisc-10": {
     "src": "/study-visuals/lisc-10.svg",
-    "alt": "Compare structures, not just outlines. Cell membrane, present, present. Cellulose cell wall, present, absent. Chloroplasts, in photosynthetic cells, absent. Mitochondria, present, present",
-    "caption": "Compare structures, not just outlines"
+    "alt": "Simplified plant cell, not to scale. Labels point to the outer cellulose cell wall, inner cell membrane, large central vacuole, nucleus and chloroplast. Mitochondria are discussed in the notes but are not drawn.",
+    "caption": "Inside a photosynthetic plant cell"
   },
   "lisc-11": {
     "src": "/study-visuals/lisc-11.svg",
-    "alt": "Illustrative pondweed results. 10, 24, higher light. 20, 15, lower light. 30, 7, lowest light",
-    "caption": "Illustrative pondweed results"
+    "alt": "Light energy, carbon dioxide and water enter a leaf containing chloroplasts. An outgoing arrow identifies glucose and oxygen as products. This is a conceptual diagram, not a balanced chemical equation.",
+    "caption": "How photosynthesis uses light"
   },
   "lisc-12": {
     "src": "/study-visuals/lisc-12.svg",
-    "alt": "Tt × Tt: each parent forms T and t gametes. T, TT, Tt. t, Tt, tt",
-    "caption": "Tt × Tt: each parent forms T and t gametes"
+    "alt": "Each parent supplies T or t. Four equally likely cells show TT, Tt, Tt and tt. Under the stated dominant model, tall offspring have probability three quarters and short offspring one quarter.",
+    "caption": "A Punnett square for Tt crossed with Tt"
   },
   "acc-10": {
     "src": "/study-visuals/acc-10.svg",
-    "alt": "A new business: transaction effects. Owner invests R10 000, +10 000, +10 000, 0. Buy equipment for R3 000 cash, 0 net, 0, 0. Borrow R2 000, +2 000, 0, +2 000",
-    "caption": "A new business: transaction effects"
+    "alt": "Assets R12 000 equal equity R10 000 plus liabilities R2 000. Coloured blocks show that the two right-hand amounts add to total assets.",
+    "caption": "Keep the accounting equation balanced"
   },
   "acc-11": {
     "src": "/study-visuals/acc-11.svg",
-    "alt": "Illustrative agreement and annual allocation. Salary, R30 000, R20 000. Interest on capital, R5 000, R3 000. Residual ratio, 3 parts, 2 parts",
-    "caption": "Illustrative agreement and annual allocation"
+    "alt": "Of R100 000 total profit, Partner A receives R60 200 and Partner B receives R39 800 after the agreement allocations. Two bars compare the final totals.",
+    "caption": "Check the final partnership profit shares"
   },
   "acc-12": {
     "src": "/study-visuals/acc-12.svg",
-    "alt": "Illustrative company information. Sales, R500 000, margin denominator. Cost of sales, R300 000, gross profit calculation. Current assets, R120 000, includes R40 000 inventory. Current liabilities, R60 000, liquidity denominator",
-    "caption": "Illustrative company information"
+    "alt": "A R500 000 sales bar is split into cost of sales R300 000 and gross profit R200 000. An arrow links gross profit to a 40 percent gross profit margin.",
+    "caption": "Gross profit as a share of sales"
   },
   "bst-10": {
     "src": "/study-visuals/bst-10.svg",
@@ -91,13 +91,13 @@
   },
   "eco-10": {
     "src": "/study-visuals/eco-10.svg",
-    "alt": "Two markets connect households and firms. Factor market, households → firms: labour, firms → households: wages. Goods market, firms → households: products, households → firms: spending",
-    "caption": "Two markets connect households and firms"
+    "alt": "Households supply labour to firms and receive wages in return. Firms supply goods to households and receive spending in return. Opposing arrows show the directions.",
+    "caption": "Real and money flows connect households and firms"
   },
   "eco-11": {
     "src": "/study-visuals/eco-11.svg",
-    "alt": "Illustrative notebook market: original-value percentage method. Price, R10, R11, +10%. Quantity demanded, 100, 80, −20%. Total revenue, R1 000, R880, −12%",
-    "caption": "Illustrative notebook market: original-value percentage method"
+    "alt": "In the illustrative notebook market, revenue falls from R1 000 before the price change to R880 after it. Bars compare price multiplied by quantity demanded.",
+    "caption": "What happens to total revenue?"
   },
   "eco-12": {
     "src": "/study-visuals/eco-12.svg",
@@ -116,8 +116,8 @@
   },
   "tour-12": {
     "src": "/study-visuals/tour-12.svg",
-    "alt": "Worked route with stated offsets. Depart Johannesburg UTC+2, 22:00 − 2 h, 20:00 UTC. Fly 10 hours, 20:00 + 10 h, 06:00 UTC next day. Destination UTC+1, 06:00 + 1 h, 07:00 local next day",
-    "caption": "Worked route with stated offsets"
+    "alt": "Monday 22:00 in Johannesburg at UTC plus 2 is Monday 20:00 UTC. Add a 10 hour flight to reach Tuesday 06:00 UTC; add the destination offset of plus 1 to reach Tuesday 07:00 local.",
+    "caption": "Convert through UTC and check the day"
   },
   "hist-10": {
     "src": "/study-visuals/hist-10.svg",
@@ -136,18 +136,18 @@
   },
   "geo-10": {
     "src": "/study-visuals/geo-10.svg",
-    "alt": "Simplified energy pathway. Sun → Earth, shortwave, surface absorbs some energy. Surface → atmosphere/space, longwave infrared, surface loses energy. Greenhouse gases, absorb and re-emit infrared, some energy returns towards surface",
-    "caption": "Simplified energy pathway"
+    "alt": "Sunlight travels down to Earth as shortwave radiation. The surface emits infrared upward. A simplified atmosphere layer re-emits some infrared back toward the surface.",
+    "caption": "Follow energy through the atmosphere"
   },
   "geo-11": {
     "src": "/study-visuals/geo-11.svg",
-    "alt": "Invented data for comparison practice. GDP per capita, R100 000, R80 000. Life expectancy, 62 years, 72 years. Access to safe water, 70%, 95%",
-    "caption": "Invented data for comparison practice"
+    "alt": "In the invented dataset, 70 percent of Place A and 95 percent of Place B have access to safe water. Bars compare this social indicator, not overall development.",
+    "caption": "Compare access to safe water"
   },
   "geo-12": {
     "src": "/study-visuals/geo-12.svg",
-    "alt": "Simplified downstream pattern. Upper course, steeper, vertical erosion. Middle course, moderate, transport and lateral erosion. Lower course, gentler, deposition where carrying capacity falls",
-    "caption": "Simplified downstream pattern"
+    "alt": "A downstream curve begins steep in the upper course, becomes moderate in the middle course and gentle in the lower course. A horizontal arrow marks downstream direction.",
+    "caption": "A simplified river long profile"
   },
   "enhl-10": {
     "src": "/study-visuals/enhl-10.svg",

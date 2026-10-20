@@ -114,11 +114,35 @@ def draw(p):
    y=16+i*101;out+=rect(20,y,225,79,'#f2e4c5')+lines(37,y+27,'“'+row[0]+'”',21,18)+arrow(255,y+39,297,y+39)+rect(310,y,310,79)+lines(326,y+25,row[1],32,15)+lines(326,y+50,row[2],35,13)
  else:out=flow(p)
  return out
+DESCRIPTIONS = {
+ 'math-10': ('Factorising splits the equation into two roots', 'x squared minus 5x plus 6 equals zero becomes (x minus 2)(x minus 3) equals zero. Arrows split to the roots x equals 2 and x equals 3.'),
+ 'math-11': ('Read the roots and turning point', 'Upward parabola y equals x squared minus 4x plus 3. The labelled roots are (1; 0) and (3; 0), with minimum (2; minus 1).'),
+ 'math-12': ('Stationary points on the cubic graph', 'Cubic graph f(x) equals x cubed minus 3x. The local maximum is labelled (minus 1; 2), and the local minimum (1; minus 2).'),
+ 'matlit-10': ('See where the monthly income goes', 'A R1 200 income bar is divided into transport R400, food R350, data R150, other R100 and surplus R200. Expenses total R1 000.'),
+ 'matlit-11': ('Compare two tariffs at the same usage', 'At 8 GB, illustrative plan A costs R130 and plan B R160. Bars start at the same baseline; plan B is longer because it costs R30 more.'),
+ 'matlit-12': ('Simple and compound growth after three years', 'R1 000 at an illustrative annual rate of 10 percent reaches R1 300 with simple interest and R1 331 with annual compound interest after three years.'),
+ 'phsc-10': ('A return journey: distance and displacement', 'A walker goes 4 metres east, then 4 metres west to the start. Opposing arrows show the two legs. Total distance is 8 metres; displacement is zero.'),
+ 'phsc-11': ('Forces on the crate', 'Simplified force diagram, not drawn to force scale: a 5 kilogram crate has normal force 49 newtons up, weight 49 newtons down, pull 20 newtons right and friction 5 newtons left. The horizontal resultant is 15 newtons right.'),
+ 'phsc-12': ('Before and after a sticking collision', 'Before: a 2 kilogram trolley moves right at 3 metres per second toward a stationary 1 kilogram trolley. After they stick together: the combined 3 kilograms move right at 2 metres per second.'),
+ 'lisc-10': ('Inside a photosynthetic plant cell', 'Simplified plant cell, not to scale. Labels point to the outer cellulose cell wall, inner cell membrane, large central vacuole, nucleus and chloroplast. Mitochondria are discussed in the notes but are not drawn.'),
+ 'lisc-11': ('How photosynthesis uses light', 'Light energy, carbon dioxide and water enter a leaf containing chloroplasts. An outgoing arrow identifies glucose and oxygen as products. This is a conceptual diagram, not a balanced chemical equation.'),
+ 'lisc-12': ('A Punnett square for Tt crossed with Tt', 'Each parent supplies T or t. Four equally likely cells show TT, Tt, Tt and tt. Under the stated dominant model, tall offspring have probability three quarters and short offspring one quarter.'),
+ 'acc-10': ('Keep the accounting equation balanced', 'Assets R12 000 equal equity R10 000 plus liabilities R2 000. Coloured blocks show that the two right-hand amounts add to total assets.'),
+ 'acc-11': ('Check the final partnership profit shares', 'Of R100 000 total profit, Partner A receives R60 200 and Partner B receives R39 800 after the agreement allocations. Two bars compare the final totals.'),
+ 'acc-12': ('Gross profit as a share of sales', 'A R500 000 sales bar is split into cost of sales R300 000 and gross profit R200 000. An arrow links gross profit to a 40 percent gross profit margin.'),
+ 'eco-10': ('Real and money flows connect households and firms', 'Households supply labour to firms and receive wages in return. Firms supply goods to households and receive spending in return. Opposing arrows show the directions.'),
+ 'eco-11': ('What happens to total revenue?', 'In the illustrative notebook market, revenue falls from R1 000 before the price change to R880 after it. Bars compare price multiplied by quantity demanded.'),
+ 'geo-10': ('Follow energy through the atmosphere', 'Sunlight travels down to Earth as shortwave radiation. The surface emits infrared upward. A simplified atmosphere layer re-emits some infrared back toward the surface.'),
+ 'geo-11': ('Compare access to safe water', 'In the invented dataset, 70 percent of Place A and 95 percent of Place B have access to safe water. Bars compare this social indicator, not overall development.'),
+ 'geo-12': ('A simplified river long profile', 'A downstream curve begins steep in the upper course, becomes moderate in the middle course and gentle in the lower course. A horizontal arrow marks downstream direction.'),
+ 'tour-12': ('Convert through UTC and check the day', 'Monday 22:00 in Johannesburg at UTC plus 2 is Monday 20:00 UTC. Add a 10 hour flight to reach Tuesday 06:00 UTC; add the destination offset of plus 1 to reach Tuesday 07:00 local.'),
+}
 manifest={}
 for p in json.loads((ROOT/'src/data/study-packs.json').read_text()):
  description=p['visual']['title']+'. '+'. '.join(', '.join(row) for row in p['visual']['rows'])
+ caption,description=DESCRIPTIONS.get(p['id'],(p['visual']['title'],description))
  svg=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 380" role="img" aria-labelledby="title desc"><title id="title">{esc(p['title'])}</title><desc id="desc">{esc(description)}</desc><rect width="640" height="380" rx="18" fill="#faf9f4"/><g font-family="DejaVu Sans,Arial,sans-serif">{draw(p)}{text(25,361,'SmartBridge FET · Grade '+str(p['grade'])+' · '+p['subject'],12,'#52675e')}</g></svg>'''
  (OUT/(p['id']+'.svg')).write_text(svg)
- manifest[p['id']]={'src':'/study-visuals/'+p['id']+'.svg','alt':description,'caption':p['visual']['title']}
+ manifest[p['id']]={'src':'/study-visuals/'+p['id']+'.svg','alt':description,'caption':caption}
 (ROOT/'src/data/study-visuals.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(f'Built {len(manifest)} explanatory SVGs')
