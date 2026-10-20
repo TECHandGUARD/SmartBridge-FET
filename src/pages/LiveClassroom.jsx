@@ -31,7 +31,7 @@ export default function LiveClassroom() {
   const [quality,setQuality]=useState('saver'),[relayOnly,setRelayOnly]=useState(false),[network,setNetwork]=useState(null),[route,setRoute]=useState(null);
   const qualityRef=useRef('saver'),relayOnlyRef=useRef(false),receiveVideo=useRef(true),iceConfig=useRef({iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0}),networkResume=useRef(null),restartTimer=useRef(null),lastRestart=useRef(0),lastRotation=useRef(0);
   relayOnlyRef.current=relayOnly;
-  const [sharing, setSharing] = useState(false);
+  const [sharing, setSharing] = useState(false),[playbackBlocked,setPlaybackBlocked]=useState(false);
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
   const localStream = useRef(null);
@@ -99,7 +99,7 @@ export default function LiveClassroom() {
         track.kind === 'video' && screenStream.current ? screenStream.current.getVideoTracks()[0] : track,
         localStream.current));
       for(const kind of ['audio','video'])if(!localStream.current.getTracks().some(track=>track.kind===kind))pc.addTransceiver(kind,{direction:kind==='video'&&!receiveVideo.current?'inactive':'recvonly'});
-      pc.ontrack = event => { if (remoteVideo.current) remoteVideo.current.srcObject = event.streams[0]; setStatus(pc.connectionState==='connected'?'Live — secure peer-to-peer connection':'Connecting media…'); };
+      pc.ontrack = event => { if (remoteVideo.current) {remoteVideo.current.srcObject = event.streams[0];remoteVideo.current.play()?.catch(problem=>{if(problem.name==='NotAllowedError'&&active.current&&peer.current===pc)setPlaybackBlocked(true);});} setStatus(pc.connectionState==='connected'?'Live — secure peer-to-peer connection':'Connecting media…'); };
       pc.onicecandidate = event => { if (event.candidate && active.current && peer.current === pc) send('ice',{ candidate: event.candidate.toJSON() }).catch(e=>setError(errors(e))); };
       pc.onconnectionstatechange = () => {
         if (!active.current || peer.current !== pc) return;
@@ -167,7 +167,7 @@ export default function LiveClassroom() {
 
   const stop = useCallback(() => {
     transport.reset();
-    clearTimeout(restartTimer.current);restartTimer.current=null;networkResume.current=null;setRoute(null);
+    clearTimeout(restartTimer.current);restartTimer.current=null;networkResume.current=null;setRoute(null);setPlaybackBlocked(false);
     active.current = false;
     generation.current += 1;
     joining.current = false;
@@ -352,6 +352,7 @@ export default function LiveClassroom() {
           <span className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs">You · {role}</span>
         </div>
       </div>
+      {joined&&playbackBlocked&&<button className="rounded border px-4 py-3 text-sm" onClick={()=>remoteVideo.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play classroom audio and video</button>}
       <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||connecting} network={network} route={route}/>
       <p role="status" className="text-center text-sm font-medium">{status}</p>
       {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
