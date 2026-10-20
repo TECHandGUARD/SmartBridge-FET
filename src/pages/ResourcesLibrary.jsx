@@ -1,3 +1,4 @@
+import KnowledgeBookShelf from '@/components/resources/KnowledgeBookShelf';
 import {StudyPackLinks} from './StudyPacks';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
@@ -242,6 +243,8 @@ export default function ResourcesLibrary() {
 
         {}
         <StudyPackLinks />
+        <KnowledgeBookShelf />
+        <div className="mb-5"><h2 className="font-playfair text-2xl font-bold">Official curriculum documents</h2><p className="text-sm text-muted-foreground mt-2">Find CAPS references, teaching plans and other curriculum documents below. Use the visual guides above to study a specific topic.</p></div>
         <Card className="mb-6 border-border shadow-sm">
           <CardContent className="pt-4 pb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -349,7 +352,7 @@ export default function ResourcesLibrary() {
             </span>
             <span className="flex items-center gap-1">
               <Clock className="w-3 h-3" />
-              Updated: {new Date().toLocaleDateString('en-ZA')}
+              Documents ordered by upload date
             </span>
           </div>}
       </div>

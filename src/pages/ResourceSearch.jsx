@@ -1,3 +1,6 @@
+import KnowledgeBookShelf from '@/components/resources/KnowledgeBookShelf';
+import packs from '@/data/study-packs.json';
+import TopicVisual from '@/components/resources/TopicVisual';
 import {StudyPackLinks} from './StudyPacks';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -49,7 +52,9 @@ function ResourceCard({
 }) {
   const [expanded, setExpanded] = useState(false);
   const sub = SUBJECTS.find(s => s.name === resource.subject);
+  const guide = packs.find(p => resource.file_url === p.pdfUrl || resource.file_url?.endsWith(p.pdfUrl));
   return <div className="bg-card border border-border rounded-xl p-4 hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
+      {guide && <Link className="resource-result-image" to={'/study-packs/' + guide.id}><TopicVisual pack={guide} preview /><span>Open visual lesson →</span></Link>}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
           <Icon className="w-5 h-5 text-primary" />
@@ -238,6 +243,7 @@ export default function ResourceSearch() {
             <Search className="w-7 h-7 text-primary" /> Study Resource Search
           </h1>
 <StudyPackLinks />
+        <KnowledgeBookShelf />
           <p className="text-muted-foreground">
             Search across all CAPS-aligned resources uploaded by verified tutors.
           </p>

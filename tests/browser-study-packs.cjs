@@ -6,6 +6,11 @@ for(const width of [360,390,768,1440]){const page=await browser.newPage({viewpor
 await page.goto('http://127.0.0.1:5188/');await page.getByRole('heading',{name:/Understanding starts/}).waitFor();assert.equal(new URL(page.url()).pathname,'/learn');assert.equal(await page.locator('.learn-card').count(),45);
 await page.getByLabel('Subject',{exact:true}).selectOption('math');await page.getByLabel('Grade',{exact:true}).selectOption('12');assert.equal(await page.locator('.learn-card').count(),1);
 await page.getByRole('link',{name:'Read guide',exact:true}).click();await page.getByRole('heading',{name:'Differentiate and interpret',exact:true}).waitFor();
+await page.locator('.topic-visual > img').waitFor();
+assert.ok(await page.locator('.topic-visual > img').evaluate(img=>img.complete && img.naturalWidth>0),'explanatory diagram loads');
+await page.getByRole('button',{name:/Enlarge diagram/}).click();assert.equal(await page.locator('dialog').evaluate(d=>d.open),true);
+await page.getByRole('button',{name:'Close diagram',exact:true}).click();assert.equal(await page.locator('dialog').evaluate(d=>d.open),false);
+await page.getByRole('button',{name:/Enlarge diagram/}).click();await page.keyboard.press('Escape');assert.equal(await page.locator('dialog').evaluate(d=>d.open),false);
 await page.getByLabel('Your attempt 1',{exact:true}).fill('6x² − 10x');await page.getByRole('button',{name:'Open answer guide'}).click();assert.match(await page.locator('.learn-answers').innerText(),/6x² − 10x/);
 const [download]=await Promise.all([page.waitForEvent('download'),page.getByRole('link',{name:/Download PDF/}).click()]);assert.equal(download.suggestedFilename(),'smartbridge-math-12.pdf');
 assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`no overflow at ${width}`);
@@ -13,5 +18,5 @@ if(width===390)await page.screenshot({path:'/tmp/smartbridge-guide-phone.png',fu
 await page.goto('http://127.0.0.1:5188/study-packs/xhhl-12');await page.getByRole('heading',{name:'Yakha umhlathi wohlalutyo loncwadi'}).waitFor();assert.equal(await page.locator('main').getAttribute('lang'),'xh');assert.equal(await page.getByLabel('Your attempt 1',{exact:true}).inputValue(),'');assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
 await page.goto('http://127.0.0.1:5188/learn');await page.getByRole('heading',{name:/Understanding starts/}).waitFor();if(width===1440)await page.screenshot({path:'/tmp/smartbridge-marketing-desktop.png'});if(width===390)await page.screenshot({path:'/tmp/smartbridge-marketing-phone.png',fullPage:false});
 assert.deepEqual(errors,[]);await page.close();}
-console.log('PASS: public catalogue, subject/grade filters, practice, answers, actual PDF download, languages and four responsive widths');
+console.log('PASS: diagrams load, enlarge/close/Escape, public catalogue, subject/grade filters, practice, answers, actual PDF download, languages and four responsive widths');
 }finally{await browser?.close();server.kill('SIGTERM');}})().catch(e=>{console.error(e);process.exitCode=1});
