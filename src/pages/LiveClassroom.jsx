@@ -349,9 +349,9 @@ export default function LiveClassroom() {
         {!joined&&<div className="studio-join"><span className="studio-eyebrow">Make yourself comfortable</span><h3>Ready to learn together?</h3><p>Choose the way you want to join. For a lighter connection on mobile data, use audio and slides.</p>
           <CallButton icon={Video} variant="primary" disabled={!authorized||connecting} onClick={()=>join()}>{connecting?'Connecting…':'Join classroom'}</CallButton>
           <div className="studio-join-options">
-            <CallButton icon={Mic} disabled={!authorized||connecting} onClick={()=>join('audio')} aria-label="Join classroom with microphone only"><span>Join classroom with microphone only<small>Speak with your camera off.</small></span></CallButton>
-            <CallButton icon={Headphones} disabled={!authorized||connecting} onClick={()=>join('listen')} aria-label="Join classroom to watch and listen"><span>Join classroom to watch and listen<small>No camera or microphone permission.</small></span></CallButton>
-            <CallButton icon={Presentation} disabled={!authorized||connecting} onClick={()=>join('audioSlides')} aria-label="Join classroom with audio and slides only"><span>Join classroom with audio and slides only<small>Skip incoming video to save data.</small></span></CallButton>
+            <CallButton icon={Mic} disabled={!authorized||connecting} onClick={()=>join('audio')} aria-label="Join classroom with microphone only"><span>Microphone only<small>Speak with your camera off.</small></span></CallButton>
+            <CallButton icon={Headphones} disabled={!authorized||connecting} onClick={()=>join('listen')} aria-label="Join classroom to watch and listen"><span>Watch and listen<small>No camera or microphone permission.</small></span></CallButton>
+            <CallButton icon={Presentation} disabled={!authorized||connecting} onClick={()=>join('audioSlides')} aria-label="Join classroom with audio and slides only"><span>Audio and slides<small>Skip incoming video to save data.</small></span></CallButton>
           </div>
         </div>}
         {joined&&<div className="flex justify-end"><CallButton aria-pressed={compactVideos} onClick={()=>setCompactVideos(value=>!value)}>{compactVideos?'Show full videos':'Compact videos'}</CallButton></div>}

@@ -90,7 +90,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   console.log('PASS: capture starts in the Join gesture; denied permissions do not admit; retry, microphone-only and permission-free listen entry work and stop cleanly');
   for(const width of [320,390,768,1280]){await parent.setViewportSize({width,height:900});assert.ok(await parent.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),'meeting lobby must fit '+width);}
   await parent.setViewportSize({width:390,height:900});
-  await parent.locator('summary').filter({hasText:'Call settings'}).click();await parent.getByLabel('Data use',{exact:true}).selectOption('balanced');await parent.getByLabel('Connection mode',{exact:true}).selectOption('auto');await parent.getByLabel('Data use',{exact:true}).selectOption('saver');await parent.locator('summary').filter({hasText:'Call settings'}).click();
+  await parent.locator('summary').filter({hasText:'Call settings'}).focus();await parent.keyboard.press('Enter');await parent.getByLabel('Data use',{exact:true}).selectOption('balanced');await parent.getByLabel('Connection mode',{exact:true}).selectOption('auto');await parent.getByLabel('Data use',{exact:true}).selectOption('saver');await parent.locator('summary').filter({hasText:'Call settings'}).click();
   console.log('PASS: premium meeting lobby fits 320–1280px and keyboard-accessible settings change data use');
   if(process.env.MEETINGS_PERMISSION_ONLY==='1')return;
   for(const page of [tutor,parent,peer]){if(page===tutor)failRead=true;await page.getByRole('button',{name:'Join meeting',exact:true}).click();await page.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();}

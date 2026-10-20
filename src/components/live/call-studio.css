@@ -22,6 +22,7 @@
 .studio-video-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:.75rem; min-width:0; }
 .studio-video-grid--classroom { grid-template-columns:minmax(0,1.65fr) minmax(0,1fr); }
 .studio-tile { min-width:0; width:100%; position:relative; isolation:isolate; overflow:hidden; border-radius:1rem; background:radial-gradient(ellipse at top right,#244c43,#0c211d 75%); color:#f5f3ed; min-height:220px; aspect-ratio:16/10; border:1px solid #ffffff12; }
+.studio-video-grid--classroom .studio-tile { aspect-ratio:auto; height:340px; }
 .studio-tile video { display:block; width:100%; height:100%; object-fit:contain; }
 .studio-tile-footer { position:absolute; z-index:2; bottom:0; left:0; right:0; display:flex; align-items:center; justify-content:space-between; gap:.5rem; padding:1.5rem .9rem .8rem; background:linear-gradient(transparent,#071713dd); font-size:.75rem; pointer-events:none; }
 .studio-tile-footer small { color:#d1dcd6; font-size:.65rem; }
@@ -91,6 +92,7 @@
  .studio-content { padding:.75rem; }
  .call-workspace { border-radius:1rem; }
  .studio-video-grid--classroom { grid-template-columns:minmax(0,1fr); }
+ .studio-video-grid--classroom .studio-tile { height:auto; aspect-ratio:16/10; min-height:0; }
  .studio-video-grid--classroom .studio-tile:last-child { aspect-ratio:16/7; min-height:145px; }
  .studio-video-grid:not(.studio-video-grid--classroom) { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.5rem; }
  .studio-video-grid:not(.studio-video-grid--classroom) .studio-tile { min-height:165px; aspect-ratio:3/4; }
@@ -114,5 +116,3 @@
 .studio-video-grid.is-compact .studio-video-placeholder > span:not(.studio-avatar),.studio-video-grid.is-compact .studio-video-placeholder small { display:none; }
 @media(max-width:767px){ .studio-video-grid.is-compact,.studio-video-grid--classroom.is-compact { grid-template-columns:repeat(2,minmax(0,1fr)); } .studio-video-grid.is-compact .studio-tile { min-height:100px; max-height:120px; } }
 
-.studio-video-grid--classroom .studio-tile { aspect-ratio:auto; height:340px; }
-@media(max-width:767px){ .studio-video-grid--classroom .studio-tile { height:auto; aspect-ratio:16/10; min-height:0; } .studio-video-grid--classroom .studio-tile:last-child { min-height:145px; } }
