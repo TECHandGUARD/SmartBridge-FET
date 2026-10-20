@@ -16,7 +16,7 @@ test('live classroom is restricted to booked tutor and learner, not open guests'
 
 test('classroom offers video, audio, screen sharing and clean exit', () => {
   const classroom=read('src/pages/LiveClassroom.jsx');
-  for (const token of ['RTCPeerConnection','getUserMedia','getDisplayMedia','onicecandidate','setRemoteDescription','addIceCandidate','getTracks().forEach(track => track.stop())','can_join_live_classroom']) {
+  for (const token of ['RTCPeerConnection','requestCallMedia','getDisplayMedia','onicecandidate','setRemoteDescription','addIceCandidate','getTracks().forEach(track => track.stop())','can_join_live_classroom']) {
     assert.ok(classroom.includes(token),token);
   }
   assert.match(classroom,/TURN relay is required/);

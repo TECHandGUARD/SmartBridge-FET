@@ -4,6 +4,7 @@ const MAX = 2_000_000;
 const CHUNK = 12000;
 export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
   const connections = new Map();
+  const listeners = new Map();
   let current = null;
   const transmit = async (entry, value) => {
     const revision = ++entry.revision;
@@ -26,7 +27,8 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
     } catch { /* Leaving or reconnecting closes the old data channel. */ }
   };
   const bind = (id, channel) => {
-    if (channel.label !== LABEL || connections.has(id)) {channel.close();return;}
+    if (channel.label !== LABEL) return;
+    if (connections.has(id)) {channel.close();return;}
     const entry = {channel,revision:0,pending:null};connections.set(id,entry);
     channel.onopen = () => {transmit(entry,current);};
     channel.onmessage = event => {
@@ -58,10 +60,13 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
   return {
     attach(pc,id,initiator) {
       if (initiator) bind(id,pc.createDataChannel(LABEL,{ordered:true}));
-      else pc.ondatachannel=event=>bind(id,event.channel);
+      else {
+        const listener=event=>bind(id,event.channel);
+        listeners.set(id,{pc,listener});pc.addEventListener('datachannel',listener);
+      }
     },
-    detach(id) {const entry=connections.get(id);if(entry){entry.revision++;connections.delete(id);entry.channel.close();}onSlide(id,null);},
+    detach(id) {const attached=listeners.get(id);if(attached){attached.pc.removeEventListener('datachannel',attached.listener);listeners.delete(id);}const entry=connections.get(id);if(entry){entry.revision++;connections.delete(id);entry.channel.close();}onSlide(id,null);},
     publish(value) {if(value?.image.length>MAX)throw new Error('This slide is too large. Try a smaller PDF.');current=value;for(const entry of connections.values())transmit(entry,value);},
-    reset() {current=null;for(const id of [...connections.keys()])this.detach(id);}
+    reset() {current=null;for(const id of new Set([...connections.keys(),...listeners.keys()]))this.detach(id);}
   };
 }

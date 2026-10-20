@@ -7,7 +7,7 @@ function pair(allowed=true){
   const a=createSlideTransport({onSlide(){}}),b=createSlideTransport({onSlide:(id,value)=>received.push({id,value}),canReceive:()=>allowed});
   let sender,receiver;
   const pcA={createDataChannel(label){sender={label,readyState:'connecting',bufferedAmount:0,close(){this.readyState='closed';},send(data){receiver.onmessage({data});}};return sender;}};
-  const pcB={ondatachannel:null};
+  const pcB={ondatachannel:null,addEventListener(_event,listener){this.ondatachannel=listener;},removeEventListener(){}};
   a.attach(pcA,'b',true);b.attach(pcB,'a',false);
   receiver={label:sender.label,readyState:'open',bufferedAmount:0,close(){this.readyState='closed';},send(data){sender.onmessage({data});}};
   pcB.ondatachannel({channel:receiver});sender.readyState='open';

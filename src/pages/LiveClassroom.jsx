@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 
+import {requestCallMedia,callMediaError} from '@/lib/call-media';
 import {useSlidePresentation} from '@/lib/use-slide-presentation';
 const SlidePresentation=lazy(()=>import('@/components/live/SlidePresentation'));
 
@@ -11,11 +12,7 @@ const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stu
 const SIGNAL_KINDS = new Set(['offer','answer','ice','ready','leave']);
 const liveWindowMessage = 'The classroom opens 20 minutes before a confirmed session and closes 30 minutes after it ends.';
 const errors = error => error instanceof Error ? error.message : 'Unable to connect. Try again.';
-const getMedia = () => {
-  if (!navigator.mediaDevices?.getUserMedia || !window.RTCPeerConnection) throw new Error('Your browser does not support live video. Try an updated Chrome, Edge or Safari browser.');
-  if (!window.isSecureContext) throw new Error('Video requires a secure HTTPS connection.');
-  return navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-};
+const getMedia = () => requestCallMedia();
 
 export default function LiveClassroom() {
   const { bookingId } = useParams();
@@ -216,12 +213,12 @@ export default function LiveClassroom() {
     setError('');
     setStatus('Requesting camera and microphone…');
     try {
-      const { data: allowed, error: checkError } = await supabase.rpc('can_join_live_classroom', { booking_key: booking.id });
-      if (checkError || !allowed) throw new Error(liveWindowMessage);
-      if (attempt !== generation.current) return;
       const stream = await getMedia();
       if (attempt !== generation.current) { stream.getTracks().forEach(track => track.stop()); return; }
       localStream.current = stream;
+      const { data: allowed, error: checkError } = await supabase.rpc('can_join_live_classroom', { booking_key: booking.id });
+      if (checkError || !allowed) throw new Error(liveWindowMessage);
+      if (attempt !== generation.current) return;
       if (localVideo.current) localVideo.current.srcObject = stream;
       active.current = true;
       lastSignal.current = new Set();
@@ -273,7 +270,7 @@ export default function LiveClassroom() {
           if (active.current && state==='SUBSCRIBED') recover();
         });
       channel.current = subscription;
-    } catch (e) { if (attempt === generation.current) { stop(); setError(errors(e)); } }
+    } catch (e) { if (attempt === generation.current) { stop(); setError(callMediaError(e)); } }
     finally { if (attempt === generation.current) { joining.current = false; setConnecting(false); } }
   };
 
