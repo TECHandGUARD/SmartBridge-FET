@@ -4,6 +4,8 @@ const { spawn } = require('node:child_process');
 const { randomUUID } = require('node:crypto');
 const assert = require('node:assert/strict');
 (async () => {
+  const relay=process.env.SMARTBRIDGE_RELAY_CONFIG_PATH?JSON.parse(require('node:fs').readFileSync(process.env.SMARTBRIDGE_RELAY_CONFIG_PATH,'utf8')):null;
+  const relayServers=relay?.iceServers.map(server=>({...server,urls:server.urls.filter(url=>url.startsWith('turns:'))})).filter(server=>server.urls.length);if(relay)assert.ok(relayServers.length,'TLS TURN server required');
   const server = spawn(process.execPath, ['node_modules/vite/bin/vite.js','--host','127.0.0.1','--port','5182','--strictPort'], {
     env: {...process.env, VITE_SUPABASE_URL:'https://smartbridge-test.supabase.co', VITE_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_test',VITE_SUPABASE_ANON_KEY:''}, stdio:'ignore'
   });
@@ -17,16 +19,16 @@ const assert = require('node:assert/strict');
     async function open(person, denied=false) {
       const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='tutor'?1280:390,height:900}});
       // Instrument real browser objects, without replacing WebRTC or camera/mic capture.
-      await context.addInitScript(({screenSharing})=>{
+      await context.addInitScript(({screenSharing,relayServers})=>{
         window.testPeers=[];window.testTracks=[];
         const Original=window.RTCPeerConnection;
-        window.RTCPeerConnection=class extends Original {constructor(...args){super(...args);window.testPeers.push(this);}};
+        window.RTCPeerConnection=class extends Original {constructor(...args){super(...(relayServers?[{...args[0],iceServers:relayServers,iceTransportPolicy:"relay"}]:args));window.testPeers.push(this);}setConfiguration(config){return super.setConfiguration(relayServers?{...config,iceServers:relayServers,iceTransportPolicy:"relay"}:config);}};
         const media=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
         navigator.mediaDevices.getUserMedia=async options=>{const stream=await media(options);window.testTracks.push(...stream.getTracks());return stream;};
         // A canvas gives deterministic screen pixels, with a real replaceTrack sender.
         navigator.mediaDevices.getDisplayMedia=async()=>{if(window.testCancelScreenShare){window.testCancelScreenShare=false;throw new DOMException('Cancelled','NotAllowedError');}const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const stream=canvas.captureStream(10);window.testTracks.push(...stream.getTracks());return stream;};
         if(!screenSharing)navigator.mediaDevices.getDisplayMedia=undefined;
-      },{screenSharing:person.role!=='student'});
+      },{screenSharing:person.role!=='student',relayServers});
       const auth={...person,user_metadata:{full_name:person.full_name},aud:'authenticated',role:'authenticated'};
       const session={access_token:'eyJhbGciOiJIUzI1NiJ9.'+Buffer.from(JSON.stringify({sub:person.id,exp:4102444800,role:'authenticated'})).toString('base64url')+'.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:auth};
       // Disable WebSocket delivery deliberately: REST recovery must establish the call.
@@ -64,13 +66,16 @@ const assert = require('node:assert/strict');
     const {jsPDF}=require('jspdf');const pdf=new jsPDF();pdf.text('Classroom slide',20,20);pdf.addPage();pdf.text('Second slide',20,20);
     await tutor.getByLabel('Present PDF slides',{exact:true}).setInputFiles({name:'Classroom.pdf',mimeType:'application/pdf',buffer:Buffer.from(pdf.output('arraybuffer'))});
     await learner.getByRole('img',{name:'Shared slide 1 of 2',exact:true}).waitFor();await tutor.getByRole('button',{name:'Next slide',exact:true}).click();await learner.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();await connected();
+    const priorOffers=signals.filter(s=>s.kind==='offer').length;await tutor.evaluate(()=>window.dispatchEvent(new Event('online')));for(let n=0;n<100&&signals.filter(s=>s.kind==='offer').length===priorOffers;n++)await new Promise(r=>setTimeout(r,100));assert.ok(signals.filter(s=>s.kind==='offer').length>priorOffers);await connected();
+    if(relay){for(const page of [tutor,learner])assert.ok(await page.evaluate(async()=>{const stats=[...(await window.testPeers.at(-1).getStats()).values()];const pair=stats.find(s=>s.type==='candidate-pair'&&s.state==='succeeded'&&s.nominated);return !!pair&&stats.find(s=>s.id===pair.localCandidateId)?.candidateType==='relay';}));console.log('PASS: free introductory classroom audio/video and slides use forced encrypted TLS TURN, including ICE recovery');}
+    await learner.getByRole('button',{name:'Leave',exact:true}).click();await learner.getByRole('button',{name:'Join classroom with audio and slides only',exact:true}).click();await learner.getByRole('button',{name:'Leave',exact:true}).waitFor();await waitForAsync(learner,async()=>{const pc=window.testPeers.at(-1);if(pc?.connectionState!=='connected')return false;const stats=[...(await pc.getStats()).values()];return stats.some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0)&&!stats.some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0);});await learner.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();await learner.getByRole('button',{name:'Leave',exact:true}).click();await join(learner);await connected();console.log('PASS: introductory learner receives audio and slides without incoming video, then rejoins with camera');
     await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();await learner.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor({state:'detached'});console.log('PASS: booked tutor presents and stops PDF slides while learner audio/video continues');
-    await learner.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='audio').enabled),false);
-    await learner.getByRole('button',{name:'Camera off',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='video').enabled),false);
+    await learner.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='audio'&&t.readyState==='live').enabled),false);
+    await learner.getByRole('button',{name:'Camera off',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='video'&&t.readyState==='live').enabled),false);
     await learner.getByRole('button',{name:'Leave',exact:true}).click();await tutor.getByRole('status').filter({hasText:'Waiting for them to rejoin'}).waitFor();assert.ok(await learner.evaluate(()=>window.testTracks.every(t=>t.readyState==='ended')));
     await join(learner);await connected();assert.equal(await learner.getByRole('button',{name:'Mute',exact:true}).count(),1);console.log('PASS: learner leave/rejoin ignores old offers and resets mute/camera controls');
     await tutor.evaluate(()=>{window.testCancelScreenShare=true;});await tutor.getByRole('button',{name:'Share screen',exact:true}).click();assert.equal(await tutor.getByRole('alert').count(),0);
-    await tutor.getByRole('button',{name:'Share screen',exact:true}).click();await tutor.getByRole('button',{name:'Stop sharing',exact:true}).click();await tutor.getByRole('button',{name:'Share screen',exact:true}).waitFor();assert.ok(await tutor.evaluate(()=>window.testPeers.at(-1).getSenders().find(s=>s.track?.kind==='video').track===window.testTracks.find(t=>t.kind==='video')));console.log('PASS: explicit stop sharing restores camera track');
+    await tutor.getByRole('button',{name:'Share screen',exact:true}).click();await tutor.getByRole('button',{name:'Stop sharing',exact:true}).click();await tutor.getByRole('button',{name:'Share screen',exact:true}).waitFor();assert.ok(await tutor.evaluate(()=>window.testPeers.at(-1).getSenders().find(s=>s.track?.kind==='video').track===window.testTracks.find(t=>t.kind==='video'&&t.readyState==='live')));console.log('PASS: explicit stop sharing restores camera track');
     await tutor.getByRole('button',{name:'Leave',exact:true}).click();await learner.getByRole('status').filter({hasText:'Waiting for them to rejoin'}).waitFor();await join(tutor);await connected();console.log('PASS: tutor rejoin works while learner remains');
     await tutor.getByRole('button',{name:'Leave',exact:true}).click();await learner.getByRole('button',{name:'Leave',exact:true}).click();await learner.reload();await tutor.reload();await join(learner);await join(tutor);await connected();console.log('PASS: learner joins first with stale signal history from previous calls');
     // SPA navigation must close media even when React reuses the classroom component.

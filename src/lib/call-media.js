@@ -25,6 +25,6 @@ export function meetingAccessMessage(meeting, userId, now = Date.now()) {
   if (meeting.can_join) return '';
   if (now > Date.parse(meeting.ends_at) + 30*60000) return 'The meeting room is closed.';
   if (now < Date.parse(meeting.starts_at)) return 'Joining opens at the scheduled start time. The host can prepare the room 20 minutes early.';
-  if (!person?.first_joined_at && now > Date.parse(meeting.starts_at) + 300000) return 'The five-minute entry window has closed. People already admitted can reconnect until the room closes.';
+  if (!person?.first_joined_at && now > (person?.entry_deadline?Date.parse(person.entry_deadline):Date.parse(meeting.starts_at) + 300000)) return 'The five-minute entry window has closed. People already admitted can reconnect until the room closes.';
   return 'Checking meeting access. Refresh meetings if this does not update.';
 }

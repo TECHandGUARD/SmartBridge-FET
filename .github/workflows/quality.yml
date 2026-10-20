@@ -23,6 +23,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: python tests/test_call_relay.py
       - run: npm run check:db
       - run: npm run check:api
       - run: npm run check:edge
@@ -52,3 +53,32 @@ jobs:
           version: 2.120.0
       - run: npm ci --include=dev
       - run: node tests/local-supabase-services.cjs
+  encrypted-relay:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --include=dev
+      - run: npx playwright install --with-deps chromium
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd
+        with:
+          role-to-assume: arn:aws:iam::741180449622:role/SmartBridgeRelayTestRole
+          aws-region: eu-west-1
+      - name: Obtain ephemeral relay credentials and verify actual media
+        env:
+          SMARTBRIDGE_RELAY_CONFIG_PATH: /tmp/smartbridge-relay.json
+        run: |
+          aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true,"room_id":"00000000-0000-4000-8000-000000000001","actor_id":"00000000-0000-4000-8000-000000000002"}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
+          node tests/browser-virtual-meetings.cjs
+          aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true,"room_id":"00000000-0000-4000-8000-000000000003","actor_id":"00000000-0000-4000-8000-000000000004"}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
+          node tests/browser-live-classroom.cjs
+      - if: always()
+        run: rm -f /tmp/smartbridge-relay.json
