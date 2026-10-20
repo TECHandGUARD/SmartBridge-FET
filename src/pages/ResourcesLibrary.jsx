@@ -36,7 +36,7 @@ const CONFIG = {
     NO_DOCUMENTS: import.meta.env.VITE_CAPS_NO_DOCUMENTS_MSG || 'No documents match the current filters.',
     DOWNLOAD_SUCCESS: import.meta.env.VITE_CAPS_DOWNLOAD_SUCCESS_MSG || 'Download started!',
     DOWNLOAD_FAILED: import.meta.env.VITE_CAPS_DOWNLOAD_FAILED_MSG || 'Failed to download document.',
-    FREE_RESOURCES: import.meta.env.VITE_CAPS_FREE_RESOURCES_MSG || 'All documents are official South African DBE publications. Free to download — no premium required.'
+    FREE_RESOURCES: import.meta.env.VITE_CAPS_FREE_RESOURCES_MSG || 'SmartBridge guides are original study supplements. Official DBE curriculum documents are listed separately below. Both collections are free to download.'
   }
 };
 function DocumentCard({
