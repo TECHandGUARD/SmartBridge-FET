@@ -18,6 +18,7 @@ export async function uploadPrivate(client,bucket,file){
  return {reference:storageReference(bucket,path),path,actor:data.user};
 }
 export async function resolveFile(client,reference){
+ if(typeof reference==='string'&&/^\/study-packs\/smartbridge-(math|matlit|phsc|lisc|acc|bst|eco|tour|hist|geo|enhl|afhl|xhhl|zuhl|lo)-(10|11|12)\.pdf$/.test(reference))return new URL(reference,window.location.origin).href;
  const location=parseStorageReference(reference);
  if(!location){const url=new URL(reference);if(url.protocol!=='https:'||url.username||url.password)throw new Error('Invalid file URL');return url.href;}
  const {data,error}=await client.storage.from(location.bucket).createSignedUrl(location.path,60);if(error)throw error;if(!data?.signedUrl)throw new Error('Download unavailable');return data.signedUrl;

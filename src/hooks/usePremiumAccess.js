@@ -14,7 +14,7 @@ export default function usePremiumAccess(user) {
     setAccess({ isPremium: false, isOnTrial: false, trialDaysLeft: 0 });
     setError(null);
     if (!user?.id) { setLoading(false); return; }
-    if (user.is_super_admin === true) {
+    if (user.is_super_admin === true || user.role === 'admin') {
       setAccess({ isPremium: true, isOnTrial: false, trialDaysLeft: 0 });
       setLoading(false); return;
     }
@@ -22,18 +22,19 @@ export default function usePremiumAccess(user) {
     const verify = async () => {
       try {
         const { data, error: queryError } = await withTimeout(supabase.from('subscriptions')
-          .select('id,status,end_date').eq('user_id', user.id).eq('plan', 'premium').eq('status', 'active')
-          .gte('end_date', new Date().toISOString().slice(0, 10)).limit(1));
+          .select('id,status,start_date,end_date').eq('user_id', user.id).eq('plan', 'premium').eq('status', 'active')
+          .lte('start_date', new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()))
+          .gte('end_date', new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Johannesburg',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())).limit(1));
         if (queryError) throw queryError;
         const trialEnd = new Date(user.trial_started_at || '').getTime() + 3 * 86400000;
         const days = Number.isFinite(trialEnd) ? Math.max(0, Math.ceil((trialEnd - Date.now()) / 86400000)) : 0;
-        const paid = data.length > 0 || user.is_premium === true;
+        const paid = (data || []).length > 0;
         if (active) setAccess({ isPremium: paid || days > 0, isOnTrial: !paid && days > 0, trialDaysLeft: paid ? 0 : days });
       } catch (failure) { if (active) setError(failure); }
       finally { if (active) setLoading(false); }
     };
     verify();
     return () => { active = false; };
-  }, [user?.id, user?.is_super_admin, user?.is_premium, user?.trial_started_at, revision]);
+  }, [user?.id, user?.role, user?.is_super_admin, user?.is_premium, user?.trial_started_at, revision]);
   return { ...access, loading, error, refresh, checkAccess: refresh };
 }

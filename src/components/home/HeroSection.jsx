@@ -1,3 +1,5 @@
+import packs from '@/data/study-packs.json';
+import { SUBJECTS } from '@/lib/subjects';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,12 +36,12 @@ export default function HeroSection() {
               <span className="text-primary">Achieve More.</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              South Africa's premier FET Phase learning platform. Access CAPS-aligned resources,
-              connect with qualified tutors, and track your academic journey from Grade 10 to Matric.
+              A learning platform built for South African FET learners. Explore focused study guides,
+              explore tutor profiles, and track your academic journey from Grade 10 to Matric.
             </p>
 
             <div className="flex flex-wrap gap-3 mb-8">
-              {['No contracts', 'SACE Verified Tutors', 'POPIA Compliant'].map((item) => (
+              {['Grades 10–12', 'Visual study guides', 'Download for offline study'].map((item) => (
                 <div key={item} className="flex items-center gap-1.5 text-sm text-muted-foreground">
                   <CheckCircle className="w-4 h-4 text-primary" />
                   {item}
@@ -48,9 +50,9 @@ export default function HeroSection() {
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Link to="/subjects">
+              <Link to="/learn#collection">
                 <Button size="lg" className="bg-primary hover:bg-primary/90 gap-2 px-6">
-                  Explore Subjects <ArrowRight className="w-4 h-4" />
+                  Explore Study Guides <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <Link to="/premium">
@@ -65,9 +67,9 @@ export default function HeroSection() {
           {/* Right: Stats cards */}
           <div className="grid grid-cols-2 gap-4">
             {[
-              { icon: BookOpen, label: 'CAPS Subjects', value: '11', color: 'bg-primary/10 text-primary' },
-              { icon: Users, label: 'Verified Tutors', value: '50+', color: 'bg-secondary/20 text-amber-700' },
-              { icon: Star, label: 'Resources', value: '500+', color: 'bg-green-100 text-green-700' },
+              { icon: BookOpen, label: 'CAPS Subjects', value: String(SUBJECTS.length), color: 'bg-primary/10 text-primary' },
+              { icon: Users, label: 'Subject-and-grade Guides', value: String(packs.length), color: 'bg-secondary/20 text-amber-700' },
+              { icon: Star, label: 'Practice Questions', value: String(packs.reduce((n,p)=>n+p.questions.length,0)), color: 'bg-green-100 text-green-700' },
               { icon: CheckCircle, label: 'Grades Covered', value: '10–12', color: 'bg-blue-100 text-blue-700' }
             ].map(({ icon: Icon, label, value, color }) => (
               <div key={label} className="bg-card rounded-2xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">

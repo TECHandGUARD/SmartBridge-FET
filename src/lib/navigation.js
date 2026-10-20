@@ -19,7 +19,7 @@ export function getNavigation(user) {
   const tutors = item('Tutors', '/tutors', 'users');
   const resources = item('Resources', '/search', 'book');
   const forum = item('Forum', '/forum', 'forum');
-  const common = [item('Home', '/', 'home'), item('Videos', '/videos', 'book'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
+  const common = [item('Study guides','/learn','book'), item('Home', '/', 'home'), item('Videos', '/videos', 'book'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
     primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
     secondary: [item('Virtual meetings','/meetings','users'), ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), item('Practice', '/quiz', 'practice'), item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book')],

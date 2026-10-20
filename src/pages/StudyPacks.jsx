@@ -1,0 +1,630 @@
+import { useMemo, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import {
+  ArrowRight,
+  BookOpen,
+  Check,
+  Download,
+  Search,
+  ArrowLeft,
+  GraduationCap,
+  WifiOff,
+  Eye,
+} from "lucide-react";
+import packs from "@/data/study-packs.json";
+import files from "@/data/study-pack-files.json";
+import { SUBJECTS } from "@/lib/subjects";
+import "./study-packs.css";
+const fileById = new Map(files.map((f) => [f.id, f]));
+export const packStats = {
+  packs: packs.length,
+  subjects: new Set(packs.map((p) => p.code)).size,
+  questions: packs.reduce((n, p) => n + p.questions.length, 0),
+};
+function Header() {
+  return (
+    <header className="learn-nav">
+      <Link to="/learn" className="learn-brand">
+        <BookOpen aria-hidden="true" />
+        SmartBridge FET
+      </Link>
+      <nav aria-label="Learning navigation">
+        <Link to="/learn#collection">Study guides</Link>
+        <Link to="/login">Sign in</Link>
+        <Link className="learn-button" to="/register">
+          Get started <ArrowRight size={16} />
+        </Link>
+      </nav>
+    </header>
+  );
+}
+export function StudyPackLinks({ code = null }) {
+  const selected = packs.filter((p) => !code || p.code === code);
+  return (
+    <section className="my-6 rounded-2xl border border-emerald-800/20 bg-emerald-50 p-5 text-emerald-950">
+      <p className="mb-2 text-xs font-semibold uppercase tracking-widest">
+        SmartBridge study collection
+      </p>
+      <h2 className="mb-2 font-playfair text-2xl">
+        Learn it. Try it. Understand the correction.
+      </h2>
+      <p className="mb-4 text-sm">
+        {selected.length} focused topic guides with visual explanations, worked
+        examples and answer guides. Free to read and download.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {code ? (
+          selected.map((p) => (
+            <Link
+              key={p.id}
+              className="rounded-lg border border-emerald-800/20 bg-white px-3 py-3 text-sm"
+              to={"/study-packs/" + p.id}
+            >
+              Grade {p.grade}: {p.title} →
+            </Link>
+          ))
+        ) : (
+          <Link
+            className="rounded-lg bg-emerald-900 px-4 py-3 text-sm text-white"
+            to="/learn#collection"
+          >
+            Explore all {packStats.packs} guides →
+          </Link>
+        )}
+      </div>
+    </section>
+  );
+}
+export function VisualTable({ pack }) {
+  return (
+    <figure className="learn-visual">
+      <figcaption>{pack.visual.title}</figcaption>
+      {pack.id === "math-11" && (
+        <svg
+          viewBox="0 0 400 180"
+          role="img"
+          aria-label="Upward parabola y equals x squared minus four x plus three; roots 1 and 3, minimum at 2 minus 1"
+        >
+          <path d="M40 130H365M60 20V165" fill="none" stroke="currentColor" />
+          <path
+            d="M60 52 Q200 260 340 52"
+            fill="none"
+            stroke="#ae8545"
+            strokeWidth="3"
+          />
+          <text x="123" y="145">
+            1
+          </text>
+          <text x="195" y="145">
+            2
+          </text>
+          <text x="263" y="145">
+            3
+          </text>
+          <text x="177" y="175">
+            (2; −1)
+          </text>
+        </svg>
+      )}
+      <div
+        className="learn-table-scroll"
+        role="region"
+        aria-label={pack.visual.title}
+        tabIndex={0}
+      >
+        <table>
+          <thead>
+            <tr>
+              {pack.visual.columns.map((c) => (
+                <th key={c} scope="col">
+                  {c}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {pack.visual.rows.map((row, i) => (
+              <tr key={i}>
+                {row.map((cell, j) => (
+                  <td key={j}>{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </figure>
+  );
+}
+function Guide() {
+  const { packId } = useParams();
+  const p = packs.find((p) => p.id === packId);
+  const [revealed, setRevealed] = useState(false);
+  const [attempts, setAttempts] = useState({});
+  if (!p)
+    return (
+      <div className="learn-page">
+        <Header />
+        <main className="learn-shell">
+          <h1>Guide not found</h1>
+          <Link to="/learn#collection">Browse available guides</Link>
+        </main>
+      </div>
+    );
+  const f = fileById.get(p.id);
+  return (
+    <div className="learn-page">
+      <Header />
+      <main
+        className="learn-shell learn-reader"
+        lang={
+          { Afrikaans: "af", isiXhosa: "xh", isiZulu: "zu", English: "en" }[
+            p.language
+          ]
+        }
+      >
+        <Link
+          to={"/learn?subject=" + p.code + "#collection"}
+          className="learn-back"
+        >
+          <ArrowLeft size={17} /> All {p.subject} guides
+        </Link>
+        <div className="learn-reader-heading">
+          <div>
+            <p className="learn-eyebrow">
+              GRADE {p.grade} / {p.subject} / {p.language}
+            </p>
+            <h1>{p.title}</h1>
+            <p className="learn-muted">
+              Focused topic guide · {p.minutes} minutes · Edition {p.edition}
+            </p>
+          </div>
+          <a className="learn-button" href={p.pdfUrl} download>
+            <Download size={18} /> Download PDF · {Math.ceil(f.bytes / 1024)} KB
+          </a>
+        </div>
+        <aside className="learn-coverage">
+          <strong>CAPS topic focus</strong>
+          <p>{p.capsTopic}</p>
+          <small>
+            A selected-topic supplement. This guide does not cover the entire
+            grade syllabus. Subject-teacher and language-specialist review
+            pending.
+          </small>
+        </aside>
+        <div className="learn-reader-grid">
+          <article>
+            <section>
+              <p className="learn-eyebrow">01 / UNDERSTAND</p>
+              <h2>Build the idea</h2>
+              <ul className="learn-goals">
+                {p.goals.map((g) => (
+                  <li key={g}>
+                    <Check size={16} />
+                    {g}
+                  </li>
+                ))}
+              </ul>
+              {p.notes.map((n) => (
+                <p key={n}>{n}</p>
+              ))}
+              <VisualTable pack={p} />
+            </section>
+            <section>
+              <p className="learn-eyebrow">02 / FOLLOW THE REASONING</p>
+              <h2>A worked example</h2>
+              <p className="learn-question">{p.example}</p>
+              <ol className="learn-steps">
+                {p.steps.map((s) => (
+                  <li key={s}>{s}</li>
+                ))}
+              </ol>
+              <aside className="learn-mistake">
+                <strong>Common mistake to avoid</strong>
+                <p>{p.commonMistake}</p>
+              </aside>
+            </section>
+            <section>
+              <p className="learn-eyebrow">03 / PRACTISE</p>
+              <h2>Make the thinking your own</h2>
+              <p>
+                Try these before opening the answer guide. Use a notebook or
+                type a short attempt below. Typed attempts stay in this page
+                only and clear when it closes.
+              </p>
+              {p.questions.map((q, i) => (
+                <label className="learn-practice" key={q}>
+                  <strong>
+                    {i + 1}. {q}
+                  </strong>
+                  <textarea
+                    rows={3}
+                    maxLength={3000}
+                    aria-label={"Your attempt " + (i + 1)}
+                    value={attempts[i] || ""}
+                    onChange={(e) =>
+                      setAttempts((a) => ({ ...a, [i]: e.target.value }))
+                    }
+                  />
+                </label>
+              ))}
+              <button
+                className="learn-button"
+                aria-expanded={revealed}
+                onClick={() => setRevealed((v) => !v)}
+              >
+                <Eye size={17} />
+                {revealed ? "Hide answer guide" : "Open answer guide"}
+              </button>
+              {revealed && (
+                <div className="learn-answers">
+                  <h3>Check, correct, explain</h3>
+                  <ol>
+                    {p.answers.map((a) => (
+                      <li key={a}>{a}</li>
+                    ))}
+                  </ol>
+                  <p>
+                    This is self-check practice, not a marked assessment.
+                    Explain one correction in your own words, then revisit the
+                    topic tomorrow.
+                  </p>
+                </div>
+              )}
+            </section>
+          </article>
+          <aside className="learn-reader-aside">
+            <p className="learn-eyebrow">YOUR STUDY ROUTE</p>
+            <h3>A small step, done well.</h3>
+            <ol>
+              <li>Read the explanation.</li>
+              <li>Follow the example.</li>
+              <li>Attempt all three questions.</li>
+              <li>Explain one correction.</li>
+              <li>Try again after a gap.</li>
+            </ol>
+            <a href={p.pdfUrl} download className="learn-text-link">
+              <WifiOff size={17} /> Keep the PDF for offline study
+            </a>
+            <p>
+              No video download needed. The file contains the explanation,
+              visual table, practice and answers.
+            </p>
+            {p.furtherReading && (
+              <>
+                <hr />
+                <h3>Continue with the book</h3>
+                <p>{p.furtherReading}</p>
+                <Link to="/search">Open signed-in resource search →</Link>
+              </>
+            )}
+            <hr />
+            <h3>Curriculum reference</h3>
+            <a href={p.sourceUrl} target="_blank" rel="noreferrer">
+              {p.sourceLabel} ↗
+            </a>
+            <p>
+              Original SmartBridge content and visuals, with AI-assisted
+              authoring. Not DBE endorsed. Use your school’s prescribed texts
+              and teaching plan alongside this guide.
+            </p>
+            <a
+              className="learn-text-link"
+              href={
+                "mailto:aneleq@techandguard.co.za?subject=" +
+                encodeURIComponent("Study guide correction: " + p.id)
+              }
+            >
+              Report a correction · {p.id}
+            </a>
+          </aside>
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+function Footer() {
+  return (
+    <footer className="learn-footer">
+      <span>SmartBridge FET · Learning, with a next step.</span>
+      <div>
+        <Link to="/privacy">Privacy</Link>
+        <Link to="/terms">Terms</Link>
+        <a href="mailto:aneleq@techandguard.co.za">Contact</a>
+      </div>
+    </footer>
+  );
+}
+export default function StudyPacks() {
+  const [params, setParams] = useSearchParams();
+  const subject = params.get("subject") || "";
+  const grade = params.get("grade") || "";
+  const [search, setSearch] = useState("");
+  const filtered = useMemo(
+    () =>
+      packs.filter(
+        (p) =>
+          (!subject || p.code === subject) &&
+          (!grade || p.grade === Number(grade)) &&
+          `${p.title} ${p.subject} ${p.capsTopic}`
+            .toLowerCase()
+            .includes(search.toLowerCase()),
+      ),
+    [subject, grade, search],
+  );
+  const choose = (key, value) => {
+    const next = new URLSearchParams(params);
+    value ? next.set(key, value) : next.delete(key);
+    setParams(next, { replace: true });
+  };
+  return (
+    <div className="learn-page">
+      <Header />
+      <main>
+        <section className="learn-hero learn-shell">
+          <div>
+            <p className="learn-eyebrow">FOR SOUTH AFRICAN GRADES 10–12</p>
+            <h1>
+              Understanding starts
+              <br />
+              with <em>one clear idea.</em>
+            </h1>
+            <p className="learn-lead">
+              Thoughtful study guides. Visual explanations. Practice that helps
+              you understand your mistakes. Explore the SmartBridge FET
+              collection before you sign up.
+            </p>
+            <div className="learn-actions">
+              <a href="#collection" className="learn-button">
+                Explore the collection <ArrowRight size={18} />
+              </a>
+              <Link to="/study-packs/math-12" className="learn-text-link">
+                Read a real guide <ArrowRight size={17} />
+              </Link>
+            </div>
+            <p className="learn-caption">
+              Free guides · No card required · Download once, study offline
+            </p>
+          </div>
+          <div className="learn-preview">
+            <p className="learn-eyebrow">INSIDE THE COLLECTION / GRADE 12</p>
+            <h2>
+              From a formula
+              <br />
+              to a reason.
+            </h2>
+            <p className="learn-formula">f(x) = x³ − 3x</p>
+            <div className="learn-example-row">
+              <span>Differentiate</span>
+              <strong>f′(x) = 3x² − 3</strong>
+            </div>
+            <div className="learn-example-row">
+              <span>Find stationary points</span>
+              <strong>x = −1 or x = 1</strong>
+            </div>
+            <div className="learn-example-row">
+              <span>Explain the change</span>
+              <strong>Gradient + → − : local maximum</strong>
+            </div>
+            <Link to="/study-packs/math-12">
+              Open this guide <ArrowRight size={17} />
+            </Link>
+          </div>
+        </section>
+        <section
+          className="learn-proof learn-shell"
+          aria-label="Available collection"
+        >
+          <div>
+            <strong>{packStats.packs}</strong>
+            <span>downloadable topic guides</span>
+          </div>
+          <div>
+            <strong>{packStats.subjects}</strong>
+            <span>supported subjects</span>
+          </div>
+          <div>
+            <strong>10–12</strong>
+            <span>all three FET grades</span>
+          </div>
+          <div>
+            <strong>{packStats.questions}</strong>
+            <span>questions with answer guides</span>
+          </div>
+        </section>
+        <section className="learn-shell learn-promise">
+          <div>
+            <p className="learn-eyebrow">QUALITY YOU CAN OPEN</p>
+            <h2>
+              See the work.
+              <br />
+              Then decide.
+            </h2>
+            <p>
+              Every card below opens the actual guide, with a matching PDF. Each
+              shows its CAPS topic focus, language and edition. Counts describe
+              this published collection; they are not claims about tutors, exam
+              results or complete syllabus coverage.
+            </p>
+          </div>
+          <div className="learn-promise-grid">
+            {[
+              {
+                Icon: BookOpen,
+                title: "Understand",
+                body: "A concise explanation and a visual table that makes relationships easier to see.",
+              },
+              {
+                Icon: GraduationCap,
+                title: "Apply",
+                body: "A worked example that shows the reasoning, followed by independent practice.",
+              },
+              {
+                Icon: Check,
+                title: "Improve",
+                body: "Answer explanations, a common mistake to avoid and a prompt to revisit the skill.",
+              },
+              {
+                Icon: WifiOff,
+                title: "Keep learning",
+                body: "Small PDFs for a phone, a printed page or a study session away from Wi-Fi.",
+              },
+            ].map(({ Icon, title, body }) => (
+              <article key={title}>
+                <Icon aria-hidden="true" />
+                <h3>{title}</h3>
+                <p>{body}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+        <section className="learn-shell learn-collection" id="collection">
+          <div className="learn-section-heading">
+            <div>
+              <p className="learn-eyebrow">THE FIRST EDITION</p>
+              <h2>Find your next clear idea.</h2>
+            </div>
+            <p>
+              Focused CAPS topic supplements.
+              <br />
+              One guide per supported subject and grade.
+            </p>
+          </div>
+          <div className="learn-filters">
+            <label>
+              Subject
+              <select
+                aria-label="Subject"
+                value={subject}
+                onChange={(e) => choose("subject", e.target.value)}
+              >
+                <option value="">All subjects</option>
+                {SUBJECTS.map((s) => (
+                  <option key={s.code} value={s.code}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Grade
+              <select
+                aria-label="Grade"
+                value={grade}
+                onChange={(e) => choose("grade", e.target.value)}
+              >
+                <option value="">All grades</option>
+                {[10, 11, 12].map((g) => (
+                  <option key={g} value={g}>
+                    Grade {g}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="learn-search">
+              Search topics
+              <div>
+                <Search size={17} />
+                <input
+                  aria-label="Search topics"
+                  type="search"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Try calculus, cells or poetry"
+                />
+              </div>
+            </label>
+          </div>
+          <p className="learn-result-count" aria-live="polite">
+            {filtered.length} {filtered.length === 1 ? "guide" : "guides"}{" "}
+            available
+          </p>
+          <div className="learn-cards">
+            {filtered.map((p) => (
+              <article key={p.id} className="learn-card">
+                <div className="learn-card-top">
+                  <span>GRADE {p.grade}</span>
+                  <BookOpen size={20} aria-hidden="true" />
+                </div>
+                <p>
+                  {p.subject} · {p.language}
+                </p>
+                <h3>
+                  <Link to={"/study-packs/" + p.id}>{p.title}</Link>
+                </h3>
+                <p className="learn-card-topic">{p.capsTopic}</p>
+                <ul>
+                  {p.goals.map((g) => (
+                    <li key={g}>{g}</li>
+                  ))}
+                </ul>
+                <div className="learn-card-bottom">
+                  <Link to={"/study-packs/" + p.id}>
+                    Read guide <ArrowRight size={16} />
+                  </Link>
+                  <a
+                    href={p.pdfUrl}
+                    download
+                    aria-label={
+                      "Download " + p.subject + " Grade " + p.grade + " PDF"
+                    }
+                  >
+                    <Download size={16} />{" "}
+                    {Math.ceil(fileById.get(p.id).bytes / 1024)} KB
+                  </a>
+                </div>
+              </article>
+            ))}
+          </div>
+          {!filtered.length && (
+            <div className="learn-empty">
+              No guides match these filters.{" "}
+              <button
+                onClick={() => {
+                  setParams({});
+                  setSearch("");
+                }}
+              >
+                Clear filters
+              </button>
+            </div>
+          )}
+        </section>
+        <section className="learn-shell learn-source-note">
+          <h2>A growing collection, with honest coverage.</h2>
+          <p>
+            These original SmartBridge guides supplement the curriculum. They
+            are not complete textbooks, prescribed literature or DBE-endorsed
+            publications. AI-assisted first editions are awaiting
+            subject-teacher and language-specialist review. Source links and
+            correction reporting appear in every guide.
+          </p>
+          <p>
+            The signed-in platform also has a separate educational book
+            collection and a passage search index. Those books retain their
+            original attribution; indexed passages are not counted as additional
+            study guides here.
+          </p>
+          <div className="learn-actions">
+            <Link to="/register" className="learn-button">
+              Start your learning journey <ArrowRight size={17} />
+            </Link>
+            <a
+              href="https://www.education.gov.za/Curriculum/NCSGradesR12/CAPSFET/tabid/570/Default.aspx"
+              target="_blank"
+              rel="noreferrer"
+            >
+              View official CAPS references ↗
+            </a>
+          </div>
+        </section>
+      </main>
+      <Footer />
+    </div>
+  );
+}
+export function StudyGuide() {
+  const { packId } = useParams();
+  return <Guide key={packId} />;
+}

@@ -1,3 +1,4 @@
+import {StudyPackLinks} from './StudyPacks';
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
@@ -224,9 +225,9 @@ export default function ResourcesLibrary() {
               <BookOpen className="w-5 h-5 text-primary-foreground" />
             </div>
             <div>
-              <h1 className="font-playfair text-3xl font-bold">Official CAPS Resource Library</h1>
+              <h1 className="font-playfair text-3xl font-bold">Resource Library</h1>
               <p className="text-muted-foreground text-sm">
-                Official DBE curriculum documents — free for all users
+                SmartBridge study guides and official curriculum references
               </p>
             </div>
             <Badge className="ml-auto bg-green-100 text-green-700 border-green-200 text-xs gap-1">
@@ -240,6 +241,7 @@ export default function ResourcesLibrary() {
         </div>
 
         {}
+        <StudyPackLinks />
         <Card className="mb-6 border-border shadow-sm">
           <CardContent className="pt-4 pb-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">

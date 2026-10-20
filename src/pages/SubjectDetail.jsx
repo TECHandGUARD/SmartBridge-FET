@@ -1,3 +1,5 @@
+import usePremiumAccess from '@/hooks/usePremiumAccess';
+import {StudyPackLinks} from './StudyPacks';
 // src/pages/SubjectDetail.jsx
 import { useMemo } from 'react';
 // ============================================================
@@ -228,7 +230,7 @@ export default function SubjectDetail() {
   }, [resources, grade, type, search]);
   const hasFilters = search.trim() || grade !== 'All' || type !== 'All';
   const totalDownloads = filtered.reduce((sum, r) => sum + (r.download_count || 0), 0);
-  const isPremium = user?.is_premium === true || user?.role === 'admin';
+  const {isPremium} = usePremiumAccess(user);
   const colorClasses = subject?.color?.split(' ') || ['bg-primary', 'text-primary-foreground'];
   if (loading) {
     return <div className="min-h-screen flex flex-col items-center justify-center gap-3">
@@ -357,6 +359,7 @@ export default function SubjectDetail() {
           </div>}
 
         {}
+        <StudyPackLinks code={subject.code} />
         <SubjectTutors subjectName={subject.name} />
       </div>
     </div>;

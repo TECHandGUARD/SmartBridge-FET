@@ -28,7 +28,9 @@
     "test:e2e:live": "node tests/browser-live-classroom.cjs",
     "test:e2e:messages": "node tests/browser-free-messaging.cjs",
     "check:mobile": "node scripts/check-mobile-release.js",
-    "test:e2e:presentations": "node tests/browser-presentations.cjs"
+    "test:e2e:presentations": "node tests/browser-presentations.cjs",
+    "test:e2e:content": "node tests/browser-study-packs.cjs",
+    "test:e2e:drafts": "node tests/browser-assessment-drafts.cjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",

@@ -1,3 +1,4 @@
+import useAssessmentDraft from '@/hooks/useAssessmentDraft';
 import {useState,useEffect,useCallback} from 'react';
 import {useAuth} from '@/lib/AuthContext';
 import {supabase} from '@/lib/supabaseClient';
@@ -68,24 +69,27 @@ function TutorCentre({user}){
  </CardContent></Card></div>;
 }
 function StudentCentre(){
- const [items,setItems]=useState([]),[current,setCurrent]=useState(null),[answers,setAnswers]=useState({}),[file,setFile]=useState(null),[busy,setBusy]=useState(false);
+ const draft=useAssessmentDraft();const {answers,setAnswers}=draft;
+ const [items,setItems]=useState([]),[current,setCurrent]=useState(null),[file,setFile]=useState(null),[busy,setBusy]=useState(false);
  const load=useCallback(async()=>{const {data,error}=await supabase.rpc('my_tutor_assessments');if(error)err(error);else setItems(data||[]);},[]);
  useEffect(()=>{load();},[load]);
- const start=async(a)=>{setBusy(true);const {error}=await supabase.rpc('start_tutor_assessment',{p_assessment:a.id});setBusy(false);if(error)return err(error);setCurrent(a);setAnswers({});setFile(null);};
+ const start=async(a)=>{setBusy(true);try{const {error}=await supabase.rpc('start_tutor_assessment',{p_assessment:a.id});if(error)throw error;await draft.load(a.id);setCurrent(a);setFile(null);}catch(e){err(e);}finally{setBusy(false);}};
+ const back=async()=>{setBusy(true);try{await draft.persist();draft.close();setCurrent(null);load();}catch(e){err(e);}finally{setBusy(false);}};
  const submit=async()=>{if(!window.confirm('Submit your work? You cannot edit it after submitting.'))return;setBusy(true);try{
+  await draft.persist();
   let path=null;if(file){if(file.size>10485760||!['application/pdf','image/png','image/jpeg'].includes(file.type))throw Error('Use PDF, PNG or JPEG under 10 MB.');
    const {data:{user}}=await supabase.auth.getUser();if(!user)throw Error('Sign in again.');
    path=current.id+'/'+user.id+'/'+crypto.randomUUID()+'.'+(file.type==='application/pdf'?'pdf':file.type==='image/png'?'png':'jpg');
    const {error}=await supabase.storage.from('tutor-assessments').upload(path,file,{contentType:file.type});if(error)throw error;
   }
   const {error}=await supabase.rpc('submit_tutor_assessment',{p_assessment:current.id,p_answers:answers,p_attachment:path});if(error)throw error;
-  toast.success('Submitted');setCurrent(null);load();
+  toast.success('Submitted');draft.close();setCurrent(null);load();
  }catch(e){err(e);}finally{setBusy(false);}};
  return <div className="space-y-4">{current?<Card><CardHeader><CardTitle>{current.title}</CardTitle></CardHeader><CardContent className="space-y-4">
- <p>{current.instructions}</p><p className="text-sm">Due {new Date(current.due_at).toLocaleString()}{current.time_limit_minutes?' · Time limit: '+current.time_limit_minutes+' minutes from start':''}</p>
- {current.questions.map((q,i)=><div key={i} className="space-y-2"><strong>{i+1}. {q.prompt} ({q.marks} marks)</strong>{q.type==='mcq'?q.options.map((v,j)=><label key={j} className="flex gap-2"><input type="radio" name={'q'+i} checked={answers[i]===String(j)} onChange={()=>setAnswers(a=>({...a,[i]:String(j)}))}/>{v}</label>):<Textarea maxLength={10000} value={answers[i]||''} onChange={e=>setAnswers(a=>({...a,[i]:e.target.value}))}/>}</div>)}
+ <p>{current.instructions}</p><div className="rounded-lg border bg-muted/30 p-3"><p className="text-sm" role="status">{draft.status}</p><p className="text-sm">{draft.remaining===null?'':draft.remaining===0?'Time has ended — saved work is preserved.':`Time remaining: ${Math.floor(draft.remaining/60)}m ${draft.remaining%60}s`}</p>{draft.status.startsWith('Not saved')&&<Button variant="outline" disabled={busy} onClick={()=>draft.persist().catch(err)}>Retry saving</Button>}<p className="mt-1 text-xs text-muted-foreground">Text answers save automatically. Attachments must be selected again after reopening. Keep this page open until it says Saved.</p></div><p className="text-sm">Due {new Date(current.due_at).toLocaleString()}{current.time_limit_minutes?' · Time limit: '+current.time_limit_minutes+' minutes from start':''}</p>
+ {current.questions.map((q,i)=><div key={i} className="space-y-2"><strong>{i+1}. {q.prompt} ({q.marks} marks)</strong>{q.type==='mcq'?q.options.map((v,j)=><label key={j} className="flex gap-2"><input disabled={busy||draft.remaining===0} type="radio" name={'q'+i} checked={answers[i]===String(j)} onChange={()=>setAnswers(a=>({...a,[i]:String(j)}))}/>{v}</label>):<Textarea disabled={busy||draft.remaining===0} maxLength={10000} value={answers[i]||''} onChange={e=>setAnswers(a=>({...a,[i]:e.target.value}))}/>}</div>)}
  <label>Optional handwritten work (PDF/JPEG/PNG, 10 MB maximum)<Input type="file" accept=".pdf,.png,.jpg,.jpeg" onChange={e=>setFile(e.target.files?.[0]||null)}/></label>
- <Button disabled={busy} onClick={submit}>Submit assessment</Button> <Button variant="outline" onClick={()=>setCurrent(null)}>Back</Button>
+ <Button disabled={busy||draft.remaining===0} onClick={submit}>Submit assessment</Button> <Button disabled={busy} variant="outline" onClick={back}>Save and back</Button>
  </CardContent></Card>:<><h2 className="text-xl font-semibold">My assigned assessments</h2>{!items.length&&<p>No assigned assessments yet.</p>}
  {items.map(a=><Card key={a.id}><CardContent className="pt-5 flex flex-wrap justify-between gap-3"><div><strong>{a.title}</strong><p>{a.kind} · {a.subject} · Grade {a.grade} · {a.max_marks} marks</p><p className="text-xs">Opens {new Date(a.opens_at).toLocaleString()} · Due {new Date(a.due_at).toLocaleString()}</p><p className="text-sm">{a.submission_status||'Not started'}{a.score!==null?' · '+a.score+'/'+a.max_marks:''}</p>{a.submission_status==='marked'&&a.feedback&&<p>Feedback: {a.feedback}</p>}</div>
  {(!a.submission_status||a.submission_status==='in_progress')&&a.status==='published'&&new Date(a.opens_at)<=new Date()&&new Date(a.due_at)>new Date()&&<Button disabled={busy} onClick={()=>start(a)}>{a.submission_status?'Resume':'Start'}</Button>}

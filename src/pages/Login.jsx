@@ -135,6 +135,7 @@ export default function Login() {
                 </> : 'Sign In'}
             </Button>
           </form>
+<p className="mt-5 text-center text-sm"><Link to="/learn" className="font-medium text-primary underline">Explore free SmartBridge study guides before signing in</Link></p>
 
           {CONFIG.ENABLE_GOOGLE_SIGN_IN && <>
               <div className="relative">
