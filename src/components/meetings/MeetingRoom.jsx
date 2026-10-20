@@ -1,3 +1,5 @@
+import {Camera,CameraOff,Mic,MicOff,MonitorUp,PhoneOff,Video,Headphones,Presentation,Users,DoorOpen,Hand,ShieldCheck} from 'lucide-react';
+import {CallButton,CallWorkspace,VideoPlaceholder} from '@/components/live/CallStudio';
 import {getCallIceConfig} from '@/lib/call-network';
 import CallNetworkControls from '@/components/live/CallNetworkControls';
 import InviteMeetingGuests from './InviteMeetingGuests';
@@ -11,13 +13,21 @@ import {useSlidePresentation} from '@/lib/use-slide-presentation';
 const SlidePresentation=lazy(()=>import('@/components/live/SlidePresentation'));
 
 
-function ParticipantVideo({stream,label,muted=false,reaction}) {
+function ParticipantVideo({stream,label,muted=false,reaction,cameraOff=false,status=''}) {
   const video=useRef(null);
-  const [playbackBlocked,setPlaybackBlocked]=useState(false);
-  useEffect(()=>{let cancelled=false;const node=video.current;if(node){node.srcObject=stream||null;setPlaybackBlocked(false);if(stream)node.play()?.catch(()=>{if(!cancelled)setPlaybackBlocked(true);});}return()=>{cancelled=true;};},[stream]);
-  return <div className="overflow-hidden rounded-xl bg-slate-900 text-white"><video ref={video} autoPlay playsInline muted={muted} aria-label={label} className="h-52 w-full object-contain"/>{playbackBlocked&&<button className="m-3 rounded-lg border px-3 py-2" onClick={()=>video.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play meeting audio and video</button>}<p className="px-3 py-2 text-sm">{label}{reaction?.handRaised&&<span aria-label={`${label}: hand raised`}> · ✋ Hand raised</span>}{reaction?.emoji&&<span role="status" aria-label={`${label}: ${MEETING_REACTIONS[reaction.emoji]}`}> {reaction.emoji}</span>}</p></div>;
+  const [playbackBlocked,setPlaybackBlocked]=useState(false),[hasVideo,setHasVideo]=useState(false);
+  useEffect(()=>{
+    let cancelled=false;const node=video.current;
+    const update=()=>setHasVideo(!!stream?.getVideoTracks().some(track=>track.readyState==='live'&&!track.muted));
+    update();stream?.addEventListener('addtrack',update);stream?.addEventListener('removetrack',update);
+    const tracks=stream?.getVideoTracks()||[];tracks.forEach(track=>{track.addEventListener('unmute',update);track.addEventListener('mute',update);track.addEventListener('ended',update);});
+    if(node){node.srcObject=stream||null;setPlaybackBlocked(false);if(stream)node.play()?.catch(()=>{if(!cancelled)setPlaybackBlocked(true);});}
+    return()=>{cancelled=true;stream?.removeEventListener('addtrack',update);stream?.removeEventListener('removetrack',update);tracks.forEach(track=>{track.removeEventListener('unmute',update);track.removeEventListener('mute',update);track.removeEventListener('ended',update);});};
+  },[stream]);
+  return <div className="studio-tile"><video ref={video} autoPlay playsInline muted={muted} aria-label={label}/>{(!hasVideo||cameraOff)&&<VideoPlaceholder name={label} note={stream?'Camera is off':'Waiting to join'}/>}{playbackBlocked&&<button className="studio-video-play" onClick={()=>video.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play meeting audio and video</button>}<div className="studio-tile-footer"><span>{label}{reaction?.handRaised&&<span aria-label={`${label}: hand raised`}> · ✋ Hand raised</span>}{reaction?.emoji&&<span role="status" aria-label={`${label}: ${MEETING_REACTIONS[reaction.emoji]}`}> {reaction.emoji}</span>}</span><small>{status}</small></div></div>;
 }
 export default function MeetingRoom({meeting,user,onRefresh}) {
+  const [compactVideos,setCompactVideos]=useState(false);
   const presenters=meeting.participants.filter(p=>['admin','tutor','sace_tutor','student_tutor'].includes(p.role)).map(p=>p.user_id);
   const {transport,received}=useSlidePresentation(meeting.id,user.id,presenters);
   const response=meeting.participants.find(p=>p.user_id===user.id)?.response;
@@ -86,32 +96,37 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
     if(!window.confirm('End this meeting for everyone? Everyone will disconnect and this meeting cannot be rejoined. Choose Leave meeting to leave on your own.'))return;
     setBusy(true);try{const {error:closeError}=await supabase.rpc('close_virtual_meeting',{meeting_key:meeting.id,decision:'ended'});if(closeError)throw closeError;stop();await dispatchMeetingNotifications(meeting.id);await onRefresh();}catch(e){setError(e.message);}finally{setBusy(false);}
   };
-  return <section className="space-y-4 rounded-2xl border bg-card p-4 sm:p-6" aria-label="Meeting room">
-    <p className="text-sm text-muted-foreground">Private meeting · up to 6 participants · no recording</p>
-    <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||busy} network={network} route={Object.values(routes).includes('relay')?'relay':Object.keys(routes).length?'direct':null}/>
-    {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
-    {!meeting.can_join&&<p role="status">{response==='invited'&&inWindow?'Joining accepts your invitation. Choose camera and microphone, microphone only, or watch and listen.':meetingAccessMessage(meeting,user.id)}</p>}
-    {!joined&&<p className="text-sm text-muted-foreground">Allow camera and microphone when your browser asks. Watch and listen lets you view the meeting and slides without turning on either device.</p>}
-    {joined&&(!local?.getAudioTracks().length||!local?.getVideoTracks().length)&&<p role="status" className="text-sm text-muted-foreground">{!local?.getAudioTracks().length?'You joined to watch and listen. Your microphone and camera are off.':'You joined with microphone only. Your camera is off.'} Leave and rejoin with camera and microphone to enable both.</p>}
-    {joined&&!canShare&&<p className="text-sm text-muted-foreground">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
-    {joined&&meeting.participants.some(p=>p.user_id!==user.id&&p.response==='invited')&&!meeting.participants.some(p=>p.user_id!==user.id&&p.response==='accepted')&&<p role="status" className="text-sm text-muted-foreground">Waiting for invitees to accept. They can open the invitation email or Virtual Meetings to accept and join.</p>}
-    {joined&&meeting.host_id===user.id&&<InviteMeetingGuests meeting={meeting} onRefresh={onRefresh}/>}
-    {joined&&<Suspense fallback={<p>Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={presenters.includes(user.id)}/></Suspense>}
-    {joined&&<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-      <ParticipantVideo stream={local} label="You" muted reaction={reactionState[user.id]}/>
-      {meeting.participants.filter(p=>p.user_id!==user.id&&p.response==='accepted').map(p=><div key={p.user_id}><ParticipantVideo stream={remote[p.user_id]} label={p.full_name||'Participant'} reaction={reactionState[p.user_id]}/><p className="mt-1 text-xs">{statuses[p.user_id]||'Waiting to join'}</p></div>)}
-    </div>}
-    <div className="flex flex-wrap gap-2">
-      {!joined?<button className="rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-50" disabled={!canAttemptJoin||busy} onClick={()=>join()}>{busy?'Connecting…':'Join meeting'}</button>:<>
-        <button disabled={!local?.getAudioTracks().length} className="rounded-lg border px-4 py-2 disabled:opacity-50" onClick={()=>{const track=stream.current?.getAudioTracks()[0];if(track){track.enabled=!track.enabled;setMuted(!track.enabled);}}}>{muted?'Unmute':'Mute'}</button>
-        <button disabled={!local?.getVideoTracks().length} className="rounded-lg border px-4 py-2 disabled:opacity-50" onClick={()=>{const track=stream.current?.getVideoTracks()[0];if(track){track.enabled=!track.enabled;setCameraOff(!track.enabled);}}}>{cameraOff?'Camera on':'Camera off'}</button>
-        {canShare&&!!local?.getVideoTracks().length&&<button className="rounded-lg border px-4 py-2" onClick={share}>{sharing?'Stop sharing':'Share screen'}</button>}
-        <button className="rounded-lg bg-red-600 px-4 py-2 text-white" onClick={stop}>Leave meeting</button>
-        {meeting.host_id===user.id&&<button className="rounded-lg border border-red-400 px-4 py-2" disabled={busy} onClick={close}>End for everyone</button>}
-      </>}
+  return <CallWorkspace title="Meeting room" subtitle="Private meeting · up to 6 participants · no recording" joined={joined}>
+    <div className="studio-content">
+      {error&&<p role="alert" className="studio-alert">{error}</p>}
+      {!meeting.can_join&&<p role="status" className="studio-status"><ShieldCheck size={18} aria-hidden="true"/>{response==='invited'&&inWindow?'Joining accepts your invitation. Choose camera and microphone, microphone only, or watch and listen.':meetingAccessMessage(meeting,user.id)}</p>}
+      {!joined&&<div className="studio-join"><span className="studio-eyebrow">Your space to connect</span><h3>Choose how you join</h3><p>Allow camera and microphone when your browser asks. Watch and listen lets you view the meeting and slides without turning on either device.</p>
+        <CallButton icon={Video} variant="primary" disabled={!canAttemptJoin||busy} onClick={()=>join()}>{busy?'Connecting…':'Join meeting'}</CallButton>
+        <div className="studio-join-options">
+          <CallButton icon={Mic} disabled={!canAttemptJoin||busy} onClick={()=>join('audio')} aria-label="Join with microphone only"><span>Microphone only<small>Keep your camera off.</small></span></CallButton>
+          <CallButton icon={Headphones} disabled={!canAttemptJoin||busy} onClick={()=>join('listen')} aria-label="Join to watch and listen"><span>Watch and listen<small>No camera or microphone permission.</small></span></CallButton>
+          <CallButton icon={Presentation} disabled={!canAttemptJoin||busy} onClick={()=>join('audioSlides')} aria-label="Join with audio and slides only"><span>Audio and slides<small>Save data by skipping incoming video.</small></span></CallButton>
+        </div>
+      </div>}
+      {joined&&<div className="flex justify-end"><CallButton aria-pressed={compactVideos} onClick={()=>setCompactVideos(value=>!value)}>{compactVideos?'Show full videos':'Compact videos'}</CallButton></div>}
+      {joined&&<div className={`studio-video-grid ${compactVideos?'is-compact':''}`}>
+        <ParticipantVideo stream={local} label="You" muted cameraOff={cameraOff} reaction={reactionState[user.id]} status={muted?'Microphone off':'You'}/>
+        {meeting.participants.filter(p=>p.user_id!==user.id&&p.response==='accepted').map(p=><ParticipantVideo key={p.user_id} stream={remote[p.user_id]} label={p.full_name||'Participant'} reaction={reactionState[p.user_id]} status={statuses[p.user_id]||'Waiting to join'}/>)}
+      </div>}
+      {joined&&meeting.participants.some(p=>p.user_id!==user.id&&p.response==='invited')&&!meeting.participants.some(p=>p.user_id!==user.id&&p.response==='accepted')&&<p role="status" className="studio-status"><Users size={18} aria-hidden="true"/>Waiting for invitees to accept. They can open the invitation email or Virtual Meetings to accept and join.</p>}
+      {joined&&(!local?.getAudioTracks().length||!local?.getVideoTracks().length)&&<p role="status" className="studio-note">{!local?.getAudioTracks().length?'You joined to watch and listen. Your microphone and camera are off.':'You joined with microphone only. Your camera is off.'} Leave and rejoin with camera and microphone to enable both.</p>}
+      {joined&&<Suspense fallback={<p role="status" className="studio-note">Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={presenters.includes(user.id)}/></Suspense>}
+      {joined&&<div role="group" aria-label="Meeting reactions" className="studio-reactions"><CallButton icon={Hand} aria-label={reactionState[user.id]?.handRaised?'✋ Lower hand':'✋ Raise hand'} aria-pressed={!!reactionState[user.id]?.handRaised} onClick={()=>reactions.toggleHand()}>{reactionState[user.id]?.handRaised?'Lower hand':'Raise hand'}</CallButton>{Object.entries(MEETING_REACTIONS).map(([emoji,label])=><CallButton key={emoji} aria-label={label} onClick={()=>reactions.react(emoji)}>{emoji}</CallButton>)}</div>}
+      {joined&&meeting.host_id===user.id&&<details className="studio-settings"><summary>Invite another person</summary><div className="studio-settings-body"><InviteMeetingGuests meeting={meeting} onRefresh={onRefresh}/></div></details>}
+      <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||busy} network={network} route={Object.values(routes).includes('relay')?'relay':Object.keys(routes).length?'direct':null}/>
+      {joined&&!canShare&&<p className="studio-note">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
     </div>
-    {!joined&&<div className="flex flex-wrap gap-2"><button disabled={!canAttemptJoin||busy} onClick={()=>join('audio')} className="rounded-lg border px-4 py-3 text-sm disabled:opacity-50">Join with microphone only</button><button disabled={!canAttemptJoin||busy} onClick={()=>join('listen')} className="rounded-lg border px-4 py-3 text-sm disabled:opacity-50">Join to watch and listen</button><button disabled={!canAttemptJoin||busy} onClick={()=>join('audioSlides')} className="rounded-lg border px-4 py-3 text-sm disabled:opacity-50">Join with audio and slides only</button></div>}
-    {joined&&<div role="group" aria-label="Meeting reactions" className="flex flex-wrap gap-2"><button aria-pressed={!!reactionState[user.id]?.handRaised} onClick={()=>reactions.toggleHand()} className="rounded-lg border px-4 py-3 text-sm">{reactionState[user.id]?.handRaised?'✋ Lower hand':'✋ Raise hand'}</button>{Object.entries(MEETING_REACTIONS).map(([emoji,label])=><button key={emoji} aria-label={label} onClick={()=>reactions.react(emoji)} className="rounded-lg border px-4 py-3 text-xl">{emoji}</button>)}</div>}
-    <p className="text-xs text-muted-foreground">Mobile and school networks can use the encrypted relay when direct connections are blocked. A network that blocks all calling traffic may still need administrator permission.</p>
-  </section>;
+    {joined&&<div className="studio-dock" role="group" aria-label="Meeting controls">
+      <CallButton icon={muted?MicOff:Mic} aria-pressed={muted} disabled={!local?.getAudioTracks().length} onClick={()=>{const track=stream.current?.getAudioTracks()[0];if(track){track.enabled=!track.enabled;setMuted(!track.enabled);}}}>{muted?'Unmute':'Mute'}</CallButton>
+      <CallButton icon={cameraOff?CameraOff:Camera} aria-pressed={cameraOff} disabled={!local?.getVideoTracks().length} onClick={()=>{const track=stream.current?.getVideoTracks()[0];if(track){track.enabled=!track.enabled;setCameraOff(!track.enabled);}}}>{cameraOff?'Camera on':'Camera off'}</CallButton>
+      {canShare&&!!local?.getVideoTracks().length&&<CallButton icon={MonitorUp} aria-pressed={sharing} onClick={share}>{sharing?'Stop sharing':'Share screen'}</CallButton>}
+      <CallButton icon={PhoneOff} variant="danger" onClick={stop}>Leave meeting</CallButton>
+      {meeting.host_id===user.id&&<CallButton icon={DoorOpen} variant="quiet" disabled={busy} onClick={close}>End for everyone</CallButton>}
+    </div>}
+  </CallWorkspace>;
 }

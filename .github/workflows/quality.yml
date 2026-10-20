@@ -39,6 +39,14 @@ jobs:
       - run: npm run test:e2e:lab
       - run: npm run test:e2e:sponsorship
       - run: npm run test:e2e:messages
+      - name: Save classroom and meeting visual checks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: live-space-visual-checks
+          path: /tmp/premium-*.png
+          if-no-files-found: ignore
+          retention-days: 7
   supabase-services:
     runs-on: ubuntu-latest
     timeout-minutes: 25

@@ -1,7 +1,8 @@
+import {CallButton,CallWorkspace,VideoPlaceholder} from '@/components/live/CallStudio';
 import {DEFAULT_ICE_SERVERS,getCallIceConfig,applyCallQuality,selectedCallRoute} from '@/lib/call-network';
 import CallNetworkControls from '@/components/live/CallNetworkControls';
 import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, RefreshCw, ShieldCheck, Video } from 'lucide-react';
+import { ArrowLeft, Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, RefreshCw, ShieldCheck, Video, Headphones, Presentation } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
@@ -17,6 +18,7 @@ const errors = error => error instanceof Error ? error.message : 'Unable to conn
 const getMedia = mode => requestCallMedia(mode);
 
 export default function LiveClassroom() {
+  const [compactVideos,setCompactVideos]=useState(false);
   const { bookingId } = useParams();
   const { user } = useAuth();
   const [booking, setBooking] = useState(null);
@@ -335,42 +337,52 @@ export default function LiveClassroom() {
     } catch (e) { await stopSharing(); if(e.name==='NotSupportedError')setCanShare(false);else if(!['NotAllowedError','AbortError'].includes(e.name))setError(errors(e)); }
   };
 
-  return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7">
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <div><Link to="/bookings" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary"><ArrowLeft size={16}/> Back to bookings</Link><h1 className="mt-2 text-2xl font-bold">SmartBridge Live <span className="text-primary">Lite</span></h1><p className="text-sm text-muted-foreground">{booking ? booking.subject+' · '+booking.date+' · '+booking.time+' (SAST)' : 'Private booked tutoring classroom'}</p></div>
-      <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold"><ShieldCheck size={16}/> Booking-protected · No recording</span>
-    </div>
-    <div className="rounded-2xl border bg-card p-4 sm:p-6 space-y-4">
-      {joined&&<Suspense fallback={<p>Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={role==='tutor'}/></Suspense>}
-      <div className="grid gap-3 md:grid-cols-2">
-        <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-xl bg-slate-900 text-white">
-          <video ref={remoteVideo} autoPlay playsInline className="h-full w-full object-contain" aria-label="Other participant video"/>
-          <span className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs">Other participant</span>
+  return <main className="studio-page">
+    <header className="studio-page-header">
+      <div><Link to="/bookings" className="studio-back"><ArrowLeft size={16} aria-hidden="true"/> Back to bookings</Link><span className="studio-eyebrow">Your learning space</span><h1>SmartBridge Live</h1><p>{booking ? booking.subject+' · '+booking.date+' · '+booking.time+' (SAST)' : 'Private booked tutoring classroom'}</p></div>
+      <span className="studio-badge"><ShieldCheck size={16} aria-hidden="true"/> Booking-protected · No recording</span>
+    </header>
+    <CallWorkspace title="Your classroom" subtitle={booking?.is_intro?'Free introductory session · One-to-one learning':'One-to-one learning · Your tutor, your pace'} joined={joined}>
+      <div className="studio-content">
+        {error&&<div role="alert" className="studio-alert">{error}</div>}
+        <p role="status" className="studio-status"><ShieldCheck size={18} aria-hidden="true"/>{status}</p>
+        {!joined&&<div className="studio-join"><span className="studio-eyebrow">Make yourself comfortable</span><h3>Ready to learn together?</h3><p>Choose the way you want to join. For a lighter connection on mobile data, use audio and slides.</p>
+          <CallButton icon={Video} variant="primary" disabled={!authorized||connecting} onClick={()=>join()}>{connecting?'Connecting…':'Join classroom'}</CallButton>
+          <div className="studio-join-options">
+            <CallButton icon={Mic} disabled={!authorized||connecting} onClick={()=>join('audio')} aria-label="Join classroom with microphone only"><span>Microphone only<small>Speak with your camera off.</small></span></CallButton>
+            <CallButton icon={Headphones} disabled={!authorized||connecting} onClick={()=>join('listen')} aria-label="Join classroom to watch and listen"><span>Watch and listen<small>No camera or microphone permission.</small></span></CallButton>
+            <CallButton icon={Presentation} disabled={!authorized||connecting} onClick={()=>join('audioSlides')} aria-label="Join classroom with audio and slides only"><span>Audio and slides<small>Skip incoming video to save data.</small></span></CallButton>
+          </div>
+        </div>}
+        {joined&&<div className="flex justify-end"><CallButton aria-pressed={compactVideos} onClick={()=>setCompactVideos(value=>!value)}>{compactVideos?'Show full videos':'Compact videos'}</CallButton></div>}
+        <div className={`studio-video-grid studio-video-grid--classroom ${compactVideos?'is-compact':''}`}>
+          <div className="studio-tile">
+            <video ref={remoteVideo} autoPlay playsInline aria-label="Other participant video"/>
+            {!joined&&<VideoPlaceholder name={role==='tutor'?'Your learner':'Your tutor'} note="Your session starts here"/>}
+            <div className="studio-tile-footer"><span>{role==='tutor'?'Your learner':'Your tutor'}</span><small>Private classroom</small></div>
+          </div>
+          <div className="studio-tile">
+            <video ref={localVideo} autoPlay playsInline muted aria-label="Your camera preview"/>
+            {(!joined||cameraOff)&&<VideoPlaceholder name={user?.full_name||'You'} note={!joined?'Camera starts when you join':'Camera is off'}/>}
+            <div className="studio-tile-footer"><span>You · {role}</span><small>{muted?'Microphone off':'Your space'}</small></div>
+          </div>
         </div>
-        <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-xl bg-slate-800 text-white">
-          <video ref={localVideo} autoPlay playsInline muted className="h-full w-full object-contain" aria-label="Your camera preview"/>
-          <span className="pointer-events-none absolute bottom-3 left-3 rounded bg-black/60 px-2 py-1 text-xs">You · {role}</span>
-        </div>
+        {joined&&playbackBlocked&&<CallButton icon={Headphones} variant="primary" onClick={()=>remoteVideo.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play classroom audio and video</CallButton>}
+        {joined&&<Suspense fallback={<p className="studio-note" role="status">Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={role==='tutor'}/></Suspense>}
+        <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||connecting} network={network} route={route}/>
+        {joined&&!canShare&&<p className="studio-note">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
       </div>
-      {joined&&playbackBlocked&&<button className="rounded border px-4 py-3 text-sm" onClick={()=>remoteVideo.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play classroom audio and video</button>}
-      <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||connecting} network={network} route={route}/>
-      <p role="status" className="text-center text-sm font-medium">{status}</p>
-      {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
-      {!joined&&<div className="flex flex-wrap gap-2"><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('audio')}>Join classroom with microphone only</button><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('listen')}>Join classroom to watch and listen</button><button disabled={!authorized||connecting} className="rounded border px-3 py-2 disabled:opacity-50" onClick={()=>join('audioSlides')}>Join classroom with audio and slides only</button></div>}
-      {joined&&!canShare&&<p className="text-center text-sm text-muted-foreground">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
-      <div className="flex flex-wrap justify-center gap-2">
-        {!joined ? <button type="button" disabled={!authorized || connecting} onClick={()=>join()} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Video size={18}/> {connecting ? 'Connecting…' : 'Join classroom'}</button> : <>
-          <button type="button" disabled={!localStream.current?.getAudioTracks().length} onClick={toggleMic} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{muted?<MicOff size={18}/>:<Mic size={18}/>} {muted?'Unmute':'Mute'}</button>
-          <button type="button" disabled={!localStream.current?.getVideoTracks().length} onClick={toggleCamera} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{cameraOff?<CameraOff size={18}/>:<Camera size={18}/>} {cameraOff?'Camera on':'Camera off'}</button>
-          {canShare&&!!localStream.current?.getVideoTracks().length&&<button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>}
-          <button type="button" onClick={leave} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white"><PhoneOff size={18}/> Leave</button>
-        </>}
-        {joined && <button type="button" onClick={()=>{leave();setStatus('Ready to reconnect');}} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><RefreshCw size={18}/> Reset</button>}
-      </div>
-    </div>
-    <div className="grid gap-3 sm:grid-cols-2 text-sm">
-      <div className="rounded-xl border p-4"><h2 className="font-semibold">Safety and privacy</h2><p className="mt-2 text-muted-foreground">Only the booked tutor and learner can enter. Do not share personal contact details or move lessons outside SmartBridge without guardian approval. The call is not recorded. If you feel unsafe, leave immediately and report the incident to SmartBridge support.</p></div>
-      <div className="rounded-xl border p-4"><h2 className="font-semibold">Free pilot limitations</h2><p className="mt-2 text-muted-foreground">Calls try direct encrypted connections and can fall back to an authenticated relay. Data saver and audio-and-slides modes reduce mobile data use. School network administrators may still need to permit calling traffic.</p></div>
+      {joined&&<div className="studio-dock" role="group" aria-label="Classroom controls">
+        <CallButton icon={muted?MicOff:Mic} aria-pressed={muted} disabled={!localStream.current?.getAudioTracks().length} onClick={toggleMic}>{muted?'Unmute':'Mute'}</CallButton>
+        <CallButton icon={cameraOff?CameraOff:Camera} aria-pressed={cameraOff} disabled={!localStream.current?.getVideoTracks().length} onClick={toggleCamera}>{cameraOff?'Camera on':'Camera off'}</CallButton>
+        {canShare&&!!localStream.current?.getVideoTracks().length&&<CallButton icon={MonitorUp} aria-pressed={sharing} onClick={shareScreen}>{sharing?'Stop sharing':'Share screen'}</CallButton>}
+        <CallButton icon={PhoneOff} variant="danger" onClick={leave}>Leave</CallButton>
+        <CallButton icon={RefreshCw} variant="quiet" onClick={()=>{leave();setStatus('Ready to reconnect');}}>Reset</CallButton>
+      </div>}
+    </CallWorkspace>
+    <div className="studio-support-grid">
+      <div><h2>Safety and privacy</h2><p>Only the booked tutor and learner can enter. Do not share personal contact details or move lessons outside SmartBridge without guardian approval. The call is not recorded. If you feel unsafe, leave immediately and report the incident to SmartBridge support.</p></div>
+      <div><h2>Made for your connection</h2><p>Calls try direct encrypted connections and can fall back to an authenticated relay. Data saver and audio-and-slides modes reduce mobile data use. School network administrators may still need to permit calling traffic.</p></div>
     </div>
   </main>;
 }
