@@ -11,6 +11,7 @@ import {
   WifiOff,
   Eye,
 } from "lucide-react";
+import TopicVisual from "@/components/resources/TopicVisual";
 import packs from "@/data/study-packs.json";
 import files from "@/data/study-pack-files.json";
 import { SUBJECTS } from "@/lib/subjects";
@@ -40,72 +41,34 @@ function Header() {
 }
 export function StudyPackLinks({ code = null }) {
   const selected = packs.filter((p) => !code || p.code === code);
+  const previews = code ? selected : ['math-11', 'lisc-10', 'geo-12'].map(id => packs.find(p => p.id === id));
   return (
-    <section className="my-6 rounded-2xl border border-emerald-800/20 bg-emerald-50 p-5 text-emerald-950">
-      <p className="mb-2 text-xs font-semibold uppercase tracking-widest">
-        SmartBridge study collection
-      </p>
-      <h2 className="mb-2 font-playfair text-2xl">
-        Learn it. Try it. Understand the correction.
-      </h2>
-      <p className="mb-4 text-sm">
-        {selected.length} focused topic guides with visual explanations, worked
-        examples and answer guides. Free to read and download.
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {code ? (
-          selected.map((p) => (
-            <Link
-              key={p.id}
-              className="rounded-lg border border-emerald-800/20 bg-white px-3 py-3 text-sm"
-              to={"/study-packs/" + p.id}
-            >
-              Grade {p.grade}: {p.title} →
-            </Link>
-          ))
-        ) : (
-          <Link
-            className="rounded-lg bg-emerald-900 px-4 py-3 text-sm text-white"
-            to="/learn#collection"
-          >
-            Explore all {packStats.packs} guides →
-          </Link>
-        )}
+    <section className="resource-discovery" aria-label="Visual study resources">
+      <div className="resource-discovery-heading">
+        <div><p className="learn-eyebrow">SEE IT. UNDERSTAND IT. TRY IT.</p>
+          <h2>Start with a picture of the idea.</h2>
+          <p>{selected.length} free topic guides with diagrams, worked examples and answers.</p>
+        </div>
+        <Link className="learn-button" to={code ? `/learn?subject=${code}#collection` : '/learn#collection'}>Browse guides <ArrowRight size={17} /></Link>
       </div>
+      <div className="resource-visual-grid">{previews.map(p => <Link key={p.id} to={'/study-packs/' + p.id} className="resource-visual-card">
+        <TopicVisual pack={p} preview />
+        <div><span>Grade {p.grade} · {p.subject}</span><h3>{p.title}</h3><span>Explore the diagram and lesson →</span></div>
+      </Link>)}</div>
+      <div className="resource-learning-paths">
+        <Link to="/learn#collection"><BookOpen size={20} /><div><strong>Visual guides</strong><span>Read → follow an example → practise</span></div></Link>
+        <Link to="/search"><Search size={20} /><div><strong>Find a resource</strong><span>Search by subject, grade and type</span></div></Link>
+        <Link to="/student-dashboard?section=ai"><GraduationCap size={20} /><div><strong>Ask the study assistant</strong><span>Premium AI tools · check source references</span></div></Link>
+      </div>
+      <p className="resource-source-help">The study assistant can retrieve indexed passages from the knowledge base. Check the source title and page references in its response; an explanation may also use web research or general knowledge. Original books keep their publisher attribution.</p>
     </section>
   );
 }
+
 export function VisualTable({ pack }) {
   return (
     <figure className="learn-visual">
       <figcaption>{pack.visual.title}</figcaption>
-      {pack.id === "math-11" && (
-        <svg
-          viewBox="0 0 400 180"
-          role="img"
-          aria-label="Upward parabola y equals x squared minus four x plus three; roots 1 and 3, minimum at 2 minus 1"
-        >
-          <path d="M40 130H365M60 20V165" fill="none" stroke="currentColor" />
-          <path
-            d="M60 52 Q200 260 340 52"
-            fill="none"
-            stroke="#ae8545"
-            strokeWidth="3"
-          />
-          <text x="123" y="145">
-            1
-          </text>
-          <text x="195" y="145">
-            2
-          </text>
-          <text x="263" y="145">
-            3
-          </text>
-          <text x="177" y="175">
-            (2; −1)
-          </text>
-        </svg>
-      )}
       <div
         className="learn-table-scroll"
         role="region"
@@ -192,9 +155,12 @@ function Guide() {
             pending.
           </small>
         </aside>
+        <nav className="learn-reader-tabs" aria-label="Guide sections">
+          <a href="#understand">01 · Understand</a><a href="#worked-example">02 · Worked example</a><a href="#practise">03 · Practise</a>
+        </nav>
         <div className="learn-reader-grid">
           <article>
-            <section>
+            <section id="understand">
               <p className="learn-eyebrow">01 / UNDERSTAND</p>
               <h2>Build the idea</h2>
               <ul className="learn-goals">
@@ -205,12 +171,13 @@ function Guide() {
                   </li>
                 ))}
               </ul>
-              {p.notes.map((n) => (
-                <p key={n}>{n}</p>
-              ))}
+              <TopicVisual pack={p} />
+              <div className="learn-note-cards">{p.notes.map((n, i) => (
+                <div key={n} className="learn-note-card"><span aria-hidden="true">{i + 1}</span><p>{n}</p></div>
+              ))}</div>
               <VisualTable pack={p} />
             </section>
-            <section>
+            <section id="worked-example">
               <p className="learn-eyebrow">02 / FOLLOW THE REASONING</p>
               <h2>A worked example</h2>
               <p className="learn-question">{p.example}</p>
@@ -224,7 +191,7 @@ function Guide() {
                 <p>{p.commonMistake}</p>
               </aside>
             </section>
-            <section>
+            <section id="practise">
               <p className="learn-eyebrow">03 / PRACTISE</p>
               <h2>Make the thinking your own</h2>
               <p>
@@ -298,6 +265,10 @@ function Guide() {
                 <Link to="/search">Open signed-in resource search →</Link>
               </>
             )}
+            <hr />
+            <h3>Need another explanation?</h3>
+            <Link to="/student-dashboard?section=ai">Open the study assistant →</Link>
+            <p>Ask about this topic and check any source titles and page references. The assistant can search indexed knowledge-base passages; a response may also use other evidence.</p>
             <hr />
             <h3>Curriculum reference</h3>
             <a href={p.sourceUrl} target="_blank" rel="noreferrer">
@@ -394,7 +365,7 @@ export default function StudyPacks() {
               <br />
               to a reason.
             </h2>
-            <p className="learn-formula">f(x) = x³ − 3x</p>
+            <TopicVisual pack={packs.find(p => p.id === 'math-12')} preview />
             <div className="learn-example-row">
               <span>Differentiate</span>
               <strong>f′(x) = 3x² − 3</strong>
@@ -453,7 +424,7 @@ export default function StudyPacks() {
               {
                 Icon: BookOpen,
                 title: "Understand",
-                body: "A concise explanation and a visual table that makes relationships easier to see.",
+                body: "An explanatory diagram and visual table that make relationships easier to see.",
               },
               {
                 Icon: GraduationCap,
@@ -536,13 +507,14 @@ export default function StudyPacks() {
               </div>
             </label>
           </div>
-          <p className="learn-result-count" aria-live="polite">
+          <div className="learn-results-toolbar"><p className="learn-result-count" aria-live="polite">
             {filtered.length} {filtered.length === 1 ? "guide" : "guides"}{" "}
             available
-          </p>
+          </p>{(subject || grade || search) && <button type="button" className="learn-clear" onClick={() => {setParams({}); setSearch("");}}>Clear filters</button>}</div>
           <div className="learn-cards">
             {filtered.map((p) => (
               <article key={p.id} className="learn-card">
+                <Link to={'/study-packs/' + p.id} className="learn-card-image" aria-label={'Explore diagram: ' + p.title}><TopicVisual pack={p} preview /></Link>
                 <div className="learn-card-top">
                   <span>GRADE {p.grade}</span>
                   <BookOpen size={20} aria-hidden="true" />
@@ -554,6 +526,7 @@ export default function StudyPacks() {
                   <Link to={"/study-packs/" + p.id}>{p.title}</Link>
                 </h3>
                 <p className="learn-card-topic">{p.capsTopic}</p>
+                <p className="learn-card-meta">{p.minutes} min · Diagram + example + 3 questions</p>
                 <ul>
                   {p.goals.map((g) => (
                     <li key={g}>{g}</li>
