@@ -32,6 +32,7 @@ import SimulationLab from '@/components/simulations/SimulationLab';
 import QuizBuilder from '@/components/quiz/QuizBuilder';
 import LessonPlanner from '@/components/tutor/LessonPlanner';
 import TutorLessonStudio from '@/components/tutor/TutorLessonStudio';
+import TutorLiveClassroomHub from '@/components/tutor/TutorLiveClassroomHub';
 import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
@@ -256,6 +257,8 @@ export default function TutorDashboard() {
 
         {/* ===== SECTIONS — only active section is shown ===== */}
 
+        {activeSection === 'classroom' && <div className="mb-6" id="tutor-panel-classroom"><TutorLiveClassroomHub user={user} onOpenBookings={() => toggleSection('bookings')} /></div>}
+
         {/* Free lesson design workspace — independent of tutor Pro subscription */}
         {activeSection === 'lesson-studio' && <div id="tutor-panel-lesson-studio" role="region" aria-label="Lesson Studio" className="mb-6 scroll-mt-24"><TutorLessonStudio /></div>}
 
@@ -327,6 +330,7 @@ export default function TutorDashboard() {
         {/* Live Sessions */}
         {activeSection === 'sessions' && (
           <div className="mb-6 space-y-4">
+            <TutorLiveClassroomHub user={user} onOpenBookings={() => toggleSection('bookings')} />
             <UpcomingSessionsWidget user={user} />
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
               <LessonPlanner user={user} />
