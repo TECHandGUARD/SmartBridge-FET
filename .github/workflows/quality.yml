@@ -78,5 +78,7 @@ jobs:
         run: |
           aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true,"room_id":"00000000-0000-4000-8000-000000000001","actor_id":"00000000-0000-4000-8000-000000000002"}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
           node tests/browser-virtual-meetings.cjs
+          aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true,"room_id":"00000000-0000-4000-8000-000000000003","actor_id":"00000000-0000-4000-8000-000000000004"}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
+          node tests/browser-live-classroom.cjs
       - if: always()
         run: rm -f /tmp/smartbridge-relay.json

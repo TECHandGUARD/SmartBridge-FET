@@ -1,0 +1,47 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "kinesisvideo:GetSignalingChannelEndpoint",
+        "kinesisvideo:GetIceServerConfig",
+        "kinesisvideo:DescribeSignalingChannel",
+        "kinesisvideo:DeleteSignalingChannel",
+        "kinesisvideo:CreateSignalingChannel"
+      ],
+      "Resource": [
+        "arn:aws:kinesisvideo:eu-west-1:741180449622:channel/smartbridge-relay-*/*",
+        "arn:aws:kinesisvideo:eu-west-1:741180449622:channel/smartbridge-call-relay/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": "kinesisvideo:ListSignalingChannels",
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:eu-west-1:741180449622:log-group:/aws/lambda/smartbridge-call-relay:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "kinesisvideo:TagResource",
+      "Resource": "arn:aws:kinesisvideo:eu-west-1:741180449622:channel/smartbridge-relay-*/*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestTag/Application": "SmartBridge-FET"
+        },
+        "ForAllValues:StringEquals": {
+          "aws:TagKeys": [
+            "Application"
+          ]
+        }
+      }
+    }
+  ]
+}
