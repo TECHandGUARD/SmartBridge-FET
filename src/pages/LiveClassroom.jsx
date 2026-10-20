@@ -83,7 +83,7 @@ export default function LiveClassroom() {
       await pc.setLocalDescription(offer);
       if (!active.current || peer.current !== pc) return;
       await send('offer',{ sdp: pc.localDescription?.sdp, type: 'offer' });
-      if (active.current) setStatus('Invitation sent. Waiting for learner…');
+      if (active.current) setStatus(pc.connectionState==='connected'?'Live — secure peer-to-peer connection':'Invitation sent. Waiting for learner…');
     } catch (e) { sentOffer.current = false; if (pc.signalingState === 'have-local-offer') await pc.setLocalDescription({type:'rollback'}).catch(()=>{}); if (active.current) setError(errors(e)); }
   }, [send]);
 
@@ -99,7 +99,7 @@ export default function LiveClassroom() {
         track.kind === 'video' && screenStream.current ? screenStream.current.getVideoTracks()[0] : track,
         localStream.current));
       for(const kind of ['audio','video'])if(!localStream.current.getTracks().some(track=>track.kind===kind))pc.addTransceiver(kind,{direction:kind==='video'&&!receiveVideo.current?'inactive':'recvonly'});
-      pc.ontrack = event => { if (remoteVideo.current) remoteVideo.current.srcObject = event.streams[0]; setStatus('Connecting media…'); };
+      pc.ontrack = event => { if (remoteVideo.current) remoteVideo.current.srcObject = event.streams[0]; setStatus(pc.connectionState==='connected'?'Live — secure peer-to-peer connection':'Connecting media…'); };
       pc.onicecandidate = event => { if (event.candidate && active.current && peer.current === pc) send('ice',{ candidate: event.candidate.toJSON() }).catch(e=>setError(errors(e))); };
       pc.onconnectionstatechange = () => {
         if (!active.current || peer.current !== pc) return;
@@ -108,6 +108,7 @@ export default function LiveClassroom() {
         if(pc.connectionState==='failed')setError('Reconnecting this call. Try relay connection mode or audio and slides if the network stays blocked.');
         if (pc.connectionState==='disconnected') setStatus('Connection interrupted. Trying to reconnect…');
       };
+      pc.oniceconnectionstatechange=pc.onconnectionstatechange;
 
     return pc;
   }, [send,transport,recipientId,role]);
@@ -145,10 +146,11 @@ export default function LiveClassroom() {
         await pc.setLocalDescription(answer);
         if (!active.current || peer.current !== pc) return;
         await send('answer',{ type:'answer',sdp:pc.localDescription?.sdp });
-        setStatus('Connecting to tutor…');
+        setStatus(pc.connectionState==='connected'?'Live — secure peer-to-peer connection':'Connecting to tutor…');
       } else if (message.kind==='answer' && role==='tutor' && pc.signalingState==='have-local-offer') {
         await pc.setRemoteDescription({ type:'answer', sdp:message.payload?.sdp });
         await drainIce();
+        if(pc.connectionState==='connected')setStatus('Live — secure peer-to-peer connection');
       } else if (message.kind==='ice' && message.payload?.candidate) {
         const candidate = message.payload.candidate;
         if (pc.remoteDescription) await pc.addIceCandidate(candidate);

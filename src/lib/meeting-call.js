@@ -52,6 +52,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
       if(['failed','disconnected'].includes(pc.connectionState)&&!p.restartTimer){p.restartTimer=setTimeout(()=>{p.restartTimer=null;requestRestart(id,p);},pc.connectionState==='failed'?500:3000);}
       if(pc.connectionState==='failed')onError('Reconnecting this participant. If the network stays blocked, try relay connection mode or audio and slides.');
     };
+    pc.oniceconnectionstatechange=pc.onconnectionstatechange;
     return p;
   };
   const handle=async m=>{
