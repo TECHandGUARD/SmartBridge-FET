@@ -29,7 +29,7 @@ export default function LiveClassroom() {
   const [cameraOff, setCameraOff] = useState(false);
   const [canShare,setCanShare]=useState(()=>typeof navigator.mediaDevices?.getDisplayMedia==='function');
   const [quality,setQuality]=useState('saver'),[relayOnly,setRelayOnly]=useState(false),[network,setNetwork]=useState(null),[route,setRoute]=useState(null);
-  const qualityRef=useRef('saver'),relayOnlyRef=useRef(false),receiveVideo=useRef(true),iceConfig=useRef({iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false}),networkResume=useRef(null),restartTimer=useRef(null),lastRestart=useRef(0),lastRotation=useRef(0);
+  const qualityRef=useRef('saver'),relayOnlyRef=useRef(false),receiveVideo=useRef(true),iceConfig=useRef({iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0}),networkResume=useRef(null),restartTimer=useRef(null),lastRestart=useRef(0),lastRotation=useRef(0);
   relayOnlyRef.current=relayOnly;
   const [sharing, setSharing] = useState(false);
   const localVideo = useRef(null);
@@ -122,6 +122,10 @@ export default function LiveClassroom() {
     lastSignal.current?.add(message.id);
     let pc = peer.current;
     try {
+      if((message.kind==='ready'||message.kind==='offer')&&(!iceConfig.current.expiresAt||iceConfig.current.expiresAt<Date.now()+30000)){
+        const fresh=await getCallIceConfig(supabase,'classroom',booking.id);if(!active.current||peer.current!==pc)return;if(fresh.relayAvailable||!iceConfig.current.relayAvailable)iceConfig.current=fresh;
+        pc.setConfiguration({iceServers:iceConfig.current.iceServers,iceTransportPolicy:relayOnlyRef.current?'relay':'all'});
+      }
       if (message.kind==='ready') {
         if (remoteSession.current !== payload.session_id) {
           if (remoteSession.current) retiredSessions.current.add(remoteSession.current);

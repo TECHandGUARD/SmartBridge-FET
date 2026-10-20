@@ -1,6 +1,6 @@
 // Small-room mesh. Booking classrooms keep their independent access contract.
 import {DEFAULT_ICE_SERVERS,applyCallQuality,selectedCallRoute} from './call-network';
-export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',onRoute=(_id,_route)=>{}}) {
+export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',onRoute=(_id,_route)=>{}}) {
   const sessionId=crypto.randomUUID();
   const browserConnection=/** @type {any} */(navigator).connection;
   /** @type {Map<string, any>} */
@@ -61,6 +61,10 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
     let p=peers.get(id);
     if(m.kind!=='ready'&&(!p||payload.target_session!==sessionId||p.session!==payload.session_id))return;
     seen.add(m.id);
+    if((m.kind==='ready'||m.kind==='offer')&&getIceConfig&&(!iceConfig.expiresAt||iceConfig.expiresAt<Date.now()+30000)){
+      const fresh=await getIceConfig();if(!active)return;if(fresh.relayAvailable||!iceConfig.relayAvailable)iceConfig=fresh;
+      if(p)p.pc.setConfiguration({iceServers:iceConfig.iceServers,iceTransportPolicy:relayOnly?'relay':'all'});
+    }
     if(m.kind==='ready') {
       if(!p||p.session!==payload.session_id)p=makePeer(id,payload.session_id);
       if(!payload.ack)await send(id,'ready',{ack:true});
