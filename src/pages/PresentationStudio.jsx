@@ -1,0 +1,4 @@
+import {Link,useLocation} from 'react-router-dom';
+import PresentationEditor from '@/components/presentations/PresentationEditor';
+import {deckFromLesson} from '@/lib/presentation-decks';
+export default function PresentationStudio(){const {state}=useLocation();const initialDeck=state?.lessonPlan?deckFromLesson(state.lessonPlan):null;return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7"><header><Link to="/meetings" className="text-sm text-primary">Virtual meetings</Link><h1 className="mt-2 text-2xl font-bold">Presentation Studio</h1><p className="mt-2 text-sm text-muted-foreground">Create your own teaching slides, save them to your account and present inside SmartBridge calls. Export a branded PDF to share elsewhere.</p></header><div className="rounded-2xl border bg-card p-4 sm:p-6"><PresentationEditor initialDeck={initialDeck}/></div></main>;}

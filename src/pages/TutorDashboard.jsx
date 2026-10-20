@@ -208,7 +208,7 @@ export default function TutorDashboard() {
   return (
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
-        <div className="mb-4 rounded-xl border bg-card p-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
+        <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>

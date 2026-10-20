@@ -1,0 +1,48 @@
+import {useEffect,useRef,useState} from 'react';
+import {supabase} from '@/lib/supabaseClient';
+import {useAuth} from '@/lib/AuthContext';
+import {withTimeout} from '@/lib/auth-utils';
+import {buildLessonDeck,DECK_THEMES,exportDeckPdf,MAX_SLIDES,newDeck,newSlide,renderDeckSlide,validateDeck} from '@/lib/presentation-decks';
+const fresh=()=>({id:crypto.randomUUID(),title:'Untitled presentation',content:newDeck(),revision:1});
+const field='block w-full rounded-lg border bg-background p-2 text-sm';
+const button='rounded-lg border px-3 py-2 text-sm font-medium disabled:opacity-50';
+export default function PresentationEditor({onPresent=null,initialDeck=null}){
+ const {user}=useAuth();const [deck,setDeck]=useState(()=>({...fresh(),...(initialDeck||{})})),[saved,setSaved]=useState(false),[dirty,setDirty]=useState(!!initialDeck),[decks,setDecks]=useState([]),[index,setIndex]=useState(0),[topic,setTopic]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
+ const canvas=useRef(null),lock=useRef(false),alive=useRef(true);
+ const author=user?.full_name?.trim()||'SmartBridge educator';
+ const slide=deck.content.slides[index];
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ const refresh=async()=>{const {data,error:problem}=await withTimeout(supabase.from('presentation_decks').select('*').eq('owner_id',user.id).order('updated_at',{ascending:false}).limit(50));if(!alive.current)return;if(problem)throw problem;setDecks(data||[]);};
+ useEffect(()=>{refresh().catch(e=>{if(alive.current)setError(e.message);});},[user.id]); // Account-scoped private collection.
+ useEffect(()=>{if(canvas.current&&slide)renderDeckSlide(canvas.current,slide,deck.content.theme,index+1,deck.content.slides.length,deck.content.show_author?author:'');},[slide,deck.content.theme,deck.content.show_author,deck.content.slides.length,index,author]);
+ const edit=value=>{setDeck(previous=>({...previous,...value}));setDirty(true);setNotice('');};
+ const editSlide=patch=>edit({content:{...deck.content,slides:deck.content.slides.map((s,i)=>i===index?{...s,...patch}:s)}});
+ const discard=()=>!dirty||window.confirm('Discard unsaved changes to this presentation?');
+ const open=selected=>{if(!discard())return;setDeck(structuredClone(selected));setSaved(true);setDirty(false);setIndex(0);setError('');setNotice('');};
+ const save=async present=>{
+  if(lock.current)return;lock.current=true;setBusy(true);setError('');setNotice('');
+  try{
+   if(deck.title.trim().length<3||deck.title.length>120||!validateDeck(deck.content))throw new Error('Use a title of 3–120 characters and complete every slide title.');
+   const values={title:deck.title.trim(),content:deck.content};
+   const query=saved?supabase.from('presentation_decks').update(values).eq('id',deck.id).eq('revision',deck.revision).select('*').maybeSingle():supabase.from('presentation_decks').insert({...values,id:deck.id,owner_id:user.id}).select('*').single();
+   const {data,error:problem}=await withTimeout(query);if(problem)throw problem;if(!data)throw new Error('This presentation changed on another device. Reload the saved copy before saving again.');
+   if(!alive.current)return;setDeck(data);setSaved(true);setDirty(false);setNotice('Presentation saved to your account.');await refresh();if(present)onPresent?.(data);
+  }catch(e){if(alive.current)setError(e.code==='23505'?'A previous save may have succeeded. Reload your presentations before retrying.':e.message||'Unable to save. Your edits are still here.');}
+  finally{lock.current=false;if(alive.current)setBusy(false);}
+ };
+ const move=direction=>{const target=index+direction;if(target<0||target>=deck.content.slides.length)return;const slides=[...deck.content.slides];[slides[index],slides[target]]=[slides[target],slides[index]];edit({content:{...deck.content,slides}});setIndex(target);};
+ const exportPdf=async()=>{setBusy(true);setError('');try{await exportDeckPdf(deck,author);}catch(e){setError(e.message);}finally{if(alive.current)setBusy(false);}};
+ return <section className="min-w-0 space-y-4" aria-label="Presentation builder">
+  <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-end"><button className={button} disabled={busy} onClick={()=>{if(discard()){setDeck(fresh());setSaved(false);setDirty(false);setIndex(0);setError('');setNotice('');}}}>New presentation</button><label className="min-w-0 flex-1 text-sm">Your saved presentations<select aria-label="Your saved presentations" className={field} disabled={busy} value={saved?deck.id:''} onChange={e=>{const selected=decks.find(d=>d.id===e.target.value);if(selected)open(selected);}}><option value="">Choose a saved presentation</option>{decks.map(d=><option key={d.id} value={d.id}>{d.title}</option>)}</select></label><button className={button} disabled={busy} onClick={()=>refresh().catch(e=>setError(e.message))}>Reload saved list</button></div>
+  {error&&<p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}{notice&&<p role="status" className="text-sm text-emerald-700">{notice}</p>}
+  <fieldset disabled={busy} className="min-w-0 space-y-4">
+   <div className="grid gap-3 sm:grid-cols-2"><label className="text-sm">Presentation title<input className={field} value={deck.title} maxLength={120} onChange={e=>edit({title:e.target.value})}/></label><label className="text-sm">Design theme<select aria-label="Design theme" className={field} value={deck.content.theme} onChange={e=>edit({content:{...deck.content,theme:e.target.value}})}>{Object.entries(DECK_THEMES).map(([id,t])=><option key={id} value={id}>{t.name}</option>)}</select></label></div>
+   <div className="rounded-lg border p-3"><label className="text-sm">Lesson topic<input className={field} maxLength={100} value={topic} onChange={e=>setTopic(e.target.value)} placeholder="For example: Grade 11 quadratic equations"/></label><button className={button+' mt-2'} onClick={()=>{if(discard()){edit({title:topic.trim().length<3?'My lesson':topic.trim().slice(0,120),content:{...buildLessonDeck(topic),theme:deck.content.theme,show_author:deck.content.show_author}});setIndex(0);}}}>Use lesson outline template</button><p className="mt-2 text-xs text-muted-foreground">Creates an editable six-slide teaching outline. Add your own explanations, examples and questions.</p></div>
+   <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={deck.content.show_author} onChange={e=>edit({content:{...deck.content,show_author:e.target.checked}})}/>Show author: {author}</label>
+   <p className="text-xs text-muted-foreground">SmartBridge FET branding appears on every slide and PDF. The author line is optional. Your decks are private to your account until you present or export them.</p>
+   <div className="flex flex-wrap gap-2" aria-label="Choose a slide">{deck.content.slides.map((s,i)=><button key={i} aria-label={'Edit slide '+(i+1)} aria-pressed={i===index} className={button+(i===index?' border-primary bg-primary/10':'')} onClick={()=>setIndex(i)}>{i+1}. {s.title.slice(0,22)}</button>)}<button className={button} disabled={deck.content.slides.length>=MAX_SLIDES} onClick={()=>{edit({content:{...deck.content,slides:[...deck.content.slides,newSlide()]}});setIndex(deck.content.slides.length);}}>Add slide</button></div>
+   <div className="grid min-w-0 gap-4 lg:grid-cols-2"><div className="min-w-0 space-y-3"><label className="block text-sm">Slide title<input className={field} value={slide.title} maxLength={100} onChange={e=>editSlide({title:e.target.value})}/></label><label className="block text-sm">Slide layout<select aria-label="Slide layout" className={field} value={slide.layout} onChange={e=>editSlide({layout:e.target.value})}><option value="title">Title slide</option><option value="content">Teaching content</option></select></label><label className="block text-sm">Slide content<textarea aria-label="Slide content" className={field} rows={6} maxLength={1600} value={slide.body} onChange={e=>editSlide({body:e.target.value})}/></label><label className="block text-sm">Speaker notes (only you see these)<textarea aria-label="Speaker notes (only you see these)" className={field} rows={3} maxLength={2000} value={slide.notes} onChange={e=>editSlide({notes:e.target.value})}/></label><div className="flex flex-wrap gap-2"><button className={button} disabled={index===0} onClick={()=>move(-1)}>Move slide earlier</button><button className={button} disabled={index===deck.content.slides.length-1} onClick={()=>move(1)}>Move slide later</button><button className={button} disabled={deck.content.slides.length===1} onClick={()=>{edit({content:{...deck.content,slides:deck.content.slides.filter((_,i)=>i!==index)}});setIndex(Math.max(0,index-1));}}>Remove slide</button></div></div><div className="order-first min-w-0 lg:order-none"><canvas ref={canvas} aria-label="Branded slide preview" className="h-auto w-full rounded-lg border"/><p className="mt-2 text-xs text-muted-foreground">Slide {index+1} of {deck.content.slides.length} · {dirty?'Unsaved changes':saved?'Saved presentation':'New draft'}</p></div></div>
+  </fieldset>
+  <div className="flex flex-wrap gap-2"><button className="rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground disabled:opacity-50" disabled={busy} onClick={()=>save(false)}>{busy?'Working…':'Save presentation'}</button><button className={button} disabled={busy||!validateDeck(deck.content)} onClick={exportPdf}>Download branded PDF</button>{onPresent&&<button className={button} disabled={busy} onClick={()=>save(true)}>Save and present in this call</button>}</div>
+ </section>;
+}
