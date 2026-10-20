@@ -41,6 +41,7 @@ const AssessmentCentre = lazy(() => import('./pages/AssessmentCentre'));
 const Bookings = lazy(() => import('./pages/Bookings'));
 const GroupStudyRooms = lazy(() => import('./pages/GroupStudyRooms'));
 const VideoLessons = lazy(() => import('./pages/VideoLessons'));
+const PresentationStudio = lazy(() => import('./pages/PresentationStudio'));
 const VirtualMeetings = lazy(() => import('./pages/VirtualMeetings'));
 const LiveClassroom = lazy(() => import('./pages/LiveClassroom'));
 const ResourcesLibrary = lazy(() => import('./pages/ResourcesLibrary'));
@@ -242,6 +243,7 @@ const AuthenticatedApp = () => {
             }
           />
 
+          <Route path="/presentations" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','tutor','sace_tutor','student_tutor']}><PresentationStudio /></ProtectedRoute></RequireAuthAndOnboarding>} />
           <Route path="/meetings" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','parent','tutor','sace_tutor','student_tutor']}><VirtualMeetings /></ProtectedRoute></RequireAuthAndOnboarding>} />
           <Route path="/meetings/:meetingId" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','parent','tutor','sace_tutor','student_tutor']}><VirtualMeetings /></ProtectedRoute></RequireAuthAndOnboarding>} />
 

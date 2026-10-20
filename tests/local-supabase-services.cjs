@@ -31,6 +31,16 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
 
+ // Presentations use real authenticated REST and private account ownership.
+ const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
+ const deck=ok(await tutor.client.from('presentation_decks').insert({title:'Private lesson slides',content:deckContent}).select('*').single());
+ assert.equal(deck.owner_id,tutor.id);assert.equal(deck.revision,1);
+ assert.deepEqual(ok(await parent.client.from('presentation_decks').select('*').eq('id',deck.id)),[]);
+ assert.ok((await student.client.from('presentation_decks').insert({title:'Unauthorized slides',content:deckContent})).error);
+ const changed=ok(await tutor.client.from('presentation_decks').update({title:'Revised lesson slides'}).eq('id',deck.id).eq('revision',1).select('*').single());assert.equal(changed.revision,2);
+ assert.equal(ok(await tutor.client.from('presentation_decks').update({title:'Stale overwrite'}).eq('id',deck.id).eq('revision',1).select('*').maybeSingle()),null);
+ console.log('PASS: real presentation saves, private notes, author isolation and optimistic revision checks');
+
  // Adult meetings use the real Auth/PostgREST and RLS services, independently of payments.
  const meetingArgs={meeting_title:'Local parent support',meeting_purpose:'parent_support',meeting_agenda:'Private support discussion',scheduled_start:new Date(Date.now()-60000).toISOString(),duration_minutes:30,invite_emails:[parent.email],client_request_id:randomUUID()};
  const meetingId=ok(await tutor.client.rpc('create_virtual_meeting',meetingArgs));

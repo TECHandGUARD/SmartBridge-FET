@@ -89,6 +89,7 @@ export default defineConfig(({ command, mode }) => {
         'react-router-dom',
         '@supabase/supabase-js',
         'pdfjs-dist',
+        'jspdf',
       ],
     },
 

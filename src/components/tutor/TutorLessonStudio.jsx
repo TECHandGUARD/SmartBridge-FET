@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import {Link} from 'react-router-dom';
 import { Download, Printer, RotateCcw, Save, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import LessonDesignSheet, { LESSON_THEMES } from './LessonDesignSheet';
@@ -126,6 +127,7 @@ export default function TutorLessonStudio() {
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div><h2 className="text-xl font-bold flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary"/>Tutor Lesson Studio</h2><p className="text-sm text-muted-foreground">Create, style and print a colorful lesson plan with editable activities and visual teaching ideas — no AI credits required.</p></div>
       <div className="flex flex-wrap gap-2">
+        <Link to="/presentations" state={{lessonPlan:plan}} className="rounded-lg border px-3 py-2 text-sm">Make slides from this lesson</Link>
         <button type="button" onClick={saveDraft} className="rounded-lg border px-3 py-2 text-sm inline-flex items-center gap-1"><Save size={15}/> {saved ? 'Saved locally' : 'Save draft'}</button>
         <button type="button" onClick={exportText} className="rounded-lg border px-3 py-2 text-sm inline-flex items-center gap-1"><Download size={15}/> Export</button>
         <button type="button" onClick={() => setPreview(v => !v)} className="rounded-lg border px-3 py-2 text-sm">{preview ? 'Edit' : 'Preview'}</button>

@@ -7,7 +7,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   for(let n=0;n<100;n++){try{await fetch('http://127.0.0.1:5183/login');break;}catch{await new Promise(r=>setTimeout(r,100));}}
   browser=await chromium.launch({headless:true,args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream','--autoplay-policy=no-user-gesture-required'],...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH?{executablePath:process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH}:{})});
   const people=['admin','tutor','parent','tutor','parent'].map((role,i)=>({id:`00000000-0000-4000-8000-00000000020${i+1}`,email:`meeting${i}@example.test`,role,full_name:`Meeting Person ${i}`,is_super_admin:role==='admin',is_active:true,onboarding_complete:true}));
-  const meetings=[];let failRead=false;const emailDispatches=[];
+  const meetings=[],presentationDecks=[];let failRead=false;const emailDispatches=[];
   const details=(m,person)=>({...m,can_join:m.status==='scheduled'&&m.participants.some(p=>p.user_id===person.id&&p.response==='accepted'&&(m.host_id===person.id||p.first_joined_at||Date.now()>=Date.parse(m.starts_at)&&Date.now()<=Date.parse(m.starts_at)+300000))});
   async function open(person,invitationPath=null){
    const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='parent'?390:1280,height:1000}});
@@ -37,6 +37,10 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
     if(rpc==='join_virtual_meeting'){const m=meetings.find(m=>m.id===args.meeting_key);const p=m?.participants.find(p=>p.user_id===person.id);if(!p||m.status!=='scheduled'||p.response==='declined'||m.host_id!==person.id&&!p.first_joined_at&&(Date.now()<Date.parse(m.starts_at)||Date.now()>Date.parse(m.starts_at)+300000)){status=403;data={message:'Meeting admission closed'};}else{p.response='accepted';p.first_joined_at||=new Date().toISOString();data=details(m,person);}}
     if(rpc==='respond_virtual_meeting'){const m=meetings.find(m=>m.id===args.meeting_key);m.participants.find(p=>p.user_id===person.id).response=args.decision;data=true;}
     if(rpc==='close_virtual_meeting'){const m=meetings.find(m=>m.id===args.meeting_key);assert.equal(m.host_id,person.id);m.status=args.decision;data=true;}
+    if(url.pathname==='/rest/v1/presentation_decks'){
+     if(req.method()==='POST'){assert.equal(args.owner_id,person.id);const deck={...args,revision:1,updated_at:new Date().toISOString()};presentationDecks.push(deck);data=deck;}
+     else data=presentationDecks.filter(d=>d.owner_id===person.id);
+    }
     if(url.pathname==='/rest/v1/virtual_meeting_signals'){
      if(req.method()==='POST'){assert.equal(args.sender_id,person.id);signals.push({...args,id:randomUUID(),created_at:new Date().toISOString()});}
      else if(failRead){failRead=false;status=503;data={message:'Temporary signal interruption'};}
@@ -78,6 +82,11 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();assert.ok(await parent.evaluate(()=>window.testTracks.every(t=>t.readyState==='ended')));await parent.getByRole('button',{name:'Join meeting',exact:true}).click();await connected();console.log('PASS: group media controls, screen restoration and parent rejoin while other three remain');
   await parent.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();console.log('PASS: rejoining participant receives the current slide');
   await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor({state:'detached'});
+  await tutor.getByRole('button',{name:'Build slides',exact:true}).click();await tutor.getByLabel('Presentation title',{exact:true}).fill('Live reflection slides');await tutor.getByLabel('Slide content',{exact:true}).fill('Reflect on our teaching practice');await tutor.getByLabel('Speaker notes (only you see these)',{exact:true}).fill('PRIVATE LIVE NOTES');await tutor.getByLabel('Show author: Meeting Person 1',{exact:true}).check();await tutor.getByRole('button',{name:'Save and present in this call',exact:true}).click();
+  for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 1 of 1',exact:true}).waitFor();assert.equal(await parent.getByText('PRIVATE LIVE NOTES',{exact:false}).count(),0);assert.equal(await parent.getByRole('button',{name:'Build slides',exact:true}).count(),0);await connected();
+  await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 1 of 1',exact:true}).waitFor({state:'detached'});
+  await tutor.getByRole('button',{name:'Choose saved presentation',exact:true}).click();await tutor.getByLabel('Saved presentation',{exact:true}).selectOption(presentationDecks[0].id);for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 1 of 1',exact:true}).waitFor();await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();
+  console.log('PASS: tutor builds, brands, saves and presents a native deck during a connected call; private notes stay with author and saved decks can be reused');
   await peer.getByRole('link',{name:'Virtual meetings',exact:true}).first().click();await peer.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));await peer.goto('http://127.0.0.1:5183/meetings/'+m.id);await peer.getByRole('button',{name:'Join meeting',exact:true}).click();await connected();
   await admin.getByRole('button',{name:'End for everyone',exact:true}).click();for(const page of [admin,tutor,parent,peer]){await page.getByRole('button',{name:'Join meeting',exact:true}).waitFor();await page.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));assert.ok(await page.getByRole('button',{name:'Join meeting',exact:true}).isDisabled());}
   console.log('PASS: host ending stops all participants, including navigation/rejoin; outsiders denied and parents cannot create');
