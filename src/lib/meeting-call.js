@@ -77,6 +77,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
       }
     } else if(m.kind==='offer'&&userId>id&&p.pc.signalingState==='stable') {
       await p.pc.setRemoteDescription({type:'offer',sdp:payload.sdp});
+      if(!receiveVideo)for(const transceiver of p.pc.getTransceivers())if(transceiver.receiver.track.kind==='video')transceiver.direction='inactive';
       for(const candidate of p.pending.splice(0))await p.pc.addIceCandidate(candidate);
       await p.pc.setLocalDescription(await p.pc.createAnswer());
       if(active&&peers.get(id)===p)await send(id,'answer',{sdp:p.pc.localDescription.sdp});

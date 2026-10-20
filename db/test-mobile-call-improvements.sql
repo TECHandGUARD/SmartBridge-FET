@@ -28,6 +28,15 @@ do $$declare k uuid;begin
  if cardinality(public.meeting_notification_ids(k))<>2 then raise exception 'Guest retry duplicated emails';end if;
  begin perform public.invite_virtual_meeting_guests(k,array['meeting-student@example.invalid'],gen_random_uuid());raise exception 'Learner invited into adult room';exception when raise_exception then if sqlerrm='Learner invited into adult room' then raise;end if;end;
 end $$;
+reset role;
+do $$declare invite uuid;claimed jsonb;begin
+ select n.id into invite from public.action_notifications n join smartbridge_private.notification_outbox o on o.id=n.id where o.event_key like 'virtual-meeting:%:guest:00000000-0000-4000-8000-000000007651:%';
+ claimed:=public.claim_action_notification(invite,'00000000-0000-4000-8000-000000007602');
+ if claimed is null or claimed->>'to'<>'live-guest@example.invalid' or claimed->>'meeting_id' is null then raise exception 'Live guest email was not claimable with its private meeting link';end if;
+ perform public.finish_action_notification(invite,'isolated-test-provider-id',null);
+ if public.claim_action_notification(invite,null) is not null then raise exception 'Accepted guest email retried';end if;
+end $$;
+set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000007606","role":"authenticated"}',true);
 do $$declare k uuid;i integer;begin
  select id into k from public.virtual_meetings where title='Live guest invitation test';

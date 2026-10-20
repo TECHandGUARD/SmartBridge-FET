@@ -13,7 +13,8 @@ export async function getCallIceConfig(client,roomKind,roomId,{force=false,endpo
   const {data,error}=await client.auth.getSession();if(error||!data?.session?.access_token)throw new Error('Sign in before connecting');
   const key=data.session.user.id+':'+roomKind+':'+roomId;
   const previous=cached.get(key);if(!force&&previous?.expiresAt>Date.now()+30000)return previous;
-  const response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({room_kind:roomKind,room_id:roomId}),signal:AbortSignal.timeout(10000)});
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),10000);let response;
+  try{response=await fetch(url,{method:'POST',headers:{Authorization:'Bearer '+data.session.access_token,'Content-Type':'application/json'},body:JSON.stringify({room_kind:roomKind,room_id:roomId}),signal:controller.signal});}finally{clearTimeout(timeout);}
   if(!response.ok)throw new Error('Relay unavailable');
   const body=await response.json(),servers=validRelayServers(body.iceServers);
   if(!servers.length||!Number.isFinite(body.expires_in)||body.expires_in<30)throw new Error('Invalid relay response');

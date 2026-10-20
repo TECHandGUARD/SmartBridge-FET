@@ -139,6 +139,7 @@ export default function LiveClassroom() {
       } else if (message.kind==='offer' && role==='learner') {
         if (pc.signalingState!=='stable') return;
         await pc.setRemoteDescription({ type:'offer', sdp:message.payload?.sdp });
+        if(!receiveVideo.current)for(const transceiver of pc.getTransceivers())if(transceiver.receiver.track.kind==='video')transceiver.direction='inactive';
         await drainIce();
         const answer = await pc.createAnswer();
         await pc.setLocalDescription(answer);
