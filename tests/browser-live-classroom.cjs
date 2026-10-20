@@ -17,15 +17,16 @@ const assert = require('node:assert/strict');
     async function open(person, denied=false) {
       const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='tutor'?1280:390,height:900}});
       // Instrument real browser objects, without replacing WebRTC or camera/mic capture.
-      await context.addInitScript(()=>{
+      await context.addInitScript(({screenSharing})=>{
         window.testPeers=[];window.testTracks=[];
         const Original=window.RTCPeerConnection;
         window.RTCPeerConnection=class extends Original {constructor(...args){super(...args);window.testPeers.push(this);}};
         const media=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);
         navigator.mediaDevices.getUserMedia=async options=>{const stream=await media(options);window.testTracks.push(...stream.getTracks());return stream;};
         // A canvas gives deterministic screen pixels, with a real replaceTrack sender.
-        navigator.mediaDevices.getDisplayMedia=async()=>{const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const stream=canvas.captureStream(10);window.testTracks.push(...stream.getTracks());return stream;};
-      });
+        navigator.mediaDevices.getDisplayMedia=async()=>{if(window.testCancelScreenShare){window.testCancelScreenShare=false;throw new DOMException('Cancelled','NotAllowedError');}const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const stream=canvas.captureStream(10);window.testTracks.push(...stream.getTracks());return stream;};
+        if(!screenSharing)navigator.mediaDevices.getDisplayMedia=undefined;
+      },{screenSharing:person.role!=='student'});
       const auth={...person,user_metadata:{full_name:person.full_name},aud:'authenticated',role:'authenticated'};
       const session={access_token:'eyJhbGciOiJIUzI1NiJ9.'+Buffer.from(JSON.stringify({sub:person.id,exp:4102444800,role:'authenticated'})).toString('base64url')+'.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:auth};
       // Disable WebSocket delivery deliberately: REST recovery must establish the call.
@@ -57,12 +58,18 @@ const assert = require('node:assert/strict');
     await learner.goto('http://127.0.0.1:5182/bookings');await learner.getByRole('button',{name:'Join Session',exact:true}).waitFor();assert.equal(await learner.locator('a').filter({has:learner.getByRole('button',{name:'Join Session',exact:true})}).getAttribute('href'),'/live-classroom/'+booking.id);
     await learner.goto('http://127.0.0.1:5182/live-classroom/'+booking.id);
     async function join(page){await page.getByRole('button',{name:'Join classroom',exact:true}).click();await page.getByRole('button',{name:'Leave',exact:true}).waitFor();}
-    async function connected(){for(const page of [tutor,learner]){await page.getByRole('status').filter({hasText:'Live — secure peer-to-peer connection'}).waitFor({timeout:30000});await page.waitForFunction(()=>{const v=document.querySelector('video[aria-label="Other participant video"]');return v?.videoWidth>0&&v.srcObject?.getAudioTracks().length===1;});await page.waitForFunction(async()=>{const pc=window.testPeers.at(-1);if(!pc)return false;const stats=await pc.getStats();return [...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0)&&[...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0);});}}
-    await join(tutor);failRead=true;await join(learner);await connected();console.log('PASS: real bidirectional audio/video, tutor first, failed REST read recovery and WebSocket unavailable');
+    async function waitForAsync(page,predicate){const deadline=Date.now()+30000;while(Date.now()<deadline){if(await page.evaluate(predicate))return;await new Promise(r=>setTimeout(r,250));}throw new Error('Timed out waiting for real media');}
+    async function connected(){for(const page of [tutor,learner]){await page.getByRole('status').filter({hasText:'Live — secure peer-to-peer connection'}).waitFor({timeout:30000});await page.waitForFunction(()=>{const v=document.querySelector('video[aria-label="Other participant video"]');return v?.videoWidth>0&&v.srcObject?.getAudioTracks().length===1;});await waitForAsync(page,async()=>{const pc=window.testPeers.at(-1);if(!pc)return false;const stats=await pc.getStats();return [...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0)&&[...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0);});}}
+    await join(tutor);failRead=true;await join(learner);await connected();assert.equal(await learner.getByRole('button',{name:'Share screen',exact:true}).count(),0);await learner.getByText('Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.').waitFor();assert.equal(await learner.getByRole('alert').count(),0);console.log('PASS: real bidirectional audio/video, tutor first, failed REST read recovery and WebSocket unavailable');
+    const {jsPDF}=require('jspdf');const pdf=new jsPDF();pdf.text('Classroom slide',20,20);pdf.addPage();pdf.text('Second slide',20,20);
+    await tutor.getByLabel('Present PDF slides',{exact:true}).setInputFiles({name:'Classroom.pdf',mimeType:'application/pdf',buffer:Buffer.from(pdf.output('arraybuffer'))});
+    await learner.getByRole('img',{name:'Shared slide 1 of 2',exact:true}).waitFor();await tutor.getByRole('button',{name:'Next slide',exact:true}).click();await learner.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();await connected();
+    await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();await learner.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor({state:'detached'});console.log('PASS: booked tutor presents and stops PDF slides while learner audio/video continues');
     await learner.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='audio').enabled),false);
     await learner.getByRole('button',{name:'Camera off',exact:true}).click();assert.equal(await learner.evaluate(()=>window.testTracks.find(t=>t.kind==='video').enabled),false);
     await learner.getByRole('button',{name:'Leave',exact:true}).click();await tutor.getByRole('status').filter({hasText:'Waiting for them to rejoin'}).waitFor();assert.ok(await learner.evaluate(()=>window.testTracks.every(t=>t.readyState==='ended')));
     await join(learner);await connected();assert.equal(await learner.getByRole('button',{name:'Mute',exact:true}).count(),1);console.log('PASS: learner leave/rejoin ignores old offers and resets mute/camera controls');
+    await tutor.evaluate(()=>{window.testCancelScreenShare=true;});await tutor.getByRole('button',{name:'Share screen',exact:true}).click();assert.equal(await tutor.getByRole('alert').count(),0);
     await tutor.getByRole('button',{name:'Share screen',exact:true}).click();await tutor.getByRole('button',{name:'Stop sharing',exact:true}).click();await tutor.getByRole('button',{name:'Share screen',exact:true}).waitFor();assert.ok(await tutor.evaluate(()=>window.testPeers.at(-1).getSenders().find(s=>s.track?.kind==='video').track===window.testTracks.find(t=>t.kind==='video')));console.log('PASS: explicit stop sharing restores camera track');
     await tutor.getByRole('button',{name:'Leave',exact:true}).click();await learner.getByRole('status').filter({hasText:'Waiting for them to rejoin'}).waitFor();await join(tutor);await connected();console.log('PASS: tutor rejoin works while learner remains');
     await tutor.getByRole('button',{name:'Leave',exact:true}).click();await learner.getByRole('button',{name:'Leave',exact:true}).click();await learner.reload();await tutor.reload();await join(learner);await join(tutor);await connected();console.log('PASS: learner joins first with stale signal history from previous calls');
@@ -71,5 +78,5 @@ const assert = require('node:assert/strict');
     await learner.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));
     await tutor.getByRole('link',{name:'Back to bookings'}).click();await tutor.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));
     assert.deepEqual(errors,[]);console.log('PASS: outsider blocked, free intro join link, navigation cleanup and no uncaught browser errors');
-  } finally {if(browser)await browser.close();server.kill();}
+  } catch(e) {for(const c of browser?.contexts()||[])for(const p of c.pages())console.error('BROWSER FAILURE',p.url(),(await p.locator('body').innerText()).slice(-3500));throw e;} finally {if(browser)await browser.close();server.kill();}
 })().catch(e=>{console.error(e);process.exit(1);});

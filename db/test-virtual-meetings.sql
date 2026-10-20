@@ -21,8 +21,8 @@ do $$begin
 end $$;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000007602","role":"authenticated"}',true);
 do $$declare k uuid;begin
- k:=public.create_virtual_meeting('Parent support conference','parent_support','Discuss support strategies',now()+interval '5 minutes',30,array['meeting-parent@example.invalid','meeting-peer@example.invalid'],'00000000-0000-4000-8000-000000007611');
- if k<>public.create_virtual_meeting('Parent support conference','parent_support','Discuss support strategies',now()+interval '5 minutes',30,array['meeting-parent@example.invalid','meeting-peer@example.invalid'],'00000000-0000-4000-8000-000000007611') then raise exception 'Duplicate retry';end if;
+ k:=public.create_virtual_meeting('Parent support conference','parent_support','Discuss support strategies',now(),30,array['meeting-parent@example.invalid','meeting-peer@example.invalid'],'00000000-0000-4000-8000-000000007611');
+ if k<>public.create_virtual_meeting('Parent support conference','parent_support','Discuss support strategies',now(),30,array['meeting-parent@example.invalid','meeting-peer@example.invalid'],'00000000-0000-4000-8000-000000007611') then raise exception 'Duplicate retry';end if;
  if jsonb_array_length(public.list_virtual_meetings())<>1 or not (public.virtual_meeting_details(k)->>'can_join')::boolean then raise exception 'Host meeting missing';end if;
  begin perform public.create_virtual_meeting('Student invitation','staff_support','',now(),30,array['meeting-student@example.invalid'],gen_random_uuid());raise exception 'Student invited';exception when raise_exception then if sqlerrm='Student invited' then raise;end if;end;
  begin insert into public.virtual_meeting_signals(meeting_id,sender_id,recipient_id,kind) values(k,auth.uid(),'00000000-0000-4000-8000-000000007603','ready');raise exception 'Unaccepted invite joined';exception when insufficient_privilege then null;end;
@@ -40,7 +40,7 @@ do $$declare k uuid;begin
  select id into k from public.virtual_meetings where title='Parent support conference';
  if (public.virtual_meeting_details(k)->>'can_join')::boolean then raise exception 'Invitation acceptance not enforced';end if;
  perform public.respond_virtual_meeting(k,'accepted');
- if not (public.virtual_meeting_details(k)->>'can_join')::boolean then raise exception 'Accepted parent cannot join';end if;
+ if not (public.join_virtual_meeting(k)->>'can_join')::boolean then raise exception 'Accepted parent cannot join';end if;
  begin perform public.close_virtual_meeting(k,'ended');raise exception 'Parent ended everyone';exception when raise_exception then if sqlerrm='Parent ended everyone' then raise;end if;end;
  insert into public.virtual_meeting_signals(meeting_id,sender_id,recipient_id,kind,payload) values(k,auth.uid(),'00000000-0000-4000-8000-000000007602','ready','{"session_id":"parent-session"}');
  begin insert into public.virtual_meeting_signals(meeting_id,sender_id,recipient_id,kind) values(k,'00000000-0000-4000-8000-000000007602',auth.uid(),'ready');raise exception 'Signal sender forged';exception when insufficient_privilege then null;end;

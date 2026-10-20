@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Camera, CameraOff, Mic, MicOff, MonitorUp, PhoneOff, RefreshCw, ShieldCheck, Video } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
+
+import {useSlidePresentation} from '@/lib/use-slide-presentation';
+const SlidePresentation=lazy(()=>import('@/components/live/SlidePresentation'));
 
 const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }, { urls: 'stun:stun1.l.google.com:19302' }];
 const SIGNAL_KINDS = new Set(['offer','answer','ice','ready','leave']);
@@ -18,12 +21,14 @@ export default function LiveClassroom() {
   const { bookingId } = useParams();
   const { user } = useAuth();
   const [booking, setBooking] = useState(null);
+  const {transport,received}=useSlidePresentation(bookingId,user?.id,booking?[booking.tutor_id]:[]);
   const [status, setStatus] = useState('Checking your booking…');
   const [error, setError] = useState('');
   const [authorized, setAuthorized] = useState(false);
   const [joined, setJoined] = useState(false);
   const [muted, setMuted] = useState(false);
   const [cameraOff, setCameraOff] = useState(false);
+  const [canShare,setCanShare]=useState(()=>typeof navigator.mediaDevices?.getDisplayMedia==='function');
   const [sharing, setSharing] = useState(false);
   const localVideo = useRef(null);
   const remoteVideo = useRef(null);
@@ -81,11 +86,13 @@ export default function LiveClassroom() {
   }, [send]);
 
   const createPeer = useCallback(() => {
+    transport.detach(recipientId);
     peer.current?.close();
     pendingIce.current = [];
     sentOffer.current = false;
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
       peer.current = pc;
+      transport.attach(pc,recipientId,role==='tutor');
       localStream.current.getTracks().forEach(track => pc.addTrack(
         track.kind === 'video' && screenStream.current ? screenStream.current.getVideoTracks()[0] : track,
         localStream.current));
@@ -99,7 +106,7 @@ export default function LiveClassroom() {
       };
 
     return pc;
-  }, [send]);
+  }, [send,transport,recipientId,role]);
 
   const handleSignal = useCallback(async message => {
     if (!active.current || !peer.current || !booking || message.booking_id!==booking.id || message.sender_id!==recipientId || message.recipient_id!==user?.id) return;
@@ -148,6 +155,7 @@ export default function LiveClassroom() {
   }, [booking,recipientId,user?.id,role,makeOffer,send,drainIce,createPeer]);
 
   const stop = useCallback(() => {
+    transport.reset();
     active.current = false;
     generation.current += 1;
     joining.current = false;
@@ -175,7 +183,7 @@ export default function LiveClassroom() {
     setCameraOff(false);
     setSharing(false);
     setStatus('You left the classroom');
-  }, []);
+  }, [transport]);
 
   useEffect(() => {
     stop();
@@ -284,7 +292,8 @@ export default function LiveClassroom() {
   const shareScreen = async () => {
     if (!peer.current || !localStream.current) return;
     if (screenStream.current) { await stopSharing(); return; }
-    if (!navigator.mediaDevices?.getDisplayMedia) { setError('Screen sharing is not available on this device.'); return; }
+    if (!canShare) return;
+    setError('');
     try {
       const attempt = generation.current;
       const stream = await navigator.mediaDevices.getDisplayMedia({ video:true });
@@ -296,7 +305,7 @@ export default function LiveClassroom() {
       await sender.replaceTrack(track);
       setSharing(true);
       track.onended = stopSharing;
-    } catch (e) { await stopSharing(); setError(errors(e)); }
+    } catch (e) { await stopSharing(); if(e.name==='NotSupportedError')setCanShare(false);else if(!['NotAllowedError','AbortError'].includes(e.name))setError(errors(e)); }
   };
 
   return <main className="mx-auto max-w-6xl space-y-5 px-4 py-7">
@@ -305,6 +314,7 @@ export default function LiveClassroom() {
       <span className="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold"><ShieldCheck size={16}/> Booking-protected · No recording</span>
     </div>
     <div className="rounded-2xl border bg-card p-4 sm:p-6 space-y-4">
+      {joined&&<Suspense fallback={<p>Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={role==='tutor'}/></Suspense>}
       <div className="grid gap-3 md:grid-cols-2">
         <div className="relative flex min-h-56 items-center justify-center overflow-hidden rounded-xl bg-slate-900 text-white">
           <video ref={remoteVideo} autoPlay playsInline className="h-full w-full object-contain" aria-label="Other participant video"/>
@@ -317,11 +327,12 @@ export default function LiveClassroom() {
       </div>
       <p role="status" className="text-center text-sm font-medium">{status}</p>
       {error && <div role="alert" className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-800">{error}</div>}
+      {joined&&!canShare&&<p className="text-center text-sm text-muted-foreground">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
       <div className="flex flex-wrap justify-center gap-2">
         {!joined ? <button type="button" disabled={!authorized || connecting} onClick={join} className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground disabled:opacity-50"><Video size={18}/> {connecting ? 'Connecting…' : 'Join classroom'}</button> : <>
           <button type="button" onClick={toggleMic} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{muted?<MicOff size={18}/>:<Mic size={18}/>} {muted?'Unmute':'Mute'}</button>
           <button type="button" onClick={toggleCamera} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm">{cameraOff?<CameraOff size={18}/>:<Camera size={18}/>} {cameraOff?'Camera on':'Camera off'}</button>
-          <button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>
+          {canShare&&<button type="button" onClick={shareScreen} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><MonitorUp size={18}/>{sharing?'Stop sharing':'Share screen'}</button>}
           <button type="button" onClick={leave} className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-3 text-sm font-semibold text-white"><PhoneOff size={18}/> Leave</button>
         </>}
         {joined && <button type="button" onClick={()=>{leave();setStatus('Ready to reconnect');}} className="inline-flex items-center gap-2 rounded-xl border px-4 py-3 text-sm"><RefreshCw size={18}/> Reset</button>}
