@@ -48,6 +48,15 @@ class RelayTests(unittest.TestCase):
             self.assertEqual(response['headers']['Cache-Control'], 'no-store')
             issue.assert_called_once_with('00000000-0000-4000-8000-000000000001', actor)
 
+    def test_room_identity_is_canonical_before_issuance(self):
+        room = 'abcdefab-1234-4000-8000-000000000001'
+        actor = '00000000-0000-4000-8000-000000000002'
+        self.event['body'] = json.dumps({'room_kind': 'meeting', 'room_id': room.upper()})
+        with patch.object(relay.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(actor).encode())) as authorize, patch.object(relay, 'relay_configuration', return_value={}) as issue:
+            self.assertEqual(relay.handler(self.event, None)['statusCode'], 200)
+            self.assertEqual(json.loads(authorize.call_args.args[0].data)['room_id'], room)
+            issue.assert_called_once_with(room, actor)
+
     def test_provider_failure_does_not_leak_payload(self):
         actor = '00000000-0000-4000-8000-000000000002'
         with patch.object(relay.urllib.request, 'urlopen', return_value=io.BytesIO(json.dumps(actor).encode())), patch.object(relay, 'relay_configuration', side_effect=Exception('SECRET-PROVIDER-PAYLOAD')):

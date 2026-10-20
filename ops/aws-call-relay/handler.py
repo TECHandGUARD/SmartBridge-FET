@@ -89,6 +89,7 @@ def handler(event, _context):
         kind, room = body.get('room_kind'), body.get('room_id')
         if kind not in ('meeting', 'classroom') or str(uuid.UUID(room)) != room.lower():
             return result(400, {'error': 'Invalid call request'})
+        room = str(uuid.UUID(room))
     except (ValueError, TypeError, AttributeError):
         return result(400, {'error': 'Invalid call request'})
     request = urllib.request.Request(os.environ['SUPABASE_URL'] + '/rest/v1/rpc/authorize_call_relay',
