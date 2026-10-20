@@ -19,7 +19,7 @@ export function createMeetingReactions({userId,onChange}) {
       if(peers.get(id)!==entry||typeof event.data!=='string'||event.data.length>150)return;
       let message;try{message=JSON.parse(event.data);}catch{return;}
       if(!message||typeof message.hand!=='boolean'||typeof message.emoji!=='string'||message.emoji!==''&&!Object.hasOwn(MEETING_REACTIONS,message.emoji) )return;
-      const emoji=Date.now()-entry.lastReceived<300?'':message.emoji;entry.lastReceived=Date.now();display(id,message.hand,emoji);
+      const emoji=message.emoji&&Date.now()-entry.lastReceived>=300?message.emoji:'';if(message.emoji)entry.lastReceived=Date.now();display(id,message.hand,emoji);
     };
     channel.onclose=()=>{if(peers.get(id)===entry){peers.delete(id);clearTimeout(timers.get(id));timers.delete(id);states.delete(id);onChange(id,null);}};
     if(channel.readyState==='open')channel.onopen();
