@@ -1,3 +1,4 @@
+import {Presentation} from 'lucide-react';
 import {useEffect,useRef,useState} from 'react';
 import {getDocument,GlobalWorkerOptions} from 'pdfjs-dist';
 import {supabase} from '@/lib/supabaseClient';
@@ -75,7 +76,8 @@ export default function SlidePresentation({transport,received,canPresent}) {
   };
   const downloadCorrectedPage=async()=>{try{const {jsPDF}=await import('jspdf');const element=canvas.current;const pdf=new jsPDF({orientation:element.width>element.height?'landscape':'portrait',unit:'px',format:[element.width,element.height]});pdf.addImage(element.toDataURL('image/jpeg',0.9),'JPEG',0,0,element.width,element.height);pdf.save('corrected-slide-'+page+'.pdf');}catch(e){setError(e.message);}};
   const total=nativeDeck?nativeDeck.content.slides.length:document?.numPages;
-  return <section className="space-y-3 rounded-xl border p-3" aria-label="Slide presentation">
+  return <section className="studio-slides space-y-3" aria-label="Slide presentation">
+    <header><div><span className="studio-eyebrow">Shared learning</span><h3>Presentation studio</h3></div><Presentation size={20} className="text-primary" aria-hidden="true"/></header>
     {canPresent&&<><div className="flex flex-wrap gap-2"><button className="rounded border px-3 py-2" onClick={()=>setEditing(value=>!value)}>{editing?'Close slide builder':'Build slides'}</button><button className="rounded border px-3 py-2" onClick={loadDecks}>Choose saved presentation</button></div>{editing&&<div className="rounded-xl border p-3"><PresentationEditor onPresent={chooseDeck}/></div>}{!!decks.length&&<label className="block text-sm">Saved presentation<select aria-label="Saved presentation" className="block w-full rounded border bg-background p-2" value={nativeDeck?.id||''} onChange={e=>{const selected=decks.find(d=>d.id===e.target.value);if(selected)chooseDeck(selected);}}><option value="">Select a deck to present</option>{decks.map(d=><option key={d.id} value={d.id}>{d.title}</option>)}</select></label>}<label className="block text-sm font-semibold">Present PDF slides<input type="file" accept="application/pdf,.pdf" onChange={upload} disabled={busy||rendering} className="mt-2 block max-w-full text-sm"/></label><p className="text-xs text-muted-foreground">Export PowerPoint or Canva slides as PDF. Up to 20 MB and 150 pages. Works on phones. The uploaded PDF is not saved; saved decks remain private to your account.</p><label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={showAuthor} onChange={e=>setShowAuthor(e.target.checked)}/>Show author on uploaded PDF slides: {author}</label></>}
     {busy&&<p role="status">Opening slides…</p>}
     {error&&<p role="alert">{error}</p>}
