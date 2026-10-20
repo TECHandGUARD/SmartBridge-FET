@@ -13,7 +13,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
    const context=await browser.newContext({permissions:['camera','microphone'],viewport:{width:person.role==='parent'?390:1280,height:1000}});
    await context.addInitScript(({screenSharing})=>{
     window.testChannels=[];window.testPeers=[];window.testTracks=[];const Original=window.RTCPeerConnection;window.RTCPeerConnection=class extends Original{constructor(...args){super(...args);window.testPeers.push(this);this.addEventListener('datachannel',e=>window.testChannels.push(e.channel));}createDataChannel(...args){const c=super.createDataChannel(...args);window.testChannels.push(c);return c;}};
-    const media=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async options=>{const s=await media(options);window.testTracks.push(...s.getTracks());return s;};
+    window.testMediaCalls=[];const media=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices);navigator.mediaDevices.getUserMedia=async options=>{window.testMediaCalls.push({audio:!!options.audio,video:!!options.video,active:navigator.userActivation.isActive});if(window.testDenyMedia)throw new DOMException('Blocked by browser','NotAllowedError');const s=await media(options);window.testTracks.push(...s.getTracks());return s;};
     navigator.mediaDevices.getDisplayMedia=async()=>{if(window.testCancelScreenShare){window.testCancelScreenShare=false;throw new DOMException('Cancelled','NotAllowedError');}const canvas=document.createElement('canvas');canvas.width=320;canvas.height=240;canvas.getContext('2d').fillRect(0,0,320,240);const s=canvas.captureStream(10);window.testTracks.push(...s.getTracks());return s;};
     if(!screenSharing)navigator.mediaDevices.getDisplayMedia=undefined;
    },{screenSharing:person.role!=='parent'});
@@ -62,12 +62,42 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   await admin.getByRole('link',{name:'Open meeting',exact:true}).click();await admin.getByRole('button',{name:'Join meeting',exact:true}).click();await admin.getByRole('status').filter({hasText:'Waiting for invitees to accept'}).waitFor();
   m.starts_at=new Date(Date.now()-60000).toISOString();
   for(const page of [tutor,parent,peer]){await page.goto('http://127.0.0.1:5183/meetings/'+m.id);assert.equal(await page.getByRole('button',{name:'Join meeting',exact:true}).isDisabled(),false);}
+  // A denied camera request must not admit someone or leave the Join button stuck.
+  await parent.evaluate(()=>{window.testDenyMedia=true;});
+  await parent.getByRole('button',{name:'Join meeting',exact:true}).click();
+  await parent.getByRole('alert').filter({hasText:'Camera or microphone access is blocked'}).waitFor();await parent.screenshot({path:'/tmp/meeting-permission-recovery.png',fullPage:true});
+  assert.equal(m.participants.find(p=>p.user_id===people[2].id).first_joined_at,undefined);
+  assert.equal(await parent.getByRole('button',{name:'Join meeting',exact:true}).isEnabled(),true);
+  assert.equal(await parent.evaluate(()=>window.testMediaCalls.at(-1).active),true);
+  const captureAttempts=await parent.evaluate(()=>window.testMediaCalls.length);
+  await parent.getByRole('button',{name:'Join to watch and listen',exact:true}).click();
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();
+  assert.equal(await parent.evaluate(()=>window.testMediaCalls.length),captureAttempts);
+  assert.equal(await parent.getByRole('button',{name:'Unmute',exact:true}).isDisabled(),true);
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();
+  await parent.evaluate(()=>{window.testDenyMedia=false;});
+  await parent.getByRole('button',{name:'Join with microphone only',exact:true}).click();
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();
+  assert.equal(await parent.evaluate(()=>window.testMediaCalls.at(-1).video),false);
+  assert.equal(await parent.evaluate(()=>window.testTracks.filter(t=>t.readyState==='live').every(t=>t.kind==='audio')),true);
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();
+  assert.ok(await parent.evaluate(()=>window.testTracks.every(t=>t.readyState==='ended')));
+  console.log('PASS: capture starts in the Join gesture; denied permissions do not admit; retry, microphone-only and permission-free listen entry work and stop cleanly');
+  if(process.env.MEETINGS_PERMISSION_ONLY==='1')return;
   for(const page of [tutor,parent,peer]){if(page===tutor)failRead=true;await page.getByRole('button',{name:'Join meeting',exact:true}).click();await page.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();}
   async function waitForAsync(page,predicate){const deadline=Date.now()+45000;while(Date.now()<deadline){if(await page.evaluate(predicate))return;await new Promise(r=>setTimeout(r,250));}throw new Error('Timed out waiting for real media');}
   async function connected(){for(const page of [admin,tutor,parent,peer])await waitForAsync(page,async()=>{const pcs=window.testPeers.filter(p=>p.connectionState==='connected');if(pcs.length!==3)return false;for(const pc of pcs){const stats=await pc.getStats();if(![...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0)||![...stats.values()].some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0))return false;}return true;});}
   assert.equal(await parent.getByRole('button',{name:'Share screen',exact:true}).count(),0);await parent.getByText('Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.').waitFor();assert.equal(await parent.getByRole('alert').count(),0);
   await tutor.evaluate(()=>{window.testCancelScreenShare=true;});await tutor.getByRole('button',{name:'Share screen',exact:true}).click();assert.equal(await tutor.getByRole('alert').count(),0);
   await connected();assert.equal(m.participants.every(p=>p.response==='accepted'),true);console.log('PASS: host stays in call while invitees accept and join with one click');console.log('PASS: administrator + two tutors + parent exchange real audio/video in all twelve directions, with WebSockets disabled and a failed REST read');
+  await parent.getByRole('button',{name:'✋ Raise hand',exact:true}).click();
+  for(const p of [admin,tutor,peer])await p.getByLabel('Meeting Person 2: hand raised',{exact:true}).waitFor();
+  await parent.getByRole('button',{name:'Thumbs up',exact:true}).click();
+  for(const p of [admin,tutor,peer])await p.getByRole('status',{name:'Meeting Person 2: Thumbs up',exact:true}).waitFor();
+  for(const p of [admin,tutor,peer])await p.getByRole('status',{name:'Meeting Person 2: Thumbs up',exact:true}).waitFor({state:'detached'});
+  await parent.getByRole('button',{name:'✋ Lower hand',exact:true}).click();
+  for(const p of [admin,tutor,peer])await p.getByLabel('Meeting Person 2: hand raised',{exact:true}).waitFor({state:'detached'});
+  console.log('PASS: raised/lowered hands and expiring reactions reach all other participants alongside audio/video');
   const {jsPDF}=require('jspdf');const pdf=new jsPDF();pdf.text('Slide one',20,20);pdf.addPage();pdf.text('Slide two',20,20);
   // Phone-width tutor presents a real two-page PDF without getDisplayMedia.
   await tutor.setViewportSize({width:390,height:900});await tutor.evaluate(()=>{window.savedScreenCapture=navigator.mediaDevices.getDisplayMedia;navigator.mediaDevices.getDisplayMedia=undefined;});
@@ -77,10 +107,20 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();
   await tutor.screenshot({path:'/tmp/smartbridge-phone-slides.png',fullPage:true});await tutor.evaluate(()=>{navigator.mediaDevices.getDisplayMedia=window.savedScreenCapture;});
   await connected();console.log('PASS: phone-width tutor presents PDF pages to all participants without interrupting audio/video');
-  await parent.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await parent.evaluate(()=>window.testTracks.find(t=>t.kind==='audio').enabled),false);await parent.getByRole('button',{name:'Camera off',exact:true}).click();
+  await parent.getByRole('button',{name:'Mute',exact:true}).click();assert.equal(await parent.evaluate(()=>window.testTracks.find(t=>t.kind==='audio'&&t.readyState==='live').enabled),false);await parent.getByRole('button',{name:'Camera off',exact:true}).click();
   await tutor.getByRole('button',{name:'Share screen',exact:true}).click();await tutor.getByRole('button',{name:'Stop sharing',exact:true}).click();await tutor.getByRole('button',{name:'Share screen',exact:true}).waitFor();assert.ok(await tutor.evaluate(()=>window.testPeers.filter(p=>p.connectionState==='connected').every(p=>p.getSenders().find(s=>s.track?.kind==='video').track===window.testTracks.find(t=>t.kind==='video'))));
   await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();assert.ok(await parent.evaluate(()=>window.testTracks.every(t=>t.readyState==='ended')));await parent.getByRole('button',{name:'Join meeting',exact:true}).click();await connected();console.log('PASS: group media controls, screen restoration and parent rejoin while other three remain');
   await parent.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();console.log('PASS: rejoining participant receives the current slide');
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();
+  await parent.evaluate(()=>{window.testDenyMedia=true;});
+  await parent.getByRole('button',{name:'Join to watch and listen',exact:true}).click();
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).waitFor();
+  await waitForAsync(parent,async()=>{const pcs=window.testPeers.filter(p=>p.connectionState==='connected');if(pcs.length!==3)return false;for(const pc of pcs){const stats=[...(await pc.getStats()).values()];if(!stats.some(s=>s.type==='inbound-rtp'&&s.kind==='audio'&&s.bytesReceived>0)||!stats.some(s=>s.type==='inbound-rtp'&&s.kind==='video'&&s.bytesReceived>0))return false;}return true;});
+  await parent.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor();
+  await parent.getByRole('button',{name:'Applause',exact:true}).click();for(const p of [admin,tutor,peer])await p.getByRole('status',{name:'Meeting Person 2: Applause',exact:true}).waitFor();
+  await parent.getByRole('button',{name:'Leave meeting',exact:true}).click();await parent.evaluate(()=>{window.testDenyMedia=false;});await parent.getByRole('button',{name:'Join meeting',exact:true}).click();await connected();
+  console.log('PASS: camera/microphone-denied participant receives real audio/video and current slides, sends reactions, and can rejoin with devices');
+
   await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 2 of 2',exact:true}).waitFor({state:'detached'});
   await tutor.getByRole('button',{name:'Build slides',exact:true}).click();await tutor.getByLabel('Presentation title',{exact:true}).fill('Live reflection slides');await tutor.getByLabel('Slide content',{exact:true}).fill('Reflect on our teaching practice');await tutor.getByLabel('Speaker notes (only you see these)',{exact:true}).fill('PRIVATE LIVE NOTES');await tutor.getByLabel('Show author: Meeting Person 1',{exact:true}).check();await tutor.getByRole('button',{name:'Save and present in this call',exact:true}).click();
   for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 1 of 1',exact:true}).waitFor();assert.equal(await parent.getByText('PRIVATE LIVE NOTES',{exact:false}).count(),0);assert.equal(await parent.getByRole('button',{name:'Build slides',exact:true}).count(),0);await connected();
@@ -88,7 +128,8 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
   await tutor.getByRole('button',{name:'Choose saved presentation',exact:true}).click();await tutor.getByLabel('Saved presentation',{exact:true}).selectOption(presentationDecks[0].id);for(const p of [admin,parent,peer])await p.getByRole('img',{name:'Shared slide 1 of 1',exact:true}).waitFor();await tutor.getByRole('button',{name:'Stop presenting',exact:true}).click();
   console.log('PASS: tutor builds, brands, saves and presents a native deck during a connected call; private notes stay with author and saved decks can be reused');
   await peer.getByRole('link',{name:'Virtual meetings',exact:true}).first().click();await peer.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));await peer.goto('http://127.0.0.1:5183/meetings/'+m.id);await peer.getByRole('button',{name:'Join meeting',exact:true}).click();await connected();
-  await admin.getByRole('button',{name:'End for everyone',exact:true}).click();for(const page of [admin,tutor,parent,peer]){await page.getByRole('button',{name:'Join meeting',exact:true}).waitFor();await page.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));assert.ok(await page.getByRole('button',{name:'Join meeting',exact:true}).isDisabled());}
+  admin.once('dialog',dialog=>dialog.dismiss());await admin.getByRole('button',{name:'End for everyone',exact:true}).click();assert.equal(m.status,'scheduled');
+  admin.once('dialog',dialog=>dialog.accept());await admin.getByRole('button',{name:'End for everyone',exact:true}).click();for(const page of [admin,tutor,parent,peer]){await page.getByRole('button',{name:'Join meeting',exact:true}).waitFor();await page.waitForFunction(()=>window.testTracks.every(t=>t.readyState==='ended'));assert.ok(await page.getByRole('button',{name:'Join meeting',exact:true}).isDisabled());}
   console.log('PASS: host ending stops all participants, including navigation/rejoin; outsiders denied and parents cannot create');
   await tutor.goto('http://127.0.0.1:5183/meetings');await tutor.getByLabel('Meeting title',{exact:true}).fill('Peer reflection conference');await tutor.getByLabel('Meeting purpose',{exact:true}).selectOption('tutor_reflection');await tutor.getByLabel(/Invite account emails/).fill(people[3].email);await tutor.getByRole('button',{name:'Send meeting invitations',exact:true}).click();await tutor.getByRole('heading',{name:'Peer reflection conference',exact:true}).waitFor();assert.equal(meetings[1].host_id,people[1].id);assert.equal(meetings[1].purpose,'tutor_reflection');
   await peer.goto('http://127.0.0.1:5183/meetings');await peer.getByRole('button',{name:'Decline invitation',exact:true}).click();await peer.getByText(/Your invitation: declined/).waitFor();await tutor.getByRole('button',{name:'Cancel meeting',exact:true}).click();assert.equal(meetings[1].status,'cancelled');
