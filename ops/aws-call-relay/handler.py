@@ -58,7 +58,9 @@ def cleanup_channels():
 def handler(event, _context):
     # IAM-only deployment check. Function URL calls always have AWS-generated requestContext.
     if not event.get('requestContext') and event.get('deployment_check') is True:
-        return relay_configuration()
+        room = str(uuid.UUID(event['room_id'])) if event.get('room_id') else None
+        actor = str(uuid.UUID(event['actor_id'])) if event.get('actor_id') else None
+        return relay_configuration(room, actor)
     if not event.get('requestContext') and event.get('source') == 'aws.events':
         return cleanup_channels()
     headers = {key.lower(): value for key, value in event.get('headers', {}).items()}

@@ -76,7 +76,7 @@ jobs:
         env:
           SMARTBRIDGE_RELAY_CONFIG_PATH: /tmp/smartbridge-relay.json
         run: |
-          aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
+          aws lambda invoke --function-name smartbridge-call-relay --payload '{"deployment_check":true,"room_id":"00000000-0000-4000-8000-000000000001","actor_id":"00000000-0000-4000-8000-000000000002"}' --cli-binary-format raw-in-base64-out /tmp/smartbridge-relay.json > /dev/null
           node tests/browser-virtual-meetings.cjs
       - if: always()
         run: rm -f /tmp/smartbridge-relay.json
