@@ -88,6 +88,8 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/respond_parent_link') {links=links.map(link=>({...link,status:req.postDataJSON().decision}));data=true;}
   if(url.pathname==='/rest/v1/rpc/log_study_session') {sessionCalls.push(req.postDataJSON());sessions=1;data='session-1';}
   if(url.pathname.startsWith('/functions/')) {status=404;data={error:'Not available'};}
+  // This flow tests deliberately paused checkout, with the actual catalogue shape.
+  if(url.pathname==='/functions/v1/payment-gateways') {status=200;data={checkout_active:false,gateways:[]};}
   if(url.pathname==='/rest/v1/study_rooms') data=[{id:'math',name:'Mathematics'}];
   if(url.pathname==='/rest/v1/rpc/join_study_room') data=true;
   if(url.pathname==='/rest/v1/study_room_posts') {assert.equal(url.searchParams.get('select').includes('author_email'),false);data=roomPosts;}
