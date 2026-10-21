@@ -75,3 +75,6 @@ supabase/.temp
 
 # Reproducible content research and render previews
 tmp/
+
+# Python content compiler cache
+__pycache__/

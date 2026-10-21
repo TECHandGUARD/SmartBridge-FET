@@ -21,7 +21,8 @@ export default function PracticeQuiz() {
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
   const [term, setTerm] = useState('2');
-  const [quizMetadata, setQuizMetadata] = useState({ content_version: '', language: 'en', focus: '', atp_url: '', lesson_path: '' });
+  const [quizSet, setQuizSet] = useState('A');
+  const [quizMetadata, setQuizMetadata] = useState({ content_version: '', language: 'en', focus: '', atp_url: '', lesson_path: '', set_id: '', assessment_note: '' });
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -71,7 +72,7 @@ export default function PracticeQuiz() {
         .eq('grade', grade)
         .eq('is_published', true)
         .eq('quiz_type', 'practice')
-        .contains('metadata', { term: Number(term) })
+        .contains('metadata', { term: Number(term), set_id: quizSet })
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -84,7 +85,7 @@ export default function PracticeQuiz() {
         qId = data[0].id;
         setQuizMetadata(data[0].metadata || {});
       } else {
-        toast.info('No published practice quiz is available for this subject, grade and term yet.');
+        toast.info('No published practice quiz is available for this subject, grade, term and set yet.');
         return;
       }
 
@@ -147,7 +148,7 @@ export default function PracticeQuiz() {
             total_questions: total,
             percentage: pct,
             time_taken_seconds: timeTaken,
-            metadata: { term: Number(term), content_version: quizMetadata.content_version },
+            metadata: { term: Number(term), set_id: quizMetadata.set_id || quizSet, content_version: quizMetadata.content_version },
             created_at: new Date().toISOString()
           })
           .select()
@@ -176,12 +177,12 @@ export default function PracticeQuiz() {
     setSelected(null);
   };
 
-  if (stage === 'select') return <SelectStage subject={subject} setSubject={setSubject} grade={grade} setGrade={setGrade} term={term} setTerm={setTerm} onStart={startQuiz} pastResults={pastResults} loading={loading} />;
+  if (stage === 'select') return <SelectStage subject={subject} setSubject={setSubject} grade={grade} setGrade={setGrade} term={term} setTerm={setTerm} quizSet={quizSet} setQuizSet={setQuizSet} onStart={startQuiz} pastResults={pastResults} loading={loading} />;
   if (stage === 'quiz') return <QuizStage questions={questions} currentQ={currentQ} selected={selected} showExplanation={showExplanation} quizTitle={quizTitle} metadata={quizMetadata} subject={subject} onAnswer={handleAnswer} onNext={handleNext} saving={loading} />;
   if (stage === 'result') return <ResultStage answers={answers} questions={questions} quizTitle={quizTitle} metadata={quizMetadata} subject={subject} onReset={resetQuiz} />;
 }
 
-function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, onStart, pastResults, loading }) {
+function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, quizSet, setQuizSet, onStart, pastResults, loading }) {
   const bySubject = pastResults.reduce((acc, r) => {
     if (!acc[r.subject]) acc[r.subject] = [];
     acc[r.subject].push(r.percentage);
@@ -195,7 +196,7 @@ function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, onSt
           <BookOpen className="w-7 h-7 text-primary" />
         </div>
         <h1 className="font-playfair text-3xl font-bold mb-2">Practice Quiz</h1>
-        <p className="text-muted-foreground">Choose your term. Try a short quiz, understand each answer, then decide what to revise next.</p>
+        <p className="text-muted-foreground">Five questions. A fresh perspective. Choose term practice or mixed revision, then use your feedback to plan the next step.</p>
       </div>
 
       <Card className="mb-6">
@@ -225,6 +226,19 @@ function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, onSt
               <SelectContent>{['2', '3', '4'].map(t => <SelectItem key={t} value={t}>Term {t}{t === '4' ? ' · Year-end practice' : ''}</SelectItem>)}</SelectContent>
             </Select>
           </div>
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-medium mb-2">Choose your quiz set</legend>
+            {[
+              { id: 'A', title: 'Term-focused practice', detail: 'Five questions on selected topics in your chosen term.' },
+              { id: 'B', title: 'Mixed grade revision', detail: 'Five different questions from the other two terms, including later-term topics.' },
+            ].map(set => (
+              <label key={set.id} className={`flex items-start gap-3 cursor-pointer rounded-2xl border p-4 transition-colors ${quizSet === set.id ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/40'}`}>
+                <input type="radio" name="quiz-set" value={set.id} checked={quizSet === set.id} onChange={() => setQuizSet(set.id)} className="mt-1 accent-primary" />
+                <span className="min-w-0"><span className="block font-semibold text-sm">Set {set.id} · {set.title}</span><span className="block text-xs leading-5 text-muted-foreground mt-1">{set.detail}</span></span>
+              </label>
+            ))}
+          </fieldset>
+          <p className="text-xs leading-5 text-muted-foreground">Each set includes different cognitive demands using the subject’s CAPS framework. Mixed revision deliberately revisits questions from term practice; the two sets within a selection have no questions in common.</p>
           <p className="text-xs leading-5 text-muted-foreground">Original formative practice mapped to selected DBE CAPS/ATP topics. These short quizzes sample skills; they are not full examination papers. Term 4 includes revision where the ATP specifies it. Language questions use original passages rather than prescribed set works.</p>
           <Button onClick={onStart} className="w-full gap-2 mt-2" size="lg" disabled={loading || !subject || !grade || !term}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
@@ -258,8 +272,8 @@ function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, onSt
             <p className="text-sm font-medium text-muted-foreground">Recent attempts</p>
             {pastResults.slice(0, 5).map((r, i) => (
               <div key={i} className="flex items-center justify-between text-sm bg-muted/40 rounded-lg px-3 py-2">
-                <span className="font-medium">{r.quiz_title || r.subject}</span>
-                <div className="flex items-center gap-2">
+                <span className="font-medium min-w-0 break-words">{r.quiz_title || r.subject}</span>
+                <div className="flex items-center gap-2 shrink-0">
                   <Badge variant={r.percentage >= 70 ? 'default' : r.percentage >= 50 ? 'secondary' : 'destructive'} className="text-xs">
                     {r.percentage}%
                   </Badge>
@@ -294,6 +308,7 @@ function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, 
       <Card>
         <CardHeader>
           {q.stimulus && <blockquote className="rounded-xl border-l-4 border-primary bg-primary/5 p-4 text-sm leading-7 whitespace-pre-line mb-3">{q.stimulus}</blockquote>}
+          {q.cognitive_level && <Badge lang="en" variant="secondary" className="w-fit mb-2">{q.cognitive_level.code} · {q.cognitive_level.label}</Badge>}
           <CardTitle className="text-lg font-semibold leading-snug">{q.question}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -341,7 +356,16 @@ function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, 
 function ResultStage({ answers, questions, quizTitle, metadata, subject, onReset }) {
   const score = answers.filter(a => a.selected === a.correct).length;
   const pct = Math.round((score / questions.length) * 100);
-  const grade = pct >= 80 ? '🏆 Excellent!' : pct >= 60 ? '👍 Good job!' : pct >= 40 ? '📚 Keep practising!' : '💪 Don\'t give up!';
+  const cognitiveResults = questions.reduce((groups, question, index) => {
+    const label = question.cognitive_level?.label;
+    if (!label) return groups;
+    const entry = groups[label] || { correct: 0, total: 0 };
+    entry.total += 1;
+    if (answers[index]?.selected === question.correct_index) entry.correct += 1;
+    groups[label] = entry;
+    return groups;
+  }, {});
+  const grade = pct >= 80 ? 'Excellent!' : pct >= 60 ? 'Good job!' : pct >= 40 ? 'Keep practising!' : 'Don\'t give up!';
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -358,6 +382,11 @@ function ResultStage({ answers, questions, quizTitle, metadata, subject, onReset
         </CardContent>
       </Card>
 
+      {Object.keys(cognitiveResults).length > 0 && <section aria-labelledby="cognitive-feedback" className="rounded-2xl border p-5 mb-6">
+        <h3 id="cognitive-feedback" className="font-semibold mb-3">Your cognitive-level feedback</h3>
+        <ul className="space-y-2 text-sm">{Object.entries(cognitiveResults).map(([label, result]) => <li key={label} className="flex justify-between gap-4"><span>{label}</span><span className="font-semibold whitespace-nowrap">{result.correct} / {result.total}</span></li>)}</ul>
+        <p className="text-xs text-muted-foreground leading-5 mt-3">A small practice sample, not a full measure of mastery. {metadata.assessment_note || 'Cognitive classifications are draft author judgements pending independent moderation.'}</p>
+      </section>}
       {/* Review answers */}
       <div className="rounded-xl bg-primary/5 p-4 mb-6 text-sm space-y-2">
         <p className="font-semibold">Your next revision step</p>

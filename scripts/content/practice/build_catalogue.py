@@ -3,11 +3,13 @@
 Run from the repository root. Source PDFs in tmp are research material, not copied
 learning content. Questions and passages are SmartBridge originals.
 """
+import copy
 import json
 import re
 import uuid
 from collections import Counter
 from pathlib import Path
+from cognition import FRAMEWORKS, LEVELS, CHALLENGES, classify
 
 ROOT = Path(__file__).resolve().parents[3]
 HERE = Path(__file__).resolve().parent
@@ -60,12 +62,12 @@ for source in ['questions.txt', 'nguni.txt']:
                 'description': f'Short formative practice: {focus}. Selected CAPS/ATP skills, with explanations. Not a complete term assessment.',
                 'quiz_type': 'practice', 'difficulty_level': 'medium',
                 'time_limit_minutes': 12, 'passing_score_percentage': 50,
-                'total_questions': 4, 'allow_retakes': True,
+                'total_questions': 5, 'allow_retakes': True,
                 'show_answers_after_submission': True,
                 'tags': ['CAPS', 'ATP', f'term-{term}', 'formative', code],
                 'metadata': {
                     'term': int(term), 'focus': focus, 'language': language,
-                    'content_version': '2026-10-21.1', 'content_origin': 'SmartBridge original',
+                    'content_version': '2026-10-21.2', 'content_origin': 'SmartBridge original',
                     'curriculum_year': 2026, 'atp_url': atp,
                     'caps_url': caps[{'enhl':'English', 'afhl':'Afrikaans', 'xhhl':'IsiXhosa', 'zuhl':'IsiZulu'}.get(code, name)],
                     'retention_circular_url': 'https://www.education.gov.za/Portals/0/Documents/Publications/2026/Circulars/Circular%20S19%20of%202025%20and%20Annexures.pdf',
@@ -96,7 +98,66 @@ for source in ['questions.txt', 'nguni.txt']:
 
 expected = {f'{c}/{g}/{t}' for c in SUBJECTS for g in (10, 11, 12) for t in (2, 3, 4)}
 assert seen == expected, f'Missing: {expected-seen}; unexpected: {seen-expected}'
-assert all(len(q['questions']) == q['total_questions'] for q in quizzes)
+# Retain original quiz IDs and historical result links; add a second deterministic
+# set rather than overwriting a learner's choice with whichever row is newest.
+challenges = {}
+for raw in (HERE / 'challenges.txt').read_text().splitlines():
+    if not raw.strip() or raw.startswith('#'):
+        continue
+    key, question, correct, a, b, c, explanation = raw.split('|')
+    assert key not in challenges
+    assert len({correct,a,b,c}) == 4
+    challenges[key] = {'question':question, 'options':[a,b,correct,c], 'correct_index':2, 'explanation':explanation}
+assert set(challenges) == expected
+bases = {}
+for quiz in quizzes:
+    code = quiz['tags'][-1]
+    grade = int(quiz['grade'][-2:])
+    term = quiz['metadata']['term']
+    key = f'{code}/{grade}/{term}'
+    index = (grade-10)*3 + term-2
+    assert len(quiz['questions']) == 4
+    for item, level in zip(quiz['questions'], LEVELS[code][index]):
+        item['cognitive_level'] = classify(code, int(level))
+    challenge = challenges[key]
+    challenge['cognitive_level'] = classify(code, CHALLENGES.get(code, [len(FRAMEWORKS[code]) if not code.endswith('hl') else 4]*9)[index])
+    if code.endswith('hl'):
+        challenge['stimulus'] = quiz['questions'][0]['stimulus']
+    quiz['questions'].append(challenge)
+    quiz['title'] += ' · Set A'
+    quiz['metadata'].update({
+        'set_id':'A', 'set_label':'Term-focused practice',
+        'cognitive_framework': ('CAPS-informed historical knowledge and source skills' if code == 'hist' else 'CAPS subject taxonomy') if not code.endswith('hl') else 'CAPS language response: Barrett-informed comprehension and literary analysis',
+        'cognitive_levels': FRAMEWORKS[code],
+        'classification_status':'Draft author classification; independent moderation pending',
+        'assessment_note':'Five-question formative samples do not reproduce formal examination mark weightings or assess extended written responses.',
+    })
+    bases[key] = quiz
+
+mixed = []
+for key, base in bases.items():
+    code, grade, term = key.split('/')
+    others = [bases[f'{code}/{grade}/{t}'] for t in (2,3,4) if t != int(term)]
+    quiz = copy.deepcopy(base)
+    quiz['id'] = str(uuid.uuid5(uuid.NAMESPACE_URL, f'https://smartbridge.fet/practice/{key}/set-b'))
+    quiz['title'] = f"{base['subject']} · Grade {grade} · Term {term} selection · Set B: Mixed revision"
+    quiz['description'] = 'Mixed grade revision drawn from the other two terms. Includes later-term topics; revisit after studying those topics. Questions are reused deliberately across revision sets.'
+    quiz['metadata'].update({'set_id':'B', 'set_label':'Mixed grade revision',
+        'focus': 'Mixed revision: ' + '; '.join(q['metadata']['focus'] for q in others),
+        'source_terms':[q['metadata']['term'] for q in others],
+        'coverage':'Selected grade revision from other terms, including later-term content. Not a second paper covering only the selected term.',
+        'atp_urls':list(dict.fromkeys(q['metadata']['atp_url'] for q in others)),
+        'question_reuse':'Revision questions recur across term-focused and mixed sets; Set A and Set B within the same selection do not share questions.'})
+    quiz['questions'] = copy.deepcopy([others[0]['questions'][0], others[0]['questions'][3], others[1]['questions'][1], others[1]['questions'][2], others[1]['questions'][4]])
+    assert not {q['question'] for q in base['questions']} & {q['question'] for q in quiz['questions']}
+    mixed.append(quiz)
+quizzes.extend(mixed)
+assert len(quizzes) == 270
+assert all(len(q['questions']) == q['total_questions'] == 5 for q in quizzes)
+assert all(len({x['cognitive_level']['label'] for x in q['questions']}) >= 2 for q in quizzes)
+for stale in OUT.glob('quizzes-*.sql'):
+    stale.unlink()
+
 (OUT / 'quizzes.json').write_text(json.dumps(quizzes, ensure_ascii=False, indent=2) + '\n')
 
 def seed(table, records, columns, filename):
