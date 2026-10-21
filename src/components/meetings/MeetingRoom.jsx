@@ -1,3 +1,5 @@
+import CallChat from '@/components/live/CallChat';
+import {useCallChat} from '@/lib/use-call-chat';
 import {Camera,CameraOff,Mic,MicOff,MonitorUp,PhoneOff,Video,Headphones,Presentation,Users,DoorOpen,Hand,ShieldCheck} from 'lucide-react';
 import {CallButton,CallWorkspace,VideoPlaceholder} from '@/components/live/CallStudio';
 import {getCallIceConfig} from '@/lib/call-network';
@@ -28,6 +30,7 @@ function ParticipantVideo({stream,label,muted=false,reaction,cameraOff=false,sta
 }
 export default function MeetingRoom({meeting,user,onRefresh}) {
   const [compactVideos,setCompactVideos]=useState(false);
+  const chat=useCallChat(meeting.id,user.id);
   const presenters=meeting.participants.filter(p=>['admin','tutor','sace_tutor','student_tutor'].includes(p.role)).map(p=>p.user_id);
   const {transport,received}=useSlidePresentation(meeting.id,user.id,presenters);
   const response=meeting.participants.find(p=>p.user_id===user.id)?.response;
@@ -42,11 +45,11 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
   const [muted,setMuted]=useState(false),[cameraOff,setCameraOff]=useState(false),[sharing,setSharing]=useState(false);
   const stream=useRef(null),screen=useRef(null),call=useRef(null),generation=useRef(0),joining=useRef(false),sharePending=useRef(false);
   const stop=useCallback(()=>{
-    generation.current++;joining.current=false;call.current?.stop();call.current=null;transport.reset();reactions.reset();
+    generation.current++;joining.current=false;call.current?.stop();call.current=null;transport.reset();reactions.reset();chat.transport.reset();
     screen.current?.getTracks().forEach(t=>t.stop());screen.current=null;
     stream.current?.getTracks().forEach(t=>t.stop());stream.current=null;
     setRoutes({});setJoined(false);setBusy(false);setLocal(null);setRemote({});setStatuses({});setMuted(false);setCameraOff(false);setSharing(false);
-  },[transport,reactions]);
+  },[transport,reactions,chat.transport]);
   useEffect(()=>()=>stop(),[meeting.id,user.id,stop]);
   const accepted=meeting.participants.filter(p=>p.response==='accepted'&&p.first_joined_at).map(p=>p.user_id);
   const signature=accepted.join(',');
@@ -68,7 +71,7 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
       await onRefresh();
       if(response==='invited')dispatchMeetingNotifications(meeting.id).catch(()=>{});
       if(attempt!==generation.current)return;
-      call.current=createMeetingCall({client:supabase,meetingId:meeting.id,userId:user.id,stream:media,presentation:transport,reactions,iceConfig,relayOnly,receiveVideo:mode!=='audioSlides',quality,onRoute:(id,route)=>setRoutes(previous=>({...previous,[id]:route})),getIceConfig:()=>getCallIceConfig(supabase,'meeting',meeting.id,{force:true}),
+      call.current=createMeetingCall({client:supabase,meetingId:meeting.id,userId:user.id,stream:media,presentation:transport,reactions,chat:chat.transport,iceConfig,relayOnly,receiveVideo:mode!=='audioSlides',quality,onRoute:(id,route)=>setRoutes(previous=>({...previous,[id]:route})),getIceConfig:()=>getCallIceConfig(supabase,'meeting',meeting.id,{force:true}),
         onRemote:(id,value)=>setRemote(previous=>({...previous,[id]:value})),
         onStatus:(id,value)=>{setStatuses(previous=>({...previous,[id]:value}));if(value==='connected')setError('');},onError:setError});
       call.current.start(data.participants.filter(p=>p.response==='accepted'&&p.first_joined_at).map(p=>p.user_id));setJoined(true);
@@ -118,6 +121,7 @@ export default function MeetingRoom({meeting,user,onRefresh}) {
       {joined&&<Suspense fallback={<p role="status" className="studio-note">Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={presenters.includes(user.id)}/></Suspense>}
       {joined&&<div role="group" aria-label="Meeting reactions" className="studio-reactions"><CallButton icon={Hand} aria-label={reactionState[user.id]?.handRaised?'✋ Lower hand':'✋ Raise hand'} aria-pressed={!!reactionState[user.id]?.handRaised} onClick={()=>reactions.toggleHand()}>{reactionState[user.id]?.handRaised?'Lower hand':'Raise hand'}</CallButton>{Object.entries(MEETING_REACTIONS).map(([emoji,label])=><CallButton key={emoji} aria-label={label} onClick={()=>reactions.react(emoji)}>{emoji}</CallButton>)}</div>}
       {joined&&meeting.host_id===user.id&&<details className="studio-settings"><summary>Invite another person</summary><div className="studio-settings-body"><InviteMeetingGuests meeting={meeting} onRefresh={onRefresh}/></div></details>}
+      {joined&&<CallChat chat={chat} userId={user.id} participants={meeting.participants}/>}
       <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||busy} network={network} route={Object.values(routes).includes('relay')?'relay':Object.keys(routes).length?'direct':null}/>
       {joined&&!canShare&&<p className="studio-note">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
     </div>

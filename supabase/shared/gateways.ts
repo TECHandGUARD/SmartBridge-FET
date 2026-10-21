@@ -42,6 +42,9 @@ export async function initializeGateway(provider: 'yoco' | 'paystack', credentia
     const returnPath = order.product === 'booking' ? `/bookings?booking=${order.booking_id}&payment=` : '/Premium?payment=';
     const headers = { 'Authorization': `Bearer ${credentials.key}`, 'Content-Type': 'application/json' };
     if (provider === 'yoco') {
+        // Yoco Checkout requires at least R2. Never silently raise the customer's price.
+        if (!Number.isInteger(order.amount_cents) || order.amount_cents < 200)
+            failure(422, 'Yoco requires a payment of at least R2. Please ask the administrator to review this price.');
         const result = await providerJson('https://payments.yoco.com/api/checkouts', { method: 'POST', headers: { ...headers, 'Idempotency-Key': `smartbridge-${order.id}` }, body: JSON.stringify({ amount: order.amount_cents, currency: 'ZAR', successUrl: appUrl(returnPath+'processing'), cancelUrl: appUrl(returnPath+'cancelled'), failureUrl: appUrl(returnPath+'failed'), metadata: { order_id: order.id }, externalId: order.id }) });
         if (!result.id || result.amount !== order.amount_cents || result.currency !== 'ZAR' || result.processingMode !== credentials.mode)
             failure(502, 'Checkout did not match the order');

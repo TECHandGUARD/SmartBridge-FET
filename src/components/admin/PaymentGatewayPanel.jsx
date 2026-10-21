@@ -1,3 +1,4 @@
+import {invokePayment} from '@/lib/payment-api';
 import {useCallback, useEffect, useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
 import {appConfig} from '@/lib/config';
@@ -9,17 +10,20 @@ import {toast} from 'sonner';
 export default function PaymentGatewayPanel(){
  const [checkoutActive,setCheckoutActive]=useState(false);
  const [gateways,setGateways]=useState([]),[loading,setLoading]=useState(true),[saving,setSaving]=useState(''),[error,setError]=useState('');
+ const [saveError,setSaveError]=useState('');
  const load=useCallback(async()=>{setLoading(true);setError('');try{
-  const {data,error:failure}=await supabase.functions.invoke('payment-gateways',{body:{action:'admin-list'}});if(failure)throw failure;setGateways(data.gateways||[]);setCheckoutActive(data.checkout_active===true);
+  const {data,error:failure}=await invokePayment(supabase,'payment-gateways',{action:'admin-list'});if(failure)throw failure;setGateways(data.gateways||[]);setCheckoutActive(data.checkout_active===true);
  }catch(failure){setError(failure.message||'Payment settings unavailable.');}finally{setLoading(false);}},[]);
  useEffect(()=>{load();},[load]);
  const update=(id,values)=>setGateways(items=>items.map(item=>item.provider===id?{...item,...values}:item));
- const save=async(item)=>{setSaving(item.provider);try{
-  const {error:failure}=await supabase.functions.invoke('payment-gateways',{body:{action:'save',provider:item.provider,enabled:item.enabled,mode:item.mode,priority:item.priority}});if(failure)throw failure;toast.success(`${item.name} settings saved`);await load();
- }catch(failure){toast.error(failure.message||'Could not save gateway settings.');}finally{setSaving('');}};
+ const save=async(item)=>{setSaving(item.provider);setSaveError('');try{
+  const {data}=await invokePayment(supabase,'payment-gateways',{action:'save',provider:item.provider,enabled:item.enabled,mode:item.mode,priority:item.priority});setGateways(data.gateways||[]);setCheckoutActive(data.checkout_active===true);toast.success(`${item.name} settings saved`);
+ }catch(failure){const message=(failure.message||'Could not save gateway settings.')+' Refresh settings to confirm whether the change completed before retrying.';setSaveError(message);toast.error(message);}finally{setSaving('');}};
  return <div className="space-y-4">
   <div><h2 className="font-playfair text-xl font-bold">Payment gateways</h2><p className="text-sm text-muted-foreground">Choose which payment options customers can use. You can keep a gateway disabled until you have an account and are ready to accept payments.</p></div>
-  {!loading&&!error&&(!checkoutActive||!appConfig.paymentsApiEnabled)&&<p role="status" className="text-sm text-amber-700">Online checkout is paused for this app. You can save gateway settings; customers will see them after checkout is activated.</p>}
+  {!loading&&!error&&!checkoutActive&&<p role="status" className="text-sm text-amber-700">Online checkout is paused for this app. You can save gateway settings; customers will see them after checkout is activated.</p>}
+  {saveError&&<p role="alert" className="text-sm text-red-700">{saveError}</p>}
+  {!loading&&<Button variant="outline" disabled={!!saving} onClick={()=>{setSaveError('');load();}}>Refresh settings</Button>}
   {loading?<p role="status">Loading payment settings…</p>:error?<div role="alert" className="space-y-2"><p>{error}</p><Button variant="outline" onClick={load}>Retry</Button></div>:gateways.map(item=>{
    const ready=item.mode==='test'?item.test_ready:item.live_ready;
    return <Card key={item.provider}><CardHeader><CardTitle className="flex flex-wrap items-center gap-3">{item.name}<Badge variant={item.enabled?'default':'secondary'}>{item.enabled?'Enabled':'Disabled'}</Badge></CardTitle></CardHeader><CardContent className="space-y-4">

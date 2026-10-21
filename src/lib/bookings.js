@@ -1,6 +1,7 @@
 import { bookingEstimate } from './tutor-pricing';
 import { supabase } from './supabaseClient';
 import { withTimeout } from './auth-utils';
+import { invokePayment } from './payment-api';
 import { dispatchNotifications, dispatchBookingNotifications } from './action-notifications';
 
 // Both booking screens use this one contract. Keep the same request ID on retry.
@@ -30,11 +31,11 @@ export async function cancelBooking(id, message) {
 }
 
 export async function payForBooking(booking) {
-  const {data:availability,error:gatewayError}=await supabase.functions.invoke('payment-gateways',{body:{}});
+  const {data:availability,error:gatewayError}=await invokePayment(supabase,'payment-gateways',{});
   if(gatewayError) throw new Error('Payment options could not load. Your reservation is saved in Bookings; retry payment there.');
   const gateway=availability?.gateways?.find(item=>item.enabled && item.ready)?.provider;
   if(!availability?.checkout_active || !gateway) throw new Error('Online checkout is unavailable. Your reservation is awaiting payment in Bookings.');
-  const {data,error}=await supabase.functions.invoke('create-checkout',{body:{product:'booking',booking_id:booking.id,request_id:booking.id,gateway}});
+  const {data,error}=await invokePayment(supabase,'create-checkout',{product:'booking',booking_id:booking.id,request_id:booking.id,gateway},{timeout:30000});
   if(error) {
     let detail;try {detail=await error.context?.json();}catch { /* Keep a useful retry message. */ }
     throw new Error(detail?.error || 'Checkout could not open. Your reservation is saved in Bookings; retry payment there.');

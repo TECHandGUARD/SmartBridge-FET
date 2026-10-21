@@ -1,3 +1,5 @@
+import CallChat from '@/components/live/CallChat';
+import {useCallChat} from '@/lib/use-call-chat';
 import {CallButton,CallWorkspace,VideoPlaceholder} from '@/components/live/CallStudio';
 import {DEFAULT_ICE_SERVERS,getCallIceConfig,applyCallQuality,selectedCallRoute} from '@/lib/call-network';
 import CallNetworkControls from '@/components/live/CallNetworkControls';
@@ -21,6 +23,7 @@ export default function LiveClassroom() {
   const [compactVideos,setCompactVideos]=useState(false);
   const { bookingId } = useParams();
   const { user } = useAuth();
+  const chat=useCallChat(bookingId,user?.id);
   const [booking, setBooking] = useState(null);
   const {transport,received}=useSlidePresentation(bookingId,user?.id,booking?[booking.tutor_id]:[]);
   const [status, setStatus] = useState('Checking your booking…');
@@ -91,12 +94,14 @@ export default function LiveClassroom() {
 
   const createPeer = useCallback(() => {
     transport.detach(recipientId);
+    chat.transport.detach(recipientId);
     peer.current?.close();
     pendingIce.current = [];
     sentOffer.current = false;
     const pc = new RTCPeerConnection({iceServers:iceConfig.current.iceServers,iceTransportPolicy:relayOnlyRef.current?'relay':'all'});
       peer.current = pc;
       transport.attach(pc,recipientId,role==='tutor');
+      chat.transport.attach(pc,recipientId,role==='tutor');
       localStream.current.getTracks().forEach(track => pc.addTrack(
         track.kind === 'video' && screenStream.current ? screenStream.current.getVideoTracks()[0] : track,
         localStream.current));
@@ -113,7 +118,7 @@ export default function LiveClassroom() {
       pc.oniceconnectionstatechange=pc.onconnectionstatechange;
 
     return pc;
-  }, [send,transport,recipientId,role]);
+  }, [send,transport,chat.transport,recipientId,role]);
 
   const handleSignal = useCallback(async message => {
     if (!active.current || !peer.current || !booking || message.booking_id!==booking.id || message.sender_id!==recipientId || message.recipient_id!==user?.id) return;
@@ -169,6 +174,7 @@ export default function LiveClassroom() {
 
   const stop = useCallback(() => {
     transport.reset();
+    chat.transport.reset();
     clearTimeout(restartTimer.current);restartTimer.current=null;networkResume.current=null;setRoute(null);setPlaybackBlocked(false);
     active.current = false;
     generation.current += 1;
@@ -197,7 +203,7 @@ export default function LiveClassroom() {
     setCameraOff(false);
     setSharing(false);
     setStatus('You left the classroom');
-  }, [transport]);
+  }, [transport,chat.transport]);
 
   useEffect(() => {
     stop();
@@ -369,6 +375,7 @@ export default function LiveClassroom() {
         </div>
         {joined&&playbackBlocked&&<CallButton icon={Headphones} variant="primary" onClick={()=>remoteVideo.current?.play().then(()=>setPlaybackBlocked(false)).catch(()=>{})}>Play classroom audio and video</CallButton>}
         {joined&&<Suspense fallback={<p className="studio-note" role="status">Loading slide controls…</p>}><SlidePresentation transport={transport} received={received} canPresent={role==='tutor'}/></Suspense>}
+        {joined&&<CallChat chat={chat} userId={user?.id} participants={[{user_id:booking.tutor_id,full_name:'Tutor'},{user_id:booking.student_id,full_name:'Learner'}]}/>}
         <CallNetworkControls quality={quality} onQuality={setQuality} relayOnly={relayOnly} onRelayOnly={setRelayOnly} joined={joined||connecting} network={network} route={route}/>
         {joined&&!canShare&&<p className="studio-note">Screen sharing is unavailable in this browser. Audio, video and viewing shared screens are still available.</p>}
       </div>
