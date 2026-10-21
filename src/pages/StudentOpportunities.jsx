@@ -249,10 +249,11 @@ export default function StudentOpportunities() {
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
+                      aria-label={tab.label}
                       className="flex items-center gap-1.5 text-xs flex-1 min-w-[80px] data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                     >
                       <tab.icon className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{tab.label}</span>
+                      <span>{tab.label}</span>
                     </TabsTrigger>
                   ))}
                 </TabsList>

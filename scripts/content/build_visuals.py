@@ -1,31 +1,35 @@
 """Build lightweight original explanatory SVGs from the published topic data.
 No remote images, learner data or publisher pages are copied. Rebuild with Python.
 """
-import html,json,math,pathlib,textwrap
+import hashlib,html,json,math,pathlib,textwrap
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 OUT=ROOT/'public/study-visuals';OUT.mkdir(exist_ok=True)
-INK='#173d34';GREEN='#2d8068';GOLD='#a86b26';PALE='#e6efe8';BLUE='#386a98'
+INK='#193e36';GREEN='#347864';GOLD='#a97936';PALE='#edf3ed';BLUE='#3c718c'
 def esc(s):return html.escape(str(s))
 def text(x,y,s,size=17,color=INK,anchor='start',weight='normal'):
  return f'<text x="{x}" y="{y}" font-size="{size}" fill="{color}" text-anchor="{anchor}" font-weight="{weight}">{esc(s)}</text>'
 def lines(x,y,s,width=29,size=15,color=INK):
  return ''.join(text(x,y+i*(size+6),line,size,color) for i,line in enumerate(textwrap.wrap(str(s),width=width)))
-def rect(x,y,w,h,fill=PALE):return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="12" fill="{fill}"/>'
-def line(x,y,X,Y,color=GREEN,width=3):return f'<path d="M{x},{y} L{X},{Y}" stroke="{color}" stroke-width="{width}" fill="none"/>'
+def rect(x,y,w,h,fill=PALE):
+ paint='url(#sage)' if fill==PALE else 'url(#forest)' if fill==GREEN else 'url(#brass)' if fill==GOLD else fill
+ return f'<rect x="{x}" y="{y}" width="{w}" height="{h}" rx="13" fill="{paint}" stroke="{INK}" stroke-opacity=".13" stroke-width=".8"/>'
+def line(x,y,X,Y,color=GREEN,width=3):return f'<path d="M{x},{y} L{X},{Y}" stroke="{color}" stroke-width="{width}" stroke-linecap="round" fill="none"/>'
 def arrow(x,y,X,Y,color=GREEN):
  a=math.atan2(Y-y,X-x);d=9
  pts=[(X-d*math.cos(a-.5),Y-d*math.sin(a-.5)),(X,Y),(X-d*math.cos(a+.5),Y-d*math.sin(a+.5))]
- return line(x,y,X,Y,color)+f'<polyline points="{" ".join(f"{i},{j}" for i,j in pts)}" stroke="{color}" stroke-width="3" fill="none"/>'
+ return line(x,y,X,Y,color,2.1)+f'<polyline points="{" ".join(f"{i},{j}" for i,j in pts)}" stroke="{color}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
 def circle(x,y,r,fill=GREEN):return f'<circle cx="{x}" cy="{y}" r="{r}" fill="{fill}"/>'
 def flow(p):
- rows=p['visual']['rows'];out='';n=len(rows);h=min(90,300/n-12)
+ rows=p['visual']['rows'];out='';n=len(rows);h=min(94,320/n-8)
  for i,row in enumerate(rows):
-  y=15+i*(h+14);out+=circle(24,y+22,16)+text(24,y+28,str(i+1),16,'white','middle','bold')+rect(54,y,554,h)
-  # Visually connect the specific evidence in the published table.
-  out+=lines(70,y+24,row[0],width=26,size=14)
-  out+=arrow(278,y+27,300,y+27,GOLD)
-  out+=lines(320,y+24,' · '.join(row[1:]),width=33,size=14)
-  if i<n-1:out+=line(24,y+39,24,y+h+12,GOLD,2)
+  y=6+i*(h+8)
+  if i<n-1:out+=line(21,y+22,21,y+h+28,'#c3cfc0',1.5)
+  out+=circle(21,y+24,17,'url(#forest)')+text(21,y+29,f'{i+1:02}',12,'white','middle','bold')
+  out+=rect(54,y,566,h,'#ffffff')+rect(54,y,172,h,PALE)
+  out+=lines(68,y+26,row[0],width=19,size=15)
+  out+=lines(247,y+25,row[1],width=39,size=15)
+  detail_y=y+29+len(textwrap.wrap(row[1],width=39))*21
+  out+=lines(247,detail_y,row[2],width=45,size=13,color='#576d62')
  return out
 
 def draw(p):
@@ -35,11 +39,18 @@ def draw(p):
   X=lambda x:75+(x-xmin)/(xmax-xmin)*480
   Y=lambda y:255-(y-ymin)/(ymax-ymin)*215
   f=lambda x:x**3-3*x if cubic else x*x-4*x+3
-  out=arrow(55,Y(0),585,Y(0))+arrow(X(0),275,X(0),25)+text(590,Y(0)-8,'x',14)+text(X(0)+12,28,'y',14)
+  out=rect(48,15,560,275,'#ffffff')
+  for x in range(math.ceil(xmin),math.floor(xmax)+1):
+   out+=line(X(x),30,X(x),270,'#dce5df',.7)
+   if x:out+=text(X(x),Y(0)+18,str(x),11,'#708078','middle')
+  for y in range(math.ceil(ymin),math.floor(ymax)+1):
+   out+=line(65,Y(y),580,Y(y),'#dce5df',.7)
+   if y:out+=text(X(0)-13,Y(y)+4,str(y),11,'#708078','end')
+  out+=arrow(55,Y(0),585,Y(0))+arrow(X(0),275,X(0),25)+text(590,Y(0)-8,'x',14)+text(X(0)+12,28,'y',14)
   points=' '.join(f'{X(xmin+(xmax-xmin)*i/100):.2f},{Y(f(xmin+(xmax-xmin)*i/100)):.2f}' for i in range(101))
-  out+=f'<polyline points="{points}" stroke="{GOLD}" stroke-width="4" fill="none"/>'
+  out+=f'<polyline points="{points}" stroke="{GOLD}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>'
   for x in ([-1,1] if cubic else [1,2,3]):
-   y=f(x);out+=circle(X(x),Y(y),5)+text(X(x),Y(y)+(-16 if y>=0 else 27),f'({x}; {y})',15,INK,'middle')
+   y=f(x);out+=circle(X(x),Y(y),9,'#ffffff')+circle(X(x),Y(y),4.5)+text(X(x),Y(y)+(-16 if y>=0 else 27),f'({x}; {y})',15,INK,'middle')
   out+=text(320,310,'f(x) = x³ − 3x' if cubic else 'y = x² − 4x + 3',20,INK,'middle')
  elif id=='math-10':
   out=rect(130,15,380,64)+text(320,55,'x² − 5x + 6 = 0',24,INK,'middle')+arrow(320,85,320,115)+rect(130,120,380,64)+text(320,160,'(x − 2)(x − 3) = 0',24,INK,'middle')
@@ -56,13 +67,25 @@ def draw(p):
   out=text(28,30,'BEFORE',15)+rect(35,80,140,70)+text(105,122,'2 kg',23,INK,'middle')+arrow(180,110,265,110)+text(217,88,'3 m/s',16,INK,'middle')+rect(365,80,100,70)+text(415,122,'1 kg',23,INK,'middle')+text(415,175,'at rest',16,INK,'middle')
   out+=text(28,220,'AFTER: STUCK TOGETHER',15)+rect(180,235,235,65)+text(297,275,'3 kg',23,INK,'middle')+arrow(425,267,550,267)+text(487,245,'2 m/s',16,INK,'middle')
  elif id=='lisc-10':
-  out=rect(110,26,285,230,'#c1d9ac')+rect(122,38,261,206,'#eaf3d9')+rect(205,70,140,130,'#cbe0ef')
-  out+=circle(167,100,25,'#bcb0d3')+circle(148,183,14,GREEN)+circle(355,218,14,GREEN)
-  for x,y,X,Y,label in [(110,52,24,52,'Cell wall'),(383,60,440,60,'Membrane'),(345,120,440,120,'Vacuole'),(169,100,440,180,'Nucleus'),(355,218,440,240,'Chloroplast')]:out+=line(x,y,X,Y,GOLD,2)+text(X,Y-9,label,14)
+  out='<path d="M143 24 Q110 24 110 58 L110 217 Q110 258 151 258 L358 258 Q398 258 398 217 L398 66 Q398 24 355 24 Z" fill="url(#cell)" stroke="#719266" stroke-width="6"/>'
+  out+='<path d="M144 37 Q124 37 124 63 L124 213 Q124 243 153 243 L354 243 Q383 243 383 212 L383 68 Q383 38 354 38 Z" fill="#edf4df" stroke="#a2bc8a" stroke-width="2"/>'
+  out+='<path d="M239 61 Q205 67 210 104 L207 170 Q210 205 242 211 L321 209 Q354 203 352 168 L348 101 Q345 67 316 62 Z" fill="url(#vacuole)" stroke="#85b0bd" stroke-width="2"/>'
+  out+=circle(167,100,27,'url(#nucleus)')+circle(173,104,10,'#7b6997')
+  for x,y in [(147,182),(354,218),(345,49)]:
+   out+=f'<ellipse cx="{x}" cy="{y}" rx="20" ry="11" transform="rotate(-24 {x} {y})" fill="url(#forest)" stroke="#426e44" stroke-width="1.4"/>'
+   for j in [-7,0,7]:out+=line(x+j,y-4,x+j+1,y+4,'#b1d48b',1.5)
+  for x,y in [(157,142),(178,178),(177,221),(280,230),(367,144),(192,54)]:out+=circle(x,y,2.2,'#8da785')
+  for x,y,X,Y,label in [(110,52,24,52,'Cell wall'),(383,60,440,60,'Membrane'),(345,120,440,120,'Vacuole'),(140,100,24,130,'Nucleus'),(355,218,440,240,'Chloroplast')]:out+=line(x,y,X,Y,GOLD,1.5)+text(X,Y-9,label,14)
   out+=text(320,297,'Simplified photosynthetic plant cell · not to scale',16,INK,'middle')
  elif id=='lisc-11':
-  out=circle(90,76,42,'#efcb70')+text(90,82,'Light',16,INK,'middle')+arrow(145,90,245,125,GOLD)
-  out+=rect(246,95,150,125,'#bad3ad')+text(321,150,'Leaf',26,INK,'middle')+text(321,178,'chloroplasts',16,INK,'middle')
+  out=circle(90,76,45,'url(#sun)')+text(90,82,'Light',16,INK,'middle')
+  for a in range(0,360,45):
+   r=math.radians(a);out+=line(90+53*math.cos(r),76+53*math.sin(r),90+61*math.cos(r),76+61*math.sin(r),'#d6ae59',2)
+  out+=arrow(155,90,252,125,GOLD)
+  out+='<path d="M254 208 Q215 72 396 60 Q419 205 270 224 Z" fill="url(#leaf)" stroke="#3f775a" stroke-width="2"/>'
+  out+=line(258,223,380,80,'#bcd7a7',2)
+  for x,y in [(280,193),(304,165),(328,137)]:out+=line(x,y,x-27,y-48,'#bcd7a7',1)+line(x,y,x+54,y-9,'#bcd7a7',1)
+  out+=rect(278,135,102,48,'#eff5dc')+text(329,154,'Leaf',16,INK,'middle')+text(329,174,'chloroplasts',12,INK,'middle')
   out+=text(24,240,'CO₂ + water',18)+arrow(165,230,250,192)+arrow(395,145,475,145)+text(480,137,'Glucose',18)+text(480,163,'+ oxygen',18)
   out+=text(320,300,'Light energy supports the production of glucose.',17,INK,'middle')
  elif id=='lisc-12':
@@ -96,6 +119,37 @@ def draw(p):
  elif id=='acc-12':
   out=text(320,35,'Sales: R500 000',23,INK,'middle')+rect(45,70,330,70,GREEN)+rect(375,70,220,70,GOLD)+text(210,110,'Cost: R300 000',19,'white','middle')+text(485,110,'GP: R200 000',17,'white','middle')
   out+=arrow(485,150,485,205)+rect(320,215,285,70)+text(462,257,'GP margin = 40%',22,INK,'middle')+text(25,305,'Gross profit ÷ sales × 100',19)
+ elif id=='bst-12':
+  cells=[('S','STRENGTHS',['Strong maths authors','Clear brand identity'],PALE),('W','WEAKNESSES',['Slow delivery process','Limited cash reserves'],'#f4ecd9'),('O','OPPORTUNITIES',['Digital demand'],PALE),('T','THREATS',['New competitors'],'#f4ecd9')]
+  for i,(letter,label,items,color) in enumerate(cells):
+   x=15+(i%2)*312;y=8+(i//2)*148
+   out+=rect(x,y,298,137,color)+text(x+19,y+42,letter,33,GREEN if i%2==0 else GOLD,weight='bold')+text(x+67,y+33,label,11,weight='bold')
+   out+=text(x+67,y+53,'INTERNAL' if i<2 else 'EXTERNAL',9,'#62756a')
+   for j,item in enumerate(items):out+=text(x+20,y+86+j*23,item,15)
+ elif id=='eco-12':
+  out=text(25,21,'MPC = 0.8  /  each round spends 80% of the previous one',15)
+  for i,v in enumerate([100,80,64]):
+   x=44+i*177;h=v*1.65
+   out+=rect(x,247-h,123,h,GREEN if i==0 else BLUE if i==1 else GOLD)+text(x+61,232-h,f'R{v}',21,INK,'middle')+text(x+61,274,f'Round {i+1}',14,INK,'middle')
+   if i<2:out+=arrow(x+134,150,x+164,150,GOLD)
+  out+=line(25,247,596,247,'#8da597',1)+text(320,310,'All rounds: total spending approaches R500',18,INK,'middle')
+ elif id=='tour-11':
+  values=[('Transport',600),('Room',800),('Activity × 2',240),('Meals × 2',300)]
+  for i,(label,v) in enumerate(values):
+   y=16+i*65;out+=text(20,y+23,label,16)+rect(160,y+3,v/800*325,30,GREEN if i%2==0 else BLUE)+text(510,y+25,f'R{v}',17)
+  out+=rect(15,281,610,44,PALE)+text(35,309,'Total for two people',16)+text(602,311,'R1 940',23,INK,'end','bold')
+ elif p['code']=='hist':
+  rows=p['visual']['rows'];step=310/len(rows)
+  out=line(130,22,130,296,'#b2c4b4',2)
+  for i,(date,event,context) in enumerate(rows):
+   y=8+i*step;out+=text(111,y+27,date,12,INK,'end')+circle(130,y+22,9,'#fffefa')+circle(130,y+22,4,GOLD)
+   out+=rect(155,y,465,step-7,'#ffffff')+text(175,y+26,event,16)+lines(175,y+49,context,50,13,'#576d62')
+ elif id=='tour-10':
+  icons=['TRANSPORT','STAY','EXPLORE','DINE']
+  for i,row in enumerate(p['visual']['rows']):
+   x=15+(i%2)*315;y=8+(i//2)*158
+   out+=rect(x,y,300,142,'#ffffff')+circle(x+29,y+30,16,'url(#forest)')+text(x+29,y+35,str(i+1),14,'#ffffff','middle')+text(x+56,y+32,icons[i],11,GOLD,weight='bold')
+   out+=text(x+19,y+72,row[0],17)+text(x+19,y+99,row[2],14,'#576d62')
  elif id=='geo-10':
   out=circle(90,63,35,'#efcb70')+text(90,69,'Sun',18,INK,'middle')+rect(50,250,540,30,GREEN)+text(320,305,'Earth’s surface',18,INK,'middle')
   out+=arrow(130,90,235,245,GOLD)+text(110,175,'Shortwave',16)+arrow(340,245,340,70,BLUE)+text(355,100,'Infrared',16)
@@ -109,9 +163,11 @@ def draw(p):
   out+=arrow(320,98,320,130,GOLD)+text(345,119,'+10 hours flying',16)+rect(25,140,590,65)+text(48,180,'Tuesday 06:00 UTC',23)
   out+=arrow(320,213,320,242,GOLD)+text(345,233,'+1 hour at destination',15)+rect(25,250,590,65)+text(48,289,'Tuesday 07:00 local · UTC+1',22)
  elif p['code'] in ['enhl','afhl','xhhl','zuhl']:
-  # Annotations retain the guide's language and original textual evidence.
   for i,row in enumerate(p['visual']['rows']):
-   y=16+i*101;out+=rect(20,y,225,79,'#f2e4c5')+lines(37,y+27,'“'+row[0]+'”',21,18)+arrow(255,y+39,297,y+39)+rect(310,y,310,79)+lines(326,y+25,row[1],32,15)+lines(326,y+50,row[2],35,13)
+   y=7+i*103;out+=rect(15,y,610,94,'#ffffff')
+   out+=text(33,y+30,'“',39,GOLD)+lines(57,y+35,row[0],19,18)
+   out+=line(244,y+18,244,y+76,'#d9d3c3',1)+arrow(258,y+47,285,y+47,GOLD)
+   out+=lines(305,y+29,row[1],31,16)+lines(305,y+64,row[2],37,13,color='#576d62')
  else:out=flow(p)
  return out
 DESCRIPTIONS = {
@@ -138,11 +194,38 @@ DESCRIPTIONS = {
  'tour-12': ('Convert through UTC and check the day', 'Monday 22:00 in Johannesburg at UTC plus 2 is Monday 20:00 UTC. Add a 10 hour flight to reach Tuesday 06:00 UTC; add the destination offset of plus 1 to reach Tuesday 07:00 local.'),
 }
 manifest={}
+DEFS='''<defs>
+ <linearGradient id="paper" x2="0" y2="1"><stop stop-color="#fffefa"/><stop offset="1" stop-color="#f2f3ec"/></linearGradient>
+ <linearGradient id="forest" x2=".8" y2="1"><stop stop-color="#3d806b"/><stop offset="1" stop-color="#183f35"/></linearGradient>
+ <linearGradient id="sage" x2=".8" y2="1"><stop stop-color="#f0f5ee"/><stop offset="1" stop-color="#e0eadd"/></linearGradient>
+ <linearGradient id="brass" x2="1" y2="1"><stop stop-color="#c7a36a"/><stop offset="1" stop-color="#98703b"/></linearGradient>
+ <linearGradient id="cell" x2="1" y2="1"><stop stop-color="#d7e6bf"/><stop offset="1" stop-color="#9cb887"/></linearGradient>
+ <linearGradient id="vacuole" x2="1" y2="1"><stop stop-color="#e7f3ed"/><stop offset="1" stop-color="#b7d6df"/></linearGradient>
+ <radialGradient id="nucleus" cx=".3" cy=".25"><stop stop-color="#e0d7ec"/><stop offset="1" stop-color="#a596bd"/></radialGradient>
+ <radialGradient id="sun"><stop stop-color="#faf0c6"/><stop offset="1" stop-color="#e6c77c"/></radialGradient>
+ <linearGradient id="leaf" x2="1" y2="1"><stop stop-color="#9dbb74"/><stop offset=".6" stop-color="#5f9361"/><stop offset="1" stop-color="#35694f"/></linearGradient>
+ <pattern id="dots" width="18" height="18" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r=".65" fill="#8fa491" opacity=".18"/></pattern>
+</defs>'''
 for p in json.loads((ROOT/'src/data/study-packs.json').read_text()):
  description=p['visual']['title']+'. '+'. '.join(', '.join(row) for row in p['visual']['rows'])
  caption,description=DESCRIPTIONS.get(p['id'],(p['visual']['title'],description))
- svg=f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 380" role="img" aria-labelledby="title desc"><title id="title">{esc(p['title'])}</title><desc id="desc">{esc(description)}</desc><rect width="640" height="380" rx="18" fill="#faf9f4"/><g font-family="DejaVu Sans,Arial,sans-serif">{draw(p)}{text(25,361,'SmartBridge FET · Grade '+str(p['grade'])+' · '+p['subject'],12,'#52675e')}</g></svg>'''
+ heading=lines(40,79,p['title'],width=52,size=23)
+ svg=f'''<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 800 520" role="img" aria-labelledby="title desc"><title id="title">{esc(p['title'])}</title><desc id="desc">{esc(description)}</desc>{DEFS}
+ <rect width="800" height="520" rx="0" fill="url(#paper)"/>
+ <path d="M600 0H800V190C718 156 654 86 600 0Z" fill="#e4ebe1" opacity=".55"/>
+ <rect x="20" y="122" width="760" height="350" rx="18" fill="url(#dots)"/>
+ <g font-family="DejaVu Sans,Arial,sans-serif">
+ {text(40,36,p['subject'].upper()+'  /  GRADE '+str(p['grade']),11,'#52675e',weight='bold')}
+ <path d="M704 24H760M732 10V38" stroke="#ae8a50" stroke-width="1" opacity=".65"/>
+ <g font-family="Georgia,DejaVu Serif,serif">{heading}</g>
+ <path d="M40 116H760" stroke="#c6d0c0" stroke-width=".8"/>
+ <g transform="translate(64 132) scale(1.05)">{draw(p)}</g>
+ <path d="M40 484H760" stroke="#c6d0c0" stroke-width=".8"/>
+ {text(40,506,'SMARTBRIDGE FET',10,'#52675e',weight='bold')}
+ {text(760,506,'VISUAL NOTES  /  '+p['id'].upper(),10,'#52675e','end')}
+ </g></svg>'''
  (OUT/(p['id']+'.svg')).write_text(svg)
- manifest[p['id']]={'src':'/study-visuals/'+p['id']+'.svg','alt':description,'caption':caption}
+ version=hashlib.sha256(svg.encode()).hexdigest()[:12]
+ manifest[p['id']]={'src':'/study-visuals/'+p['id']+'.svg?v='+version,'alt':description,'caption':caption}
 (ROOT/'src/data/study-visuals.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
 print(f'Built {len(manifest)} explanatory SVGs')
