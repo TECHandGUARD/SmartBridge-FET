@@ -1,3 +1,4 @@
+import StaffAccountsPanel from '@/components/admin/StaffAccountsPanel';
 import {Link} from 'react-router-dom';
 import BookingActivitySummary from '@/components/tutor/BookingActivitySummary';
 import {paymentOrderSummary, loadPaymentOrders} from '@/lib/payment-reporting';
@@ -33,6 +34,7 @@ import { toast } from 'sonner';
 
 const ADMIN_MOBILE_SECTIONS = [
   { value: 'registrations', label: 'Registrations' },
+  { value: 'staff-accounts', label: 'Staff Accounts' },
   { value: 'verification', label: 'Tutor Verification' },
   { value: 'users', label: 'Users' },
   { value: 'tutors', label: 'Tutor Analytics' },
@@ -798,6 +800,7 @@ export default function AdminDashboard() {
           </div>
           <TabsList className="mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
+            <TabsTrigger value="staff-accounts">Staff Accounts</TabsTrigger>
             <TabsTrigger value="verification" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Tutor Verification</TabsTrigger>
             <TabsTrigger value="users" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Users</TabsTrigger>
             <TabsTrigger value="tutors" className="gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> Tutor Analytics</TabsTrigger>
@@ -1011,6 +1014,7 @@ export default function AdminDashboard() {
             </SafeSubComponent>
           </TabsContent>
 
+          <TabsContent value="staff-accounts"><SafeSubComponent><StaffAccountsPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="sponsorship"><SafeSubComponent><SponsorshipPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="subscription-pricing"><SafeSubComponent><SubscriptionPricingPanel /></SafeSubComponent></TabsContent>
           <TabsContent value="legal-documents"><SafeSubComponent><LegalDocumentsPanel /></SafeSubComponent></TabsContent>

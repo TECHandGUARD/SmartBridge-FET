@@ -2,6 +2,7 @@
 export const TUTOR_ROLES = ['sace_tutor', 'student_tutor', 'tutor_pending', 'tutor'];
 export function getDashboardPath(user) {
   if (user?.is_super_admin === true || user?.role === 'admin') return '/admin';
+  if (user?.staff_access?.enabled === true) return '/staff';
   if (user?.role === 'parent') return '/parent-dashboard';
   if (user?.role === 'school_counselor') return '/counselor';
   if (TUTOR_ROLES.includes(user?.role)) return '/tutor-dashboard';
@@ -9,7 +10,7 @@ export function getDashboardPath(user) {
 }
 export function getAccountDestination(user) {
   if (!user) return '/login';
-  if (user.is_super_admin !== true && !user.onboarding_complete) return '/onboarding';
+  if (user.is_super_admin !== true && user?.staff_access?.enabled !== true && !user.onboarding_complete) return '/onboarding';
   return getDashboardPath(user);
 }
 const item = (label, path, icon) => ({ label, path, icon });
@@ -24,6 +25,7 @@ export function getNavigation(user) {
     primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
     secondary: [item('Virtual meetings','/meetings','users'), ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), item('Practice', '/quiz', 'practice'), item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book')],
   };
+  if (user?.staff_access?.enabled === true) return {primary:[dashboard,resources],secondary:[item('Home','/','home')]};
   if (user?.role === 'school_counselor') return { primary: [dashboard, resources], secondary: [item('Home', '/', 'home')] };
   if (user?.role === 'parent') return {
     primary: [dashboard, tutors, item('Opportunities', '/opportunities', 'book'), forum],

@@ -27,6 +27,11 @@ export const AuthProvider = ({ children }) => {
         if (!data) throw new Error('Your account profile is unavailable. Please retry or contact support.');
         if (data.is_active === false) throw new Error('Your account is inactive. Please contact support.');
         next = mergeProfile(authUser, data);
+        // The database supplies delegated access; user metadata never grants staff privileges.
+        try {
+          const access = await withTimeout(supabase.rpc('get_staff_access'), 5000);
+          next.staff_access = !access.error && access.data?.enabled === true ? access.data : null;
+        } catch { next.staff_access = null; }
       }
       if (alive.current && request === generation.current) {
         setUser(next); setAuthError(null); setIsLoadingAuth(false);
@@ -125,7 +130,7 @@ export const AuthProvider = ({ children }) => {
   const role = user?.is_super_admin ? 'admin' : user?.role || 'user';
   return <AuthContext.Provider value={{ user, role, isAuthenticated: !!user, isLoadingAuth, loading: isLoadingAuth,
     authError, authChecked: !isLoadingAuth, isLoadingPublicSettings: false, appPublicSettings: { enabled: true },
-    isAdmin: user?.is_super_admin === true, isTutor: ['sace_tutor', 'student_tutor', 'tutor'].includes(role), isStudent: role === 'student', isParent: role === 'parent',
+    isAdmin: user?.is_super_admin === true || user?.role === 'admin', isTutor: ['sace_tutor', 'student_tutor', 'tutor'].includes(role), isStudent: role === 'student', isParent: role === 'parent',
     signIn, signUp, signInWithGoogle, signOut, updateUserProfile, checkUser,
     navigateToLogin: () => window.location.assign('/login'), checkAppState: checkUser,
   }}>{children}</AuthContext.Provider>;

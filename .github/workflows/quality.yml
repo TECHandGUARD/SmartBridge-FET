@@ -32,6 +32,7 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e:content
       - run: npm run test:e2e:opportunities
+      - run: npm run test:e2e:staff
       - run: npm run test:e2e:payments
       - run: npm run test:e2e:drafts
       - run: npm run test:e2e:presentations

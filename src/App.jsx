@@ -30,6 +30,7 @@ const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const TutorDashboard = lazy(() => import('./pages/TutorDashboard'));
 const Tutors = lazy(() => import('./pages/Tutors'));
 const Premium = lazy(() => import('./pages/Premium'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -235,6 +236,7 @@ const AuthenticatedApp = () => {
             }
           />
 
+          <Route path="/staff" element={<ProtectedRoute><StaffDashboard /></ProtectedRoute>} />
           {/* 🔧 ADMIN DASHBOARD */}
           <Route
             path="/admin"
