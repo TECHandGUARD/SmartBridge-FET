@@ -115,7 +115,8 @@ def draw(p):
    out+=text(320,y-12,label,16,INK,'middle')
  elif id=='acc-10':
   out=text(320,40,'Assets = Equity + Liabilities',25,INK,'middle')+rect(40,80,560,70,GREEN)+text(320,124,'Assets R12 000',25,'white','middle')
-  out+=rect(40,180,390,70)+rect(445,180,155,70,'#f1dfbd')+text(235,222,'Equity R10 000',23,INK,'middle')+text(522,222,'R2 000',21,INK,'middle')+text(522,278,'Liabilities',16,INK,'middle')+text(235,278,'Owner’s interest',16,INK,'middle')
+  # The component blocks use the same scale as total assets: 10 000 : 2 000.
+  out+=rect(40,180,560*5/6,70)+rect(40+560*5/6,180,560/6,70,'#f1dfbd')+text(40+560*5/12,222,'Equity R10 000',23,INK,'middle')+text(600-560/12,222,'R2 000',17,INK,'middle')+text(600-560/12,278,'Liabilities',13,INK,'middle')+text(40+560*5/12,278,'Owner’s interest',16,INK,'middle')
  elif id=='acc-12':
   out=text(320,35,'Sales: R500 000',23,INK,'middle')+rect(45,70,330,70,GREEN)+rect(375,70,220,70,GOLD)+text(210,110,'Cost: R300 000',19,'white','middle')+text(485,110,'GP: R200 000',17,'white','middle')
   out+=arrow(485,150,485,205)+rect(320,215,285,70)+text(462,257,'GP margin = 40%',22,INK,'middle')+text(25,305,'Gross profit ÷ sales × 100',19)
