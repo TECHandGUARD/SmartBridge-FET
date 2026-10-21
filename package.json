@@ -30,6 +30,7 @@
     "check:mobile": "node scripts/check-mobile-release.js",
     "test:e2e:presentations": "node tests/browser-presentations.cjs",
     "test:e2e:content": "node tests/browser-study-packs.cjs",
+    "test:e2e:opportunities": "node tests/browser-practice-opportunities.cjs",
     "test:e2e:drafts": "node tests/browser-assessment-drafts.cjs"
   },
   "dependencies": {

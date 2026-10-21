@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Calendar, MapPin, Clock, CheckCircle2, Upload, FileText, ChevronDown, ChevronUp, Plus, AlertCircle, Trophy, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-const TESTS = ['AQL', 'MAT', 'QL'];
+import { formatOpportunityDate, southAfricanDate } from '@/lib/opportunity-dates';
+const TESTS = ['AQL', 'MAT'];
 const BAND_COLORS = {
   Proficient: 'bg-green-100 text-green-700',
   Intermediate: 'bg-yellow-100 text-yellow-700',
@@ -33,16 +34,17 @@ function TestDateCard({
   const [qlScore, setQlScore] = useState(registration?.ql_score ?? '');
   const [band, setBand] = useState(registration?.overall_band ?? '');
   const [savingResults, setSavingResults] = useState(false);
-  const daysUntil = Math.ceil((new Date(testDate.test_date).getTime() - new Date().getTime()) / 86400000);
-  const regDeadlineDays = testDate.registration_deadline ? Math.ceil((new Date(testDate.registration_deadline).getTime() - new Date().getTime()) / 86400000) : null;
-  const isPast = daysUntil < 0;
+  const today = southAfricanDate();
+  const daysUntil = Math.ceil((new Date(`${testDate.test_date}T12:00:00+02:00`).getTime() - new Date(`${today}T12:00:00+02:00`).getTime()) / 86400000);
+  const registrationClosed = Boolean(testDate.registration_deadline && testDate.registration_deadline < today);
+  const isPast = testDate.test_date < today;
   const isRegistered = !!registration;
   const toggleTest = t => {
     setSelectedTests(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
   };
   const handleRegister = async () => {
     if (!userEmail) {
-      toast.error('Please sign in to register');
+      toast.error('Please sign in to save a test date');
       return;
     }
     setRegistering(true);
@@ -64,14 +66,15 @@ function TestDateCard({
         city: testDate.city,
         tests_registered: selectedTests,
         status: 'registered',
+        metadata: { tracking_only: true, official_booking_confirmed: false },
         created_at: new Date().toISOString()
       });
       if (error) throw error;
-      toast.success('Registration successful!');
+      toast.success('Date saved to your planner. Complete your booking and payment on the official NBT website.');
       onRefresh();
     } catch (err) {
       console.error('Registration error:', err);
-      toast.error(`Failed to register: ${err.message}`);
+      toast.error(`Could not save this date: ${err.message}`);
     } finally {
       setRegistering(false);
     }
@@ -147,7 +150,7 @@ function TestDateCard({
               })}
               </p>
               {isRegistered && <Badge className="text-[10px] bg-primary/10 text-primary px-1.5 py-0 flex items-center gap-0.5">
-                  <CheckCircle2 className="w-2.5 h-2.5" /> Registered
+                  <CheckCircle2 className="w-2.5 h-2.5" /> In your planner
                 </Badge>}
               {isPast && <Badge className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0">Past</Badge>}
               {!isPast && daysUntil <= 7 && <Badge className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0 flex items-center gap-0.5">
@@ -168,9 +171,14 @@ function TestDateCard({
               {(testDate.tests_available || TESTS).map(t => <Badge key={t} variant="outline" className="text-[10px] px-1.5 py-0">{t}</Badge>)}
             </div>
 
-            {regDeadlineDays !== null && !isPast && <p className={`text-[11px] mt-1 ${regDeadlineDays <= 3 ? 'text-red-500 font-semibold' : 'text-muted-foreground'}`}>
-                Registration deadline: {regDeadlineDays < 0 ? 'Closed' : `${regDeadlineDays}d left`}
-              </p>}
+            <dl className="mt-3 grid sm:grid-cols-2 gap-x-4 gap-y-1 text-xs">
+              <div><dt className="font-semibold">Registration closes</dt><dd>{formatOpportunityDate(testDate.registration_deadline)} {registrationClosed ? '· Closed' : '· Check availability with NBT'}</dd></div>
+              <div><dt className="font-semibold">Payment due</dt><dd>{formatOpportunityDate(testDate.metadata?.payment_deadline)}</dd></div>
+              <div><dt className="font-semibold">Institution results</dt><dd>{formatOpportunityDate(testDate.metadata?.institution_results_date)}</dd></div>
+              <div><dt className="font-semibold">Your results</dt><dd>{formatOpportunityDate(testDate.results_release_date)}</dd></div>
+            </dl>
+            {testDate.metadata?.source_url && <a className="inline-block mt-2 text-xs text-primary underline" href={testDate.metadata.source_url} target="_blank" rel="noopener noreferrer">Official NBT calendar · checked {formatOpportunityDate(testDate.metadata.verified_on)}</a>}
+
 
             {}
             {isRegistered && registration.results_uploaded && <div className="mt-2 flex flex-wrap gap-2">
@@ -183,14 +191,14 @@ function TestDateCard({
               </div>}
           </div>
 
-          <button onClick={() => setExpanded(e => !e)}>
+          <button aria-label={`Details for ${formatOpportunityDate(testDate.test_date)}`} aria-expanded={expanded} onClick={() => setExpanded(e => !e)}>
             {expanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
           </button>
         </div>
 
         {expanded && <div className="mt-3 pt-3 border-t space-y-3">
             {!isRegistered && !isPast && <div>
-                <p className="text-xs font-semibold mb-2">Select tests to register for:</p>
+                <p className="text-xs font-semibold mb-2">Choose tests to track (AQL includes AL and QL):</p>
                 <div className="flex gap-2 mb-3">
                   {TESTS.map(t => <button key={t} onClick={() => toggleTest(t)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedTests.includes(t) ? 'bg-primary text-white border-primary' : 'bg-background border-border text-muted-foreground'}`}>
                       {t}
@@ -199,10 +207,10 @@ function TestDateCard({
                 <div className="flex gap-2">
                   <Button size="sm" className="flex-1 h-8 text-xs" disabled={registering || selectedTests.length === 0} onClick={handleRegister}>
                     {registering ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                    {registering ? 'Registering...' : 'Register Now'}
+                    {registering ? 'Saving...' : 'Save to my planner'}
                   </Button>
-                  {testDate.registration_link && <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer">
-                      <Button size="sm" variant="outline" className="h-8 text-xs">Official Site</Button>
+                  {!registrationClosed && testDate.registration_link && <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer">
+                      <Button size="sm" variant="outline" className="h-8 text-xs">Book on NBT site</Button>
                     </a>}
                 </div>
               </div>}
@@ -249,11 +257,11 @@ function TestDateCard({
 
             {isRegistered && !isPast && <div className="text-xs text-muted-foreground space-y-1">
                 <p className="flex items-center gap-1 text-primary font-medium">
-                  <CheckCircle2 className="w-3.5 h-3.5" /> You're registered for: {registration.tests_registered?.join(', ')}
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Planned tests: {registration.tests_registered?.join(', ')}
                 </p>
-                <p>Results can be uploaded here after your test date.</p>
+                <p>Saving here does not book a test or reserve a seat. Book and pay through NBT. You can record your results after the test.</p>
                 {testDate.registration_link && <a href={testDate.registration_link} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                    View official confirmation →
+                    Open the official NBT website →
                   </a>}
               </div>}
           </div>}
@@ -327,7 +335,7 @@ export default function NBTScheduler({
         registration_deadline: newDate.registration_deadline || null,
         registration_link: newDate.registration_link || null,
         available_slots: newDate.available_slots ? Number(newDate.available_slots) : null,
-        tests_available: ['AQL', 'MAT', 'QL'],
+        tests_available: ['AQL', 'MAT'],
         is_active: true,
         created_at: new Date().toISOString()
       });
@@ -352,9 +360,9 @@ export default function NBTScheduler({
       setSaving(false);
     }
   };
-  const now = new Date();
+  const today = southAfricanDate();
   const displayed = testDates.filter(d => {
-    const isPast = new Date(d.test_date) < now;
+    const isPast = d.test_date < today;
     if (filter === 'upcoming') return !isPast;
     if (filter === 'past') return isPast;
     return true;
@@ -370,14 +378,14 @@ export default function NBTScheduler({
           <h3 className="font-playfair font-semibold text-base flex items-center gap-2">
             <Calendar className="w-4 h-4 text-primary" /> NBT Test Schedule
           </h3>
-          <p className="text-xs text-muted-foreground">View upcoming test dates, register, and upload your results</p>
+          <p className="text-xs text-muted-foreground">View official dates, save your plan, and record results. Bookings happen on the NBT website.</p>
         </div>
         {isAdmin && <Button size="sm" className="gap-1.5 h-8 text-xs" onClick={() => setShowAddForm(s => !s)}>
             <Plus className="w-3.5 h-3.5" /> Add Test Date
           </Button>}
       </div>
 
-      {}
+      <p className="text-xs leading-5 text-muted-foreground">The 2027 intake calendar includes tests written during 2026 and January 2027. Venues, seats and institutional deadlines vary; confirm with NBT and your university before booking. Dates use South African time.</p>
       <div className="flex gap-1.5">
         {['upcoming', 'past', 'all'].map(f => <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1 rounded-full text-xs font-medium transition-all capitalize ${filter === f ? 'bg-primary text-white' : 'bg-muted text-muted-foreground hover:bg-muted/70'}`}>
             {f}

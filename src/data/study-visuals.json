@@ -1,226 +1,226 @@
 {
   "math-10": {
-    "src": "/study-visuals/math-10.svg",
+    "src": "/study-visuals/math-10.svg?v=77ab53b37bec",
     "alt": "x squared minus 5x plus 6 equals zero becomes (x minus 2)(x minus 3) equals zero. Arrows split to the roots x equals 2 and x equals 3.",
     "caption": "Factorising splits the equation into two roots"
   },
   "math-11": {
-    "src": "/study-visuals/math-11.svg",
+    "src": "/study-visuals/math-11.svg?v=2ed3ff7f796e",
     "alt": "Upward parabola y equals x squared minus 4x plus 3. The labelled roots are (1; 0) and (3; 0), with minimum (2; minus 1).",
     "caption": "Read the roots and turning point"
   },
   "math-12": {
-    "src": "/study-visuals/math-12.svg",
+    "src": "/study-visuals/math-12.svg?v=694179513c31",
     "alt": "Cubic graph f(x) equals x cubed minus 3x. The local maximum is labelled (minus 1; 2), and the local minimum (1; minus 2).",
     "caption": "Stationary points on the cubic graph"
   },
   "matlit-10": {
-    "src": "/study-visuals/matlit-10.svg",
+    "src": "/study-visuals/matlit-10.svg?v=696f04383f64",
     "alt": "A R1 200 income bar is divided into transport R400, food R350, data R150, other R100 and surplus R200. Expenses total R1 000.",
     "caption": "See where the monthly income goes"
   },
   "matlit-11": {
-    "src": "/study-visuals/matlit-11.svg",
+    "src": "/study-visuals/matlit-11.svg?v=876cf17c91db",
     "alt": "At 8 GB, illustrative plan A costs R130 and plan B R160. Bars start at the same baseline; plan B is longer because it costs R30 more.",
     "caption": "Compare two tariffs at the same usage"
   },
   "matlit-12": {
-    "src": "/study-visuals/matlit-12.svg",
+    "src": "/study-visuals/matlit-12.svg?v=d56d75733470",
     "alt": "R1 000 at an illustrative annual rate of 10 percent reaches R1 300 with simple interest and R1 331 with annual compound interest after three years.",
     "caption": "Simple and compound growth after three years"
   },
   "phsc-10": {
-    "src": "/study-visuals/phsc-10.svg",
+    "src": "/study-visuals/phsc-10.svg?v=32da95a7917d",
     "alt": "A walker goes 4 metres east, then 4 metres west to the start. Opposing arrows show the two legs. Total distance is 8 metres; displacement is zero.",
     "caption": "A return journey: distance and displacement"
   },
   "phsc-11": {
-    "src": "/study-visuals/phsc-11.svg",
+    "src": "/study-visuals/phsc-11.svg?v=13797e07efd6",
     "alt": "Simplified force diagram, not drawn to force scale: a 5 kilogram crate has normal force 49 newtons up, weight 49 newtons down, pull 20 newtons right and friction 5 newtons left. The horizontal resultant is 15 newtons right.",
     "caption": "Forces on the crate"
   },
   "phsc-12": {
-    "src": "/study-visuals/phsc-12.svg",
+    "src": "/study-visuals/phsc-12.svg?v=f62a92a58b9e",
     "alt": "Before: a 2 kilogram trolley moves right at 3 metres per second toward a stationary 1 kilogram trolley. After they stick together: the combined 3 kilograms move right at 2 metres per second.",
     "caption": "Before and after a sticking collision"
   },
   "lisc-10": {
-    "src": "/study-visuals/lisc-10.svg",
+    "src": "/study-visuals/lisc-10.svg?v=b93ae75f2228",
     "alt": "Simplified plant cell, not to scale. Labels point to the outer cellulose cell wall, inner cell membrane, large central vacuole, nucleus and chloroplast. Mitochondria are discussed in the notes but are not drawn.",
     "caption": "Inside a photosynthetic plant cell"
   },
   "lisc-11": {
-    "src": "/study-visuals/lisc-11.svg",
+    "src": "/study-visuals/lisc-11.svg?v=e6adf62bd1d8",
     "alt": "Light energy, carbon dioxide and water enter a leaf containing chloroplasts. An outgoing arrow identifies glucose and oxygen as products. This is a conceptual diagram, not a balanced chemical equation.",
     "caption": "How photosynthesis uses light"
   },
   "lisc-12": {
-    "src": "/study-visuals/lisc-12.svg",
+    "src": "/study-visuals/lisc-12.svg?v=459a63f9b3cc",
     "alt": "Each parent supplies T or t. Four equally likely cells show TT, Tt, Tt and tt. Under the stated dominant model, tall offspring have probability three quarters and short offspring one quarter.",
     "caption": "A Punnett square for Tt crossed with Tt"
   },
   "acc-10": {
-    "src": "/study-visuals/acc-10.svg",
+    "src": "/study-visuals/acc-10.svg?v=90c3d8c697bf",
     "alt": "Assets R12 000 equal equity R10 000 plus liabilities R2 000. Coloured blocks show that the two right-hand amounts add to total assets.",
     "caption": "Keep the accounting equation balanced"
   },
   "acc-11": {
-    "src": "/study-visuals/acc-11.svg",
+    "src": "/study-visuals/acc-11.svg?v=60451f9fb227",
     "alt": "Of R100 000 total profit, Partner A receives R60 200 and Partner B receives R39 800 after the agreement allocations. Two bars compare the final totals.",
     "caption": "Check the final partnership profit shares"
   },
   "acc-12": {
-    "src": "/study-visuals/acc-12.svg",
+    "src": "/study-visuals/acc-12.svg?v=516c46c6bcaa",
     "alt": "A R500 000 sales bar is split into cost of sales R300 000 and gross profit R200 000. An arrow links gross profit to a 40 percent gross profit margin.",
     "caption": "Gross profit as a share of sales"
   },
   "bst-10": {
-    "src": "/study-visuals/bst-10.svg",
+    "src": "/study-visuals/bst-10.svg?v=5d9f11afc7ae",
     "alt": "Three lenses for a school stationery shop. Poor staff scheduling, Micro, revise shifts. Supplier delays, Market, find a second supplier. Economy-wide cost increases, Macro, review budget and prices",
     "caption": "Three lenses for a school stationery shop"
   },
   "bst-11": {
-    "src": "/study-visuals/bst-11.svg",
+    "src": "/study-visuals/bst-11.svg?v=4d44be5d62e3",
     "alt": "A structured problem-solving cycle. Define, What is going wrong?, 20 late orders this week. Investigate, What causes it?, stock-outs on 15 orders. Act and review, Did the change help?, late orders after new stock rule",
     "caption": "A structured problem-solving cycle"
   },
   "bst-12": {
-    "src": "/study-visuals/bst-12.svg",
+    "src": "/study-visuals/bst-12.svg?v=521e82c8191b",
     "alt": "SWOT for an illustrative tutoring publisher. Strong maths authors, Slow delivery process, Opportunity: digital demand. Clear brand identity, Limited cash reserves, Threat: new competitors",
     "caption": "SWOT for an illustrative tutoring publisher"
   },
   "eco-10": {
-    "src": "/study-visuals/eco-10.svg",
+    "src": "/study-visuals/eco-10.svg?v=bfcaa729d728",
     "alt": "Households supply labour to firms and receive wages in return. Firms supply goods to households and receive spending in return. Opposing arrows show the directions.",
     "caption": "Real and money flows connect households and firms"
   },
   "eco-11": {
-    "src": "/study-visuals/eco-11.svg",
+    "src": "/study-visuals/eco-11.svg?v=b15a70300467",
     "alt": "In the illustrative notebook market, revenue falls from R1 000 before the price change to R880 after it. Bars compare price multiplied by quantity demanded.",
     "caption": "What happens to total revenue?"
   },
   "eco-12": {
-    "src": "/study-visuals/eco-12.svg",
+    "src": "/study-visuals/eco-12.svg?v=0726a38bcd91",
     "alt": "An initial R100 spending injection with MPC = 0.8. 1, R100, R100. 2, R80, R180. 3, R64, R244. All rounds, decreasing amounts, approaches R500",
     "caption": "An initial R100 spending injection with MPC = 0.8"
   },
   "tour-10": {
-    "src": "/study-visuals/tour-10.svg",
+    "src": "/study-visuals/tour-10.svg?v=9e57638a9080",
     "alt": "A domestic weekend trip. Bus to destination, transport, accessible boarding. Guesthouse stay, accommodation, confirmed booking. Museum visit, attraction, opening hours. Local café meal, food service, dietary information",
     "caption": "A domestic weekend trip"
   },
   "tour-11": {
-    "src": "/study-visuals/tour-11.svg",
+    "src": "/study-visuals/tour-11.svg?v=7dc9f09df738",
     "alt": "Illustrative one-night trip for two people. Transport shared, one vehicle, R600. Room shared, one night, R800. Activity per person, R120 × 2, R240. Meals per person, R150 × 2, R300",
     "caption": "Illustrative one-night trip for two people"
   },
   "tour-12": {
-    "src": "/study-visuals/tour-12.svg",
+    "src": "/study-visuals/tour-12.svg?v=2a937cf158c8",
     "alt": "Monday 22:00 in Johannesburg at UTC plus 2 is Monday 20:00 UTC. Add a 10 hour flight to reach Tuesday 06:00 UTC; add the destination offset of plus 1 to reach Tuesday 07:00 local.",
     "caption": "Convert through UTC and check the day"
   },
   "hist-10": {
-    "src": "/study-visuals/hist-10.svg",
+    "src": "/study-visuals/hist-10.svg?v=b30f1cb4fb56",
     "alt": "Selected sequence — not a complete chronology. Before 1789, fiscal and social tensions, longer-term context. May 1789, Estates-General meets, political confrontation. 14 July 1789, Bastille stormed, popular action. August 1789, Declaration of Rights, new political principles",
     "caption": "Selected sequence — not a complete chronology"
   },
   "hist-11": {
-    "src": "/study-visuals/hist-11.svg",
+    "src": "/study-visuals/hist-11.svg?v=57e6e15aa39f",
     "alt": "Conventional names use the old Russian calendar. February 1917, Tsar abdicates, why did support collapse?. Between revolutions, Provisional Government, why did problems persist?. October 1917, Bolsheviks take power, how did they gain support and act?",
     "caption": "Conventional names use the old Russian calendar"
   },
   "hist-12": {
-    "src": "/study-visuals/hist-12.svg",
+    "src": "/study-visuals/hist-12.svg?v=d278f8ca245e",
     "alt": "Selected context and mobilisation. Late 1960s–1970s, Black Consciousness, identity and political awareness. 1976, Soweto uprising, student resistance and repression. 1980s, broader civic mobilisation, community and organisational networks",
     "caption": "Selected context and mobilisation"
   },
   "geo-10": {
-    "src": "/study-visuals/geo-10.svg",
+    "src": "/study-visuals/geo-10.svg?v=42809558c4d4",
     "alt": "Sunlight travels down to Earth as shortwave radiation. The surface emits infrared upward. A simplified atmosphere layer re-emits some infrared back toward the surface.",
     "caption": "Follow energy through the atmosphere"
   },
   "geo-11": {
-    "src": "/study-visuals/geo-11.svg",
+    "src": "/study-visuals/geo-11.svg?v=7e9e0be8bb2d",
     "alt": "In the invented dataset, 70 percent of Place A and 95 percent of Place B have access to safe water. Bars compare this social indicator, not overall development.",
     "caption": "Compare access to safe water"
   },
   "geo-12": {
-    "src": "/study-visuals/geo-12.svg",
+    "src": "/study-visuals/geo-12.svg?v=59fe681bc8bc",
     "alt": "A downstream curve begins steep in the upper course, becomes moderate in the middle course and gentle in the lower course. A horizontal arrow marks downstream direction.",
     "caption": "A simplified river long profile"
   },
   "enhl-10": {
-    "src": "/study-visuals/enhl-10.svg",
+    "src": "/study-visuals/enhl-10.svg?v=afa73f2bd2c9",
     "alt": "From clue to explanation. checked the empty road, expectation or worry, repeated attention to an arrival. finally exhaled, relief, tension has eased. warm light, comfort, positive sensory association",
     "caption": "From clue to explanation"
   },
   "enhl-11": {
-    "src": "/study-visuals/enhl-11.svg",
+    "src": "/study-visuals/enhl-11.svg?v=63e2edd04f1b",
     "alt": "Original poster: “Don’t let our library fade. Join Saturday’s book drive. A single book can open a hundred doors.”. our library, inclusive language, shared ownership. fade, emotive metaphor, sense of loss. a hundred doors, figurative exaggeration, suggests many opportunities",
     "caption": "Original poster: “Don’t let our library fade. Join Saturday’s book drive. A single book can open a hundred doors.”"
   },
   "enhl-12": {
-    "src": "/study-visuals/enhl-12.svg",
+    "src": "/study-visuals/enhl-12.svg?v=534879475f6a",
     "alt": "Original poem: “I fold the map. / The road remains. / Beyond the gate, / the morning waits.”. fold the map, less reliance on planning, an action ends preparation. road remains, uncertainty continues, contrast with folded map. morning waits, new possibility, personification and open ending",
     "caption": "Original poem: “I fold the map. / The road remains. / Beyond the gate, / the morning waits.”"
   },
   "afhl-10": {
-    "src": "/study-visuals/afhl-10.svg",
+    "src": "/study-visuals/afhl-10.svg?v=c8165a0205fd",
     "alt": "Van teks na betekenis. weer, herhaalde handeling, sy het reeds gewag. uiteindelik, verligting, die spanning neem af. warm lig, geborgenheid, positiewe sintuiglike beeld",
     "caption": "Van teks na betekenis"
   },
   "afhl-11": {
-    "src": "/study-visuals/afhl-11.svg",
+    "src": "/study-visuals/afhl-11.svg?v=dbdb808d53a9",
     "alt": "Oorspronklike plakkaat: “Moenie ons biblioteek laat verdwyn nie. Skenk Saterdag ’n boek. Een boek maak honderd deure oop.”. ons, inklusiewe taal, gedeelde verantwoordelikheid. verdwyn, emotiewe taal, vrees vir verlies. honderd deure, beeldspraak, baie geleenthede",
     "caption": "Oorspronklike plakkaat: “Moenie ons biblioteek laat verdwyn nie. Skenk Saterdag ’n boek. Een boek maak honderd deure oop.”"
   },
   "afhl-12": {
-    "src": "/study-visuals/afhl-12.svg",
+    "src": "/study-visuals/afhl-12.svg?v=af91c6a96c63",
     "alt": "Oorspronklike gedig: “Ek vou die kaart. / Die pad bly oop. / Daar by die hek / wag môre nog.”. kaart vou, voorbereiding eindig, doelbewuste handeling. pad bly oop, geleenthede bestaan, kontras met die kaart. môre wag, toekoms as moontlikheid, personifikasie",
     "caption": "Oorspronklike gedig: “Ek vou die kaart. / Die pad bly oop. / Daar by die hek / wag môre nog.”"
   },
   "xhhl-10": {
-    "src": "/study-visuals/xhhl-10.svg",
+    "src": "/study-visuals/xhhl-10.svg?v=b6381e201371",
     "alt": "Ukusuka kwigama ukuya kwintsingiselo. kwakhona, isenzo siyaphindwa, sele ejongile ngaphambili. ekugqibeleni, ukulinda kuyaphela, ibhasi iyafika. wancuma, uvuyo okanye ukukhululeka, indlela asabela ngayo",
     "caption": "Ukusuka kwigama ukuya kwintsingiselo"
   },
   "xhhl-11": {
-    "src": "/study-visuals/xhhl-11.svg",
+    "src": "/study-visuals/xhhl-11.svg?v=dc77fef04f2a",
     "alt": "Isibhengezo sokuqala: “Masikhusele ithala lethu leencwadi. Yiza nencwadi ngoMgqibelo. Incwadi enye ivula iingcango ezininzi.”. lethu, ukuquka abafundi, imvakalelo yobunye. masikhusele, isicelo sokuthatha inyathelo, uxanduva oludibeneyo. iingcango ezininzi, ulwimi olufuziselayo, amathuba amaninzi",
     "caption": "Isibhengezo sokuqala: “Masikhusele ithala lethu leencwadi. Yiza nencwadi ngoMgqibelo. Incwadi enye ivula iingcango ezininzi.”"
   },
   "xhhl-12": {
-    "src": "/study-visuals/xhhl-12.svg",
+    "src": "/study-visuals/xhhl-12.svg?v=12f783a3f6ec",
     "alt": "Umbongo wokuqala: “Ndiyasonga imephu. / Indlela isavulekile. / Ngaphaya kwesango / kusasa kundilindile.”. imephu iyasongwa, ukulungiselela kuyaphela, isenzo sesithethi. indlela ivulekile, amathuba asekhona, uhambo alukapheli. kusasa kuyalinda, ithemba ngekamva, isimntwiso",
     "caption": "Umbongo wokuqala: “Ndiyasonga imephu. / Indlela isavulekile. / Ngaphaya kwesango / kusasa kundilindile.”"
   },
   "zuhl-10": {
-    "src": "/study-visuals/zuhl-10.svg",
+    "src": "/study-visuals/zuhl-10.svg?v=7f8aade1a936",
     "alt": "Kusukela egameni kuya emqondweni. futhi, isenzo siyaphindwa, wayeseke wabheka. ekugcineni, ukulinda kuyaphela, ibhasi liyafika. wamamatheka, injabulo noma ukukhululeka, indlela asabela ngayo",
     "caption": "Kusukela egameni kuya emqondweni"
   },
   "zuhl-11": {
-    "src": "/study-visuals/zuhl-11.svg",
+    "src": "/study-visuals/zuhl-11.svg?v=95de276a0779",
     "alt": "Isikhangiso sokuqala: “Masivikele umtapo wethu wezincwadi. Letha incwadi ngoMgqibelo. Incwadi eyodwa ivula iminyango eminingi.”. wethu, ukufaka wonke umuntu, umuzwa wobunye. masivikele, ukubiza abantu esenzweni, ukuzibophezela. iminyango eminingi, ulimi olungokomfanekiso, amathuba amaningi",
     "caption": "Isikhangiso sokuqala: “Masivikele umtapo wethu wezincwadi. Letha incwadi ngoMgqibelo. Incwadi eyodwa ivula iminyango eminingi.”"
   },
   "zuhl-12": {
-    "src": "/study-visuals/zuhl-12.svg",
+    "src": "/study-visuals/zuhl-12.svg?v=763b9deb91f3",
     "alt": "Inkondlo yokuqala: “Ngigoqa ibalazwe. / Indlela isavulekile. / Ngale kwesango / ukusa kungilindile.”. ibalazwe liyagoqwa, ukulungiselela kuyaphela, isenzo sesikhulumi. indlela ivulekile, amathuba asekhona, uhambo lusengaphambili. ukusa kuyalinda, ithemba ngekusasa, ukwenzasamuntu",
     "caption": "Inkondlo yokuqala: “Ngigoqa ibalazwe. / Indlela isavulekile. / Ngale kwesango / ukusa kungilindile.”"
   },
   "lo-10": {
-    "src": "/study-visuals/lo-10.svg",
+    "src": "/study-visuals/lo-10.svg?v=3543a1ec8d71",
     "alt": "From aspiration to a weekly action. Aspiration, improve maths confidence, why it matters. Action, practise three factorising questions on Tue/Thu, time and place. Review, check answers on Friday, identify one error to discuss",
     "caption": "From aspiration to a weekly action"
   },
   "lo-11": {
-    "src": "/study-visuals/lo-11.svg",
+    "src": "/study-visuals/lo-11.svg?v=72dd370f66d7",
     "alt": "A comparison sheet to complete using official sources. Required subjects, record official details, record official details. Selection and deadline, save source and date, save source and date. Cost and support, tuition, travel, funding, tuition, travel, funding",
     "caption": "A comparison sheet to complete using official sources"
   },
   "lo-12": {
-    "src": "/study-visuals/lo-12.svg",
+    "src": "/study-visuals/lo-12.svg?v=9d0a61f7a96d",
     "alt": "A repeatable revision cycle. Recall, answer a short set without notes, your first attempt. Check, compare with a memo, identify the error type. Repair, rework and explain the correction, correct reasoning. Revisit, try again after a gap, independent recall",
     "caption": "A repeatable revision cycle"
   }

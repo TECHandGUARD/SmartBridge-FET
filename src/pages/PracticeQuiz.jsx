@@ -1,6 +1,7 @@
 import { useAuth } from '@/lib/AuthContext';
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { SUBJECTS as SUBJECT_REGISTRY } from '@/lib/subjects';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,22 +11,17 @@ import { Progress } from '@/components/ui/progress';
 import { CheckCircle, XCircle, BookOpen, Trophy, ArrowRight, RotateCcw, TrendingUp, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
-const SUBJECTS = [
-  'Mathematics', 'Mathematical Literacy', 'Physical Sciences', 'Life Sciences',
-  'Accounting', 'Business Studies', 'Economics',
-  'English HL', 'isiXhosa HL', 'Afrikaans HL',
-  'History', 'Geography', 'Life Orientation'
-];
+const SUBJECTS = SUBJECT_REGISTRY.map(s => s.name);
 const GRADES = ['Grade 10', 'Grade 11', 'Grade 12'];
 
 export default function PracticeQuiz() {
   const { user } = useAuth();
-  const navigate = useNavigate();
 
   const [stage, setStage] = useState('select'); // select | quiz | result
   const [subject, setSubject] = useState('');
   const [grade, setGrade] = useState('');
-  const [quizzes, setQuizzes] = useState([]);
+  const [term, setTerm] = useState('2');
+  const [quizMetadata, setQuizMetadata] = useState({ content_version: '', language: 'en', focus: '', atp_url: '', lesson_path: '' });
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [selected, setSelected] = useState(null);
@@ -53,7 +49,7 @@ export default function PracticeQuiz() {
     } catch (err) {
       console.error('Error loading past results:', err);
     }
-  }, [user?.email]);
+  }, [user?.email, user?.id]);
 
   useEffect(() => {
     loadPastResults();
@@ -74,6 +70,8 @@ export default function PracticeQuiz() {
         .eq('subject', subject)
         .eq('grade', grade)
         .eq('is_published', true)
+        .eq('quiz_type', 'practice')
+        .contains('metadata', { term: Number(term) })
         .order('created_at', { ascending: false })
         .limit(1);
 
@@ -84,8 +82,9 @@ export default function PracticeQuiz() {
         qs = data[0].questions;
         title = data[0].title;
         qId = data[0].id;
+        setQuizMetadata(data[0].metadata || {});
       } else {
-        toast.info('No published quiz is available for this subject and grade yet.');
+        toast.info('No published practice quiz is available for this subject, grade and term yet.');
         return;
       }
 
@@ -148,6 +147,7 @@ export default function PracticeQuiz() {
             total_questions: total,
             percentage: pct,
             time_taken_seconds: timeTaken,
+            metadata: { term: Number(term), content_version: quizMetadata.content_version },
             created_at: new Date().toISOString()
           })
           .select()
@@ -176,12 +176,12 @@ export default function PracticeQuiz() {
     setSelected(null);
   };
 
-  if (stage === 'select') return <SelectStage subject={subject} setSubject={setSubject} grade={grade} setGrade={setGrade} onStart={startQuiz} pastResults={pastResults} loading={loading} />;
-  if (stage === 'quiz') return <QuizStage questions={questions} currentQ={currentQ} selected={selected} showExplanation={showExplanation} quizTitle={quizTitle} subject={subject} onAnswer={handleAnswer} onNext={handleNext} saving={loading} />;
-  if (stage === 'result') return <ResultStage answers={answers} questions={questions} quizTitle={quizTitle} subject={subject} onReset={resetQuiz} pastResults={pastResults} />;
+  if (stage === 'select') return <SelectStage subject={subject} setSubject={setSubject} grade={grade} setGrade={setGrade} term={term} setTerm={setTerm} onStart={startQuiz} pastResults={pastResults} loading={loading} />;
+  if (stage === 'quiz') return <QuizStage questions={questions} currentQ={currentQ} selected={selected} showExplanation={showExplanation} quizTitle={quizTitle} metadata={quizMetadata} subject={subject} onAnswer={handleAnswer} onNext={handleNext} saving={loading} />;
+  if (stage === 'result') return <ResultStage answers={answers} questions={questions} quizTitle={quizTitle} metadata={quizMetadata} subject={subject} onReset={resetQuiz} />;
 }
 
-function SelectStage({ subject, setSubject, grade, setGrade, onStart, pastResults, loading }) {
+function SelectStage({ subject, setSubject, grade, setGrade, term, setTerm, onStart, pastResults, loading }) {
   const bySubject = pastResults.reduce((acc, r) => {
     if (!acc[r.subject]) acc[r.subject] = [];
     acc[r.subject].push(r.percentage);
@@ -195,30 +195,38 @@ function SelectStage({ subject, setSubject, grade, setGrade, onStart, pastResult
           <BookOpen className="w-7 h-7 text-primary" />
         </div>
         <h1 className="font-playfair text-3xl font-bold mb-2">Practice Quiz</h1>
-        <p className="text-muted-foreground">Test your knowledge and track your progress over time.</p>
+        <p className="text-muted-foreground">Choose your term. Try a short quiz, understand each answer, then decide what to revise next.</p>
       </div>
 
       <Card className="mb-6">
         <CardContent className="p-6 space-y-4">
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Subject *</label>
+            <label htmlFor="quiz-subject" className="text-sm font-medium mb-1.5 block">Subject *</label>
             <Select value={subject} onValueChange={setSubject}>
-              <SelectTrigger><SelectValue placeholder="Choose a subject…" /></SelectTrigger>
+              <SelectTrigger id="quiz-subject"><SelectValue placeholder="Choose a subject…" /></SelectTrigger>
               <SelectContent>
                 {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="text-sm font-medium mb-1.5 block">Grade *</label>
+            <label htmlFor="quiz-grade" className="text-sm font-medium mb-1.5 block">Grade *</label>
             <Select value={grade} onValueChange={setGrade}>
-              <SelectTrigger><SelectValue placeholder="Choose your grade" /></SelectTrigger>
+              <SelectTrigger id="quiz-grade"><SelectValue placeholder="Choose your grade" /></SelectTrigger>
               <SelectContent>
                 {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={onStart} className="w-full gap-2 mt-2" size="lg" disabled={loading || !subject || !grade}>
+          <div>
+            <label htmlFor="quiz-term" className="text-sm font-medium mb-1.5 block">Term *</label>
+            <Select value={term} onValueChange={setTerm}>
+              <SelectTrigger id="quiz-term"><SelectValue /></SelectTrigger>
+              <SelectContent>{['2', '3', '4'].map(t => <SelectItem key={t} value={t}>Term {t}{t === '4' ? ' · Year-end practice' : ''}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+          <p className="text-xs leading-5 text-muted-foreground">Original formative practice mapped to selected DBE CAPS/ATP topics. These short quizzes sample skills; they are not full examination papers. Term 4 includes revision where the ATP specifies it. Language questions use original passages rather than prescribed set works.</p>
+          <Button onClick={onStart} className="w-full gap-2 mt-2" size="lg" disabled={loading || !subject || !grade || !term}>
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
             {loading ? 'Loading...' : 'Start Quiz'}
           </Button>
@@ -266,13 +274,15 @@ function SelectStage({ subject, setSubject, grade, setGrade, onStart, pastResult
   );
 }
 
-function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, subject, onAnswer, onNext, saving }) {
+function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, metadata, subject, onAnswer, onNext, saving }) {
   const q = questions[currentQ];
   const isCorrect = selected === q.correct_index;
   const progress = ((currentQ) / questions.length) * 100;
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
+    <div lang={metadata.language || 'en'} className="max-w-2xl mx-auto px-4 py-10">
+      <p className="text-sm font-semibold mb-3">{quizTitle}</p>
+      {metadata.focus && <p className="text-sm text-muted-foreground mb-4">{metadata.focus}</p>}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <Badge variant="outline">{subject}</Badge>
@@ -283,6 +293,7 @@ function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, 
 
       <Card>
         <CardHeader>
+          {q.stimulus && <blockquote className="rounded-xl border-l-4 border-primary bg-primary/5 p-4 text-sm leading-7 whitespace-pre-line mb-3">{q.stimulus}</blockquote>}
           <CardTitle className="text-lg font-semibold leading-snug">{q.question}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
@@ -309,7 +320,7 @@ function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, 
           })}
 
           {showExplanation && q.explanation && (
-            <div className={`rounded-xl p-3 text-sm mt-2 ${isCorrect ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-blue-50 border border-blue-200 text-blue-800'}`}>
+            <div role="status" className={`rounded-xl p-3 text-sm mt-2 ${isCorrect ? 'bg-green-50 border border-green-200 text-green-800' : 'bg-blue-50 border border-blue-200 text-blue-800'}`}>
               <p className="font-semibold mb-0.5">{isCorrect ? '✅ Correct!' : '❌ Not quite.'}</p>
               <p>{q.explanation}</p>
             </div>
@@ -327,7 +338,7 @@ function QuizStage({ questions, currentQ, selected, showExplanation, quizTitle, 
   );
 }
 
-function ResultStage({ answers, questions, quizTitle, subject, onReset, pastResults }) {
+function ResultStage({ answers, questions, quizTitle, metadata, subject, onReset }) {
   const score = answers.filter(a => a.selected === a.correct).length;
   const pct = Math.round((score / questions.length) * 100);
   const grade = pct >= 80 ? '🏆 Excellent!' : pct >= 60 ? '👍 Good job!' : pct >= 40 ? '📚 Keep practising!' : '💪 Don\'t give up!';
@@ -348,6 +359,13 @@ function ResultStage({ answers, questions, quizTitle, subject, onReset, pastResu
       </Card>
 
       {/* Review answers */}
+      <div className="rounded-xl bg-primary/5 p-4 mb-6 text-sm space-y-2">
+        <p className="font-semibold">Your next revision step</p>
+        <p>{score === questions.length ? 'Explain your reasoning without the options, then try a longer written problem.' : 'Rework the questions you missed before retrying. Write each step and compare your reasoning with the explanation.'}</p>
+        {metadata.lesson_path && <Link to={metadata.lesson_path} className="block text-primary underline">Review the illustrated {subject} lesson</Link>}
+        {metadata.atp_url && <a href={metadata.atp_url} target="_blank" rel="noopener noreferrer" className="block text-primary underline">View the official grade ATP</a>}
+        <p className="text-xs text-muted-foreground">Curriculum mapping checked against DBE sources. Independent teacher and language moderation is pending.</p>
+      </div>
       <h3 className="font-semibold mb-3">Answer Review</h3>
       <div className="space-y-3 mb-6">
         {questions.map((q, i) => {
