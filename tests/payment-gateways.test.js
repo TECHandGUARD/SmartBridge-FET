@@ -33,3 +33,10 @@ test('Paystack signatures and server verification protect fulfillment even after
  assert.equal((await runtime.handle(webhook())).status,200);assert.equal(calls[0].args.provider_key,'paystack');assert.equal(calls[0].args.payment_key,'paystack-123');
  const invalid=edgeRuntime('paystackWebhook',{client,env,fetch:async()=>Response.json({status:true,data:{domain:'live',reference:event.data.reference,status:'success',id:123,amount:2000,currency:'ZAR'}})});assert.equal((await invalid.handle(webhook())).status,400);assert.equal(calls.length,1);
 });
+test('Yoco rejects sub-R2 checkout before contacting the provider and never increases the quoted amount',async()=>{
+ let calls=0;const id='00000000-0000-4000-8000-000000000601';
+ const client=fakeClient(account,call=>({data:call.table==='payment_gateway_settings'?{provider:'yoco',enabled:true,mode:'live',priority:0}:call.table==='subscription_prices'?{amount_cents:100}:[],error:null}));
+ client.rpc=async name=>({data:name==='consume_api_quota'?true:{id,amount_cents:100,mode:'live',provider:'yoco',status:'pending'},error:null});
+ const runtime=edgeRuntime('createCheckout',{client,env:{...env,YOCO_LIVE_SECRET_KEY:'sk_live_isolated',YOCO_LIVE_WEBHOOK_SECRET:'whsec_isolated'},fetch:async()=>{calls++;throw new Error('Provider must not be called');}});
+ const response=await runtime.handle(request({gateway:'yoco',product:'student',request_id:id}));assert.equal(response.status,422);assert.match((await response.json()).error,/at least R2/);assert.equal(calls,0);
+});

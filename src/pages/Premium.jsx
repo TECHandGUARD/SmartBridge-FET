@@ -1,3 +1,4 @@
+import {invokePayment} from '@/lib/payment-api';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { appConfig } from '@/lib/config';
 import { useAuth } from '@/lib/AuthContext';
@@ -85,7 +86,7 @@ export default function Premium() {
     setGateways([]);setGateway('');setCheckoutActive(false);setGatewayError('');
     if(!user?.id){setGatewaysLoading(false);return()=>{alive=false;};}
     setGatewaysLoading(true);
-    supabase.functions.invoke('payment-gateways',{body:{action:'list'}}).then(({data,error})=>{
+    invokePayment(supabase,'payment-gateways',{action:'list'}).then(({data,error})=>{
       if(!alive)return;
       if(error)throw error;
       const active=data?.checkout_active===true;
@@ -113,9 +114,7 @@ export default function Premium() {
       try { sessionStorage.setItem(storageKey,paymentIntent.current.id); } catch { /* In-memory retry remains available. */ }
     }
     try {
-      const {data,error} = await supabase.functions.invoke('create-checkout', {
-        body: {product: plan.id, request_id: paymentIntent.current.id, gateway}
-      });
+      const {data,error} = await invokePayment(supabase,'create-checkout',{product: plan.id, request_id: paymentIntent.current.id, gateway},{timeout:30000});
       if(error) throw error;
       if(data?.status === 'paid') { paymentIntent.current=null; try { sessionStorage.removeItem(storageKey); } catch { /* No stored intent. */ } toast.info('Payment already received. Refresh your account status.'); await loadSubscription(); return; }
       if(data?.amount_cents !== Math.round(plan.price * 100)) { await prices.refetch(); throw new Error('The plan price changed. Review the updated price before paying.'); }
@@ -283,15 +282,15 @@ export default function Premium() {
                       <CreditCard className="w-5 h-5 text-primary" />
                       <p className="font-playfair text-lg font-bold">Pay securely online</p>
                     </div>
-                    <p className="text-xs text-muted-foreground">{onlineCheckout ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after verified live payment.` : 'Online checkout will be available once the payment gateway is configured.'}</p>
+                    <p className="text-xs text-muted-foreground">{onlineCheckout ? `Pay R${plan.price} for one month of access. This is a one-off payment and does not renew automatically. Access updates after verified live payment.` : gatewaysLoading ? 'Checking available payment options…' : gatewayError ? 'Payment options could not be checked. Please refresh below.' : 'Online checkout is not currently available.'}</p>
                     {user && <div className="space-y-2">
                       {gatewaysLoading?<p role="status">Loading payment options…</p>:gatewayError?<p role="alert">{gatewayError}</p>:onlineCheckout?<label className="block text-sm">Payment gateway<select className="block w-full border rounded-md p-2 mt-1 bg-background" value={gateway} onChange={event=>setGateway(event.target.value)}>{gateways.map(item=><option key={item.provider} value={item.provider}>{item.name}{item.mode==='test'?' — test mode':''}</option>)}</select></label>:<p role="status">No online payment gateway is currently available.</p>}
                       {!gatewaysLoading && <Button variant="outline" size="sm" onClick={()=>setGatewayRefresh(value=>value+1)}>Refresh payment options</Button>}
                     </div>}
                     {user && !canBuyPlan(plan.id) && <p role="status" className="text-sm text-amber-800">This plan is not available for your account. Tutor Pro requires a verified tutor profile.</p>}
-                    {onlineCheckout ? <Button className="w-full" disabled={!user || !canBuyPlan(plan.id) || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : <p role="status" className="text-sm text-muted-foreground">Online payment is currently unavailable. Please contact support.</p>}
+                    {onlineCheckout ? <Button className="w-full" disabled={!user || !canBuyPlan(plan.id) || checkingOut || !gateway || gatewaysLoading} onClick={() => beginCheckout(plan)}>{checkingOut ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CreditCard className="w-4 h-4 mr-2" />}Pay R{plan.price} securely</Button> : !gatewaysLoading && !gatewayError && <p role="status" className="text-sm text-muted-foreground">Online payment is currently unavailable. Please contact support.</p>}
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 leading-relaxed">
-                      {onlineCheckout ? (gateways.find(item=>item.provider===gateway)?.mode==='test' ? 'TEST MODE: No real charge or premium activation occurs. Use only provider test cards.':'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.') : 'Online checkout is unavailable. No payment has been taken.'}
+                      {onlineCheckout ? (gateways.find(item=>item.provider===gateway)?.mode==='test' ? 'TEST MODE: No real charge or premium activation occurs. Use only provider test cards.':'Payment returning you to this page does not confirm activation. Refresh your account after verification; contact support if it remains pending.') : gatewaysLoading ? 'Checking payment availability. No payment has been requested.' : gatewayError ? 'Payment availability is unconfirmed. Refresh the options before continuing.' : 'Online checkout is unavailable. No payment has been taken.'}
                     </div>
                   </CardContent>
                 </Card>

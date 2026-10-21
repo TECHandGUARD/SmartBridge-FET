@@ -1,6 +1,6 @@
 // Small-room mesh. Booking classrooms keep their independent access contract.
 import {DEFAULT_ICE_SERVERS,applyCallQuality,selectedCallRoute} from './call-network';
-export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',onRoute=(_id,_route)=>{}}) {
+export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,chat,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',onRoute=(_id,_route)=>{}}) {
   const sessionId=crypto.randomUUID();
   const browserConnection=/** @type {any} */(navigator).connection;
   /** @type {Map<string, any>} */
@@ -19,7 +19,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
       payload:{...payload,session_id:sessionId,target_session:kind==='ready'&&!payload.ack?null:peers.get(id)?.session}});
     if(error)throw error;
   };
-  const remove=id=>{clearTimeout(peers.get(id)?.restartTimer);presentation?.detach(id);reactions?.detach(id);const p=peers.get(id);p?.pc.close();peers.delete(id);onRemote(id,null,'Left');onStatus(id,'Left');};
+  const remove=id=>{clearTimeout(peers.get(id)?.restartTimer);presentation?.detach(id);reactions?.detach(id);chat?.detach(id);const p=peers.get(id);p?.pc.close();peers.delete(id);onRemote(id,null,'Left');onStatus(id,'Left');};
   const requestRestart=(id,p)=>{
     if(!active||peers.get(id)!==p||Date.now()-(p.lastRestart||0)<8000)return;
     p.lastRestart=Date.now();
@@ -41,6 +41,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
     const p={pc,session:remoteSession,pending:[],offered:false,lastRestart:0,created:Date.now(),restartTimer:null};peers.set(id,p);
     presentation?.attach(pc,id,userId<id);
     reactions?.attach(pc,id,userId<id);
+    chat?.attach(pc,id,userId<id);
     stream.getTracks().forEach(track=>pc.addTrack(track.kind==='video'?videoTrack:track,stream));
     for(const kind of ['audio','video'])if(!stream.getTracks().some(track=>track.kind===kind))pc.addTransceiver(kind,{direction:kind==='video'&&!receiveVideo?'inactive':'recvonly'});
     pc.ontrack=e=>{if(active&&peers.get(id)===p)onRemote(id,e.streams[0],'Connecting');};
