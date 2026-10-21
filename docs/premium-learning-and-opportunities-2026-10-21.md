@@ -1,10 +1,21 @@
 # Premium visual learning, term practice and verified opportunities
 
 Learners can select a subject, grade and Term 2, 3 or 4 in Practice Quiz. The
-published bank contains 135 four-question quizzes (540 questions): 15 subjects ×
-three grades × three terms. Each question has an answer explanation. Language
+published bank contains 270 five-question sets: 15 subjects × three grades ×
+three term selections × two sets. Set A samples the selected term. Set B draws
+mixed revision from the other two terms, explicitly including later-term topics.
+The two sets in a selection have no questions in common. Revision deliberately
+reuses items across selections: there are 675 distinct questions and 1,350 quiz
+question placements, not 1,350 unique questions. Each has an answer explanation.
+
+The new 135 challenge questions add error analysis, evidence evaluation and
+contextual reasoning. `cognition.py` classifies each item using the relevant
+subject framework. Each set spans at least two cognitive categories; it is not a
+full examination or a reproduction of formal mark-weight percentages. Labels
+are draft author judgements pending independent moderation. Learners select a
+set explicitly and receive results broken down by cognitive category. Language
 quizzes include original passages in English, Afrikaans, isiXhosa or isiZulu.
-Results retain grade, subject, term and content version. Failed result saves remain
+Results retain grade, subject, term, set and content version. Failed result saves remain
 retryable; they do not report a successful save.
 
 These are short formative samples mapped to selected CAPS/ATP topics, not a full

@@ -6,22 +6,31 @@ const read = file => JSON.parse(readFileSync(new URL(`../db/seeds/practice-20261
 
 test('every supported subject, grade and requested term has original answerable practice', () => {
   const quizzes = read('quizzes.json');
-  assert.equal(quizzes.length, 135);
-  assert.equal(new Set(quizzes.map(q => q.id)).size, 135);
+  assert.equal(quizzes.length, 270);
+  assert.equal(new Set(quizzes.map(q => q.id)).size, 270);
+  assert.equal(new Set(quizzes.flatMap(q => q.questions.map(x => x.question))).size, 675);
   const subjects = new Set(quizzes.map(q => q.subject));
   assert.equal(subjects.size, 15);
   for (const subject of subjects) for (const grade of [10, 11, 12]) for (const term of [2, 3, 4]) {
     const matching = quizzes.filter(q => q.subject === subject && q.grade === `Grade ${grade}` && q.metadata.term === term);
-    assert.equal(matching.length, 1, `${subject}, ${grade}, term ${term}`);
-    const quiz = matching[0];
+    assert.equal(matching.length, 2, `${subject}, ${grade}, term ${term}`);
+    assert.deepEqual(matching.map(q => q.metadata.set_id).sort(), ['A', 'B']);
+    assert.equal(new Set(matching.flatMap(q => q.questions.map(x => x.question))).size, 10, 'paired sets are distinct');
+    for (const quiz of matching) {
     assert.match(quiz.metadata.atp_url, /^https:\/\/www.education.gov.za\//);
-    assert.equal(quiz.questions.length, 4);
+    assert.equal(quiz.questions.length, 5);
     assert.equal(quiz.is_published, true);
+    assert.equal(quiz.total_questions, 5);
+    assert.ok(new Set(quiz.questions.map(q => q.cognitive_level.label)).size >= 2);
+    assert.ok(quiz.metadata.caps_url.startsWith('https://www.education.gov.za/'));
+    assert.match(quiz.metadata.classification_status, /moderation pending/);
     for (const question of quiz.questions) {
+      assert.ok(quiz.metadata.cognitive_levels.includes(question.cognitive_level.label));
       assert.equal(new Set(question.options).size, 4);
       assert.ok(Number.isInteger(question.correct_index) && question.correct_index >= 0 && question.correct_index < 4);
       assert.ok(question.explanation.length > 35);
       if (subject.endsWith('HL')) assert.ok(question.stimulus?.length > 60);
+    }
     }
   }
 });
