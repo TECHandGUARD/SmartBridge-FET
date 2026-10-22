@@ -1,3 +1,4 @@
+import {fetchDocument, MAX_DOCUMENTS, MAX_ZIP_BYTES} from '../../shared/document-fetch.ts';
 import { serverConnection } from "../../shared/config.ts";
 import { withHttp, authorize } from "../../shared/http.ts";
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
@@ -15,7 +16,7 @@ serve(withHttp(async (req) => {
     let query = supabase
       .from("caps_documents")
       .select("*")
-      .eq("is_active", true);
+      .eq("is_active", true).limit(MAX_DOCUMENTS + 1);
 
     if (subject && subject !== "all") {
       query = query.eq("subject", subject);
@@ -43,32 +44,23 @@ serve(withHttp(async (req) => {
       );
     }
 
-    const zip = new JSZip();
-
-    // Fetch each PDF and add to zip
-    await Promise.all(docs.map(async (doc) => {
-      try {
-        // Fetch the file from the URL
-        const res = await fetch(doc.file_url);
-        if (!res.ok) return;
-        const buffer = await res.arrayBuffer();
-        const safeName = doc.title.replace(/[^a-z0-9]/gi, "_").substring(0, 60);
-        zip.file(`${safeName}.pdf`, buffer);
-
-        // Increment download count
-        await supabase
-          .from("caps_documents")
-          .update({
-            download_count: (doc.download_count || 0) + 1
-          })
-          .eq("id", doc.id);
-      } catch (_e) {
-        // skip failed files
-      }
-    }));
+    if (docs.length > MAX_DOCUMENTS) return new Response(JSON.stringify({error:'Select fewer documents (maximum 20).'}), {status:413,headers:{'Content-Type':'application/json'}});
+    const zip = new JSZip(); let total = 0; const deadline = Date.now() + 35000;
+    // Sequential bounded downloads avoid unbounded memory/concurrency and partial success.
+    for (const doc of docs) {
+      let buffer;
+      try { const remaining = deadline - Date.now(); if (remaining <= 0) throw new Error('Archive timeout'); buffer = await fetchDocument(doc.file_url, connection.url, fetch, Math.min(12000,remaining)); }
+      catch { return new Response(JSON.stringify({error:'A document is unavailable or its destination is not approved. Contact support.'}),{status:422,headers:{'Content-Type':'application/json'}}); }
+      total += buffer.byteLength;
+      if (total > MAX_ZIP_BYTES) return new Response(JSON.stringify({error:'Download exceeds the archive size limit. Select fewer documents.'}),{status:413,headers:{'Content-Type':'application/json'}});
+      const safeName = String(doc.title || 'document').replace(/[^a-z0-9]/gi, '_').substring(0,60);
+      zip.file(`${safeName}_${doc.id}.pdf`, buffer);
+    }
 
     const zipBuffer = await zip.generateAsync({ type: "arraybuffer" });
 
+    const {error: countError} = await supabase.rpc('increment_caps_downloads',{document_ids:docs.map(doc=>doc.id)});
+    if(countError) return new Response(JSON.stringify({error:'Download could not be recorded. Please retry.'}),{status:503,headers:{'Content-Type':'application/json'}});
     return new Response(zipBuffer, {
       status: 200,
       headers: {

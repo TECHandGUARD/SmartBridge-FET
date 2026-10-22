@@ -1,3 +1,4 @@
+import ShareLinks from '@/components/marketing/ShareLinks';
 import { useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -29,14 +30,15 @@ function Header() {
         <BookOpen aria-hidden="true" />
         SmartBridge FET
       </Link>
-      <nav aria-label="Learning navigation">
+      <nav aria-label="Learning navigation" className="flex-wrap">
         <Link to="/learn#collection">Study guides</Link>
-        <Link to="/login">Sign in</Link>
+        <Link to="/find-tutors">Tutors</Link><Link to="/news">News</Link><Link to="/refer">Invite</Link><Link to="/login">Sign in</Link>
         <Link className="learn-button" to="/register">
           Get started <ArrowRight size={16} />
         </Link>
       </nav>
     </header>
+
   );
 }
 export function StudyPackLinks({ code = null }) {
@@ -107,7 +109,7 @@ function Guide() {
   if (!p)
     return (
       <div className="learn-page">
-        <Header />
+        <Header /><div className="max-w-6xl mx-auto px-6 pt-4"><ShareLinks path={window.location.pathname+window.location.search} title="Free SmartBridge FET study guides"/></div>
         <main className="learn-shell">
           <h1>Guide not found</h1>
           <Link to="/learn#collection">Browse available guides</Link>
@@ -117,7 +119,7 @@ function Guide() {
   const f = fileById.get(p.id);
   return (
     <div className="learn-page">
-      <Header />
+      <Header /><div className="max-w-6xl mx-auto px-6 pt-4"><ShareLinks path={window.location.pathname+window.location.search} title="Free SmartBridge FET study guides"/></div>
       <main
         className="learn-shell learn-reader"
         lang={
@@ -331,7 +333,7 @@ export default function StudyPacks() {
   };
   return (
     <div className="learn-page">
-      <Header />
+      <Header /><div className="max-w-6xl mx-auto px-6 pt-4"><ShareLinks path={window.location.pathname+window.location.search} title="Free SmartBridge FET study guides"/></div>
       <main>
         <section className="learn-hero learn-shell">
           <div>

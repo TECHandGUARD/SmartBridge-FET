@@ -1,0 +1,8 @@
+import {useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {useAuth} from '@/lib/AuthContext';
+import {supabase} from '@/lib/supabaseClient';
+import {withTimeout} from '@/lib/auth-utils';
+import PublicShell from '@/components/marketing/PublicShell';
+import ShareLinks from '@/components/marketing/ShareLinks';
+export default function ReferFriend(){const {user}=useAuth();const [code,setCode]=useState(''),[error,setError]=useState('');useEffect(()=>{let live=true;setCode('');setError('');if(user)withTimeout(supabase.rpc('my_referral_link')).then(({data,error})=>{if(live){if(error)setError('Your invitation link could not be loaded. Try again later.');else setCode(data);}}).catch(()=>{if(live)setError('Your invitation link could not be loaded. Try again later.');});return()=>{live=false;};},[user?.id]);return <PublicShell><div className="max-w-2xl space-y-6"><p className="learn-eyebrow">LEARNING IS BETTER TOGETHER</p><h1 className="text-4xl font-bold">Invite a friend</h1><p>Share free SmartBridge study guides with someone who might find them useful. Your personal link helps us understand how new members discover SmartBridge.</p><p>Invitations do not earn cash, credits or discounts.</p>{!user?<Link className="learn-button" to="/login">Sign in to get your invitation link</Link>:error?<p role="alert">{error}</p>:code?<><p className="break-all bg-white rounded-xl border p-4">{new URL('/learn?ref='+code,window.location.origin).href}</p><ShareLinks title="Explore free SmartBridge FET study guides" path={'/learn?ref='+code}/></>:<p role="status">Preparing your invitation link…</p>}</div></PublicShell>;}

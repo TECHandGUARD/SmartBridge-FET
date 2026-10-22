@@ -1,0 +1,3 @@
+import {Link} from 'react-router-dom';
+import '@/pages/study-packs.css';
+export default function PublicShell({children}){return <div className="learn-page min-h-screen"><header className="learn-nav flex-wrap gap-4"><Link to="/learn" className="learn-brand">SmartBridge FET</Link><nav aria-label="Public navigation" className="flex flex-wrap gap-4"><Link to="/learn">Study guides</Link><Link to="/find-tutors">Tutors</Link><Link to="/news">News & events</Link><Link to="/refer">Invite a friend</Link><Link to="/login">Sign in</Link></nav></header><main className="learn-shell">{children}</main><footer className="p-6 flex flex-wrap gap-5"><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link><Link to="/register">Join SmartBridge</Link></footer></div>;}

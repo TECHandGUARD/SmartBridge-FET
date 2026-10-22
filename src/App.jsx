@@ -1,5 +1,7 @@
+import {captureAttribution,readAttribution} from '@/lib/marketing';
+import {supabase} from '@/lib/supabaseClient';
 import {meetingReturnPath} from '@/lib/meeting-navigation';
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClientInstance } from '@/lib/query-client';
@@ -15,6 +17,10 @@ import PageNotFound from './lib/PageNotFound';
 // ============================================================
 // 🚀 LAZY LOAD PAGES (Reduces initial bundle size)
 // ============================================================
+const PublicTutors=lazy(()=>import('./pages/PublicTutors'));
+const MarketingNews=lazy(()=>import('./pages/MarketingNews'));
+const ReferFriend=lazy(()=>import('./pages/ReferFriend'));
+function MarketingAttribution(){const location=useLocation();const {user}=useAuth();useEffect(()=>{captureAttribution(location.search);if(user){const a=readAttribution();if(a)Promise.resolve(supabase.rpc('record_marketing_attribution',{p_ref:a.ref,p_campaign:a.campaign})).then(({error})=>{if(!error)try{window.sessionStorage.removeItem('smartbridge-attribution');}catch{/* optional */}}).catch(()=>{});}},[location.search,user?.id]);return null;}
 const StemLab = lazy(() => import('./pages/StemLab'));
 const StudyPacks = lazy(() => import('./pages/StudyPacks'));
 const StudyGuide = lazy(() => import('./pages/StudyPacks').then(m=>({default:m.StudyGuide})));
@@ -126,6 +132,11 @@ const AuthenticatedApp = () => {
     <Suspense fallback={<PageLoader />}>
       <Routes>
         {/* 🚪 PUBLIC ROUTES */}
+        <Route path="/find-tutors" element={<PublicTutors/>}/>
+        <Route path="/find-tutors/:tutorId" element={<PublicTutors/>}/>
+        <Route path="/news" element={<MarketingNews/>}/>
+        <Route path="/news/:slug" element={<MarketingNews/>}/>
+        <Route path="/refer" element={<ReferFriend/>}/>
         <Route path="/learn" element={<StudyPacks />} />
         <Route path="/study-packs/:packId" element={<StudyGuide />} />
         <Route path="/login" element={<Login />} />
@@ -410,6 +421,7 @@ export default function App() {
     <QueryClientProvider client={queryClientInstance}>
       <AuthProvider>
         <Router>
+          <MarketingAttribution />
           <ConnectivityNotice />
           <AuthenticatedApp />
           <Toaster />

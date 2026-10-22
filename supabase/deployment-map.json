@@ -217,16 +217,18 @@
       "deployed_version": 7,
       "deployed_verify_jwt": true,
       "deployed_bundle_sha256": "75f6ef725f427c0dfcb72c9b39159599228e09170df27cd7744ccc545080ae1d",
-      "reconciled_entrypoint_sha256": "7c9042368e050aa92eb52a1bda182c1e4854a9115c271fe1ad068663b5c05cfa",
+      "reconciled_entrypoint_sha256": "33ed17b6ef471abe1d851da78b87f3144f06128b3986747f1277a92fccf38bd4",
       "dependencies": [
         "supabase/shared/config.ts",
         "supabase/shared/http.ts",
-        "supabase/shared/monitoring.ts"
+        "supabase/shared/monitoring.ts",
+        "supabase/shared/document-fetch.ts"
       ],
       "dependency_sha256": {
         "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
         "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
-        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2"
+        "supabase/shared/monitoring.ts": "c42ea147d7a2590f7140327d2266b954d8ba58e652ebc24e3b4ad8e50762e7f2",
+        "supabase/shared/document-fetch.ts": "9c60642755bc64e3dc7bb6c6fa411e212facda00cc9d96e0f1c1838b35210b54"
       },
       "required_migrations": [
         "supabase/migrations/20261013123603_operational_integrations.sql"
