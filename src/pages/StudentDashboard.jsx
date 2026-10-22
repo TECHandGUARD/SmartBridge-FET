@@ -366,7 +366,7 @@ export default function StudentDashboard() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Subjects', value: '11', icon: BookOpen, color: 'bg-primary/10 text-primary' },
+                { label: 'Subjects', value: SUBJECTS.length, icon: BookOpen, color: 'bg-primary/10 text-primary' },
                 { label: 'Grades', value: '10–12', icon: GraduationCap, color: 'bg-blue-100 text-blue-700' },
                 { label: 'Resources', value: resources.length, icon: TrendingUp, color: 'bg-green-100 text-green-700' },
                 { label: 'My Status', value: isPremium ? (isOnTrial ? 'Trial' : 'Premium') : 'Free', icon: Star, color: 'bg-amber-100 text-amber-700' },
