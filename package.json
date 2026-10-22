@@ -33,7 +33,8 @@
     "test:e2e:opportunities": "node tests/browser-practice-opportunities.cjs",
     "test:e2e:drafts": "node tests/browser-assessment-drafts.cjs",
     "test:e2e:payments": "node tests/browser-payment-recovery.cjs",
-    "test:e2e:staff": "node tests/browser-staff-accounts.cjs"
+    "test:e2e:staff": "node tests/browser-staff-accounts.cjs",
+    "test:e2e:marketing": "node tests/browser-marketing.cjs"
   },
   "dependencies": {
     "@hello-pangea/dnd": "^17.0.0",
