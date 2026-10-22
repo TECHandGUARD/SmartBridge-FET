@@ -19,3 +19,9 @@ test('document fetch forbids redirects and rejects oversized or non-PDF bodies',
  await assert.rejects(fetchDocument('https://www.education.gov.za/book.pdf',project,async()=>new Response(new ReadableStream({start(c){c.enqueue(new Uint8Array(MAX_DOCUMENT_BYTES+1));c.close();}}))));
 });
 test('referral capture is bounded, first touch and optional',()=>{const m=new Map(),s={getItem:k=>m.get(k),setItem:(k,v)=>m.set(k,v)};captureAttribution('?ref='+ 'a'.repeat(32)+'&campaign=exam-help',s,10);captureAttribution('?campaign=later-campaign',s,20);assert.equal(readAttribution(s,30).campaign,'exam-help');assert.equal(readAttribution(s,8*86400000),null);assert.equal(safePublicUrl('javascript:alert(1)'),null);});
+test('blocked browser session storage cannot interrupt navigation',()=>{
+ const previous=Object.getOwnPropertyDescriptor(globalThis,'window');
+ Object.defineProperty(globalThis,'window',{configurable:true,value:Object.defineProperty({},'sessionStorage',{get(){throw new Error('Storage access denied');}})});
+ try { assert.doesNotThrow(()=>captureAttribution('?campaign=exam-help'));assert.equal(readAttribution(),null); }
+ finally { if(previous)Object.defineProperty(globalThis,'window',previous);else delete globalThis.window; }
+});
