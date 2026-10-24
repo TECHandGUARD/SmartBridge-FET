@@ -44,3 +44,15 @@ test('peer guardian consent and missing peer ID fail closed',()=>{
  assert.equal(peerCallEligibility({...valid,participants:[{...peer,requiresGuardianConsent:true,guardianConsent:true}]}).allowed,true);
  assert.equal(peerCallEligibility({...valid,participants:[{...peer,id:null}]}).allowed,false);
 });
+
+test('malformed participant collections fail closed',()=>{
+ for(const participants of [null,{},'learner-2',42]){
+  assert.equal(peerCallEligibility({...valid,participants}).allowed,false);
+ }
+});
+test('disabled feature cannot be bypassed by valid consent and membership',()=>{
+ assert.equal(peerCallEligibility({...valid,featureEnabled:false,guardianConsent:true}).allowed,false);
+});
+test('peer participant consent is required even when caller consent is supplied',()=>{
+ assert.equal(peerCallEligibility({...valid,guardianConsent:true,participants:[{...peer,requiresGuardianConsent:true}]}).allowed,false);
+});
