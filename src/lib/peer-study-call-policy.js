@@ -13,13 +13,13 @@ export function peerCallEligibility({actor,room,kind,participants=[],featureEnab
     return {allowed:false,reason:'Peer calls are limited to approved study rooms and forum topics.'};
   if (!room?.id || !room?.active || !room?.moderated)
     return {allowed:false,reason:'This study discussion is not available for calls.'};
-  if (!room?.memberIds?.includes(actor.id))
+  if (!Array.isArray(room?.memberIds) || !room.memberIds.includes(actor.id))
     return {allowed:false,reason:'Join the approved study discussion before requesting a call.'};
   if (!guardianConsent && actor?.requiresGuardianConsent)
     return {allowed:false,reason:'Guardian consent is required before joining calls.'};
   if (!Array.isArray(participants) || participants.length > 5)
     return {allowed:false,reason:'Study calls are limited to six participants.'};
-  if (participants.some(p => !p?.approved || p?.suspended || p?.role !== 'student' || !room.memberIds.includes(p.id)))
+  if (participants.some(p => !p?.id || !p.approved || p.suspended || p.role !== 'student' || !room.memberIds.includes(p.id) || (p.requiresGuardianConsent && !p.guardianConsent)))
     return {allowed:false,reason:'All participants must be approved members of this discussion.'};
   if (participants.some(p => p.id === actor.id) || new Set(participants.map(p => p.id)).size !== participants.length)
     return {allowed:false,reason:'Duplicate participants are not allowed.'};
