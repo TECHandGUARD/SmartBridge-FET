@@ -33,3 +33,14 @@ test('unsafe capabilities stay disabled',()=>{
  for(const key of ['directLearnerCalls','anonymousInvites','externalGuests','recording','screenSharing'])assert.equal(c[key],false);
  assert.equal(c.serverAdmissionRequired,true);
 });
+
+test('missing or malformed membership list fails closed without throwing',()=>{
+ for(const memberIds of [undefined,null,'learner-1',{}]){
+  assert.equal(peerCallEligibility({...valid,room:{...room,memberIds}}).allowed,false);
+ }
+});
+test('peer guardian consent and missing peer ID fail closed',()=>{
+ assert.equal(peerCallEligibility({...valid,participants:[{...peer,requiresGuardianConsent:true}]}).allowed,false);
+ assert.equal(peerCallEligibility({...valid,participants:[{...peer,requiresGuardianConsent:true,guardianConsent:true}]}).allowed,true);
+ assert.equal(peerCallEligibility({...valid,participants:[{...peer,id:null}]}).allowed,false);
+});
