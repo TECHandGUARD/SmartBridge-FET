@@ -1,6 +1,6 @@
 // Small-room mesh. Booking classrooms keep their independent access contract.
 import {DEFAULT_ICE_SERVERS,applyCallQuality,selectedCallRoute} from './call-network';
-export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,chat,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',signalTable='virtual_meeting_signals',onRoute=(_id,_route)=>{}}) {
+export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation=null,reactions=null,chat=null,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig=null,relayOnly=false,receiveVideo=true,quality='saver',signalTable='virtual_meeting_signals',onRoute=(_id,_route)=>{}}) {
   if(!['virtual_meeting_signals','instant_adult_call_signals'].includes(signalTable))throw new Error('Invalid signaling transport');
   const sessionId=crypto.randomUUID();
   const browserConnection=/** @type {any} */(navigator).connection;
