@@ -7,6 +7,7 @@ import {useAuth} from '@/lib/AuthContext';
 import {supabase} from '@/lib/supabaseClient';
 import {dispatchMeetingNotifications} from '@/lib/action-notifications';
 import MeetingRoom from '@/components/meetings/MeetingRoom';
+import InstantAdultCalls from '@/components/calls/InstantAdultCalls';
 
 const PURPOSES={parent_support:'Parent–tutor support',tutor_reflection:'Tutor reflection & development',staff_support:'Administrator & tutor support'};
 const formatTime=value=>new Intl.DateTimeFormat('en-ZA',{dateStyle:'medium',timeStyle:'short',timeZone:'Africa/Johannesburg'}).format(new Date(value));
@@ -48,6 +49,7 @@ export default function VirtualMeetings(){
     <header className="studio-page-header"><div><Link to="/meetings" className="studio-back">{meetingId&&<ArrowLeft size={16} aria-hidden="true"/>}Virtual meetings</Link><span className="studio-eyebrow">SmartBridge conversations</span><h1>{meetingId?meeting?.title||'Private virtual meeting':'A space to connect.'}</h1><p>Parent support, tutor reflection and professional development. Thoughtful conversations, together in one private space.</p></div><span className="studio-badge"><ShieldCheck size={16} aria-hidden="true"/> Free · Invitation only</span></header>
     {error&&<p role="alert" className="studio-alert mb-4">{error}</p>}
     {notice&&<p role="status" className="studio-status mb-4"><Mail size={18} aria-hidden="true"/>{notice}</p>}
+    {!meetingId&&user&&<InstantAdultCalls user={user}/>}
     {meetingId?loading?<p role="status" className="studio-panel">Loading meeting…</p>:meeting&&<>
       <section className="studio-meeting-info space-y-3">
         <div className="flex flex-wrap items-center gap-3 text-xs"><span className="studio-badge"><CalendarDays size={14} aria-hidden="true"/>{formatTime(meeting.starts_at)} (SAST)</span><span className="text-muted-foreground">Status: {meeting.status} · Your invitation: {response(meeting)}</span></div>

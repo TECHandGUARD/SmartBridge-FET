@@ -1,6 +1,7 @@
 // Small-room mesh. Booking classrooms keep their independent access contract.
 import {DEFAULT_ICE_SERVERS,applyCallQuality,selectedCallRoute} from './call-network';
-export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation,reactions,chat,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig,relayOnly=false,receiveVideo=true,quality='saver',onRoute=(_id,_route)=>{}}) {
+export function createMeetingCall({client,meetingId,userId,stream,onRemote,onStatus,onError,presentation=null,reactions=null,chat=null,iceConfig={iceServers:DEFAULT_ICE_SERVERS,relayAvailable:false,expiresAt:0},getIceConfig=null,relayOnly=false,receiveVideo=true,quality='saver',signalTable='virtual_meeting_signals',onRoute=(_id,_route)=>{}}) {
+  if(!['virtual_meeting_signals','instant_adult_call_signals'].includes(signalTable))throw new Error('Invalid signaling transport');
   const sessionId=crypto.randomUUID();
   const browserConnection=/** @type {any} */(navigator).connection;
   /** @type {Map<string, any>} */
@@ -15,8 +16,8 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
   const report=e=>{if(active)onError(e?.message||'Meeting connection interrupted. Try leaving and rejoining.');};
   const send=async(id,kind,payload={})=>{
     if(!active)return;
-    const {error}=await client.from('virtual_meeting_signals').insert({meeting_id:meetingId,sender_id:userId,recipient_id:id,kind,
-      payload:{...payload,session_id:sessionId,target_session:kind==='ready'&&!payload.ack?null:peers.get(id)?.session}});
+    const payloadWithSession={...payload,session_id:sessionId,target_session:kind==='ready'&&!payload.ack?null:peers.get(id)?.session};
+    const {error}=signalTable==='instant_adult_call_signals' ? await client.rpc('send_instant_adult_signal',{call_key:meetingId,recipient:id,signal_kind:kind,signal_payload:payloadWithSession}) : await client.from(signalTable).insert({meeting_id:meetingId,sender_id:userId,recipient_id:id,kind,payload:payloadWithSession});
     if(error)throw error;
   };
   const remove=id=>{clearTimeout(peers.get(id)?.restartTimer);presentation?.detach(id);reactions?.detach(id);chat?.detach(id);const p=peers.get(id);p?.pc.close();peers.delete(id);onRemote(id,null,'Left');onStatus(id,'Left');};
@@ -96,7 +97,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
   const recover=async()=>{
     if(!active||polling)return;polling=true;
     try{
-      const {data,error}=await client.from('virtual_meeting_signals').select('*').eq('meeting_id',meetingId).eq('recipient_id',userId)
+      const {data,error}=await client.from(signalTable).select('*').eq('meeting_id',meetingId).eq('recipient_id',userId)
         .gte('created_at',cursor).order('created_at',{ascending:true}).order('id',{ascending:true}).limit(1000);
       if(error)throw error;if(!active)return;
       for(const row of data||[])await enqueue(row);
@@ -112,7 +113,7 @@ export function createMeetingCall({client,meetingId,userId,stream,onRemote,onSta
     start(ids){
       participants=ids.filter(id=>id!==userId);
       channel=client.channel('virtual-meeting-'+meetingId+'-'+userId+'-'+sessionId)
-        .on('postgres_changes',{event:'INSERT',schema:'public',table:'virtual_meeting_signals',filter:'meeting_id=eq.'+meetingId},event=>{enqueue(event.new);})
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:signalTable,filter:'meeting_id=eq.'+meetingId},event=>{enqueue(event.new);})
         .subscribe(state=>{if(state==='SUBSCRIBED')recover();});
       timer=setInterval(recover,2000);window.addEventListener('online',resume);document.addEventListener('visibilitychange',visible);browserConnection?.addEventListener?.('change',resume);recover();
     },
