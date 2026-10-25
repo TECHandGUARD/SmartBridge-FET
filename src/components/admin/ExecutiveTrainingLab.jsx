@@ -21,7 +21,8 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
     setCooBusy(true);setCooError('');setCooAnswer(null);
     try{
       const {data,error}=await supabase.functions.invoke('coo-ai-scenario-test',{body:{scenario}});
-      if(error||!data?.answer)throw new Error('Unable to generate a COO response. Check administrator access and approved training.');
+      if(error){let detail='COO test failed. Please try again.';try{const result=await error.context?.json();if(typeof result?.error==='string')detail=result.error;}catch{}throw new Error(detail);}
+      if(!data?.answer)throw new Error('The COO did not return a response.');
       setCooAnswer(data);
     }catch(e){setCooError(e.message||'Test failed.');}finally{setCooBusy(false);}
   };
