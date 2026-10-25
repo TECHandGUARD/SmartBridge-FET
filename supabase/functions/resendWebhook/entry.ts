@@ -29,6 +29,20 @@ serve(withHttp(async (request) => {
         const { data, error } = await client.rpc('record_email_event', { event_key: request.headers.get('svix-id'), provider_id: text(event.data.email_id, 'email_id', 200), event_type: event.type, event_time: event.created_at, recipient_emails: recipients.map((value: string) => value.toLowerCase()) });
         if (error)
             failure(503, 'Email delivery tracking unavailable. Retry this event.');
+        const eventStates: Record<string,string> = {
+            'email.sent': 'accepted', 'email.delivered':'delivered',
+            'email.bounced':'bounced', 'email.complained':'suppressed',
+            'email.failed':'failed', 'email.suppressed':'suppressed'
+        };
+        const state = eventStates[event.type];
+        if (state) {
+            const { error: cooError } = await client.from('coo_tutor_email_log')
+                .update({ state, updated_at: new Date().toISOString() })
+                .eq('provider_id', event.data.email_id)
+                .in('recipient_email', recipients.map((v:string)=>v.toLowerCase()));
+            if (cooError && cooError.code !== '42P01')
+                failure(503, 'COO delivery tracking unavailable. Retry this event.');
+        }
         return json(data);
     }
     catch (error) {
