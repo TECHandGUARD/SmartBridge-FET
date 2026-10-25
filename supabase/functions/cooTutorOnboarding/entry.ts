@@ -6,7 +6,6 @@ import { json, apiError } from '../../shared/api.ts';
 
 // Job-only endpoint. COO has standing authority for this tightly bounded operational campaign.
 // dry-run defaults to true. Live sends require COO_EMAIL_ENABLED=true in secrets.
-const PROFILE_FIELDS = ['bio','subjects','grades','qualifications','teaching_languages','session_price_per_hour'] as const;
 const nonempty = (v: unknown) => Array.isArray(v) ? v.length > 0 : typeof v === 'string' ? v.trim().length > 0 : typeof v === 'number' ? v > 0 : false;
 const missingFields = (p: any): string[] => {
   const missing: string[] = [];
@@ -38,7 +37,7 @@ serve(withHttp(async (request) => {
    if(!Number.isFinite(hours)||hours<48) {skipped++;continue;}
    if(!user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {skipped++;continue;}
    // Fail closed on unsupported communication-preference values.
-   if(typeof user.communication_preferences==='string' && /none|off|unsubscribe|no_email|do_not_contact/i.test(user.communication_preferences)) {skipped++;continue;}
+   if(typeof user.communication_preferences !== 'string' || !/^(all|email|email_only|email_enabled)$/i.test(user.communication_preferences.trim())) {skipped++;continue;}
    const profile=byUser.get(user.id);
    const missing=profile?missingFields(profile):['Tutor profile'];
    if(!missing.length) {skipped++;continue;}
