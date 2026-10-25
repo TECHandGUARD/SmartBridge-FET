@@ -17,9 +17,10 @@ test('only active tutor roles qualify and first follow-up is no earlier than 48h
  assert.match(dispatcher, /eq\('is_active',true\)/);
  assert.match(dispatcher, /hours<48/);
 });
-test('email preferences fail closed for null/unrecognised preferences',()=> {
- assert.match(dispatcher, /typeof user\.communication_preferences !== 'string'/);
- assert.match(dispatcher, /skipped\+\+;continue/);
+test('admin managed operational reminders still honor explicit user refusal',()=> {
+ assert.match(dispatcher, /opt_out/);
+ assert.match(dispatcher, /coo_issue_unsubscribe_token/);
+ assert.match(dispatcher, /coo_reserve_email/);
 });
 test('quota and idempotency exist at DB level',()=>{
  assert.match(migration, /pg_advisory_xact_lock/);
@@ -32,4 +33,13 @@ test('scheduler and signed delivery webhook include COO',()=>{
  assert.match(config, /\[functions\.coo-tutor-onboarding\]/);
  assert.match(webhook, /verifySignedWebhook/);
  assert.match(webhook, /coo_tutor_email_log/);
+});
+
+test('unsubscribe requires an explicit confirmed action',()=> {
+ const endpoint=readFileSync('supabase/functions/cooReminderUnsubscribe/entry.ts','utf8');
+ const optout=readFileSync('supabase/migrations/20261025223500_coo_admin_reminders_opt_out.sql','utf8');
+ assert.match(endpoint,/request.method==='GET'/);
+ assert.match(endpoint,/request.method==='POST'/);
+ assert.match(optout,/coo_reminder_suppressions/);
+ assert.match(optout,/coo_redeem_unsubscribe_token/);
 });
