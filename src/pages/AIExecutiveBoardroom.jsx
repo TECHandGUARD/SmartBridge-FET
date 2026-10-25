@@ -28,7 +28,7 @@ export default function AIExecutiveBoardroom(){
       <h2 className="text-xl font-semibold">Account review workflow</h2>
       <p className="mt-2 text-sm">Existing accounts: one-time baseline review. Incoming accounts: event-based onboarding. Account records are not loaded into this preview, and no emails are sent.</p>
       <p className="mt-3 text-sm">Next integration: admin-authorized account summaries, consent-aware message templates, auditable task queue, and a delivery provider.</p>
-      <Link to="/admin" className="mt-4 inline-block underline">Return to admin dashboard</Link>
+      <div className="mt-4 flex flex-wrap gap-4"><Link to="/admin/ai-training" className="underline">Open AI Executive Training Centre</Link><Link to="/admin" className="underline">Return to admin dashboard</Link></div>
     </section>
   </main>;
 }
