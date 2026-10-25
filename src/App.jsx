@@ -40,6 +40,7 @@ const Premium = lazy(() => import('./pages/Premium'));
 const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AIExecutiveBoardroom = lazy(() => import('./pages/AIExecutiveBoardroom'));
+const AIExecutiveTrainingCenter = lazy(() => import('./pages/AIExecutiveTrainingCenter'));
 const FeatureVisibility = lazy(() => import('./pages/FeatureVisibility'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
 const ResetPassword = lazy(() => import('./pages/ResetPassword'));
@@ -268,6 +269,7 @@ const AuthenticatedApp = () => {
           />
 
           <Route path="/admin/feature-visibility" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin']}><FeatureVisibility /></ProtectedRoute></RequireAuthAndOnboarding>} />
+          <Route path="/admin/ai-training" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin']}><AIExecutiveTrainingCenter /></ProtectedRoute></RequireAuthAndOnboarding>} />
           <Route path="/admin/ai-boardroom" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin']}><AIExecutiveBoardroom /></ProtectedRoute></RequireAuthAndOnboarding>} />
           <Route path="/presentations" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','tutor','sace_tutor','student_tutor']}><PresentationStudio /></ProtectedRoute></RequireAuthAndOnboarding>} />
           <Route path="/meetings" element={<RequireAuthAndOnboarding><ProtectedRoute allowedRoles={['admin','parent','tutor','sace_tutor','student_tutor']}><VirtualMeetings /></ProtectedRoute></RequireAuthAndOnboarding>} />
