@@ -48,7 +48,7 @@ serve(withHttp(async (request) => {
   try { appUrl('/tutor-dashboard'); linkReady=true; } catch { /* Block live sending if app origin is unconfigured. */ }
   const deliverySettings=dryRun?null:{apiKey:requiredEnv('RESEND_API_KEY'),from:COO_EMAIL_FROM};
   const now=Date.now();
-  const {data:users,error:userError}=await client.from('users').select('id,email,full_name,role,created_at,is_active,communication_preferences').eq('role','student_tutor').eq('is_active',true).limit(500);
+  const {data:users,error:userError}=await client.from('users').select('id,email,full_name,role,created_at,is_active,communication_preferences').in('role',['student_tutor','sace_tutor','tutor']).eq('is_active',true).limit(500);
   if(userError)throw userError;
   const {data:profiles,error:profileError}=await client.from('tutor_profiles').select('user_id,bio,subjects,subjects_taught,grades,grade_levels_taught,qualifications,highest_qualification,teaching_languages,languages_spoken,session_price_per_hour,hourly_rate').limit(500);
   if(profileError)throw profileError;
