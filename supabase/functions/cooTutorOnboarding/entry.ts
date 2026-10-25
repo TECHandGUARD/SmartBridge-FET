@@ -38,8 +38,12 @@ serve(withHttp(async (request) => {
     .select('enabled,daily_limit,autonomy').eq('key','tutor-onboarding').single();
   if(configError)throw new Error('COO sending configuration unavailable');
   const dryRun=payload?.dry_run !== false || config?.enabled !== true;
-  let providerReady=false,linkReady=false;
-  try { emailSettings(); providerReady=true; } catch { /* Configuration is checked again before sending. */ }
+  let providerReady=false,linkReady=false,providerSenderDomain:string|null=null;
+  try {
+    const {from}=emailSettings();
+    providerReady=true;
+    providerSenderDomain=from.match(/@([a-zA-Z0-9.-]+)/)?.[1]?.toLowerCase() || null;
+  } catch { /* Configuration is checked again before sending. */ }
   try { appUrl('/tutor-dashboard'); linkReady=true; } catch { /* Block live sending if app origin is unconfigured. */ }
   const deliverySettings=dryRun?null:emailSettings();
   const now=Date.now();
@@ -83,6 +87,6 @@ serve(withHttp(async (request) => {
    }
   }
   // Daily operational report is visible to admins through database aggregation; do not expose recipient PII in job response.
-  return json({dry_run:dryRun,provider_ready:providerReady,link_ready:linkReady,eligible,attempted,accepted,failed,skipped,preview:dryRun?attempts.slice(0,25):undefined});
+  return json({dry_run:dryRun,provider_ready:providerReady,provider_sender_domain:providerSenderDomain,link_ready:linkReady,eligible,attempted,accepted,failed,skipped,preview:dryRun?attempts.slice(0,25):undefined});
  } catch(error){return apiError(error);}
 },'coo-tutor-onboarding'));
