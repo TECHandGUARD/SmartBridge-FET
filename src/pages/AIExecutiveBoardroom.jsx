@@ -29,7 +29,7 @@ export default function AIExecutiveBoardroom(){
       <h1 className="mt-2 text-3xl font-bold">AI Executive Boardroom</h1>
       <p className="mt-2 text-muted-foreground">Executive integration preview · Check COO live status below</p>
     </header>
-    <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-label="Executive portfolios">
+    <section className="rounded-xl border p-5 space-y-2" role="status" aria-label="Outstanding AI provider setup">\n      <h2 className="font-semibold">Action required — COO AI provider setup is not complete</h2>\n      <p className="text-sm">The COO AI scenario test still needs a working provider connection. In Supabase Edge Function Secrets, configure OPENAI_API_KEY and an available OPENAI_MODEL, then run and verify an actual COO response. This notice stays visible across deployments until setup and testing have been confirmed and this outstanding item is explicitly closed.</p>\n      <p className="text-xs text-muted-foreground">Do not paste API keys into this website, chat, or source code. Approved training instructions remain saved; automatic tutor emails remain paused.</p>\n    </section>\n    <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-label="Executive portfolios">
       {executives.map(([title,department,description])=><article key={title} className="rounded-xl border bg-card p-5">
         <h2 className="text-xl font-semibold">{title}</h2>
         <p className="mt-1 font-medium">{department}</p>
