@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {supabase} from '@/lib/supabaseClient';
 
 const roles = [
   {id:'CEO',scope:'Strategy and coordination',caseText:'Two executives propose conflicting priorities. What should the CEO do?',answer:'Summarise both recommendations, risks and evidence; refer the final choice to the administrator.',criteria:['evidence','admin approval']},
@@ -12,6 +13,18 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
   const [chosen,setChosen]=useState('COO');
   const [draft,setDraft]=useState('');
   const [reviewed,setReviewed]=useState(false);
+  const [cooAnswer,setCooAnswer]=useState(null);
+  const [cooBusy,setCooBusy]=useState(false);
+  const [cooError,setCooError]=useState('');
+  const [scenario,setScenario]=useState('A tutor registered three days ago, has an incomplete profile, and has opted out of optional reminders. What should the COO recommend?');
+  const testCoo=async()=>{
+    setCooBusy(true);setCooError('');setCooAnswer(null);
+    try{
+      const {data,error}=await supabase.functions.invoke('coo-ai-scenario-test',{body:{scenario}});
+      if(error||!data?.answer)throw new Error('Unable to generate a COO response. Check administrator access and approved training.');
+      setCooAnswer(data);
+    }catch(e){setCooError(e.message||'Test failed.');}finally{setCooBusy(false);}
+  };
   const role=roles.find(x=>x.id===chosen);
   const select=e=>{setChosen(e.target.value);setDraft('');setReviewed(false);};
   return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="AI executive training lab">
@@ -30,6 +43,15 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
       <p className="text-xs text-muted-foreground">This compares your proposed guidance with a documented example; it does not automatically score or approve the AI's performance.</p>
       {reviewed&&<div role="status" className="rounded-lg bg-muted p-3 text-sm space-y-2"><strong>Expected behaviour:</strong><p>{role.answer}</p><p><strong>Review checklist:</strong> {role.criteria.join(' · ')}</p><p className="text-muted-foreground">Your draft is for review only; it has not been saved as a live AI instruction. Test cases must be approved and connected to each executive's actual service before operational training is possible.</p></div>}
     </div>
+    {chosen==='COO'&&<div className="rounded-lg border p-4 space-y-3">
+      <h3 className="font-semibold">Test COO AI — supervised simulation</h3>
+      <p className="text-sm text-muted-foreground">The COO will generate an answer using approved COO instructions. This sends no emails and does not change tutor records.</p>
+      <label htmlFor="coo-test-scenario" className="block text-sm font-medium">Scenario for the COO</label>
+      <textarea id="coo-test-scenario" className="w-full rounded-lg border bg-background p-3 text-base" rows={4} maxLength={2500} value={scenario} onChange={e=>setScenario(e.target.value)}/>
+      <button type="button" onClick={testCoo} disabled={cooBusy||scenario.trim().length<15} className="rounded-lg border px-4 py-2 disabled:opacity-50">{cooBusy?'Testing COO…':'Test COO AI'}</button>
+      {cooError&&<p role="alert" className="text-sm">{cooError}</p>}
+      {cooAnswer&&<div role="status" className="rounded-lg bg-muted p-3 text-sm space-y-2"><p><strong>COO response (simulation):</strong></p><p className="whitespace-pre-wrap">{cooAnswer.answer}</p><p>Approved instructions used: {cooAnswer.approved_instructions} · Emails sent: {cooAnswer.emails_sent} · Actions taken: {cooAnswer.actions_taken}</p></div>}
+    </div>}
     {chosen==='COO'&&<div className="rounded-lg border p-4 space-y-2"><h3 className="font-semibold">Live-data COO dry run (admin only)</h3><p className="text-sm text-muted-foreground">Uses the existing protected COO report to count eligible tutors. No reminder emails are sent.</p><button type="button" disabled={testing||!runCooPreview} onClick={runCooPreview} className="rounded-lg bg-primary text-primary-foreground px-4 py-2 disabled:opacity-50">{testing?'Testing…':'Run controlled COO dry run'}</button>{preview&&<p role="status" className="text-sm">Checked: {preview.checked??0} · Eligible: {preview.eligible??0} · Emails sent: {preview.send_count??0}</p>}</div>}
     <p className="text-xs text-muted-foreground">Other executives are scenario-only until their own backend integrations and audit logs are implemented. Production actions always require server-side authorisation.</p>
   </section>;
