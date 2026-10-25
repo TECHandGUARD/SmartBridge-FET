@@ -51,7 +51,7 @@ serve(withHttp(async (request) => {
    const {apiKey,from}=emailSettings();
    const name=(typeof user.full_name==='string'&&user.full_name.trim()?user.full_name.trim().split(' ')[0]:'Tutor').slice(0,80);
    const subject='Complete your SmartBridge FET tutor profile';
-   const profileUrl=appUrl('/tutor/profile');
+   const profileUrl=appUrl('/tutor-dashboard');
    const body='Hi '+name+',\n\nWelcome to SmartBridge FET. Your tutor profile needs a few details: '+missing.join(', ')+'.\n\nA complete profile helps learners and parents understand your subjects, qualifications, teaching approach and availability. It also helps you prepare for bookings when your account is eligible. Completing your profile does not guarantee bookings or earnings.\n\nUpdate your profile: '+profileUrl+'\n\nSmartBridge FET Tutor Success (automated COO assistant)';
    try {
     const resp=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json','Idempotency-Key':reservation},body:JSON.stringify({from,to:[user.email],subject,text:body,headers:{'X-SmartBridge-COO-Log':reservation}}),signal:AbortSignal.timeout(15000)});
