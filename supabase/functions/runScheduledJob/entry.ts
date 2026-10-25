@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { serverConnection, requiredEnv } from '../../shared/config.ts';
 import { authorize, withHttp, failure } from '../../shared/http.ts';
 import { readJson, text, json, apiError } from '../../shared/api.ts';
-const allowed = new Set(['send-study-reminders', 'send-session-reminders', 'send-nbt-reminders', 'send-deadline-reminders', 'expire-subscriptions', 'send-weekly-parent-reports', 'send-operational-alerts', 'dispatch-notifications']);
+const allowed = new Set(['send-study-reminders', 'send-session-reminders', 'send-nbt-reminders', 'send-deadline-reminders', 'expire-subscriptions', 'send-weekly-parent-reports', 'send-operational-alerts', 'dispatch-notifications', 'coo-tutor-onboarding']);
 serve(withHttp(async (request) => {
     try {
         const { url, key } = serverConnection();
