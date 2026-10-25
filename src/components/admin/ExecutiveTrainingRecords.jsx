@@ -8,6 +8,14 @@ export default function ExecutiveTrainingRecords(){
  const [records,setRecords]=useState([]);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
+ const review=async(id,action)=>{
+  if(!supabase || busy)return;
+  setBusy(true);setMessage('');
+  const {data,error}=await supabase.rpc('ai_review_training',{p_id:id,p_action:action});
+  setBusy(false);
+  if(error||data!==true){setMessage('Review action failed. Check administrator access and current status.');return;}
+  await load();setMessage(action==='approve'?'Instruction approved for review purposes; not activated in live AI.':'Instruction withdrawn.');
+ };
  const load=async()=>{
   if(!supabase)return setMessage('Database unavailable.');
   const {data,error}=await supabase.from('ai_executive_training').select('id,executive,instruction,status,version,created_at').order('created_at',{ascending:false}).limit(100);
@@ -36,6 +44,6 @@ export default function ExecutiveTrainingRecords(){
    <button type="submit" disabled={busy||instruction.trim().length<10} className="rounded-lg bg-primary text-primary-foreground px-4 py-2 disabled:opacity-50">{busy?'Saving…':'Save draft instruction'}</button>
   </form>
   {message&&<p role="status" className="text-sm">{message}</p>}
-  <div><h3 className="font-semibold">Training history</h3>{!records.length?<p className="mt-2 text-sm text-muted-foreground">No accessible training records yet.</p>:<ul className="mt-3 space-y-3">{records.map(row=><li key={row.id} className="rounded-lg border p-3"><p className="text-sm font-semibold">{row.executive} · {row.status} · v{row.version}</p><p className="mt-1 text-sm whitespace-pre-wrap break-words">{row.instruction}</p><time className="mt-1 block text-xs text-muted-foreground">{new Date(row.created_at).toLocaleString()}</time></li>)}</ul>}</div>
+  <div><h3 className="font-semibold">Training history</h3>{!records.length?<p className="mt-2 text-sm text-muted-foreground">No accessible training records yet.</p>:<ul className="mt-3 space-y-3">{records.map(row=><li key={row.id} className="rounded-lg border p-3"><p className="text-sm font-semibold">{row.executive} · {row.status} · v{row.version}</p><p className="mt-1 text-sm whitespace-pre-wrap break-words">{row.instruction}</p><time className="mt-1 block text-xs text-muted-foreground">{new Date(row.created_at).toLocaleString()}</time><div className="mt-3 flex flex-wrap gap-2">{row.status==='draft'&&<button type="button" disabled={busy} onClick={()=>review(row.id,'approve')} className="rounded-lg border px-3 py-2 disabled:opacity-50">Approve instruction</button>}{(row.status==='draft'||row.status==='approved')&&<button type="button" disabled={busy} onClick={()=>review(row.id,'withdraw')} className="rounded-lg border px-3 py-2 disabled:opacity-50">Withdraw</button>}</div></li>)}</ul>}</div>
  </section>;
 }
