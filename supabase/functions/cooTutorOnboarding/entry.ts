@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { serverConnection, emailSettings, appUrl } from '../../shared/config.ts';
+import { serverConnection, requiredEnv, appUrl } from '../../shared/config.ts';
 import { authorize, withHttp } from '../../shared/http.ts';
 import { json, apiError } from '../../shared/api.ts';
 
+const COO_EMAIL_FROM = 'SmartBridge FET <noreply@auth.techandguard.co.za>';
 // Job-only endpoint. COO has standing authority for this tightly bounded operational campaign.
 // dry-run defaults to true. Live sends require COO_EMAIL_ENABLED=true in secrets.
 const nonempty = (v: unknown) => Array.isArray(v) ? v.length > 0 : typeof v === 'string' ? v.trim().length > 0 : typeof v === 'number' ? v > 0 : false;
@@ -40,12 +41,12 @@ serve(withHttp(async (request) => {
   const dryRun=payload?.dry_run !== false || config?.enabled !== true;
   let providerReady=false,linkReady=false,providerSenderDomain:string|null=null;
   try {
-    const {from}=emailSettings();
+    requiredEnv('RESEND_API_KEY');
     providerReady=true;
-    providerSenderDomain=from.match(/@([a-zA-Z0-9.-]+)/)?.[1]?.toLowerCase() || null;
+    providerSenderDomain='auth.techandguard.co.za';
   } catch { /* Configuration is checked again before sending. */ }
   try { appUrl('/tutor-dashboard'); linkReady=true; } catch { /* Block live sending if app origin is unconfigured. */ }
-  const deliverySettings=dryRun?null:emailSettings();
+  const deliverySettings=dryRun?null:{apiKey:requiredEnv('RESEND_API_KEY'),from:COO_EMAIL_FROM};
   const now=Date.now();
   const {data:users,error:userError}=await client.from('users').select('id,email,full_name,role,created_at,is_active,communication_preferences').eq('role','student_tutor').eq('is_active',true).limit(500);
   if(userError)throw userError;
