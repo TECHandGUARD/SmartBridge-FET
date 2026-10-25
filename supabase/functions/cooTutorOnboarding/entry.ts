@@ -21,9 +21,24 @@ serve(withHttp(async (request) => {
  try {
   const { url,key }=serverConnection();
   const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
-  await authorize(request,client,'job');
+  const cronToken = request.headers.get('x-coo-job-secret');
+  if (cronToken) {
+    const {data: expected, error: keyError} = await client.rpc('coo_scheduler_secret');
+    if (keyError || typeof expected !== 'string') throw new Error('Scheduled job verification unavailable');
+    const hash = async (v:string) => new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+    const [a,b] = await Promise.all([hash(cronToken),hash(expected)]);
+    let mismatch = a.length ^ b.length;
+    for(let i=0;i<Math.min(a.length,b.length);i++)mismatch |= a[i]^b[i];
+    if(mismatch !== 0) return json({error:'Unauthorized scheduled request'},401);
+  } else {
+    await authorize(request,client,'job');
+  }
   const payload=await request.json().catch(()=>({}));
-  const dryRun=payload?.dry_run !== false || Deno.env.get('COO_EMAIL_ENABLED') !== 'true';
+  const {data: config,error:configError} = await client.from('coo_automation_settings')
+    .select('enabled,daily_limit,autonomy').eq('key','tutor-onboarding').single();
+  if(configError)throw new Error('COO sending configuration unavailable');
+  const dryRun=payload?.dry_run !== false || config?.enabled !== true;
+  const deliverySettings=dryRun?null:emailSettings();
   const now=Date.now();
   const {data:users,error:userError}=await client.from('users').select('id,email,full_name,role,created_at,is_active,communication_preferences').eq('role','student_tutor').eq('is_active',true).limit(500);
   if(userError)throw userError;
@@ -48,7 +63,7 @@ serve(withHttp(async (request) => {
    if(reserveError)throw reserveError;
    if(!reservation){skipped++;continue;}
    attempted++;
-   const {apiKey,from}=emailSettings();
+   const {apiKey,from}=deliverySettings!;
    const name=(typeof user.full_name==='string'&&user.full_name.trim()?user.full_name.trim().split(' ')[0]:'Tutor').slice(0,80);
    const subject='Complete your SmartBridge FET tutor profile';
    const profileUrl=appUrl('/tutor-dashboard');
