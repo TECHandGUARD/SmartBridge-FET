@@ -39,7 +39,7 @@ test('unsubscribe requires an explicit confirmed action',()=> {
  const endpoint=readFileSync('supabase/functions/cooReminderUnsubscribe/entry.ts','utf8');
  const optout=readFileSync('supabase/migrations/20261025223500_coo_admin_reminders_opt_out.sql','utf8');
  assert.match(endpoint,/request.method==='GET'/);
- assert.match(endpoint,/request.method==='POST'/);
+ assert.match(endpoint,/\['GET','POST'\]/);
  assert.match(optout,/coo_reminder_suppressions/);
  assert.match(optout,/coo_redeem_unsubscribe_token/);
 });
