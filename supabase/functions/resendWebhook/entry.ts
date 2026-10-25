@@ -39,7 +39,8 @@ serve(withHttp(async (request) => {
             const { error: cooError } = await client.from('coo_tutor_email_log')
                 .update({ state, updated_at: new Date().toISOString() })
                 .eq('provider_id', event.data.email_id)
-                .in('recipient_email', recipients.map((v:string)=>v.toLowerCase()));
+                .in('recipient_email', recipients.map((v:string)=>v.toLowerCase()))
+                .in('state', state === 'accepted' ? ['reserved','accepted'] : state === 'delivered' ? ['reserved','accepted','delivered'] : ['reserved','accepted','delivered','failed']);
             if (cooError && cooError.code !== '42P01')
                 failure(503, 'COO delivery tracking unavailable. Retry this event.');
         }
