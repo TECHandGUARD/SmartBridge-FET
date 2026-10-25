@@ -15,12 +15,18 @@ export default function AIExecutiveBoardroom(){
   const [reportError,setReportError]=useState('');
   const [preview,setPreview]=useState(null);
   const [testing,setTesting]=useState(false);
+  const [changing,setChanging]=useState(false);
   useEffect(()=>{let active=true; if(!supabase){setReportError('Database connection unavailable');return;} supabase.functions.invoke('coo-board-report',{body:{}}).then(({data,error})=>{if(!active)return;if(error)setReportError('COO report unavailable until the reporting function and database are deployed');else setReport(data);});return()=>{active=false;};},[]);
   const runPreview=async()=>{setTesting(true);setReportError('');try{
     const {data,error}=await supabase.functions.invoke('coo-board-report',{body:{preview:true}});
     if(error)throw error;
     setPreview(data?.preview||null);setReport(data);
   }catch{setReportError('Could not complete safe COO preview.');}finally{setTesting(false);}};
+  const changeCampaign=async(enabled)=>{setChanging(true);setReportError('');try{
+    const {data,error}=await supabase.functions.invoke('coo-board-report',{body:{action:'set_enabled',enabled}});
+    if(error)throw error;
+    setReport(data);
+  }catch{setReportError('Could not change COO reminder campaign.');}finally{setChanging(false);}};
   return <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8" aria-label="AI Executive Boardroom">
     <header className="rounded-2xl border bg-card p-6">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tech & GUARD / SmartBridge FET</p>
@@ -38,13 +44,16 @@ export default function AIExecutiveBoardroom(){
     <section className="rounded-xl border bg-card p-5" aria-label="COO activity reporting">
       <h2 className="text-xl font-semibold">COO — daily accountability</h2>
       <div className="mt-3 rounded-xl border p-4">
-        <h3 className="font-semibold">Test the COO now</h3>
+        <h3 className="font-semibold">Admin control — tutor reminders</h3>
+        <p className="mt-1 text-sm">The administrator controls whether operational reminders run. A tutor's stop-reminders choice always overrides the campaign.</p>
+        <button type="button" disabled={changing || !report} onClick={()=>changeCampaign(!report.email_enabled)} className="mt-3 rounded-lg border px-4 py-2 disabled:opacity-50">{changing?'Saving…':report?.email_enabled?'Pause automatic reminders':'Activate automatic reminders'}</button>
+        <h3 className="mt-5 font-semibold">Test the COO now</h3>
         <p className="mt-1 text-sm text-muted-foreground">Run a safe simulation against current tutor profiles. It checks eligibility and email preferences without sending email or changing accounts.</p>
         <button type="button" onClick={runPreview} disabled={testing} className="mt-3 rounded-lg bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">{testing?'Running test…':'Run safe COO test'}</button>
         {preview && <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3" role="status">
           <p>Checked: <strong>{preview.checked}</strong></p>
           <p>Eligible: <strong>{preview.eligible}</strong></p>
-          <p>No permission: <strong>{preview.no_consent}</strong></p>
+          <p>Stopped reminders: <strong>{preview.opted_out}</strong></p>
           <p>Too new: <strong>{preview.too_new}</strong></p>
           <p>Profiles complete: <strong>{preview.complete}</strong></p>
           <p>Emails sent: <strong>{preview.send_count}</strong></p>

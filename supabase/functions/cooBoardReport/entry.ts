@@ -9,6 +9,13 @@ serve(withHttp(async (request) => {
   const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
   await authorize(request,client,'admin');
   const body=await request.json().catch(()=>({}));
+  if(body?.action === 'set_enabled'){
+    if(typeof body.enabled !== 'boolean')failure(400,'Invalid campaign switch');
+    const {error:toggleError}=await client.from('coo_automation_settings')
+      .update({enabled:body.enabled,updated_at:new Date().toISOString()})
+      .eq('key','tutor-onboarding');
+    if(toggleError)failure(503,'Unable to update COO campaign setting');
+  }
   let preview=null;
   if(body?.preview === true){
     const {data: users,error: uError}=await client.from('users')
@@ -20,12 +27,15 @@ serve(withHttp(async (request) => {
     if(pError)failure(503,'Preview could not read tutor profiles');
     const profileMap=new Map((profiles||[]).map((p:any)=>[p.user_id,p]));
     const present=(v:any)=>Array.isArray(v)?v.length>0:typeof v==='string'?v.trim().length>0:typeof v==='number'?v>0:false;
-    const stats={checked:0,too_new:0,no_consent:0,invalid_email:0,complete:0,eligible:0,send_count:0};
+    const {data:suppressed,error:supError}=await client.from('coo_reminder_suppressions').select('tutor_id').limit(1000);
+    if(supError)failure(503,'Opt-out status unavailable');
+    const stopped=new Set((suppressed||[]).map((s:any)=>s.tutor_id));
+    const stats={checked:0,too_new:0,opted_out:0,invalid_email:0,complete:0,eligible:0,send_count:0};
     for(const user of users||[]){
       stats.checked++;
       if((Date.now()-Date.parse(user.created_at))/3600000<48){stats.too_new++;continue;}
       if(!user.email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(user.email)){stats.invalid_email++;continue;}
-      if(typeof user.communication_preferences!=='string'|| !/^(all|email|email_only|email_enabled)$/i.test(user.communication_preferences.trim())){stats.no_consent++;continue;}
+      if(stopped.has(user.id) || ['none','off','disabled','unsubscribe','unsubscribed','no_email','opt_out'].includes((user.communication_preferences||'').trim().toLowerCase())){stats.opted_out++;continue;}
       const p=profileMap.get(user.id) as any;
       const missing=!p || !present(p.bio) || !(present(p.subjects)||present(p.subjects_taught))
         || !(present(p.grades)||present(p.grade_levels_taught))

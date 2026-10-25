@@ -17,24 +17,24 @@ export default function TutorEmailPreferences({user}) {
       });
     return()=>{mounted=false;};
   },[user?.id]);
-  const allowed=/^(all|email|email_only|email_enabled)$/i.test(preference||'');
+  const allowed=preference!==null && preference!=='none';
   async function save(next) {
     if(!supabase || !user?.id || saving)return;
     setSaving(true);setMessage('');
     const desired=next?'email':'none';
-    const {data,error}=await supabase.from('users')
-      .update({communication_preferences:desired})
-      .eq('id',user.id)
-      .select('communication_preferences').single();
+    const {data,error}=next
+      ? await supabase.rpc('coo_reenable_reminders')
+      : await supabase.from('users').update({communication_preferences:desired})
+          .eq('id',user.id).select('communication_preferences').single();
     setSaving(false);
     if(error){setMessage('Could not save your choice. Please try again.');return;}
-    setPreference(data.communication_preferences);
+    setPreference(next?'email':data.communication_preferences);
     setMessage(next?'Profile reminder emails enabled.':'Optional profile reminder emails disabled.');
   }
   return <section className="rounded-xl border bg-card p-4 space-y-3" aria-label="Tutor profile email preferences">
     <h2 className="font-semibold">Tutor profile email reminders</h2>
-    <p className="text-sm text-muted-foreground">Choose whether SmartBridge FET may email you helpful reminders if your tutor profile is incomplete after 2–3 days. These are account-support reminders, not promotions. You can turn them off at any time.</p>
-    <p className="text-sm">Preference: <strong>{preference===null?'Loading…':allowed?'On':preference==='none'?'Off':'Not chosen'}</strong></p>
+    <p className="text-sm text-muted-foreground">Administrators may send account-support reminders if your tutor profile stays incomplete for 2–3 days. These are not promotional emails. You can stop future reminders here or through a link in each email.</p>
+    <p className="text-sm">Preference: <strong>{preference===null?'Loading…':preference==='none'?'Off':'On (admin-managed)'}</strong></p>
     <div className="flex flex-wrap gap-2">
       <Button type="button" size="sm" disabled={saving || preference===null || allowed} onClick={()=>save(true)}>Enable reminders</Button>
       <Button type="button" size="sm" variant="outline" disabled={saving || preference===null || preference==='none'} onClick={()=>save(false)}>Turn off reminders</Button>

@@ -29,7 +29,7 @@ export default function Onboarding({ user, onComplete }) {
   const [otherUniversity, setOtherUniversity] = useState('');
   const [studentNumber, setStudentNumber] = useState('');
   const [policyConsent, setPolicyConsent] = useState(false);
-  const [tutorProfileReminders, setTutorProfileReminders] = useState(false);
+  const [tutorStopProfileReminders, setTutorStopProfileReminders] = useState(false);
   const [agreementAccepted, setAgreementAccepted] = useState(false);
   const [showAgreement, setShowAgreement] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -55,9 +55,9 @@ export default function Onboarding({ user, onComplete }) {
     submitting.current = true; setSaving(true); setError('');
     try {
       if (!user?.id) throw new Error('Please sign in before completing setup.');
-      if (tutor) {
+      if (tutor && tutorStopProfileReminders) {
         const {error: preferenceError} = await withTimeout(supabase.from('users')
-          .update({communication_preferences:tutorProfileReminders ? 'email' : 'none'})
+          .update({communication_preferences:'none'})
           .eq('id',user.id));
         if (preferenceError) throw new Error('Could not save your email reminder choice. Please retry.');
       }
@@ -120,7 +120,7 @@ export default function Onboarding({ user, onComplete }) {
           </dl>
           <p className="text-sm leading-relaxed">{tutor ? 'Next: your application goes to admin review. Tutor tools stay locked until verification is complete. Approval, bookings and earnings are not guaranteed.' : role === 'parent' ? 'Next: request access using your learner’s email. They must approve before you can see their reports.' : 'Next: open your dashboard to explore subjects and track your study progress.'}</p>
           <div className="flex items-start gap-3"><Checkbox id="policy-consent" checked={policyConsent} onCheckedChange={value => setPolicyConsent(value === true)} disabled={saving} className="mt-1 shrink-0" /><Label htmlFor="policy-consent" className="text-sm font-normal leading-relaxed">I agree to the <Link to="/terms" target="_blank" rel="noopener noreferrer" className="text-primary underline">Terms of Service</Link> and <Link to="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary underline">Privacy Policy</Link> (opens in a new tab).</Label></div>
-          {tutor && <label className="flex items-start gap-3 rounded-xl border p-4 text-sm cursor-pointer"><input type="checkbox" checked={tutorProfileReminders} onChange={e=>setTutorProfileReminders(e.target.checked)} disabled={saving} className="mt-1 h-4 w-4 accent-primary" /><span><strong>Email me profile setup reminders</strong><span className="mt-1 block text-muted-foreground">Optional. SmartBridge may email you a helpful reminder after 2–3 days if your tutor profile is incomplete. These are account-support messages, not marketing. You can turn them off in your tutor dashboard.</span></span></label>}
+          {tutor && <label className="flex items-start gap-3 rounded-xl border p-4 text-sm cursor-pointer"><input type="checkbox" checked={tutorStopProfileReminders} onChange={e=>setTutorStopProfileReminders(e.target.checked)} disabled={saving} className="mt-1 h-4 w-4 accent-primary" /><span><strong>Do not email me optional tutor profile reminders</strong><span className="mt-1 block text-muted-foreground">Administrators may send service reminders about an incomplete tutor account after 2–3 days. These are not marketing messages. You can stop these reminders here, from the email itself, or later in your dashboard.</span></span></label>}
           {tutor && <div className="rounded-xl border p-4"><p className="mb-3 text-sm">{agreementAccepted ? 'Tutor agreement accepted. Submit below when you are ready.' : 'Please read and accept the tutor agreement before submitting.'}</p><Button variant="outline" disabled={saving} onClick={() => setShowAgreement(true)}>{agreementAccepted ? 'Review tutor agreement' : 'Read tutor agreement'}</Button>{agreementAccepted && <Check className="ml-3 inline h-5 w-5 text-primary" aria-label="Agreement accepted" />}</div>}
         </div>}
         {error && <p role="alert" className="mt-5 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}

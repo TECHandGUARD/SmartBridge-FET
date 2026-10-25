@@ -163,3 +163,7 @@ entrypoint = "./functions/cooTutorOnboarding/entry.ts"
 [functions.coo-board-report]
 verify_jwt = true
 entrypoint = "./functions/cooBoardReport/entry.ts"
+
+[functions.coo-reminder-unsubscribe]
+verify_jwt = false
+entrypoint = "./functions/cooReminderUnsubscribe/entry.ts"
