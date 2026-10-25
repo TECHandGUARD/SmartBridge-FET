@@ -23,7 +23,7 @@ export function getNavigation(user) {
   const communication = item('Communication', '/communication', 'forum');
   const careers = item('Career Opportunities', '/career-hub', 'book');
   const forum = item('Forum', '/forum', 'forum');
-  const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Home', '/', 'home'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
+  const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Home', '/', 'home'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
     primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
     secondary: [communication, ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), practice, careers],
