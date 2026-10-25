@@ -12,6 +12,7 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
   const [chosen,setChosen]=useState('COO');
   const [draft,setDraft]=useState('');
   const [reviewed,setReviewed]=useState(false);
+  const [showExpected,setShowExpected]=useState(false);
   const role=roles.find(x=>x.id===chosen);
   const select=e=>{setChosen(e.target.value);setDraft('');setReviewed(false);};
   return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="AI executive training lab">
@@ -25,9 +26,10 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
       <p className="text-xs uppercase tracking-wide text-muted-foreground">Scenario rehearsal · No emails or transactions</p>
       <p className="font-medium">{role.caseText}</p>
       <label htmlFor="training-draft" className="block text-sm">Your preferred executive response or training instruction</label>
-      <textarea id="training-draft" value={draft} onChange={e=>{setDraft(e.target.value.slice(0,1500));setReviewed(false);}} rows={4} maxLength={1500} placeholder="Write the response you would want this executive to give…" className="w-full rounded-lg border bg-background p-3 text-base"/>
-      <button type="button" className="rounded-lg border px-4 py-2" onClick={()=>setReviewed(true)}>Compare with safety expectations</button>
-      {reviewed&&<div role="status" className="rounded-lg bg-muted p-3 text-sm space-y-2"><strong>Expected behaviour:</strong><p>{role.answer}</p><p className="text-muted-foreground">Your draft is for review only; it has not been saved as a live AI instruction. Test cases must be approved and connected to each executive's actual service before operational training is possible.</p></div>}
+      <textarea id="training-draft" value={draft} onChange={e=>{setDraft(e.target.value.slice(0,1500));setReviewed(false);setShowExpected(false);}} rows={4} maxLength={1500} placeholder="Write the response you would want this executive to give…" className="w-full rounded-lg border bg-background p-3 text-base"/>
+      <button type="button" disabled={!draft.trim()} className="rounded-lg border px-4 py-2 disabled:opacity-50" onClick={()=>{setReviewed(true);}}>Compare with safety expectations</button>
+      <p className="text-xs text-muted-foreground">This compares your proposed guidance with a documented example; it does not automatically score or approve the AI's performance.</p>
+      {reviewed&&<div role="status" className="rounded-lg bg-muted p-3 text-sm space-y-2"><strong>Expected behaviour:</strong><p>{role.answer}</p><p><strong>Review checklist:</strong> {role.criteria.join(' · ')}</p><p className="text-muted-foreground">Your draft is for review only; it has not been saved as a live AI instruction. Test cases must be approved and connected to each executive's actual service before operational training is possible.</p></div>}
     </div>
     {chosen==='COO'&&<div className="rounded-lg border p-4 space-y-2"><h3 className="font-semibold">Live-data COO dry run (admin only)</h3><p className="text-sm text-muted-foreground">Uses the existing protected COO report to count eligible tutors. No reminder emails are sent.</p><button type="button" disabled={testing||!runCooPreview} onClick={runCooPreview} className="rounded-lg bg-primary text-primary-foreground px-4 py-2 disabled:opacity-50">{testing?'Testing…':'Run controlled COO dry run'}</button>{preview&&<p role="status" className="text-sm">Checked: {preview.checked??0} · Eligible: {preview.eligible??0} · Emails sent: {preview.send_count??0}</p>}</div>}
     <p className="text-xs text-muted-foreground">Other executives are scenario-only until their own backend integrations and audit logs are implemented. Production actions always require server-side authorisation.</p>
