@@ -7,7 +7,11 @@ import { verifySignedWebhook } from '../../shared/webhook.ts';
 serve(withHttp(async (request) => {
     try {
         const raw = await readText(request);
-        await verifySignedWebhook(request, raw, 'RESEND_WEBHOOK_SECRET', 'svix', 300);
+        const { url, key } = serverConnection();
+        const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+        const {data: signingSecret, error: secretError} = await client.rpc('coo_resend_signing_secret');
+        if (secretError || typeof signingSecret !== 'string') failure(503, 'Webhook signing configuration unavailable');
+        await verifySignedWebhook(request, raw, 'RESEND_WEBHOOK_SECRET', 'svix', 300, signingSecret);
         let event;
         try {
             event = JSON.parse(raw);
@@ -24,8 +28,6 @@ serve(withHttp(async (request) => {
             failure(400, 'Invalid email recipients');
         if (typeof event.created_at !== 'string' || !Number.isFinite(Date.parse(event.created_at)))
             failure(400, 'Invalid event timestamp');
-        const { url, key } = serverConnection();
-        const client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
         const { data, error } = await client.rpc('record_email_event', { event_key: request.headers.get('svix-id'), provider_id: text(event.data.email_id, 'email_id', 200), event_type: event.type, event_time: event.created_at, recipient_emails: recipients.map((value: string) => value.toLowerCase()) });
         if (error)
             failure(503, 'Email delivery tracking unavailable. Retry this event.');
