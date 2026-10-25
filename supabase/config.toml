@@ -159,3 +159,7 @@ entrypoint = "./functions/dispatchNotifications/entry.ts"
 [functions.coo-tutor-onboarding]
 verify_jwt = false
 entrypoint = "./functions/cooTutorOnboarding/entry.ts"
+
+[functions.coo-board-report]
+verify_jwt = true
+entrypoint = "./functions/cooBoardReport/entry.ts"
