@@ -1,9 +1,10 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
-import { serverConnection, emailSettings, appUrl } from '../../shared/config.ts';
+import { serverConnection, requiredEnv, appUrl } from '../../shared/config.ts';
 import { authorize, withHttp } from '../../shared/http.ts';
 import { json, apiError } from '../../shared/api.ts';
 
+const COO_EMAIL_FROM = 'SmartBridge FET <noreply@auth.techandguard.co.za>';
 // Job-only endpoint. COO has standing authority for this tightly bounded operational campaign.
 // dry-run defaults to true. Live sends require COO_EMAIL_ENABLED=true in secrets.
 const nonempty = (v: unknown) => Array.isArray(v) ? v.length > 0 : typeof v === 'string' ? v.trim().length > 0 : typeof v === 'number' ? v > 0 : false;
@@ -21,9 +22,31 @@ serve(withHttp(async (request) => {
  try {
   const { url,key }=serverConnection();
   const client=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
-  await authorize(request,client,'job');
+  const cronToken = request.headers.get('x-coo-job-secret');
+  if (cronToken) {
+    const {data: expected, error: keyError} = await client.rpc('coo_scheduler_secret');
+    if (keyError || typeof expected !== 'string') throw new Error('Scheduled job verification unavailable');
+    const hash = async (v:string) => new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(v)));
+    const [a,b] = await Promise.all([hash(cronToken),hash(expected)]);
+    let mismatch = a.length ^ b.length;
+    for(let i=0;i<Math.min(a.length,b.length);i++)mismatch |= a[i]^b[i];
+    if(mismatch !== 0) return json({error:'Unauthorized scheduled request'},401);
+  } else {
+    await authorize(request,client,'job');
+  }
   const payload=await request.json().catch(()=>({}));
-  const dryRun=payload?.dry_run !== false || Deno.env.get('COO_EMAIL_ENABLED') !== 'true';
+  const {data: config,error:configError} = await client.from('coo_automation_settings')
+    .select('enabled,daily_limit,autonomy').eq('key','tutor-onboarding').single();
+  if(configError)throw new Error('COO sending configuration unavailable');
+  const dryRun=payload?.dry_run !== false || config?.enabled !== true;
+  let providerReady=false,linkReady=false,providerSenderDomain:string|null=null;
+  try {
+    requiredEnv('RESEND_API_KEY');
+    providerReady=true;
+    providerSenderDomain='auth.techandguard.co.za';
+  } catch { /* Configuration is checked again before sending. */ }
+  try { appUrl('/tutor-dashboard'); linkReady=true; } catch { /* Block live sending if app origin is unconfigured. */ }
+  const deliverySettings=dryRun?null:{apiKey:requiredEnv('RESEND_API_KEY'),from:COO_EMAIL_FROM};
   const now=Date.now();
   const {data:users,error:userError}=await client.from('users').select('id,email,full_name,role,created_at,is_active,communication_preferences').eq('role','student_tutor').eq('is_active',true).limit(500);
   if(userError)throw userError;
@@ -48,7 +71,7 @@ serve(withHttp(async (request) => {
    if(reserveError)throw reserveError;
    if(!reservation){skipped++;continue;}
    attempted++;
-   const {apiKey,from}=emailSettings();
+   const {apiKey,from}=deliverySettings!;
    const name=(typeof user.full_name==='string'&&user.full_name.trim()?user.full_name.trim().split(' ')[0]:'Tutor').slice(0,80);
    const subject='Complete your SmartBridge FET tutor profile';
    const profileUrl=appUrl('/tutor-dashboard');
@@ -65,6 +88,6 @@ serve(withHttp(async (request) => {
    }
   }
   // Daily operational report is visible to admins through database aggregation; do not expose recipient PII in job response.
-  return json({dry_run:dryRun,eligible,attempted,accepted,failed,skipped,preview:dryRun?attempts.slice(0,25):undefined});
+  return json({dry_run:dryRun,provider_ready:providerReady,provider_sender_domain:providerSenderDomain,link_ready:linkReady,eligible,attempted,accepted,failed,skipped,preview:dryRun?attempts.slice(0,25):undefined});
  } catch(error){return apiError(error);}
 },'coo-tutor-onboarding'));

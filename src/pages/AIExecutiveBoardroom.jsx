@@ -31,12 +31,17 @@ export default function AIExecutiveBoardroom(){
     <section className="rounded-xl border bg-card p-5" aria-label="COO activity reporting">
       <h2 className="text-xl font-semibold">COO — daily accountability</h2>
       {report ? <div className="mt-3 grid gap-3 sm:grid-cols-3"><p>Sending: <strong>{report.email_enabled ? 'Enabled' : 'Disabled'}</strong></p><p>Today: <strong>{report.used_today} / {report.daily_limit}</strong></p><p>Report day: <strong>{report.report_date}</strong></p><p className="sm:col-span-3 text-sm">Last 7 days: {Object.entries(report.last_7_days || {}).map(([status,count])=>`${status}: ${count}`).join(' · ') || 'No activity recorded'}</p></div> : <p className="mt-3 text-sm text-muted-foreground">{reportError || 'Loading protected COO activity report…'}</p>}
+      {report?.daily_reports?.length > 0 && <div className="mt-4 overflow-x-auto">
+        <h3 className="font-semibold mb-2">Recorded daily executive reports</h3>
+        <table className="w-full text-sm text-left"><thead><tr className="border-b"><th className="py-2 pr-4">Date (SAST)</th><th className="pr-4">Attempts</th><th className="pr-4">Accepted</th><th className="pr-4">Delivered</th><th className="pr-4">Failed</th><th className="pr-4">Bounced</th><th>Suppressed</th></tr></thead>
+        <tbody>{report.daily_reports.map(day=><tr className="border-b" key={day.report_date}><td className="py-2 pr-4">{day.report_date}</td><td>{day.attempted}</td><td>{day.accepted}</td><td>{day.delivered}</td><td>{day.failed}</td><td>{day.bounced}</td><td>{day.suppressed}</td></tr>)}</tbody></table>
+      </div>}
       <p className="mt-2 text-xs text-muted-foreground">Provider accepted is not the same as delivered. Sending remains subject to server-side permission rules.</p>
     </section>
     <section className="rounded-xl border bg-card p-5">
       <h2 className="text-xl font-semibold">Account review workflow</h2>
-      <p className="mt-2 text-sm">Existing accounts: one-time baseline review. Incoming accounts: event-based onboarding. Account records are not loaded into this preview, and no emails are sent.</p>
-      <p className="mt-3 text-sm">Next integration: admin-authorized account summaries, consent-aware message templates, auditable task queue, and a delivery provider.</p>
+      <p className="mt-2 text-sm">Existing accounts: baseline review. Incoming accounts: automated follow-up checks after 48 hours. The COO only sends when the server-side switch is enabled and the tutor has opted into profile reminder emails.</p>
+      <p className="mt-3 text-sm">Email attempts are limited to 25 per South African day, with a 72-hour cooldown, signed delivery webhooks and recorded outcomes. Other executive portfolios remain in configuration preview.</p>
       <Link to="/admin" className="mt-4 inline-block underline">Return to admin dashboard</Link>
     </section>
   </main>;
