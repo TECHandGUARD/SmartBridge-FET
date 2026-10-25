@@ -12,8 +12,8 @@ test('default is dry-run and live sending requires explicit server configuration
  assert.match(dispatcher, /COO_EMAIL_ENABLED/);
  assert.match(dispatcher, /payload\?\.dry_run !== false/);
 });
-test('only active student tutors qualify and first follow-up is no earlier than 48h',()=>{
- assert.match(dispatcher, /eq\('role','student_tutor'\)/);
+test('only active tutor roles qualify and first follow-up is no earlier than 48h',()=>{
+ assert.match(dispatcher, /in\('role',\['student_tutor','sace_tutor','tutor'\]\)/);
  assert.match(dispatcher, /eq\('is_active',true\)/);
  assert.match(dispatcher, /hours<48/);
 });
