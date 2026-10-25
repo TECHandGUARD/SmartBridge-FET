@@ -1,6 +1,7 @@
 import React, {useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
+import ExecutiveTrainingLab from '@/components/admin/ExecutiveTrainingLab';
 
 const executives = [
   ['CEO','Strategy & coordination','Prioritize growth, reconcile executive recommendations and escalate founder decisions.'],
@@ -35,6 +36,7 @@ export default function AIExecutiveBoardroom(){
         <p className="mt-4 text-xs font-medium">Configuration preview · Not connected</p>
       </article>)}
     </section>
+    <ExecutiveTrainingLab runCooPreview={runPreview} testing={testing} preview={preview}/>
     <section className="rounded-xl border bg-card p-5" aria-label="COO activity reporting">
       <h2 className="text-xl font-semibold">COO — daily accountability</h2>
       <div className="mt-3 rounded-xl border p-4">
