@@ -21,11 +21,13 @@ export function getNavigation(user) {
   const resources = item('Learning Hub', '/learning-hub', 'book');
   const practice = item('Practice & Assessments', '/practice-hub', 'practice');
   const communication = item('Communication', '/communication', 'forum');
+  const aiBoardroom = item('AI Executive Boardroom', '/admin/ai-boardroom', 'dashboard');
+  const featureMonitor = item('Feature Visibility', '/admin/feature-visibility', 'dashboard');
   const careers = item('Career Opportunities', '/career-hub', 'book');
   const forum = item('Forum', '/forum', 'forum');
   const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Home', '/', 'home'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
-    primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
+    primary: [dashboard, aiBoardroom, featureMonitor, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
     secondary: [communication, ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), practice, careers],
   };
   if (user?.staff_access?.enabled === true) return {primary:[dashboard,resources],secondary:[item('Home','/','home')]};
