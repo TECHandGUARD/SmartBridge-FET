@@ -18,26 +18,29 @@ export function getNavigation(user) {
   const dashboard = item('Dashboard', getDashboardPath(user), 'dashboard');
   const subjects = item('Subjects', '/subjects', 'book');
   const tutors = item('Tutors', '/tutors', 'users');
-  const resources = item('Resources', '/search', 'book');
+  const resources = item('Learning Hub', '/learning-hub', 'book');
+  const practice = item('Practice & Assessments', '/practice-hub', 'practice');
+  const communication = item('Communication', '/communication', 'forum');
+  const careers = item('Career Opportunities', '/career-hub', 'book');
   const forum = item('Forum', '/forum', 'forum');
-  const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Study guides','/learn','book'), item('Home', '/', 'home'), item('Videos', '/videos', 'book'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
+  const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Home', '/', 'home'), item('Study rooms', '/study-rooms', 'users'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
     primary: [dashboard, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
-    secondary: [item('Virtual meetings','/meetings','users'), ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), item('Practice', '/quiz', 'practice'), item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book')],
+    secondary: [communication, ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), practice, careers],
   };
   if (user?.staff_access?.enabled === true) return {primary:[dashboard,resources],secondary:[item('Home','/','home')]};
   if (user?.role === 'school_counselor') return { primary: [dashboard, resources], secondary: [item('Home', '/', 'home')] };
   if (user?.role === 'parent') return {
-    primary: [dashboard, tutors, item('Opportunities', '/opportunities', 'book'), forum],
-    secondary: [item('Virtual meetings','/meetings','users'), item('Messages', '/parent-dashboard?section=messages', 'forum'), item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), item('Bursaries', '/bursaries', 'book'), ...common],
+    primary: [dashboard, tutors, careers, communication],
+    secondary: [item('Link a learner', '/parent-dashboard?section=child', 'users'), item('Progress reports', '/parent-dashboard?section=progress', 'dashboard'), ...common],
   };
   if (TUTOR_ROLES.includes(user?.role)) return {
-    primary: [dashboard, item('Assessments', '/assessments', 'practice'), resources, forum],
-    secondary: [...(user?.role !== 'tutor_pending' ? [item('Virtual meetings','/meetings','users')] : []), item('CAPS Docs', '/resources-library', 'book'), item('Messages', '/tutor-dashboard?section=messages', 'forum'), subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
+    primary: [dashboard, practice, resources, communication],
+    secondary: [subjects, item('My bookings', '/tutor-dashboard?section=bookings', 'users'), ...common],
   };
   return {
-    primary: [dashboard, subjects, item('Assessments', '/assessments', 'practice'), tutors],
-    secondary: [item('Messages', '/student-dashboard?section=messages', 'forum'), resources, item('Bookings', '/bookings', 'users'), forum, item('Bursaries', '/bursaries', 'book'), item('Opportunities', '/opportunities', 'book'), ...common],
+    primary: [dashboard, resources, practice, tutors],
+    secondary: [communication, item('Bookings', '/bookings', 'users'), forum, careers, ...common],
   };
 }
 export function isNavigationActive(location, path) {

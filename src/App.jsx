@@ -23,6 +23,7 @@ const ReferFriend=lazy(()=>import('./pages/ReferFriend'));
 function MarketingAttribution(){const location=useLocation();const {user}=useAuth();useEffect(()=>{captureAttribution(location.search);if(user){const a=readAttribution();if(a)Promise.resolve(supabase.rpc('record_marketing_attribution',{p_ref:a.ref,p_campaign:a.campaign})).then(({error})=>{if(!error)try{window.sessionStorage.removeItem('smartbridge-attribution');}catch{/* optional */}}).catch(()=>{});}},[location.search,user?.id]);return null;}
 const StemLab = lazy(() => import('./pages/StemLab'));
 const StudyPacks = lazy(() => import('./pages/StudyPacks'));
+const FeatureHub = lazy(() => import('./pages/FeatureHub'));
 const StudyGuide = lazy(() => import('./pages/StudyPacks').then(m=>({default:m.StudyGuide})));
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
@@ -138,6 +139,10 @@ const AuthenticatedApp = () => {
         <Route path="/news/:slug" element={<MarketingNews/>}/>
         <Route path="/refer" element={<ReferFriend/>}/>
         <Route path="/learn" element={<StudyPacks />} />
+        <Route path="/learning-hub" element={<RequireAuthAndOnboarding><FeatureHub kind="learning" /></RequireAuthAndOnboarding>} />
+        <Route path="/practice-hub" element={<RequireAuthAndOnboarding><FeatureHub kind="practice" /></RequireAuthAndOnboarding>} />
+        <Route path="/communication" element={<RequireAuthAndOnboarding><FeatureHub kind="communication" /></RequireAuthAndOnboarding>} />
+        <Route path="/career-hub" element={<RequireAuthAndOnboarding><FeatureHub kind="career" /></RequireAuthAndOnboarding>} />
         <Route path="/study-packs/:packId" element={<StudyGuide />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
