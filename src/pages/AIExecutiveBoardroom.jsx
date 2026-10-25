@@ -13,7 +13,14 @@ const executives = [
 export default function AIExecutiveBoardroom(){
   const [report,setReport]=useState(null);
   const [reportError,setReportError]=useState('');
+  const [preview,setPreview]=useState(null);
+  const [testing,setTesting]=useState(false);
   useEffect(()=>{let active=true; if(!supabase){setReportError('Database connection unavailable');return;} supabase.functions.invoke('coo-board-report',{body:{}}).then(({data,error})=>{if(!active)return;if(error)setReportError('COO report unavailable until the reporting function and database are deployed');else setReport(data);});return()=>{active=false;};},[]);
+  const runPreview=async()=>{setTesting(true);setReportError('');try{
+    const {data,error}=await supabase.functions.invoke('coo-board-report',{body:{preview:true}});
+    if(error)throw error;
+    setPreview(data?.preview||null);setReport(data);
+  }catch{setReportError('Could not complete safe COO preview.');}finally{setTesting(false);}};
   return <main className="mx-auto max-w-6xl space-y-6 p-4 md:p-8" aria-label="AI Executive Boardroom">
     <header className="rounded-2xl border bg-card p-6">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tech & GUARD / SmartBridge FET</p>
@@ -30,6 +37,20 @@ export default function AIExecutiveBoardroom(){
     </section>
     <section className="rounded-xl border bg-card p-5" aria-label="COO activity reporting">
       <h2 className="text-xl font-semibold">COO — daily accountability</h2>
+      <div className="mt-3 rounded-xl border p-4">
+        <h3 className="font-semibold">Test the COO now</h3>
+        <p className="mt-1 text-sm text-muted-foreground">Run a safe simulation against current tutor profiles. It checks eligibility and email preferences without sending email or changing accounts.</p>
+        <button type="button" onClick={runPreview} disabled={testing} className="mt-3 rounded-lg bg-primary px-4 py-2 text-primary-foreground disabled:opacity-50">{testing?'Running test…':'Run safe COO test'}</button>
+        {preview && <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3" role="status">
+          <p>Checked: <strong>{preview.checked}</strong></p>
+          <p>Eligible: <strong>{preview.eligible}</strong></p>
+          <p>No permission: <strong>{preview.no_consent}</strong></p>
+          <p>Too new: <strong>{preview.too_new}</strong></p>
+          <p>Profiles complete: <strong>{preview.complete}</strong></p>
+          <p>Emails sent: <strong>{preview.send_count}</strong></p>
+          <p className="sm:col-span-3 text-muted-foreground">Simulation only. No messages were sent.</p>
+        </div>}
+      </div>
       {report ? <div className="mt-3 grid gap-3 sm:grid-cols-3"><p>Sending: <strong>{report.email_enabled ? 'Enabled' : 'Disabled'}</strong></p><p>Today: <strong>{report.used_today} / {report.daily_limit}</strong></p><p>Report day: <strong>{report.report_date}</strong></p><p className="sm:col-span-3 text-sm">Last 7 days: {Object.entries(report.last_7_days || {}).map(([status,count])=>`${status}: ${count}`).join(' · ') || 'No activity recorded'}</p></div> : <p className="mt-3 text-sm text-muted-foreground">{reportError || 'Loading protected COO activity report…'}</p>}
       {report?.daily_reports?.length > 0 && <div className="mt-4 overflow-x-auto">
         <h3 className="font-semibold mb-2">Recorded daily executive reports</h3>
