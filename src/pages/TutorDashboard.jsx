@@ -27,6 +27,7 @@ import ChatInbox from '@/components/tutor/ChatInbox';
 import BookingRequests from '@/components/tutor/BookingRequests';
 import TutorReviews from '@/components/tutor/TutorReviews';
 import TutorProfileEditor from '@/components/tutor/TutorProfileEditor';
+import TutorEmailPreferences from '@/components/tutor/TutorEmailPreferences';
 import TutorVerificationBadge from '@/components/tutor/TutorVerificationBadge';
 import SimulationLab from '@/components/simulations/SimulationLab';
 import QuizBuilder from '@/components/quiz/QuizBuilder';
@@ -180,6 +181,7 @@ export default function TutorDashboard() {
           <h2 className="font-playfair text-2xl font-bold mb-2">Application Submitted</h2>
           <p className="text-muted-foreground mb-3">Your tutor profile is currently under review by our admin team. You'll receive an email once verified.</p>
           <p className="text-sm text-muted-foreground bg-amber-50 border border-amber-200 rounded-xl p-3">⏳ Verification typically takes <strong>1–2 business days</strong>.</p>
+          <div className="mt-4 text-left"><TutorEmailPreferences user={user} /></div>
         </div>
       </div>
     );
@@ -208,6 +210,7 @@ export default function TutorDashboard() {
   return (
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
+        <div className="mb-4"><TutorEmailPreferences user={user} /></div>
         <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
