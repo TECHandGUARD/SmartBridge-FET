@@ -88,7 +88,7 @@ test('Resend delivery callbacks verify Svix signatures before writing tracking a
  const signed=signedRequest(event);const headers=new Headers({'Content-Type':'application/json'});for(const key of ['id','timestamp','signature'])headers.set(`svix-${key}`,signed.headers.get(`webhook-${key}`));
  assert.equal((await runtime.handle(request(event,{}))).status,401);
  assert.equal((await runtime.handle(new Request('https://example.test',{method:'POST',headers,body:JSON.stringify(event)}))).status,200);
- assert.equal(calls[0].name,'record_email_event');assert.deepEqual(Array.from(calls[0].args.recipient_emails),['user@example.test']);
+ const deliveryEvent=calls.find(call=>call.name==='record_email_event');assert.ok(deliveryEvent);assert.deepEqual(Array.from(deliveryEvent.args.recipient_emails),['user@example.test']);
 });
 
 test('suppressed recipients block provider sending and acceptance is recorded without claiming delivery',async()=>{
