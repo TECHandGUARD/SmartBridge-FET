@@ -53,6 +53,17 @@
       }
     },
     {
+      "slug": "coo-board-report",
+      "entrypoint": "supabase/functions/cooBoardReport/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": null,
+      "deployed_version": null,
+      "required_migrations": [
+        "supabase/migrations/20261025220000_coo_autonomous_schedule_and_reporting.sql"
+      ]
+    },
+    {
       "slug": "create-checkout",
       "entrypoint": "supabase/functions/createCheckout/entry.ts",
       "access": "user",
@@ -232,6 +243,17 @@
       },
       "required_migrations": [
         "supabase/migrations/20261013123603_operational_integrations.sql"
+      ]
+    },
+    {
+      "slug": "executive-ai-scenario-test",
+      "entrypoint": "supabase/functions/executiveAiScenarioTest/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": "OpenAI",
+      "deployed_version": null,
+      "required_migrations": [
+        "supabase/migrations/20261025203000_coo_tutor_onboarding.sql"
       ]
     },
     {
