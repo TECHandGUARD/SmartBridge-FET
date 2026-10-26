@@ -1,0 +1,71 @@
+import React,{useEffect,useState} from 'react';
+import {supabase} from '@/lib/supabaseClient';
+const roles=['CEO','COO','CFO','CMO','CIO','General Manager'];
+
+export default function ExecutivePerformanceBoard(){
+ const [reviews,setReviews]=useState([]);
+ const [proposals,setProposals]=useState([]);
+ const [status,setStatus]=useState('');
+ const [loading,setLoading]=useState(false);
+ const [chosen,setChosen]=useState('CEO');
+ const [title,setTitle]=useState('');
+ const [evidence,setEvidence]=useState('');
+ const [suggestion,setSuggestion]=useState('');
+ const [risk,setRisk]=useState('');
+ const [submitting,setSubmitting]=useState(false);
+ const refresh=async()=>{
+  if(!supabase)return setStatus('Backend unavailable');
+  setLoading(true);
+  const [r,p]=await Promise.all([
+   supabase.from('ai_executive_reviews').select('id,executive,total,passed,created_at,critical_violation').order('created_at',{ascending:false}).limit(200),
+   supabase.from('ai_executive_proposals').select('id,executive,title,evidence_summary,suggested_action,risk_summary,status,created_at').order('created_at',{ascending:false}).limit(50)
+  ]);
+  setLoading(false);
+  if(r.error||p.error)return setStatus('Protected history unavailable. Ensure database migration is applied and sign in with full administrator access.');
+  setReviews(r.data||[]);setProposals(p.data||[]);setStatus('');
+ };
+ useEffect(()=>{refresh();},[]);
+ const submit=async(e)=>{
+  e.preventDefault();if(!supabase||submitting)return;
+  setSubmitting(true);setStatus('');
+  const {error}=await supabase.from('ai_executive_proposals').insert({
+   executive:chosen,title:title.trim(),evidence_summary:evidence.trim(),
+   suggested_action:suggestion.trim(),risk_summary:risk.trim(),
+   founder_approval_required:true,status:'pending_founder_review'
+  });
+  setSubmitting(false);
+  if(error)return setStatus('Proposal not saved. Check form, migration and administrator permissions.');
+  setTitle('');setEvidence('');setSuggestion('');setRisk('');
+  await refresh();
+ };
+ return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="AI executive performance and founder review">
+  <header><h2 className="text-xl font-semibold">Executive performance and founder review</h2><p className="text-sm text-muted-foreground">Phase 5 review records and CEO coordination register. Historical scores are human judgments, not proof of operational AI readiness. Proposals cannot execute actions.</p></header>
+  <button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={refresh} disabled={loading}>{loading?'Refreshing…':'Refresh review records'}</button>
+  {status&&<p role="status" className="text-sm">{status}</p>}
+  <div className="grid gap-3 sm:grid-cols-3">
+   <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">Reviews recorded</p><strong className="text-xl">{reviews.length}</strong></div>
+   <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">Passed human threshold</p><strong className="text-xl">{reviews.filter(x=>x.passed).length}</strong></div>
+   <div className="rounded-lg border p-3"><p className="text-sm text-muted-foreground">Unexecuted proposals</p><strong className="text-xl">{proposals.length}</strong></div>
+  </div>
+  <div className="grid gap-2 md:grid-cols-3">
+   {roles.map(role=>{const history=reviews.filter(x=>x.executive===role);const latest=history[0];return <article key={role} className="rounded-lg border p-3"><strong>{role}</strong><p className="text-sm mt-1">Reviewed scenarios: {history.length}</p><p className="text-sm">Passing reviews: {history.filter(x=>x.passed).length}</p><p className="text-xs text-muted-foreground">Latest score: {latest?latest.total+'/24':'Not yet evaluated'}</p></article>;})}
+  </div>
+  <form onSubmit={submit} className="rounded-lg border p-4 space-y-3">
+   <h3 className="font-semibold">Register a board recommendation for founder review</h3>
+   <p className="text-xs text-muted-foreground">No approvals or financial changes can be performed here. CFO financial recommendations must be presented directly to the founder.</p>
+   <label className="block text-sm">Executive<select value={chosen} onChange={e=>setChosen(e.target.value)} className="mt-1 w-full rounded-lg border bg-background p-2">{roles.map(x=><option key={x}>{x}</option>)}</select></label>
+   <label className="block text-sm">Title<input value={title} onChange={e=>setTitle(e.target.value)} maxLength={200} minLength={5} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
+   <label className="block text-sm">Supporting evidence<textarea value={evidence} onChange={e=>setEvidence(e.target.value)} rows={2} maxLength={5000} minLength={20} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
+   <label className="block text-sm">Recommendation<textarea value={suggestion} onChange={e=>setSuggestion(e.target.value)} rows={2} maxLength={5000} minLength={10} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
+   <label className="block text-sm">Risk and rollback considerations<textarea value={risk} onChange={e=>setRisk(e.target.value)} rows={2} maxLength={3000} minLength={10} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
+   <button type="submit" disabled={submitting} className="rounded-lg border px-4 py-2 disabled:opacity-50">{submitting?'Recording…':'Submit for founder review (no execution)'}</button>
+  </form>
+  <div className="space-y-2"><h3 className="font-semibold">Founder review queue — recommendations only</h3>
+   {proposals.length===0?<p className="text-sm text-muted-foreground">No proposals recorded.</p>:proposals.map(p=><article key={p.id} className="rounded-lg border p-3 text-sm space-y-1">
+    <p className="font-semibold">{p.executive} · {p.title}</p>
+    <p>Evidence: {p.evidence_summary}</p><p>Suggested: {p.suggested_action}</p><p>Risk: {p.risk_summary}</p>
+    <p className="text-xs text-muted-foreground">Awaiting founder review · Not authorized to execute</p>
+   </article>)}
+  </div>
+ </section>;
+}
