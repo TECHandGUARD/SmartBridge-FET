@@ -61,7 +61,21 @@
       "deployed_version": null,
       "required_migrations": [
         "supabase/migrations/20261025220000_coo_autonomous_schedule_and_reporting.sql"
-      ]
+      ],
+      "dependencies": [
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/api.ts"
+      ],
+      "reconciled_entrypoint_sha256": "91e045b1c40d42e17ad8786860f5b39a3190cccf987f41b741673a37ab75e297",
+      "dependency_sha256": {
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      },
+      "retrieved_entrypoint_sha256": null,
+      "deployed_verify_jwt": null,
+      "deployed_bundle_sha256": null
     },
     {
       "slug": "create-checkout",
@@ -254,7 +268,21 @@
       "deployed_version": null,
       "required_migrations": [
         "supabase/migrations/20261025203000_coo_tutor_onboarding.sql"
-      ]
+      ],
+      "dependencies": [
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/api.ts"
+      ],
+      "reconciled_entrypoint_sha256": "79db0c226f606140a4bcb3fec3203f8fb5a9c4c9d2e06e1456fa690e08a4f5c5",
+      "dependency_sha256": {
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      },
+      "retrieved_entrypoint_sha256": null,
+      "deployed_verify_jwt": null,
+      "deployed_bundle_sha256": null
     },
     {
       "slug": "expire-subscriptions",
