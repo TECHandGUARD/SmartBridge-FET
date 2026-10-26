@@ -9,6 +9,8 @@ export default function ExecutivePerformanceBoard(){
  const [status,setStatus]=useState('');
  const [loading,setLoading]=useState(false);
  const [chosen,setChosen]=useState('CEO');
+ const [owner,setOwner]=useState('CEO');
+ const [targetDate,setTargetDate]=useState('');
  const [title,setTitle]=useState('');
  const [evidence,setEvidence]=useState('');
  const [suggestion,setSuggestion]=useState('');
@@ -19,7 +21,7 @@ export default function ExecutivePerformanceBoard(){
   setLoading(true);
   const [r,p,o]=await Promise.all([
    supabase.from('ai_executive_reviews').select('id,executive,total,passed,created_at,critical_violation').order('created_at',{ascending:false}).limit(200),
-   supabase.from('ai_executive_proposals').select('id,executive,title,evidence_summary,suggested_action,risk_summary,status,created_at').order('created_at',{ascending:false}).limit(50),
+   supabase.from('ai_executive_proposals').select('id,executive,owner_executive,target_date,title,evidence_summary,suggested_action,risk_summary,status,created_at').order('created_at',{ascending:false}).limit(50),
    supabase.rpc('ai_board_operating_snapshot')
   ]);
   setLoading(false);
@@ -31,13 +33,13 @@ export default function ExecutivePerformanceBoard(){
   e.preventDefault();if(!supabase||submitting)return;
   setSubmitting(true);setStatus('');
   const {error}=await supabase.from('ai_executive_proposals').insert({
-   executive:chosen,title:title.trim(),evidence_summary:evidence.trim(),
+   executive:chosen,owner_executive:owner,target_date:targetDate||null,title:title.trim(),evidence_summary:evidence.trim(),
    suggested_action:suggestion.trim(),risk_summary:risk.trim(),
    founder_approval_required:true,status:'pending_founder_review'
   });
   setSubmitting(false);
   if(error)return setStatus('Proposal not saved. Check form, migration and administrator permissions.');
-  setTitle('');setEvidence('');setSuggestion('');setRisk('');
+  setTitle('');setEvidence('');setSuggestion('');setRisk('');setTargetDate('');
   await refresh();
  };
  return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="AI executive performance and founder review">
@@ -57,6 +59,8 @@ export default function ExecutivePerformanceBoard(){
    <h3 className="font-semibold">Register a board recommendation for founder review</h3>
    <p className="text-xs text-muted-foreground">No approvals or financial changes can be performed here. CFO financial recommendations must be presented directly to the founder.</p>
    <label className="block text-sm">Executive<select value={chosen} onChange={e=>setChosen(e.target.value)} className="mt-1 w-full rounded-lg border bg-background p-2">{roles.map(x=><option key={x}>{x}</option>)}</select></label>
+   <label className="block text-sm">Accountable portfolio<select value={owner} onChange={e=>setOwner(e.target.value)} className="mt-1 w-full rounded-lg border bg-background p-2">{roles.map(x=><option key={x}>{x}</option>)}</select></label>
+   <label className="block text-sm">Target review date (optional)<input type="date" value={targetDate} onChange={e=>setTargetDate(e.target.value)} className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
    <label className="block text-sm">Title<input value={title} onChange={e=>setTitle(e.target.value)} maxLength={200} minLength={5} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
    <label className="block text-sm">Supporting evidence<textarea value={evidence} onChange={e=>setEvidence(e.target.value)} rows={2} maxLength={5000} minLength={20} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
    <label className="block text-sm">Recommendation<textarea value={suggestion} onChange={e=>setSuggestion(e.target.value)} rows={2} maxLength={5000} minLength={10} required className="mt-1 w-full rounded-lg border bg-background p-2"/></label>
@@ -66,7 +70,7 @@ export default function ExecutivePerformanceBoard(){
   <div className="space-y-2"><h3 className="font-semibold">Founder review queue — recommendations only</h3>
    {proposals.length===0?<p className="text-sm text-muted-foreground">No proposals recorded.</p>:proposals.map(p=><article key={p.id} className="rounded-lg border p-3 text-sm space-y-1">
     <p className="font-semibold">{p.executive} · {p.title}</p>
-    <p>Evidence: {p.evidence_summary}</p><p>Suggested: {p.suggested_action}</p><p>Risk: {p.risk_summary}</p>
+    <p className="text-xs">Owner: {p.owner_executive} · Target review: {p.target_date||'Not assigned'}</p><p>Evidence: {p.evidence_summary}</p><p>Suggested: {p.suggested_action}</p><p>Risk: {p.risk_summary}</p>
     <p className="text-xs text-muted-foreground">Awaiting founder review · Not authorized to execute</p>
    </article>)}
   </div>
