@@ -3,6 +3,7 @@ import {supabase} from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import ExecutiveTrainingLab from '@/components/admin/ExecutiveTrainingLab';
 import ExecutiveTrainingRecords from '@/components/admin/ExecutiveTrainingRecords';
+import ExecutivePerformanceBoard from '@/components/admin/ExecutivePerformanceBoard';
 
 const executives = [
   ['CEO','Strategy & coordination','Prioritize growth, reconcile executive recommendations and escalate founder decisions.'],
@@ -27,7 +28,7 @@ export default function AIExecutiveBoardroom(){
     <header className="rounded-2xl border bg-card p-6">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tech & GUARD / SmartBridge FET</p>
       <h1 className="mt-2 text-3xl font-bold">AI Executive Boardroom</h1>
-      <p className="mt-2 text-muted-foreground">Supervised AI executive workspace · COO provider test only · No autonomous board actions</p>
+      <p className="mt-2 text-muted-foreground">Supervised AI boardroom · Six-role simulations · Founder review and performance scorecards · No autonomous financial actions</p>
     </header>
     <section className="rounded-xl border p-5 space-y-2" role="status" aria-label="Outstanding AI provider setup">\n      <h2 className="font-semibold">Action required — COO AI provider setup is not complete</h2>\n      <p className="text-sm">The COO AI scenario test still needs a working provider connection. In Supabase Edge Function Secrets, configure OPENAI_API_KEY and an available OPENAI_MODEL, then run and verify an actual COO response. This notice stays visible across deployments until setup and testing have been confirmed and this outstanding item is explicitly closed.</p>\n      <p className="text-xs text-muted-foreground">Do not paste API keys into this website, chat, or source code. Approved training instructions remain saved; automatic tutor emails remain paused.</p>\n    </section>\n    <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-label="Executive portfolios">
       {executives.map(([title,department,description])=><article key={title} className="rounded-xl border bg-card p-5">
@@ -44,6 +45,7 @@ export default function AIExecutiveBoardroom(){
     </section>
     <ExecutiveTrainingLab runCooPreview={runPreview} testing={testing} preview={preview}/>
     <ExecutiveTrainingRecords/>
+    <ExecutivePerformanceBoard/>
     <section className="rounded-xl border bg-card p-5" aria-label="COO activity reporting">
       <h2 className="text-xl font-semibold">COO — daily accountability</h2>
       <div className="mt-3 rounded-xl border p-4">
