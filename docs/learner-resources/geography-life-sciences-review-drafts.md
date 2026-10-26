@@ -37,7 +37,7 @@ On a calm winter morning, emissions from roads and household fuel use may build 
 ---
 
 ## Life Sciences: The human heart and blood flow
-**Provisional placement:** Life Sciences · Grades 11–12 **pending precise CAPS grade verification**.
+**Provisional placement:** Life Sciences · **Grade 10** · Transport Systems in Mammals (Human) · CAPS-aligned topic, verify latest annual plan before release.
 
 ### Learner outcomes
 - Identify the four heart chambers and major blood vessels.
