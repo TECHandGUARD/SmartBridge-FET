@@ -82,7 +82,7 @@ test('Yoco webhook rejects forged, expired, wrong-mode and malformed payments be
 });
 
 test('Resend delivery callbacks verify Svix signatures before writing tracking and suppression events',async()=>{
- const calls=[];const client=fakeClient();client.rpc=async(name,args)=>{calls.push({name,args});return {data:{received:true},error:null};};
+ const calls=[];const client=fakeClient();client.rpc=async(name,args)=>{calls.push({name,args});return {data:name==='coo_resend_signing_secret'?paymentEnv.YOCO_WEBHOOK_SECRET:{received:true},error:null};};
  const runtime=edgeRuntime('resendWebhook',{client,env:{RESEND_WEBHOOK_SECRET:paymentEnv.YOCO_WEBHOOK_SECRET}});
  const event={type:'email.bounced',created_at:new Date().toISOString(),data:{email_id:'email-1',to:['User@Example.test']}};
  const signed=signedRequest(event);const headers=new Headers({'Content-Type':'application/json'});for(const key of ['id','timestamp','signature'])headers.set(`svix-${key}`,signed.headers.get(`webhook-${key}`));
