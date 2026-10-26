@@ -9,6 +9,7 @@ export default function ExecutiveTrainingRecords(){
  const [records,setRecords]=useState([]);
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
+ const [counts,setCounts]=useState({});
  const review=async(id,action)=>{
   if(!supabase || busy)return;
   setBusy(true);setMessage('');
@@ -21,9 +22,23 @@ export default function ExecutiveTrainingRecords(){
   if(!supabase)return setMessage('Database unavailable.');
   const {data,error}=await supabase.from('ai_executive_training').select('id,executive,instruction,status,version,created_at').order('created_at',{ascending:false}).limit(100);
   if(error)setMessage('Training history unavailable. Administrator access is required.');
-  else setRecords(data||[]);
+  else {setRecords(data||[]);const summary={};for(const role of executives){summary[role]={approved:(data||[]).filter(row=>row.executive===role&&row.status==='approved').length,drafts:(data||[]).filter(row=>row.executive===role&&row.status==='draft').length};}setCounts(summary);}
  };
  useEffect(()=>{load();},[]);
+ const prepareMissing=async()=>{
+  if(!supabase||busy)return;
+  setBusy(true);setMessage('');
+  const {data:{user},error:authError}=await supabase.auth.getUser();
+  if(authError||!user){setBusy(false);return setMessage('Administrator sign-in required.');}
+  const {data:all,error:loadError}=await supabase.from('ai_executive_training').select('executive,status,instruction');
+  if(loadError){setBusy(false);return setMessage('Could not read existing training records.');}
+  const missing=executives.filter(role=>!(all||[]).some(row=>row.executive===role&&['approved','draft'].includes(row.status)));
+  if(!missing.length){setBusy(false);return setMessage('Every executive already has approved guidance or a draft awaiting review.');}
+  const {error}=await supabase.from('ai_executive_training').insert(missing.map(role=>({executive:role,instruction:executiveRoleGuidance[role],created_by:user.id,status:'draft'})));
+  setBusy(false);
+  if(error)return setMessage('Could not prepare all missing drafts. Check administrator access.');
+  await load();setMessage(missing.length+' role-specific training drafts prepared for individual administrator review. None were automatically approved.');
+ };
  const save=async(e)=>{
   e.preventDefault();
   if(instruction.trim().length<10)return setMessage('Enter at least 10 characters.');
@@ -37,6 +52,7 @@ export default function ExecutiveTrainingRecords(){
  };
  return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="Saved executive training">
   <header><h2 className="text-xl font-semibold">Saved executive instructions</h2><p className="text-sm text-muted-foreground">Phase 1: store draft guidance privately. No instructions are automatically activated or sent to AI models.</p></header>
+  <div className="rounded-lg border p-3 space-y-3" aria-label="Executive training readiness"><h3 className="font-semibold">Six-executive readiness</h3><div className="grid gap-2 sm:grid-cols-3">{executives.map(role=><p key={role} className="rounded border p-2 text-sm"><strong>{role}</strong><span className="block">{counts[role]?.approved?'Approved guidance available':counts[role]?.drafts?'Draft awaiting approval':'Missing training record'}</span></p>)}</div><button type="button" disabled={busy} onClick={prepareMissing} className="rounded-lg border px-3 py-2 disabled:opacity-50">{busy?'Preparing…':'Prepare missing executive training drafts'}</button><p className="text-xs text-muted-foreground">Drafts require individual administrator approval. Approved instructions guide supervised AI simulations only; they never grant financial or other real-world authority.</p></div>
   <form onSubmit={save} className="space-y-3">
    <label htmlFor="saved-executive" className="block text-sm font-medium">Executive</label>
    <select id="saved-executive" value={executive} onChange={e=>setExecutive(e.target.value)} className="w-full rounded-lg border bg-background p-3">{executives.map(x=><option key={x}>{x}</option>)}</select>

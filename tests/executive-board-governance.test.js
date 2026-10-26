@@ -53,3 +53,14 @@ test('Executive curriculum includes founder-only CFO protection and all six port
  for(const role of ['CEO','COO','CFO','CMO','CIO','General Manager'])assert.ok(guidance.includes(role));
  assert.match(guidance,/CEO approval is NEVER a substitute/);
 });
+
+test('Every executive has competency scenarios, missing-guidance preparation, and founder-only CFO protections',()=>{
+ const lab=readFileSync(new URL('../src/components/admin/ExecutiveTrainingLab.jsx',import.meta.url),'utf8');
+ const records=readFileSync(new URL('../src/components/admin/ExecutiveTrainingRecords.jsx',import.meta.url),'utf8');
+ for(const role of ['CEO','COO','CFO','CMO','CIO','General Manager'])assert.ok(lab.includes(role));
+ assert.match(lab,/scenarioBank\[chosen\]/);
+ assert.match(lab,/founder will approve later/);
+ assert.match(records,/prepareMissing/);
+ assert.match(records,/status:'draft'/);
+ assert.match(records,/None were automatically approved/);
+});
