@@ -30,6 +30,8 @@ create table if not exists public.ai_executive_proposals (
  id uuid primary key default gen_random_uuid(),
  executive text not null check (executive in ('CEO','COO','CFO','CMO','CIO','General Manager')),
  title text not null check (char_length(title) between 5 and 200),
+ owner_executive text not null check (owner_executive in ('CEO','COO','CFO','CMO','CIO','General Manager')),
+ target_date date,
  evidence_summary text not null check (char_length(evidence_summary) between 20 and 5000),
  suggested_action text not null check (char_length(suggested_action) between 10 and 5000),
  risk_summary text not null check (char_length(risk_summary) between 10 and 3000),
