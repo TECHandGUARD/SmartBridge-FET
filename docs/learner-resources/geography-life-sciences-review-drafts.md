@@ -74,3 +74,47 @@ Depict all four chambers and label: superior/inferior vena cava, right atrium, t
 4. Place reviewed SmartBridge-owned content in the **registered Learner Resource Centre** under Geography and Life Sciences, separate from tutor uploads, while preserving existing public study guides and CAPS documents.
 5. Verify sign-in access, grade/subject filters, phone legibility, download/open success, premium entitlements if applicable, and evidence that draft content is not exposed as approved.
 6. Track the review status as **pending** until a real learner account can open the approved resource on the live deployment.
+
+
+---
+
+## Expanded CAPS-style assessment bank — editorial review draft (not learner published)
+
+### Geography Grade 12: Urban climates / pollution dome (15 marks)
+
+**Q1.** Define a pollution dome. (2)
+**Memo:** An accumulation of air pollutants (1) over and around an urban area when dispersion is limited (1).
+
+**Q2.** Explain how a temperature inversion and weak winds can contribute to high ground-level pollution. (4)
+**Memo:** Cool, dense air lies beneath warmer air (1); stable layering inhibits vertical mixing (1); weak winds provide limited horizontal dispersion (1); continuing emissions can accumulate near the surface (1).
+
+**Q3.** State THREE practical ways a city can reduce emissions contributing to pollution domes. (3)
+**Memo:** Any three: improve affordable public transport; reduce vehicle idling/traffic emissions; enforce industrial-emissions controls; support cleaner household cooking/heating; expand cleaner energy options (1 each). Merely moving pollution elsewhere is not acceptable.
+
+**Q4.** Distinguish an urban heat island from a pollution dome. (4)
+**Memo:** Urban heat island: city temperatures higher than nearby rural surroundings (2). Pollution dome: elevated concentration of air pollutants above/around urban area (2). They can interact but are different phenomena.
+
+**Q5.** Give TWO possible effects of prolonged poor air quality on people or the urban environment. (2)
+**Memo:** Any two: respiratory irritation or exacerbated asthma; reduced visibility; damage to vegetation; increased healthcare burden (1 each).
+
+### Life Sciences Grade 10: Transport systems in mammals (15 marks)
+
+**Q1.** Name the heart chamber that receives blood from the venae cavae and the chamber that pumps blood to the lungs. (2)
+**Memo:** Right atrium (1); right ventricle (1).
+
+**Q2.** Trace the route from the right ventricle to the left atrium, including valves and vessels. (4)
+**Memo:** Pulmonary semilunar valve (1) → pulmonary artery/arteries (1) → lungs (1) → pulmonary veins to left atrium (1).
+
+**Q3.** Explain the function of heart valves. (2)
+**Memo:** Prevent backflow (1), ensuring one-way flow when pressure changes (1).
+
+**Q4.** Distinguish an artery from a vein by direction of blood flow. State why oxygen content is not the defining feature. (3)
+**Memo:** Arteries carry blood away from heart (1); veins carry blood towards heart (1); pulmonary arteries carry deoxygenated blood / pulmonary veins oxygenated blood (1).
+
+**Q5.** Why is the wall of the left ventricle thicker than that of the right ventricle? (2)
+**Memo:** It generates higher pressure (1) to pump blood through systemic circulation/body (1).
+
+**Q6.** Identify when ventricles eject blood and when heart chambers relax and fill. (2)
+**Memo:** Ventricular systole (1); diastole (1).
+
+**Moderation instruction:** All answers and mark allocations are editorial proposals for a qualified Grade 12 Geography and Grade 10 Life Sciences educator to check against the current CAPS scope before release. The lesson is not a complete substitute for the whole curriculum.
