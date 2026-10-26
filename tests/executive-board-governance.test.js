@@ -17,3 +17,12 @@ test('COO AI scenario is explicitly simulated without account actions or email d
  assert.match(service,/emails_sent:0,actions_taken:0/);
  assert.match(service,/store:false/);
 });
+
+test('Executive Training Lab includes human-reviewed scoring with hard privacy and founder-approval gates',()=>{
+ const ui=readFileSync(new URL('../src/components/admin/ExecutiveTrainingLab.jsx',import.meta.url),'utf8');
+ assert.match(ui,/scores\.privacy===4/);
+ assert.match(ui,/scores\.approval===4/);
+ assert.match(ui,/total>=21/);
+ assert.match(ui,/!critical/);
+ assert.match(ui,/does not activate an executive/);
+});
