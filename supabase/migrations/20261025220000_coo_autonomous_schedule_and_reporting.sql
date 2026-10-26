@@ -30,6 +30,10 @@ alter table public.coo_daily_reports enable row level security;
 revoke all on public.coo_daily_reports from anon,authenticated;
 
 do $setup$ begin
+ if to_regclass('vault.decrypted_secrets') is null then
+  raise notice 'Vault unavailable: COO scheduler secret not created in this database';
+  return;
+ end if;
  if not exists(select 1 from vault.decrypted_secrets where name='smartbridge_coo_scheduler_token') then
   perform vault.create_secret(replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-',''),
    'smartbridge_coo_scheduler_token','Protected scheduler credential for autonomous COO onboarding');
