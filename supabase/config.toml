@@ -167,3 +167,7 @@ entrypoint = "./functions/cooBoardReport/entry.ts"
 [functions.coo-ai-scenario-test]
 verify_jwt = true
 entrypoint = "./functions/cooAiScenarioTest/entry.ts"
+
+[functions.executive-ai-scenario-test]
+verify_jwt = true
+entrypoint = "./functions/executiveAiScenarioTest/entry.ts"
