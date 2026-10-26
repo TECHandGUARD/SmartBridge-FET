@@ -292,7 +292,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
   }
   await page.getByRole('button',{name:'Back',exact:true}).click();
   await page.getByRole('button',{name:'Continue',exact:true}).click();
-  await page.getByRole('checkbox').check();
+  await page.locator('#policy-consent').check();
   await page.screenshot({path:'/tmp/smartbridge-'+role+'-review.png',fullPage:true});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Setup must fit phone width');
   if(role==='parent') {

@@ -82,13 +82,13 @@ test('Yoco webhook rejects forged, expired, wrong-mode and malformed payments be
 });
 
 test('Resend delivery callbacks verify Svix signatures before writing tracking and suppression events',async()=>{
- const calls=[];const client=fakeClient();client.rpc=async(name,args)=>{calls.push({name,args});return {data:{received:true},error:null};};
+ const calls=[];const client=fakeClient();client.rpc=async(name,args)=>{calls.push({name,args});return {data:name==='coo_resend_signing_secret'?paymentEnv.YOCO_WEBHOOK_SECRET:{received:true},error:null};};
  const runtime=edgeRuntime('resendWebhook',{client,env:{RESEND_WEBHOOK_SECRET:paymentEnv.YOCO_WEBHOOK_SECRET}});
  const event={type:'email.bounced',created_at:new Date().toISOString(),data:{email_id:'email-1',to:['User@Example.test']}};
  const signed=signedRequest(event);const headers=new Headers({'Content-Type':'application/json'});for(const key of ['id','timestamp','signature'])headers.set(`svix-${key}`,signed.headers.get(`webhook-${key}`));
  assert.equal((await runtime.handle(request(event,{}))).status,401);
  assert.equal((await runtime.handle(new Request('https://example.test',{method:'POST',headers,body:JSON.stringify(event)}))).status,200);
- assert.equal(calls[0].name,'record_email_event');assert.deepEqual(Array.from(calls[0].args.recipient_emails),['user@example.test']);
+ const deliveryEvent=calls.find(call=>call.name==='record_email_event');assert.ok(deliveryEvent);assert.deepEqual(Array.from(deliveryEvent.args.recipient_emails),['user@example.test']);
 });
 
 test('suppressed recipients block provider sending and acceptance is recorded without claiming delivery',async()=>{

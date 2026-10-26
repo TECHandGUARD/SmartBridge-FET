@@ -1,5 +1,12 @@
 -- COO operations: least-privilege control plane, encrypted scheduler secret, daily scorecards.
 -- Resend webhook signing secret must be provisioned separately in Supabase Vault.
+-- Pg cron must exist before the scheduling block references cron.job.
+-- Both hosted and disposable local Supabase PostgreSQL support this extension.
+do $extensions$ begin
+ if exists(select 1 from pg_available_extensions where name='pg_cron') then
+  execute 'create extension if not exists pg_cron with schema pg_catalog';
+ end if;
+end $extensions$;
 create table if not exists public.coo_automation_settings (
  key text primary key,
  enabled boolean not null default false,
@@ -23,6 +30,10 @@ alter table public.coo_daily_reports enable row level security;
 revoke all on public.coo_daily_reports from anon,authenticated;
 
 do $setup$ begin
+ if to_regclass('vault.decrypted_secrets') is null then
+  raise notice 'Vault unavailable: COO scheduler secret not created in this database';
+  return;
+ end if;
  if not exists(select 1 from vault.decrypted_secrets where name='smartbridge_coo_scheduler_token') then
   perform vault.create_secret(replace(gen_random_uuid()::text,'-','') || replace(gen_random_uuid()::text,'-',''),
    'smartbridge_coo_scheduler_token','Protected scheduler credential for autonomous COO onboarding');
@@ -93,6 +104,10 @@ end $$;
 revoke all on function smartbridge_private.capture_coo_daily_report() from public,anon,authenticated;
 
 do $setup$ begin
+ if to_regclass('cron.job') is null then
+  raise notice 'pg_cron unavailable: COO schedules not installed in this database';
+  return;
+ end if;
  if not exists(select 1 from cron.job where jobname='smartbridge-coo-tutor-onboarding') then
   perform cron.schedule('smartbridge-coo-tutor-onboarding','0 7 * * *',
   $cron$

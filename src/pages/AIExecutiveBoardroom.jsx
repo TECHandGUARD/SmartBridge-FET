@@ -7,7 +7,7 @@ import ExecutiveTrainingRecords from '@/components/admin/ExecutiveTrainingRecord
 const executives = [
   ['CEO','Strategy & coordination','Prioritize growth, reconcile executive recommendations and escalate founder decisions.'],
   ['COO','Tutor onboarding & operations','Review profile readiness, availability, bookings and onboarding follow-ups.'],
-  ['CFO','Finance & sustainability','Monitor revenue, commissions and costs; no authority to transfer funds.'],
+  ['CFO','Finance & sustainability','Prepare read-only financial analysis and proposals. Every financial modification requires explicit approval from the founder; the CEO cannot approve on the founder’s behalf.'],
   ['CMO','Marketing & communication','Manage approved welcome journeys, campaigns and communication preferences.'],
   ['CIO','Technology & security','Review system reliability, technical incidents and security findings.'],
   ['General Manager','Service quality','Coordinate support requests, user feedback and unresolved service issues.'],
@@ -27,7 +27,7 @@ export default function AIExecutiveBoardroom(){
     <header className="rounded-2xl border bg-card p-6">
       <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Tech & GUARD / SmartBridge FET</p>
       <h1 className="mt-2 text-3xl font-bold">AI Executive Boardroom</h1>
-      <p className="mt-2 text-muted-foreground">Executive integration preview · Check COO live status below</p>
+      <p className="mt-2 text-muted-foreground">Supervised AI executive workspace · COO provider test only · No autonomous board actions</p>
     </header>
     <section className="rounded-xl border p-5 space-y-2" role="status" aria-label="Outstanding AI provider setup">\n      <h2 className="font-semibold">Action required — COO AI provider setup is not complete</h2>\n      <p className="text-sm">The COO AI scenario test still needs a working provider connection. In Supabase Edge Function Secrets, configure OPENAI_API_KEY and an available OPENAI_MODEL, then run and verify an actual COO response. This notice stays visible across deployments until setup and testing have been confirmed and this outstanding item is explicitly closed.</p>\n      <p className="text-xs text-muted-foreground">Do not paste API keys into this website, chat, or source code. Approved training instructions remain saved; automatic tutor emails remain paused.</p>\n    </section>\n    <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-3" aria-label="Executive portfolios">
       {executives.map(([title,department,description])=><article key={title} className="rounded-xl border bg-card p-5">
@@ -36,6 +36,11 @@ export default function AIExecutiveBoardroom(){
         <p className="mt-2 text-sm text-muted-foreground">{description}</p>
         <p className="mt-4 text-xs font-medium">Configuration preview · Not connected</p>
       </article>)}
+    </section>
+    <section className="rounded-xl border border-amber-400/50 bg-amber-50 p-5 text-amber-950 dark:bg-amber-950/20 dark:text-amber-100" aria-label="Founder financial approval policy">
+      <h2 className="text-xl font-semibold">CFO — founder approval required</h2>
+      <p className="mt-2 text-sm">The CFO may analyse, calculate and propose changes. It must report the requested change, current and proposed values, financial impact, risks and rollback plan directly to the founder before anything is committed. No approval means no changes. CEO approval is not a substitute.</p>
+      <p className="mt-2 text-xs font-semibold">Financial execution is locked until a server-side founder-approval workflow is built, tested and verified. This notice is a governance requirement, not proof that the approval backend exists.</p>
     </section>
     <ExecutiveTrainingLab runCooPreview={runPreview} testing={testing} preview={preview}/>
     <ExecutiveTrainingRecords/>

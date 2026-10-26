@@ -53,6 +53,31 @@
       }
     },
     {
+      "slug": "coo-board-report",
+      "entrypoint": "supabase/functions/cooBoardReport/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": null,
+      "deployed_version": null,
+      "required_migrations": [
+        "supabase/migrations/20261025220000_coo_autonomous_schedule_and_reporting.sql"
+      ],
+      "dependencies": [
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/api.ts"
+      ],
+      "reconciled_entrypoint_sha256": "91e045b1c40d42e17ad8786860f5b39a3190cccf987f41b741673a37ab75e297",
+      "dependency_sha256": {
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      },
+      "retrieved_entrypoint_sha256": null,
+      "deployed_verify_jwt": null,
+      "deployed_bundle_sha256": null
+    },
+    {
       "slug": "create-checkout",
       "entrypoint": "supabase/functions/createCheckout/entry.ts",
       "access": "user",
@@ -233,6 +258,31 @@
       "required_migrations": [
         "supabase/migrations/20261013123603_operational_integrations.sql"
       ]
+    },
+    {
+      "slug": "executive-ai-scenario-test",
+      "entrypoint": "supabase/functions/executiveAiScenarioTest/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": "OpenAI",
+      "deployed_version": null,
+      "required_migrations": [
+        "supabase/migrations/20261025203000_coo_tutor_onboarding.sql"
+      ],
+      "dependencies": [
+        "supabase/shared/config.ts",
+        "supabase/shared/http.ts",
+        "supabase/shared/api.ts"
+      ],
+      "reconciled_entrypoint_sha256": "79db0c226f606140a4bcb3fec3203f8fb5a9c4c9d2e06e1456fa690e08a4f5c5",
+      "dependency_sha256": {
+        "supabase/shared/config.ts": "fa4ff73f38e9502940da0ab25993fba716a6e591becbc1df545de28e103df2db",
+        "supabase/shared/http.ts": "e08dd4f7d8a600a2a478a99078544ca29863dbaf52fc5eb0bcdd2e1ce25b0791",
+        "supabase/shared/api.ts": "a7814a0b0a05b9262141f6669cd54a0bf2310fb5c54057892578e9a67b293b12"
+      },
+      "retrieved_entrypoint_sha256": null,
+      "deployed_verify_jwt": null,
+      "deployed_bundle_sha256": null
     },
     {
       "slug": "expire-subscriptions",
@@ -787,7 +837,7 @@
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "1efecbdac0dd6929a550c43eba12f92140e4f0cbaf10064fcae953894db76cff",
+      "reconciled_entrypoint_sha256": "7a2e755eb93f3997b921a68255546899cdd91a115543e518f00ace33a6a6ce2c",
       "dependencies": [
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",
@@ -817,7 +867,7 @@
       "deployed_verify_jwt": null,
       "deployed_bundle_sha256": null,
       "retrieved_entrypoint_sha256": null,
-      "reconciled_entrypoint_sha256": "6cb5cc18f79d6a670d80b77b5794d87310dd5f41a0d8cfee7b7f198eaec02ae7",
+      "reconciled_entrypoint_sha256": "5a69f370486d0dce1240a23cbe4483ff0bc00446f31a396c7e629ff784a6acf4",
       "dependencies": [
         "supabase/shared/api.ts",
         "supabase/shared/config.ts",

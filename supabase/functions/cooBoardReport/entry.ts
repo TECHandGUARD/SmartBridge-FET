@@ -2,7 +2,8 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { serverConnection } from '../../shared/config.ts';
 import { authorize, withHttp } from '../../shared/http.ts';
-import { json, apiError, failure } from '../../shared/api.ts';
+import { json, apiError } from '../../shared/api.ts';
+import { failure } from '../../shared/http.ts';
 serve(withHttp(async (request) => {
  try {
   const {url,key}=serverConnection();
