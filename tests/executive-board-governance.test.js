@@ -26,3 +26,30 @@ test('Executive Training Lab includes human-reviewed scoring with hard privacy a
  assert.match(ui,/!critical/);
  assert.match(ui,/does not activate an executive/);
 });
+
+test('Executive board records evaluations and non-executable founder proposals',()=>{
+ const lab=readFileSync(new URL('../src/components/admin/ExecutiveTrainingLab.jsx',import.meta.url),'utf8');
+ const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
+ const migration=readFileSync(new URL('../supabase/migrations/20261026153000_ai_executive_reviews_and_proposals.sql',import.meta.url),'utf8');
+ assert.match(lab,/ai_executive_reviews/);
+ assert.match(board,/ai_executive_proposals/);
+ assert.match(board,/pending_founder_review/);
+ assert.match(migration,/generated always as/);
+ assert.match(migration,/smartbridge_private.is_admin/);
+ assert.match(migration,/status='pending_founder_review'/);
+ assert.doesNotMatch(board,/functions\.invoke\('(?:create-checkout|payment-gateways|yoco-webhook)'/);
+});
+
+test('Read-only snapshot is administrator-scoped and excludes personal details and financial amounts',()=>{
+ const sql=readFileSync(new URL('../supabase/migrations/20261026153100_ai_board_operating_snapshot.sql',import.meta.url),'utf8');
+ const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
+ assert.match(sql,/smartbridge_private.is_admin\(auth.uid\(\)\)/);
+ assert.match(sql,/revoke all on function public.ai_board_operating_snapshot/);
+ assert.match(board,/ai_board_operating_snapshot/);
+ assert.doesNotMatch(sql,/recipient_email|email_address|full_name|amount_cents/);
+});
+test('Executive curriculum includes founder-only CFO protection and all six portfolios',()=>{
+ const guidance=readFileSync(new URL('../src/lib/executiveRoleGuidance.js',import.meta.url),'utf8');
+ for(const role of ['CEO','COO','CFO','CMO','CIO','General Manager'])assert.ok(guidance.includes(role));
+ assert.match(guidance,/CEO approval is NEVER a substitute/);
+});

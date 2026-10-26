@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
+import {executiveRoleGuidance} from '@/lib/executiveRoleGuidance';
 
 const executives=['CEO','COO','CFO','CMO','CIO','General Manager'];
 export default function ExecutiveTrainingRecords(){
@@ -39,7 +40,7 @@ export default function ExecutiveTrainingRecords(){
   <form onSubmit={save} className="space-y-3">
    <label htmlFor="saved-executive" className="block text-sm font-medium">Executive</label>
    <select id="saved-executive" value={executive} onChange={e=>setExecutive(e.target.value)} className="w-full rounded-lg border bg-background p-3">{executives.map(x=><option key={x}>{x}</option>)}</select>
-   <label htmlFor="saved-instruction" className="block text-sm font-medium">Draft instruction</label>
+   <div className="flex items-center justify-between gap-2"><label htmlFor="saved-instruction" className="block text-sm font-medium">Draft instruction</label><button type="button" className="rounded-lg border px-3 py-2 text-sm" onClick={()=>{setInstruction(executiveRoleGuidance[executive]||'');setMessage('Draft template loaded for review; not saved or approved.');}}>Load research-based {executive} draft</button></div>
    <textarea id="saved-instruction" value={instruction} maxLength={6000} onChange={e=>setInstruction(e.target.value)} rows={4} className="w-full rounded-lg border bg-background p-3 text-base" placeholder="Describe the policy or behaviour this executive should follow…"/>
    <button type="submit" disabled={busy||instruction.trim().length<10} className="rounded-lg bg-primary text-primary-foreground px-4 py-2 disabled:opacity-50">{busy?'Saving…':'Save draft instruction'}</button>
   </form>
