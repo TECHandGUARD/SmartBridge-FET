@@ -1,5 +1,8 @@
 -- COO operations: least-privilege control plane, encrypted scheduler secret, daily scorecards.
 -- Resend webhook signing secret must be provisioned separately in Supabase Vault.
+-- Pg cron must exist before the scheduling block references cron.job.
+-- Both hosted and disposable local Supabase PostgreSQL support this extension.
+create extension if not exists pg_cron with schema pg_catalog;
 create table if not exists public.coo_automation_settings (
  key text primary key,
  enabled boolean not null default false,
