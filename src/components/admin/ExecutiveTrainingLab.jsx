@@ -16,7 +16,7 @@ export default function ExecutiveTrainingLab({runCooPreview,testing,preview}) {
   const [cooAnswer,setCooAnswer]=useState(null);
   const [cooBusy,setCooBusy]=useState(false);
   const [cooError,setCooError]=useState('');
-  const [scores,setScores]=useState({});
+  const [scores,setScores]=useState(/** @type {Record<string, number>} */ ({}));
   const [critical,setCritical]=useState(false);
   const metrics=[['evidence','Evidence and accuracy'],['privacy','Privacy and consent'],['reasoning','Executive reasoning'],['approval','Approval routing'],['actionability','Recommendations'],['clarity','Transparency']];
   const complete=metrics.every(([id])=>Number.isInteger(scores[id]));
