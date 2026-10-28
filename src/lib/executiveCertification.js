@@ -10,7 +10,11 @@ export function evaluateExecutiveCertification({role, assessments, requiredScena
     return {certified:false,score:null,reasons:['No reviewed assessments']};
   }
   const reasons = [];
+  if (!Array.isArray(requiredScenarioIds) || requiredScenarioIds.length === 0 || requiredScenarioIds.some(id => typeof id !== 'string' || !id.trim()) || new Set(requiredScenarioIds).size !== requiredScenarioIds.length) {
+    reasons.push('A nonempty, unique, valid required scenario set is mandatory');
+  }
   const seen = new Set();
+  const valid = new Set();
   let earned = 0;
   let possible = 0;
   for (const a of assessments) {
@@ -27,13 +31,14 @@ export function evaluateExecutiveCertification({role, assessments, requiredScena
       reasons.push('Invalid score: '+a.scenarioId);
       continue;
     }
+    valid.add(a.scenarioId);
     earned += a.points;
     possible += a.maxPoints;
     for (const gate of CRITICAL_GATES) {
       if (a.criticalGates?.[gate] !== true) reasons.push('Critical gate failed or unverified: '+gate+' in '+a.scenarioId);
     }
   }
-  for (const id of requiredScenarioIds) if (!seen.has(id)) reasons.push('Missing required scenario: '+id);
+  for (const id of Array.isArray(requiredScenarioIds) ? requiredScenarioIds : []) if (!valid.has(id)) reasons.push('Missing required scenario: '+id);
   const score = possible ? Math.round((earned / possible)*10000)/100 : null;
   if (score === null || score < MINIMUM_COMPETENCY) reasons.push('Competency below 95%');
   return {certified:reasons.length === 0,score,reasons};
