@@ -34,3 +34,15 @@ test('invalid or empty scores never certify',()=>{
  const a=reviewed('CIO','incident');a.points=NaN;
  assert.equal(evaluateExecutiveCertification({role:'CIO',assessments:[a]}).certified,false);
 });
+
+test('a perfect score cannot certify without a required scenario manifest',()=>{
+ const a=reviewed('CEO','one-perfect-example');
+ assert.equal(evaluateExecutiveCertification({role:'CEO',assessments:[a]}).certified,false);
+ assert.equal(evaluateExecutiveCertification({role:'CEO',assessments:[a],requiredScenarioIds:['one-perfect-example','one-perfect-example']}).certified,false);
+});
+test('an unreviewed required scenario is not satisfied by a valid optional scenario',()=>{
+ const bad={...reviewed('COO','required'),reviewedByHuman:false};
+ const result=evaluateExecutiveCertification({role:'COO',assessments:[bad,reviewed('COO','optional')],requiredScenarioIds:['required']});
+ assert.equal(result.certified,false);
+ assert.ok(result.reasons.some(reason=>reason.includes('Missing required scenario: required')));
+});
