@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from '@/lib/supabaseClient';
 import {executiveRoleGuidance} from '@/lib/executiveRoleGuidance';
+import {summarizeLegacyExecutiveReviews} from '@/lib/executiveTrainingRecordAdapter';
 
 const executives=['CEO','COO','CFO','CMO','CIO','General Manager'];
 export default function ExecutiveTrainingRecords(){
@@ -10,6 +11,7 @@ export default function ExecutiveTrainingRecords(){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [counts,setCounts]=useState({});
+ const [reviewSummaries,setReviewSummaries]=useState({});
  const review=async(id,action)=>{
   if(!supabase || busy)return;
   setBusy(true);setMessage('');
@@ -23,6 +25,9 @@ export default function ExecutiveTrainingRecords(){
   const {data,error}=await supabase.from('ai_executive_training').select('id,executive,instruction,status,version,created_at').order('created_at',{ascending:false}).limit(100);
   if(error)setMessage('Training history unavailable. Administrator access is required.');
   else {setRecords(data||[]);const summary={};for(const role of executives){summary[role]={approved:(data||[]).filter(row=>row.executive===role&&row.status==='approved').length,drafts:(data||[]).filter(row=>row.executive===role&&row.status==='draft').length};}setCounts(summary);}
+  const {data:reviews,error:reviewError}=await supabase.from('ai_executive_reviews').select('executive,evidence,privacy,reasoning,approval,actionability,clarity,critical_violation').limit(1000);
+  if(!reviewError){const summaries={};for(const role of executives)summaries[role]=summarizeLegacyExecutiveReviews(reviews,role);setReviewSummaries(summaries);}
+  else setMessage('Training history loaded; certification review history unavailable.');
  };
  useEffect(()=>{load();},[]);
  const prepareMissing=async()=>{
@@ -52,7 +57,7 @@ export default function ExecutiveTrainingRecords(){
  };
  return <section className="rounded-xl border bg-card p-5 space-y-4" aria-label="Saved executive training">
   <header><h2 className="text-xl font-semibold">Saved executive instructions</h2><p className="text-sm text-muted-foreground">Phase 1: store draft guidance privately. No instructions are automatically activated or sent to AI models.</p></header>
-  <div className="rounded-lg border p-3 space-y-3" aria-label="Executive training readiness"><h3 className="font-semibold">Six-executive readiness</h3><div className="grid gap-2 sm:grid-cols-3">{executives.map(role=><p key={role} className="rounded border p-2 text-sm"><strong>{role}</strong><span className="block">{counts[role]?.approved?'Approved guidance available':counts[role]?.drafts?'Draft awaiting approval':'Missing training record'}</span></p>)}</div><button type="button" disabled={busy} onClick={prepareMissing} className="rounded-lg border px-3 py-2 disabled:opacity-50">{busy?'Preparing…':'Prepare missing executive training drafts'}</button><p className="text-xs text-muted-foreground">Drafts require individual administrator approval. Approved instructions guide supervised AI simulations only; they never grant financial or other real-world authority.</p></div>
+  <div className="rounded-lg border p-3 space-y-3" aria-label="Executive training readiness"><h3 className="font-semibold">Six-executive readiness</h3><div className="grid gap-2 sm:grid-cols-3">{executives.map(role=><p key={role} className="rounded border p-2 text-sm"><strong>{role}</strong><span className="block">{counts[role]?.approved?'Approved guidance available':counts[role]?.drafts?'Draft awaiting approval':'Missing training record'}</span><span className="block">Historical reviews: {reviewSummaries[role]?.recordedReviews??'unavailable'} · Academy certification: Not certified</span></p>)}</div><button type="button" disabled={busy} onClick={prepareMissing} className="rounded-lg border px-3 py-2 disabled:opacity-50">{busy?'Preparing…':'Prepare missing executive training drafts'}</button><p className="text-xs text-muted-foreground">Drafts require individual administrator approval. Historical reviews do not establish Academy certification. No executive is activated by this display.</p></div>
   <form onSubmit={save} className="space-y-3">
    <label htmlFor="saved-executive" className="block text-sm font-medium">Executive</label>
    <select id="saved-executive" value={executive} onChange={e=>setExecutive(e.target.value)} className="w-full rounded-lg border bg-background p-3">{executives.map(x=><option key={x}>{x}</option>)}</select>
