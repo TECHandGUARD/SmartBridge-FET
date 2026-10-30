@@ -84,7 +84,6 @@ export default function GuidedTour({ role, pathname, userId }) {
       smoothScroll: true,
       allowClose: true,
       overlayClickBehavior: 'close',
-      skipMissingElement: true,
       stagePadding: 8,
       popoverClass: 'smartbridge-tour-popover',
       nextBtnText: 'Next',
