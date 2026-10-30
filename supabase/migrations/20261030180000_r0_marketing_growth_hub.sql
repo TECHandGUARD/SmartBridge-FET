@@ -55,6 +55,8 @@ create table if not exists smartbridge_private.tech_guard_lead_activity (
 );
 alter table smartbridge_private.tech_guard_lead_activity enable row level security;
 revoke all on smartbridge_private.tech_guard_lead_activity from public, anon, authenticated;
+-- SECURITY INVOKER wrappers need schema visibility; underlying tables remain ungranted.
+grant usage on schema smartbridge_private to authenticated;
 
 create or replace function smartbridge_private.record_tech_guard_lead_activity(
   p_lead_id uuid, p_activity_type text, p_note text default null, p_new_status text default null
@@ -110,6 +112,19 @@ grant execute on function public.tech_guard_lead_activity(uuid) to authenticated
 -- Founder-controlled operating guardrail. Budget is fixed at zero until the
 -- super-admin explicitly records a future approval. No payment or ad platform
 -- integration is activated by this setting.
+create table if not exists smartbridge_private.marketing_budget_audit (
+  id bigint generated always as identity primary key,
+  actor_id uuid not null references public.users(id),
+  old_monthly_budget_zar numeric(12,2) not null,
+  new_monthly_budget_zar numeric(12,2) not null,
+  old_paid_campaigns_enabled boolean not null,
+  new_paid_campaigns_enabled boolean not null,
+  approval_note text,
+  created_at timestamptz not null default now()
+);
+alter table smartbridge_private.marketing_budget_audit enable row level security;
+revoke all on smartbridge_private.marketing_budget_audit from public,anon,authenticated;
+
 create table if not exists smartbridge_private.marketing_budget_control (
   id boolean primary key default true check (id=true),
   monthly_budget_zar numeric(12,2) not null default 0 check (monthly_budget_zar >= 0),
@@ -161,6 +176,14 @@ begin
   if not p_paid_campaigns_enabled or length(btrim(coalesce(p_approval_note,'')))<10 then
     raise exception 'Paid activation requires an explicit approval note and enabled flag';
   end if;
+  if not exists(select 1 from public.users u where u.id=auth.uid() and u.is_active=true and u.is_super_admin=true) then
+    raise exception 'Only the active super-admin may approve a non-zero marketing budget';
+  end if;
+  insert into smartbridge_private.marketing_budget_audit(
+    actor_id,old_monthly_budget_zar,new_monthly_budget_zar,old_paid_campaigns_enabled,new_paid_campaigns_enabled,approval_note
+  )
+  select auth.uid(),monthly_budget_zar,p_monthly_budget_zar,paid_campaigns_enabled,true,btrim(p_approval_note)
+  from smartbridge_private.marketing_budget_control where id=true;
   update smartbridge_private.marketing_budget_control
     set monthly_budget_zar=p_monthly_budget_zar,paid_campaigns_enabled=true,
       approved_by=auth.uid(),approved_at=now(),approval_note=btrim(p_approval_note),updated_at=now()
