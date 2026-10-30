@@ -744,7 +744,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
-        <div className="flex items-center gap-3 mb-8">
+        <div data-tour="dashboard-heading" className="flex items-center gap-3 mb-8">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
             <Shield className="w-5 h-5 text-primary-foreground" />
           </div>
@@ -765,7 +765,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
+        <div data-tour="dashboard-stats" className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
           {[
             { label: 'Total Users', value: totalUserCount.toLocaleString(), icon: Users, color: 'bg-blue-100 text-blue-700' },
             { label: 'Premium Subs', value: subscriptions.filter(s => s.status === 'active').length, icon: TrendingUp, color: 'bg-amber-100 text-amber-700' },
@@ -793,7 +793,7 @@ export default function AdminDashboard() {
           <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded. Yoco refunds require live payments; test payments cannot be refunded.</p>
         </div>
         {/* Tabs Grid Navigation */}
-        <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
+        <div data-tour="dashboard-navigation"><Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
           <div className="mb-4 lg:hidden">
             <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
             <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e=>setActiveAdminTab(e.target.value)}>
@@ -1235,7 +1235,7 @@ export default function AdminDashboard() {
               </div>
             </SafeSubComponent>
           </TabsContent>
-        </Tabs>
+        </Tabs></div>
       </div>
     </div>
   );
