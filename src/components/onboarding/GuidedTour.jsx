@@ -1,41 +1,93 @@
-import { useEffect, useState } from 'react';
-import { driver } from 'driver.js';
-import 'driver.js/dist/driver.css';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Activity, BookOpen, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, CirclePlay, GraduationCap, LayoutDashboard, MessageCircle, Pause, Play, RotateCcw, ShieldCheck, Sparkles, Users, Video, X } from 'lucide-react';
 
 const ROLE = { student: 'student', user: 'student', tutor: 'tutor', sace_tutor: 'tutor', student_tutor: 'tutor', parent: 'parent', admin: 'admin' };
-const STEPS = {
- student: [
-  { element: '[data-tour="dashboard-heading"]', popover: { title: 'Your learning dashboard', description: 'Your personal study space for Grades 10–12. Your learning tools and progress are organized here.' } },
-  { element: '[data-tour="dashboard-navigation"]', popover: { title: 'Explore your tools', description: 'Move between subjects, progress, AI study tools, goals and learning activities.' } },
-  { element: 'a[href="/tutors"]', popover: { title: 'Find a tutor', description: 'Browse available tutors and explore support for the subjects you are studying.' } }
- ],
- tutor: [
-  { element: '[data-tour="dashboard-heading"]', popover: { title: 'Your tutor workspace', description: 'Your dashboard brings your tutoring activity and professional tools together.' } },
-  { element: '[data-tour="dashboard-navigation"]', popover: { title: 'Tutor dashboard sections', description: 'Use the dashboard navigation to access the different areas of your tutoring workspace.' } }
- ],
- parent: [
-  { element: '[data-tour="dashboard-heading"]', popover: { title: 'Your parent dashboard', description: 'Your space to stay connected with your child’s learning journey.' } },
-  { element: '[data-tour="dashboard-navigation"]', popover: { title: 'Parent tools', description: 'Manage your child link, view progress, explore subjects, find tutors and access messages.' } },
-  { element: 'a[href="/tutors"]', popover: { title: 'Find tutor support', description: 'Explore tutors who can support your child with CAPS subjects.' } }
- ],
- admin: [
-  { element: '[data-tour="dashboard-heading"]', popover: { title: 'SmartBridge control panel', description: 'Your administration workspace for monitoring and managing the platform.' } },
-  { element: '[data-tour="dashboard-stats"]', popover: { title: 'Platform overview', description: 'Review high-level user, subscription, resource, payment and engagement figures.' } },
-  { element: '[data-tour="dashboard-navigation"]', popover: { title: 'Administration tools', description: 'Access registrations, marketing, tutor verification, payments, content and system controls.' } }
- ]
+const make = (section, title, description, bullets, icon, rows) => ({ section, title, description, bullets, icon, rows });
+const COMMON = {
+  student: [
+    make('Your dashboard','Welcome to your learning space','Your SmartBridge home base brings your learning tools, study activity and support together for your Grade 10–12 journey.',['Get familiar with your home screen','Find your key learning tools','Pick up where you left off'],LayoutDashboard,['Learning overview','Recently viewed resources','Your study activity']),
+    make('Study resources','Find CAPS learning resources','Explore learning material aligned with the South African CAPS curriculum. Use your grade and subjects to find relevant study support.',['Browse resources by subject and grade','Open notes and study material','Build a regular study routine'],BookOpen,['CAPS study notes','Subject learning packs','Practice activities']),
+    make('Progress and planning','Build your study routine','Use the learning and progress areas to keep track of what you are working on and identify topics that need more attention.',['Review your learning activity','Set priorities for your next study session','Keep your goals in sight'],Activity,['Learning activity','Study goals','Progress overview']),
+    make('Tutor discovery','Get help from a tutor','Explore tutor profiles and find someone who works with the subjects you are studying.',['Explore tutor profiles','Compare subject support','Send a booking request'],Users,['Mathematics support','Life Sciences support','Geography support']),
+    make('Messages and sessions','Communicate and learn together','Use the communication and session tools available to your account to stay connected and make the most of tutor support.',['Keep learning conversations together','Check session details','Prepare before a lesson'],MessageCircle,['Tutor conversation','Upcoming session','Lesson follow-up']),
+    make('Your next steps','Make SmartBridge yours','You are ready to explore. Complete your account details, revisit the tools whenever you need them and build a learning routine that works for you.',['Keep your profile details current','Explore at your own pace','Replay this tour whenever you need a refresher'],Sparkles,['Your profile','Your learning tools','Help and support'])
+  ],
+  tutor: [
+    make('Your dashboard','Welcome to your tutor workspace','Your tutor dashboard brings your tutoring activity and professional tools into one workspace. This is where you manage your work with SmartBridge.',['See your tutor workspace at a glance','Find the tools you use most','Move between dashboard sections'],LayoutDashboard,['Tutor overview','Quick actions','Recent activity']),
+    make('Profile and reviews','Complete your tutor profile','Your profile helps learners and parents understand who you are, what you teach and how you can support them. Keep your information clear and current.',['Add a professional introduction','Keep subjects and qualifications accurate','Review your public profile and feedback'],GraduationCap,['Professional introduction','Subjects and qualifications','Profile reviews']),
+    make('Availability','Set your availability','Use your availability tools to communicate when learners can request lessons. Keep your schedule current so booking requests are easier to manage.',['Review your calendar','Set the times you can teach','Update availability when plans change'],CalendarDays,['Weekly availability','Available time slots','Calendar settings']),
+    make('Bookings','Manage booking requests','Booking requests help you keep track of learner interest and upcoming tutoring work. Review each request and respond through the available booking controls.',['Review new requests','Check subject and session details','Keep booking statuses up to date'],CheckCircle2,['New booking request','Upcoming lesson','Booking history']),
+    make('Messages','Stay connected with learners','Use SmartBridge communication tools to keep conversations about lessons and learner support organized.',['Open your messages','Respond to learner queries','Keep communication professional and clear'],MessageCircle,['Learner conversation','Lesson follow-up','Support message']),
+    make('Live sessions and Lesson Studio','Run and prepare lessons','Your session and lesson tools support the teaching process, from preparing learning activities to connecting for a scheduled session.',['Prepare lesson material','Check your live-session tools','Keep lesson delivery organized'],Video,['Lesson Studio','Live session tools','Learning activities']),
+    make('You are ready','Your tutor workflow','Your profile, availability, bookings and communication work together. Keep these areas updated to give learners a reliable tutoring experience.',['Complete your profile','Keep your calendar current','Check bookings and messages regularly'],Sparkles,['Profile checklist','Availability','Bookings and messages'])
+  ],
+  parent: [
+    make('Your dashboard','Welcome to your parent space','Your parent dashboard is designed to help you stay connected with your child’s learning journey and the support available through SmartBridge.',['Get familiar with your dashboard','Find the tools available to your account','Use the dashboard as your starting point'],LayoutDashboard,['Parent overview','Linked learner','Recent activity']),
+    make('Learner connection','Connect with your learner','The learner connection area helps you access learner information linked to your parent account. Follow the prompts shown in your account to manage the connection.',['Check linked learner details','Follow the account prompts','Keep contact information current'],Users,['Linked learner details','Connection status','Account information']),
+    make('Learning progress','Follow learning activity','Use the learning information available in your parent view to stay informed and have constructive conversations about study goals and support.',['Review available progress information','Notice where extra support may help','Encourage steady study habits'],Activity,['Learning activity','Study goals','Progress overview']),
+    make('Tutor discovery','Explore tutor support','Explore tutor support when your learner needs help with a subject. Review the tutor information available before making a booking request.',['Browse tutor profiles','Review subject support','Discuss suitable support with your learner'],GraduationCap,['Tutor profiles','Subject support','Booking information']),
+    make('Messages and support','Keep communication clear','Use the communication options available to your account to stay informed and coordinate learning support.',['Check available messages','Keep learner support conversations clear','Use help options when you need assistance'],MessageCircle,['Messages','Learning support','Help and guidance']),
+    make('Next steps','You are ready to get started','Your parent space is a starting point for staying involved. Explore the available features and return to this walkthrough whenever you need a refresher.',['Check your linked learner','Explore available progress information','Replay this tour when needed'],Sparkles,['Learner connection','Progress information','Support options'])
+  ],
+  admin: [
+    make('Admin dashboard','Welcome to the control center','The admin dashboard gives authorized administrators an overview of platform activity and access to management areas.',['Review the platform overview','Find key administration areas','Use role permissions responsibly'],LayoutDashboard,['Platform overview','Recent activity','Admin shortcuts']),
+    make('Platform overview','Monitor platform activity','Use the available dashboard indicators to monitor platform activity and identify areas that may need attention.',['Review the figures shown in your account','Watch for unusual activity','Use reports for deeper investigation'],Activity,['User activity','Platform engagement','Recent changes']),
+    make('User management','Manage learners and tutors','User management tools support administration of learner and tutor accounts. Only take actions that your role and platform policies authorize.',['Review account information','Follow tutor verification processes','Keep account decisions documented'],Users,['Learner accounts','Tutor profiles','Verification queue']),
+    make('Resources and learning','Oversee learning and content','Use the available content and learning administration areas to support accurate, relevant CAPS-aligned learning experiences.',['Review learning content','Check publishing details','Maintain quality and consistency'],BookOpen,['Learning resources','Content review','Publishing status']),
+    make('Payments and communication','Support platform operations','Operational tools help authorized staff review relevant platform workflows. Financial changes should follow the required approval process.',['Review operational records','Use communication tools appropriately','Escalate financial decisions for approval'],MessageCircle,['Payment overview','Platform messages','Operational activity']),
+    make('Audit and controls','Keep the platform accountable','Use available audit and configuration tools to support secure, accountable platform administration.',['Respect role-based access','Review audit information when available','Avoid changing settings without authorization'],ShieldCheck,['Role permissions','Audit activity','Account controls']),
+    make('You are ready','Your admin workflow','You have seen the main areas of the admin experience. Explore each section carefully and use the platform’s approval and audit processes.',['Review activity regularly','Keep decisions traceable','Follow security and approval controls'],Sparkles,['Activity overview','Approval process','Audit controls'])
+  ]
 };
 
+function Scene({ chapter, role }) {
+  const Icon = chapter.icon;
+  return <div className="relative flex h-full min-h-[230px] items-center justify-center overflow-hidden rounded-xl bg-[#101b2b] p-3 sm:p-7">
+    <div className="absolute -right-16 -top-20 h-60 w-60 rounded-full bg-emerald-400/10 blur-3xl" />
+    <div className="relative w-full max-w-2xl overflow-hidden rounded-xl border border-white/15 bg-[#f7f9fc] shadow-2xl">
+      <div className="flex items-center justify-between border-b border-slate-200 bg-white px-3 py-2.5"><div className="flex items-center gap-2"><span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-700 text-white"><GraduationCap size={15}/></span><span className="text-xs font-bold text-slate-800">SmartBridge <span className="font-normal text-slate-500">FET</span></span></div><span className="text-[10px] text-slate-500">{role === 'admin' ? 'Administration' : role === 'tutor' ? 'Tutor workspace' : role === 'parent' ? 'Parent space' : 'Learner space'}</span></div>
+      <div className="grid grid-cols-[62px_1fr] sm:grid-cols-[135px_1fr]">
+        <aside className="space-y-2 border-r border-slate-200 bg-white p-2 sm:p-3">{['Overview','My learning','Bookings','Messages','My profile'].map((x,i)=><div key={x} className={`rounded-md px-2 py-2 text-[9px] sm:text-[11px] ${i===0?'bg-emerald-50 font-semibold text-emerald-800':'text-slate-500'}`}><span className="hidden sm:inline">{x}</span><span className="sm:hidden">{['Home','Study','Book','Chat','Profile'][i]}</span></div>)}</aside>
+        <main className="min-w-0 p-3 sm:p-5"><p className="text-[9px] uppercase tracking-wider text-slate-400">SMARTBRIDGE WORKSPACE</p><h3 className="mt-1 text-sm font-bold text-slate-800 sm:text-lg">{chapter.section}</h3><div className="my-3 grid grid-cols-3 gap-2">{['My activity','Resources','Support'].map((x,i)=><div key={x} className="rounded-lg border border-slate-200 bg-white p-2"><span className="text-[8px] text-slate-400 sm:text-[10px]">{x}</span><div className="mt-2 h-1.5 rounded-full bg-slate-100"><div className="h-1.5 rounded-full bg-emerald-600" style={{width:['72%','58%','84%'][i]}}/></div></div>)}</div><div className="space-y-2">{chapter.rows.map(row=><div key={row} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5"><span className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-50 text-emerald-700"><Icon size={14}/></span><span className="min-w-0 flex-1 truncate text-[10px] font-medium text-slate-700 sm:text-xs">{row}</span><span className="rounded-full bg-slate-100 px-2 py-1 text-[8px] text-slate-500">Explore</span></div>)}</div></main>
+      </div>
+    </div><span className="absolute bottom-3 right-3 rounded-full border border-white/15 bg-black/35 px-2.5 py-1 text-[9px] text-white/80">Illustrative walkthrough</span>
+  </div>;
+}
+
 export default function GuidedTour({ role, pathname }) {
- const [running, setRunning] = useState(false);
- const key = ROLE[role];
- const dashboard = /^\/(student-dashboard|tutor-dashboard|parent-dashboard|admin)$/.test(pathname);
- useEffect(() => setRunning(false), [pathname]);
- if (!dashboard || !key) return null;
- const start = () => {
-  const steps = (STEPS[key] || []).filter(step => document.querySelector(step.element));
-  if (!steps.length) return;
-  const tour = driver({ showProgress: true, animate: true, smoothScroll: true, allowClose: true, overlayClickBehavior: 'close', popoverClass: 'smartbridge-tour-popover', nextBtnText: 'Next', prevBtnText: 'Back', doneBtnText: 'Finish', onDestroyed: () => setRunning(false) });
-  setRunning(true); tour.setSteps(steps); tour.drive();
- };
- return <button type="button" onClick={start} aria-label="Start the SmartBridge guided tour" className="fixed bottom-24 right-4 z-[70] inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 lg:bottom-6 lg:right-6"><span aria-hidden="true">✦</span>{running ? 'Tour running' : 'Take a tour'}</button>;
+  const [open,setOpen]=useState(false);
+  const [playing,setPlaying]=useState(false);
+  const [index,setIndex]=useState(0);
+  const key=ROLE[role];
+  const chapters=useMemo(()=>COMMON[key]||[],[key]);
+  const chapter=chapters[index];
+  const dashboard=/^\/(student-dashboard|tutor-dashboard|parent-dashboard|admin)$/.test(pathname);
+  const close=useCallback(()=>{setPlaying(false);setOpen(false);},[]);
+  const next=useCallback(()=>setIndex(i=>Math.min(i+1,chapters.length-1)),[chapters.length]);
+  const previous=useCallback(()=>setIndex(i=>Math.max(0,i-1)),[]);
+  useEffect(()=>{if(!open||!playing)return undefined;const timer=window.setTimeout(()=>{if(index>=chapters.length-1)setPlaying(false);else setIndex(i=>i+1);},9000);return()=>window.clearTimeout(timer);},[open,playing,index,chapters.length]);
+  useEffect(()=>{if(!open)return undefined;const keydown=e=>{if(e.key==='Escape')close();if(e.key==='ArrowRight')next();if(e.key==='ArrowLeft')previous();if(e.key===' '){e.preventDefault();setPlaying(v=>!v);}};window.addEventListener('keydown',keydown);return()=>window.removeEventListener('keydown',keydown);},[open,close,next,previous]);
+  useEffect(()=>{setOpen(false);setPlaying(false);setIndex(0);},[pathname,key]);
+  if(!dashboard||!key||!chapters.length)return null;
+  const progress=((index+1)/chapters.length)*100;
+  return <>
+    <button type="button" onClick={()=>{setIndex(0);setOpen(true);setPlaying(false);}} aria-label="Watch the SmartBridge dashboard tour" className="fixed bottom-24 right-3 z-[70] inline-flex min-h-11 items-center gap-2 rounded-full border border-primary/20 bg-primary px-3 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 sm:right-4 sm:px-4 lg:bottom-6 lg:right-6"><CirclePlay size={17}/><span>Watch dashboard tour</span></button>
+    <AnimatePresence>{open&&<motion.div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/90 p-0 backdrop-blur-sm sm:p-4" initial={{opacity:0}} animate={{opacity:1}} exit={{opacity:0}}>
+      <motion.section role="dialog" aria-modal="true" aria-label="SmartBridge product tour" className="flex h-[100dvh] w-full max-w-6xl flex-col overflow-hidden bg-[#0b1422] text-white sm:h-[min(92dvh,850px)] sm:rounded-2xl sm:border sm:border-white/10 sm:shadow-2xl" initial={{y:18,scale:.985}} animate={{y:0,scale:1}} exit={{y:12,scale:.985}}>
+        <header className="flex shrink-0 items-center justify-between border-b border-white/10 px-4 py-3 sm:px-6"><div className="flex items-center gap-3"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-300"><GraduationCap size={20}/></div><div><p className="text-sm font-semibold">SmartBridge FET</p><p className="text-[11px] text-slate-400">Product walkthrough · {key.charAt(0).toUpperCase()+key.slice(1)} experience</p></div></div><button type="button" onClick={close} aria-label="Close tour" className="rounded-lg p-2 text-slate-300 hover:bg-white/10 hover:text-white"><X size={20}/></button></header>
+        <div className="grid min-h-0 flex-1 grid-rows-[minmax(220px,1fr)_auto] overflow-y-auto lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-1 lg:overflow-hidden">
+          <div className="flex min-h-0 flex-col p-3 sm:p-5 lg:p-6"><div className="min-h-[230px] flex-1"><AnimatePresence mode="wait"><motion.div key={index} className="h-full" initial={{opacity:0,scale:.985}} animate={{opacity:1,scale:1}} exit={{opacity:0,scale:1.01}} transition={{duration:.28}}><Scene chapter={chapter} role={key}/></motion.div></AnimatePresence></div>
+            <div className="mt-4 shrink-0"><div className="mb-2 flex justify-between text-[11px] text-slate-400"><span>CHAPTER {String(index+1).padStart(2,'0')} / {String(chapters.length).padStart(2,'0')}</span><span>{chapter.duration||'0:20'}</span></div><div className="h-1.5 overflow-hidden rounded-full bg-white/10"><motion.div className="h-full rounded-full bg-emerald-400" animate={{width:`${progress}%`}}/></div>
+              <div className="mt-3 flex items-center justify-between gap-2"><div className="flex items-center gap-2"><button type="button" onClick={previous} disabled={index===0} aria-label="Previous chapter" className="rounded-lg p-2 text-slate-300 hover:bg-white/10 disabled:opacity-30"><ChevronLeft size={20}/></button><button type="button" onClick={()=>setPlaying(v=>!v)} aria-label={playing?'Pause tour':'Play tour'} className="flex h-11 items-center gap-2 rounded-full bg-emerald-500 px-5 text-sm font-bold text-slate-950 hover:bg-emerald-400">{playing?<Pause size={17}/>:<Play size={17} fill="currentColor"/>}{playing?'Pause':'Play'}</button><button type="button" onClick={next} disabled={index===chapters.length-1} aria-label="Next chapter" className="rounded-lg p-2 text-slate-300 hover:bg-white/10 disabled:opacity-30"><ChevronRight size={20}/></button></div><button type="button" onClick={()=>{setIndex(0);setPlaying(false);}} className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs text-slate-400 hover:bg-white/10 hover:text-white"><RotateCcw size={14}/> Restart</button></div><p className="mt-2 text-center text-[10px] text-slate-500">Space to play or pause · ← → to change chapters · Esc to exit</p>
+            </div>
+          </div>
+          <aside className="min-h-0 border-t border-white/10 bg-[#111e30] lg:overflow-y-auto lg:border-l lg:border-t-0"><div className="p-4 sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[.18em] text-emerald-300">{chapter.section}</p><h2 className="mt-2 text-xl font-bold leading-tight sm:text-2xl">{chapter.title}</h2><p className="mt-3 text-sm leading-relaxed text-slate-300">{chapter.description}</p><div className="mt-5"><p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-slate-500">In this chapter</p><ul className="space-y-3">{chapter.bullets.map(item=><li key={item} className="flex gap-2.5 text-xs leading-relaxed text-slate-300"><CheckCircle2 size={15} className="mt-0.5 shrink-0 text-emerald-400"/>{item}</li>)}</ul></div></div>
+            <div className="border-t border-white/10 p-4 sm:p-5"><div className="mb-3 flex items-center justify-between"><p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Tour chapters</p><span className="text-[10px] text-slate-500">{index+1} of {chapters.length}</span></div><div className="grid grid-cols-2 gap-2 lg:grid-cols-1">{chapters.map((item,i)=>{const I=item.icon;return <button type="button" key={item.title} onClick={()=>{setIndex(i);setPlaying(false);}} aria-current={i===index?'step':undefined} className={`flex min-w-0 items-center gap-2.5 rounded-lg border p-2.5 text-left transition ${i===index?'border-emerald-400/40 bg-emerald-400/10 text-white':'border-white/5 text-slate-400 hover:border-white/15 hover:bg-white/5'}`}><span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${i===index?'bg-emerald-400/15 text-emerald-300':'bg-white/5'}`}><I size={14}/></span><span className="min-w-0"><span className="block truncate text-[11px] font-medium">{item.title}</span><span className="mt-0.5 block text-[9px] text-slate-500">{item.duration||'0:20'}</span></span></button>;})}</div></div>
+          </aside>
+        </div>
+        <footer className="flex shrink-0 items-center justify-between border-t border-white/10 px-4 py-3 text-[10px] text-slate-500 sm:px-6"><span>SmartBridge FET · Learn how your workspace works</span><button type="button" onClick={close} className="rounded-lg px-3 py-2 font-semibold text-slate-300 hover:bg-white/10 hover:text-white">Exit tour</button></footer>
+      </motion.section>
+    </motion.div>}</AnimatePresence>
+  </>;
 }
