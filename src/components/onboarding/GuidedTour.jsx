@@ -77,11 +77,11 @@ export default function GuidedTour({ role, pathname, userId }) {
     });
     if (!steps.length) return;
 
+    let didFinish = false;
     const tour = driver({
       showProgress: true,
       animate: true,
       smoothScroll: true,
-      allowScroll: true,
       allowClose: true,
       overlayClickBehavior: 'close',
       skipMissingElement: true,
@@ -90,8 +90,14 @@ export default function GuidedTour({ role, pathname, userId }) {
       nextBtnText: 'Next',
       prevBtnText: 'Back',
       doneBtnText: 'Finish',
-      onDestroyed: (_element, _step, options) => {
-        const didFinish = options?.reason === 'done';
+      onPopoverRender: (popover, options) => {
+        if (options.state.activeIndex === steps.length - 1) {
+          popover.nextButton.addEventListener('click', () => {
+            didFinish = true;
+          }, { once: true });
+        }
+      },
+      onDestroyed: () => {
         setRunning(false);
         if (didFinish && storageKey) {
           try {
