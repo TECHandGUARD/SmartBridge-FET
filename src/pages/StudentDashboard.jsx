@@ -199,7 +199,7 @@ export default function StudentDashboard() {
         <CounselorSharing userId={user.id} />
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
               Welcome back, {user.full_name?.split(' ')[0] || 'Student'}! 👋
@@ -235,7 +235,7 @@ export default function StudentDashboard() {
         )}
 
         {/* Quick Nav */}
-        <div className="mb-6">
+        <div data-tour="dashboard-navigation" className="mb-6">
           <StudentQuickActions onAction={toggleSection} activeSection={activeSection} />
         </div>
 

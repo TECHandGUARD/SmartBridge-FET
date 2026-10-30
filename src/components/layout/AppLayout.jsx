@@ -11,6 +11,7 @@ import MobileAppFooter from './MobileAppFooter';
 import { useAuth } from '@/lib/AuthContext';
 import { withTimeout } from '@/lib/auth-utils';
 import TutorPendingScreen from '@/components/tutor/TutorPendingScreen';
+import GuidedTour from '@/components/onboarding/GuidedTour';
 
 import { TUTOR_ROLES } from '@/lib/navigation';
 
@@ -49,6 +50,7 @@ export default function AppLayout() {
     <div className="hidden lg:block"><Navbar user={user} /></div>
     <div className="lg:hidden"><MobileHeader user={user} /></div>
     {user?.id && <NotificationInbox userId={user.id} />}
+    {user?.id && <GuidedTour role={user.role} pathname={location.pathname} />}
     <main id="main-content" ref={main} tabIndex={-1} className="app-main min-w-0 flex-1 outline-none">
       <motion.div className="min-w-0" key={location.pathname} initial={{ opacity: reducedMotion ? 1 : 0 }} animate={{ opacity: 1 }} transition={{ duration: reducedMotion ? 0 : 0.15 }}><Outlet context={{ user }} /></motion.div>
     </main>

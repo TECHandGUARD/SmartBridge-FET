@@ -78,7 +78,7 @@ export default function ParentDashboard() {
 
         <div className="mb-4 rounded-xl border bg-card p-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
               Parent Dashboard 👨‍👩‍👧
@@ -105,7 +105,7 @@ export default function ParentDashboard() {
         </div>
 
         {/* Quick Nav */}
-        <div className="mb-6">
+        <div data-tour="dashboard-navigation" className="mb-6">
           <ParentQuickActions onAction={toggleSection} activeSection={activeSection} />
         </div>
 
