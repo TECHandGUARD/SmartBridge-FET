@@ -98,3 +98,35 @@ Do not implement advertising pixels, Meta/TikTok APIs, WhatsApp Cloud API, payme
 - Marketing consent is separate, optional, versioned, and withdrawable before any optional tracking/messaging is enabled.
 - Reports distinguish measured facts from unavailable metrics.
 - Production remains unchanged until explicit approval.
+
+
+## Repository review findings (30 October 2026)
+
+### Confirmed existing callers
+- `src/components/admin/MarketingPanel.jsx` reads and edits `marketing_posts`, calls `save_marketing_post`, and calls `marketing_metrics`.
+- `src/pages/MarketingNews.jsx` reads published posts for the public news/campaign pages.
+- Public post links carry the campaign slug into `/register?campaign=...`.
+- The existing marketing migration records a campaign post against a new registration, once per user, within the first seven days after account creation.
+- Existing metrics count attributed registrations and verified live paid-member records. They do not provide impressions, click totals, or social-platform engagement.
+
+### Confirmed enquiry intake
+- `tech_guard_leads` is created with: id, name, email, phone, company, service, message, status, created_at.
+- Existing status values are `new`, `contacted`, and `closed`.
+- The public website migration grants anonymous/authenticated INSERT with a permissive check. It does not grant public SELECT or UPDATE in that migration.
+- No existing lead inbox UI or lead activity history was found in the reviewed files.
+- A future admin policy must not weaken public privacy. Admin read/update should be narrowly scoped to the full-admin helper, with active-account enforcement where appropriate. Public INSERT must remain separate from admin SELECT/UPDATE.
+
+### Confirmed consent behavior
+- Onboarding writes `privacy_and_terms`; tutor onboarding also writes `tutor_service_agreement`.
+- The reviewed onboarding migration creates those records without a marketing/analytics opt-in.
+- The reviewed consent policy allows users to read their own consent records. Do not interpret existing terms acceptance as consent to advertising or analytics.
+
+### Migration design decision
+Do not add a generic tracking-event platform in the first R0 release. The smallest safe first migration should:
+1. Add nullable, validated source metadata to `tech_guard_leads` (channel/source and optional campaign slug) without changing the public form's required fields.
+2. Add an append-only private lead activity table for admin follow-up, with RLS and explicit full-admin policies.
+3. Add a founder-controlled R0 budget/paid-activation approval record with an audit trail; default budget is zero and paid activation is false.
+4. Add explicit consent types and a versioned/withdrawable consent write path only when the UI is ready to collect them; do not enable pixels or external tracking in this migration.
+5. Add database tests covering anonymous lead submission, denial of anonymous/ordinary-user lead reads and updates, admin access, inactive admin denial, and prevention of paid activation without founder approval.
+
+Before writing SQL, validate the live schema, function signatures, role model, and policy catalog with read-only database queries. The repository review alone is not sufficient to authorize a production migration.
