@@ -64,11 +64,6 @@ export default function GuidedTour({ role, pathname, userId }) {
     }
   }, [pathname, storageKey]);
 
-  useEffect(() => () => {
-    // Driver.js is torn down when this layout component unmounts.
-    setRunning(false);
-  }, []);
-
   if (!dashboard || !key || !userId) return null;
 
   const start = () => {
@@ -82,7 +77,6 @@ export default function GuidedTour({ role, pathname, userId }) {
     });
     if (!steps.length) return;
 
-    let finished = false;
     const tour = driver({
       showProgress: true,
       animate: true,
@@ -107,7 +101,6 @@ export default function GuidedTour({ role, pathname, userId }) {
             // Tours remain usable if browser storage is unavailable.
           }
         }
-        finished = didFinish;
       }
     });
 
