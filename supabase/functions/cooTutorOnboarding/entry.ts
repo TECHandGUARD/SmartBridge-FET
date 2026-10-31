@@ -59,10 +59,8 @@ serve(withHttp(async (request) => {
    const hours=(now-Date.parse(user.created_at))/3600000;
    if(!Number.isFinite(hours)||hours<48) {skipped++;continue;}
    if(!user.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(user.email)) {skipped++;continue;}
-   // Administrators authorise strictly operational account reminders through the
-   // central campaign setting. Never override an explicit user refusal.
-   const preference=typeof user.communication_preferences==='string'?user.communication_preferences.trim().toLowerCase():'';
-   if(['none','off','disabled','unsubscribe','unsubscribed','no_email','opt_out'].includes(preference)){skipped++;continue;}
+   // Fail closed on unsupported communication-preference values.
+   if(typeof user.communication_preferences !== 'string' || !/^(all|email|email_only|email_enabled)$/i.test(user.communication_preferences.trim())) {skipped++;continue;}
    const profile=byUser.get(user.id);
    const missing=profile?missingFields(profile):['Tutor profile'];
    if(!missing.length) {skipped++;continue;}
@@ -74,15 +72,12 @@ serve(withHttp(async (request) => {
    if(!reservation){skipped++;continue;}
    attempted++;
    const {apiKey,from}=deliverySettings!;
-   const {data:unsubscribeToken,error:unsubscribeError}=await client.rpc('coo_issue_unsubscribe_token',{p_tutor_id:user.id});
-   if(unsubscribeError || !unsubscribeToken)throw new Error('Opt-out link unavailable: refusing to send');
    const name=(typeof user.full_name==='string'&&user.full_name.trim()?user.full_name.trim().split(' ')[0]:'Tutor').slice(0,80);
    const subject='Complete your SmartBridge FET tutor profile';
    const profileUrl=appUrl('/tutor-dashboard');
-   const unsubscribeUrl=url+'/functions/v1/coo-reminder-unsubscribe?token='+encodeURIComponent(unsubscribeToken);
-   const body='Hi '+name+',\n\nWelcome to SmartBridge FET. Your tutor profile needs a few details: '+missing.join(', ')+'.\n\nA complete profile helps learners and parents understand your subjects, qualifications, teaching approach and availability. It also helps you prepare for bookings when your account is eligible. Completing your profile does not guarantee bookings or earnings.\n\nUpdate your profile: '+profileUrl+'\n\nSmartBridge FET Tutor Success (automated COO assistant)\n\nThis is a service reminder about your existing tutor account, not a marketing email. You may stop future profile reminders here: '+unsubscribeUrl;
+   const body='Hi '+name+',\n\nWelcome to SmartBridge FET. Your tutor profile needs a few details: '+missing.join(', ')+'.\n\nA complete profile helps learners and parents understand your subjects, qualifications, teaching approach and availability. It also helps you prepare for bookings when your account is eligible. Completing your profile does not guarantee bookings or earnings.\n\nUpdate your profile: '+profileUrl+'\n\nSmartBridge FET Tutor Success (automated COO assistant)';
    try {
-    const resp=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json','Idempotency-Key':reservation},body:JSON.stringify({from,to:[user.email],subject,text:body,headers:{'X-SmartBridge-COO-Log':reservation,'List-Unsubscribe':'<'+unsubscribeUrl+'>'}}),signal:AbortSignal.timeout(15000)});
+    const resp=await fetch('https://api.resend.com/emails',{method:'POST',headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json','Idempotency-Key':reservation},body:JSON.stringify({from,to:[user.email],subject,text:body,headers:{'X-SmartBridge-COO-Log':reservation}}),signal:AbortSignal.timeout(15000)});
     const response=await resp.json().catch(()=>({}));
     const state=resp.ok&&typeof response.id==='string'?'accepted':'failed';
     await client.from('coo_tutor_email_log').update({state,provider_id:state==='accepted'?response.id:null,updated_at:new Date().toISOString()}).eq('id',reservation);
