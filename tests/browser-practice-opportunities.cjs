@@ -19,6 +19,8 @@ const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
     for (const width of [390, 1440]) {
       const context = await browser.newContext({ viewport: { width, height: 900 } });
       const page = await context.newPage();
+      // Keep deadline assertions deterministic against the 21 October 2026 seed snapshot.
+      await page.clock.install({ time: new Date('2026-10-21T12:00:00+02:00') });
       const errors = [], writes = [], queries = [];
       page.on('pageerror', e => errors.push(e.message));
       const profile = { id: '00000000-0000-4000-8000-000000000101', email: 'learner@example.test', full_name: 'Test Learner', role: 'student', onboarding_complete: true, is_active: true, trial_started_at: new Date().toISOString() };
