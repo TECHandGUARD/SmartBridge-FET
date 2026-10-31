@@ -30,7 +30,7 @@ test('Executive Training Lab includes human-reviewed scoring with hard privacy a
 test('Executive board records evaluations and non-executable founder proposals',()=>{
  const lab=readFileSync(new URL('../src/components/admin/ExecutiveTrainingLab.jsx',import.meta.url),'utf8');
  const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
- const migration=readFileSync(new URL('../supabase/migrations/20261026153000_ai_executive_reviews_and_proposals.sql',import.meta.url),'utf8');
+ const migration=readFileSync(new URL('../supabase/migrations/20261026134125_ai_executive_reviews_and_proposals.sql',import.meta.url),'utf8');
  assert.match(lab,/ai_executive_reviews/);
  assert.match(board,/ai_executive_proposals/);
  assert.match(board,/pending_founder_review/);
@@ -41,7 +41,7 @@ test('Executive board records evaluations and non-executable founder proposals',
 });
 
 test('Read-only snapshot is administrator-scoped and excludes personal details and financial amounts',()=>{
- const sql=readFileSync(new URL('../supabase/migrations/20261026153100_ai_board_operating_snapshot.sql',import.meta.url),'utf8');
+ const sql=readFileSync(new URL('../supabase/migrations/20261026134129_ai_board_operating_snapshot.sql',import.meta.url),'utf8');
  const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
  assert.match(sql,/smartbridge_private.is_admin\(auth.uid\(\)\)/);
  assert.match(sql,/revoke all on function public.ai_board_operating_snapshot/);
@@ -63,4 +63,17 @@ test('Every executive has competency scenarios, missing-guidance preparation, an
  assert.match(records,/prepareMissing/);
  assert.match(records,/status:'draft'/);
  assert.match(records,/None were automatically approved/);
+});
+
+test('Reconstructed AI training schema keeps draft access admin-scoped and audit client-read-only',()=>{
+ const training=readFileSync(new URL('../supabase/migrations/20261025205645_ai_executive_training_phase1.sql',import.meta.url),'utf8');
+ const audit=readFileSync(new URL('../supabase/migrations/20261025205923_ai_training_review_actions.sql',import.meta.url),'utf8');
+ assert.match(training,/RECONSTRUCTION NOTICE/);
+ assert.match(training,/enable row level security/);
+ assert.match(training,/admins create own draft training/);
+ assert.match(training,/created_by=\(select auth\.uid\(\)\)/);
+ assert.match(training,/grant select,insert,update on public\.ai_executive_training to authenticated/);
+ assert.match(audit,/admin audit read/);
+ assert.match(audit,/grant select on public\.ai_executive_training_audit to authenticated/);
+ assert.doesNotMatch(audit,/create trigger|create or replace function/i);
 });
