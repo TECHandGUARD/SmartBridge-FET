@@ -177,3 +177,52 @@ The recovered PR candidates are not a one-to-one history: PR #66 has a single on
 ### Recovery decision
 
 PR #66/#68/#71 provide useful candidate provenance, but their SQL is materially different from the current live function definitions and combines several changes that the live ledger records as separate versions. The exact SQL for all nine versions remains **unrecovered**. Next, inspect the original commit history for the exact nine versioned files; if that fails, create clearly labelled catalog-derived reconstruction candidates with a per-object comparison matrix and separate them from any forward security hardening. No production changes or scheduler activation were performed.
+
+
+## Peer-study and instant-adult-call migration comparison — 31 October 2026
+
+The live catalog was compared against the candidate SQL in PRs #57, #58 and #59. This comparison establishes current database objects and their effective definitions, but not original migration byte equivalence.
+
+### Peer-study call history
+
+The live ledger records ten peer-call versions:
+
+- 20261024130857_peer_study_call_foundation
+- 20261024130902_peer_call_rls_nonrecursive
+- 20261024130907_peer_call_expiry_and_visibility
+- 20261024131039_peer_call_guardian_grants
+- 20261024132303_peer_call_minimum_age_15
+- 20261024132415_peer_call_verified_age_and_moderator_admission
+- 20261024132541_peer_call_moderator_assignment
+- 20261024132646_peer_call_signaling_transport
+- 20261024132950_peer_call_live_moderator_admission
+- 20261024133010_peer_call_secure_signaling
+
+PR #57 contains ten candidate SQL files under later timestamps 20261024140000–140900. The candidate sequence and current catalog are substantially aligned at the object/behavior level: foundational call/member tables; non-recursive visibility; expiry checks; guardian grants; age 15; age-verification and moderator admission; moderator assignment; signaling table; live moderator leases and admission; secure participant signaling. Current live function bodies include the expected later behavior, including 45-second moderator/member presence, a six-participant limit, age/guardian eligibility, room membership, and recipient admission checks. This is stronger provenance than the COO candidate set, but timestamp differences and the absence of original SQL bytes mean exact historical equivalence is not proven.
+
+The live peer-study request RPC remains fail-closed: after eligibility and moderator checks it still raises an explicit “calling remains disabled” exception. Do not describe peer calls as enabled based only on the presence of tables, moderator functions, or signaling routines.
+
+The current schema has RLS enabled on the call, member, age-verification, guardian-grant, moderator and signaling tables. The age-verification, guardian-grant and moderator tables have no client-facing policies; this is intentionally restrictive and should remain so unless a separately reviewed privileged workflow is implemented.
+
+### Instant adult calls
+
+The live ledger records three versions:
+
+- 20261024134332_instant_adult_call_requests
+- 20261024134355_instant_adult_call_signaling
+- 20261024134732_instant_adult_contact_lookup
+
+PR #58 contains three corresponding candidate SQL files under later timestamps 20261024150000–150200. The live catalog confirms the core objects and functions: caller/callee call records with 45-second ringing expiry; adult-only start/respond/end functions; accepted-call participant checks for signaling; and adult-only email contact lookup. Candidate-to-live alignment is good at the object and behavior level, but exact SQL equivalence is not established.
+
+The live instant-adult signal table is RLS enabled and has a recipient-only policy guarded by accepted-call participant checks. The current signal RPC limits payload size and signaling rate. Contact lookup returns an account UUID only after an adult-account check; it should still be reviewed for privacy and enumeration risks before broad rollout.
+
+### Adult-call push subscriptions
+
+The live ledger records 20261024142032_adult_call_push_subscriptions. PR #59 contains a candidate under 20261024161000. The live catalog confirms the subscription table and authenticated RPCs for adult-only registration and owner-scoped removal. The table has RLS enabled and no direct client policies, so subscription writes remain RPC-mediated.
+
+### Recovery decision
+
+- Peer-call candidate history is sufficiently aligned to proceed to a controlled reconstruction candidate, clearly marked as reconstructed from PR #57 plus live catalog comparison; preserve the original live migration identifiers in a provenance manifest, but do not claim byte-for-byte recovery.
+- Adult-call and push candidates are similarly suitable for a reconstructed candidate set, not exact source restoration.
+- Keep all peer/adult call feature gates and live settings unchanged. Do not enable peer study calling, push delivery, or alter live access controls as part of migration source recovery.
+- The clean disposable database replay remains the acceptance gate. Reconstructed SQL must be replayed in an isolated local/disposable database and compared against the live catalog before any migration history repair or deployment is considered.
