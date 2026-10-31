@@ -89,6 +89,21 @@ Draft PR #98 (`recovery/reconstruct-ai-training-migrations`) now contains schema
 
 The reconstruction captures the live table columns, checks, foreign keys and RLS policies. It deliberately tightens table grants compared with the current live ACL: authenticated receives only SELECT/INSERT/UPDATE on training and SELECT on the audit table; anon receives none. This intentional ACL difference must be reviewed and followed by a separately approved forward migration for production if accepted. The audit table remains read-only to clients and has no invented trigger/RPC writer. PR #98 CI is pending; no production SQL was executed.
 
+## Peer-call migration catalog inspection
+
+A read-only live catalog inventory has now captured the six core peer-call tables:
+
+- `peer_study_calls`, `peer_study_call_members`, `peer_study_call_signals`
+- `peer_call_age_verifications`, `peer_call_guardian_grants`, `peer_call_moderators`
+
+The live catalog confirms important guardrails: call sessions expire within 60 minutes; signaling payloads are limited to 16 KB and expire within 10 minutes (default five); call membership is scoped to a live call; age-verification expiry is capped at 365 days; guardian grants are capped at 365 days; the supported age-verification methods are restricted to trusted provider or manual document review. RLS policies expose call rows only to eligible participants, member rows only to admitted members, and signaling rows only to an admitted recipient when the live moderator and sender checks pass.
+
+The live database also contains six private helper functions governing eligibility, guardian consent, moderator availability, host liveness, membership, recipient admission and signaling. Public SECURITY DEFINER RPCs include moderator assignment, start/join/heartbeat/leave. The functions inspected use an empty search path and enforce authenticated identity and/or moderator checks.
+
+PR #57 contains a later-timestamp candidate series (`20261024140000`–`20261024140900`) for the ten live peer-call versions (`20261024130857`–`20261024133010`). Those timestamps differ, and the candidate branch is not proof of byte-equivalent original SQL. The catalog inventory is now recorded as the comparison baseline. Before creating restored historical filenames, compare every table column/default, constraint, index, policy, grant, function definition/ACL, trigger and dependency against the PR #57 candidate SQL and the clean replay. Do not restore the ten versions by blind rename.
+
+The three instant-adult-call migrations and push-subscription migration remain a separate recovery batch. Their PR #58/#59 candidates also use later timestamps and require the same comparison process.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
