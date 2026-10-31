@@ -57,6 +57,19 @@ The following files exist on `main` but are not present by version in the live m
 
 Several are candidate equivalents of live-applied migrations with different timestamps. They must not be applied to production just to make the ledger match.
 
+## Follow-up recovery work — AI Board Phase 5
+
+A focused follow-up compared the two Phase 5 AI Board migrations against the live catalog and restored the exact applied version identifiers on draft PR #97:
+
+- Live version `20261026134125` — `ai_executive_reviews_and_proposals`.
+- Live version `20261026134129` — `ai_board_operating_snapshot`.
+
+The original SQL content was recovered from PR #85. Read-only catalog checks confirm the live review/proposal tables have the expected columns, generated score fields, constraints, indexes, four administrator-only policies, and authenticated SELECT/INSERT grants. The snapshot RPC definition matches the recovered SQL, uses an empty search path, checks `smartbridge_private.is_admin(auth.uid())`, and has no anonymous execute grant. The repository's later duplicate filenames (`20261026153000` and `20261026153100`) were removed from the recovery branch and the source-controlled governance tests were updated to reference the applied version identifiers.
+
+**Validation still pending:** PR #97 CI is running. The live database catalogue comparison is read-only; it does not prove a full clean replay until the CI migration and local service job passes. Two earlier runs on the uncorrected branch failed the governance test only because the tests still referenced the removed duplicate filenames. This was corrected in the current head.
+
+The other two live-only AI migration versions (`20261025205645` training phase 1 and `20261025205923` training review actions) remain unresolved. Their exact SQL was not found in the recovered PR patches. Do not reconstruct them from table names alone; recover their full column, constraint, policy, grant, trigger and function definitions from the live catalog and obtain a source/review decision first.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
