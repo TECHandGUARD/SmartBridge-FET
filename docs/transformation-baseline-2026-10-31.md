@@ -64,6 +64,34 @@ A read-only comparison of Supabase's live Edge Function registry with the reposi
 
 These checks are focused spot checks, not a penetration test or a complete policy proof. The public repository search did not find obvious live credential values in the checked key patterns; matches were configuration variable names or explicit test fixtures. GitHub secret-scanning alert access was not available through the connected integration, and full Git-history secret scanning remains outstanding.
 
+### Migration-history reconciliation — critical release blocker
+
+A direct comparison of the live Supabase migration history with the current repository tree found a material mismatch:
+
+- Live database: **66 applied migration versions**.
+- Repository: **44 migration files**.
+- **29 applied versions are absent from the repository.**
+- **7 repository migration files are not recorded as applied in the live database.**
+
+The seven repository-only versions are:
+- `20261024150000_instant_adult_call_requests`
+- `20261024150100_instant_adult_call_signaling`
+- `20261024150200_instant_adult_contact_lookup`
+- `20261025203000_coo_tutor_onboarding`
+- `20261025220000_coo_autonomous_schedule_and_reporting`
+- `20261026153000_ai_executive_reviews_and_proposals`
+- `20261026153100_ai_board_operating_snapshot`
+
+The 29 live-only versions cluster around:
+- PostgreSQL extension cleanup (2 versions).
+- Peer study/adult-call safeguarding and signaling (14 versions).
+- COO onboarding, reminder opt-out, scheduler and reporting (9 versions).
+- AI executive training, review and operating snapshots (4 versions).
+
+Several live-only versions have similarly named repository migrations with different timestamps. Do not assume they are interchangeable or apply them again. This mismatch means the current repository migration folder is **not yet a reliable replay history for the live project**. The schema snapshot is useful evidence but does not replace the migration source and ordering.
+
+**Release hold:** Do not run `supabase db push`, apply the seven pending repository migrations, reset production migration history, or merge a backend migration rollout until every mismatch has been classified as (a) equivalent migration with reconciled versioning, (b) live-only change requiring recovered source, or (c) obsolete/intentional change with a documented replacement. Build a clean disposable replay from the repository, compare its resulting schema with the live schema snapshot, and test all changes in an isolated staging project before requesting production approval.
+
 ## Current Supabase advisor baseline
 
 ### Security
