@@ -62,6 +62,10 @@ A read-only comparison of Supabase's live Edge Function registry with the reposi
 - Parent–learner link reads are restricted to participants and require an active account. Payment orders expose owner/admin reads; writes are intended to occur through server-side RPCs.
 - AI executive training, reviews and proposals have administrator-only table policies. Proposal insertion requires a pending-founder-review state and marks CFO proposals as requiring founder approval. The founder-approval transition itself still needs a dedicated end-to-end authorization test.
 
+- The two applied base migrations `20261025205645_ai_executive_training_phase1` and `20261025205923_ai_training_review_actions` are missing from the repository. This is why a fresh local replay cannot find `public.ai_executive_training`; the AI Board RLS assertions are deferred until those migrations are recovered.
+- Live grants on `ai_executive_training_audit` currently include full table privileges for `anon` and `authenticated`, and the identity sequence is also granted to those roles. RLS has no anonymous policy and only an administrator SELECT policy, so ordinary anonymous access is currently blocked by RLS; nevertheless, the grants are broader than needed. Recommended least-privilege target: revoke anon entirely, grant authenticated SELECT only, and keep audit inserts behind the guarded review function/service role. The training table's authenticated grant also includes DELETE/TRUNCATE/TRIGGER/REFERENCES even though its policies do not permit those actions; reduce to the minimum SELECT/INSERT/UPDATE rights required by the admin UI.
+
+
 These checks are focused spot checks, not a penetration test or a complete policy proof. The public repository search did not find obvious live credential values in the checked key patterns; matches were configuration variable names or explicit test fixtures. GitHub secret-scanning alert access was not available through the connected integration, and full Git-history secret scanning remains outstanding.
 
 ### Migration-history reconciliation — critical release blocker
