@@ -70,6 +70,19 @@ The original SQL content was recovered from PR #85. Read-only catalog checks con
 
 The other two live-only AI migration versions (`20261025205645` training phase 1 and `20261025205923` training review actions) remain unresolved. Their exact SQL was not found in the recovered PR patches. Do not reconstruct them from table names alone; recover their full column, constraint, policy, grant, trigger and function definitions from the live catalog and obtain a source/review decision first.
 
+## AI training Phase 1 / review-action catalog inspection
+
+The two remaining AI training migrations are still source-recovery blockers. A read-only live catalog inspection identified the current end state:
+
+- `ai_executive_training`: 8 columns (`id`, `executive`, `instruction`, `status`, `version`, `created_by`, `created_at`, `updated_at`); status is constrained to `draft`, `approved`, or `withdrawn`; instructions are trimmed and constrained to 10–6,000 characters; executive values are limited to CEO, COO, CFO, CMO, CIO and General Manager.
+- Training table RLS is enabled. Authenticated administrators can read records, insert their own initial draft (version 1), and update draft records. Anonymous access is not granted. Authenticated table-level grants are broad, but RLS restricts effective row access.
+- `ai_executive_training_audit`: 6 columns (`id` bigint, `training_id`, `actor_id`, `old_status`, `new_status`, `created_at`), with a primary key and a foreign key to the training record. It has no sequence/default for `id`, no user-defined triggers, and no insert/update/delete RLS policies. Only an administrator SELECT policy exists.
+- The audit table currently has broad table ACL entries for anon/authenticated, but RLS denies those roles writes because there are no matching policies. This is an unnecessarily broad grant surface and should be reduced in a separately reviewed forward migration.
+- No function whose name or body clearly references executive training was found in the public/private schemas. No trigger currently writes audit rows. Therefore, the audit table's name should not be mistaken for a functioning append-only audit trail.
+- The UI's training-record component inserts draft rows into `ai_executive_training`; the inspected component does not create audit rows or activate an AI model.
+
+This catalog is sufficient to design a reconstruction candidate, but not to claim exact recovery of the two original migrations. The original source was not found in PR #64 or #74. Before restoring the live version identifiers `20261025205645` and `20261025205923`, recover the original SQL from commit history or explicitly label any catalog-derived reconstruction as such, then compare the rebuilt schema and test administrator/non-administrator boundaries. Separately design an append-only audit mechanism with a narrow server-side writer, deny client writes, and immutable audit semantics; do not add it to a historical migration unless source evidence proves it existed there.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
