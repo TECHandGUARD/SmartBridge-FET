@@ -29,7 +29,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  assert.deepEqual(ok(await parent.client.from('users').select('id').eq('id',student.id)),[],'Parent cannot read a learner account row without a dedicated approved data path');
  assert.ok((await student.client.from('users').update({role:'admin',is_super_admin:true,is_premium:true,is_verified:true,is_active:false}).eq('id',student.id)).error,'Account owner cannot self-promote or change protected account flags');
- assert.ok((await other.client.from('users').update({role:'admin'}).eq('id',student.id)).error,'Another account cannot change a role');
+ assert.equal(ok(await other.client.from('users').update({role:'student'}).eq('id',student.id).select('role').maybeSingle()),null,'Another account cannot change a role');
  assert.deepEqual(ok(await student.client.from('ai_executive_training').select('id')),[],'Learners cannot inspect AI executive training');
  assert.deepEqual(ok(await student.client.from('ai_executive_reviews').select('id')),[],'Learners cannot inspect AI executive reviews');
  assert.deepEqual(ok(await student.client.from('ai_executive_proposals').select('id')),[],'Learners cannot inspect AI executive proposals');
