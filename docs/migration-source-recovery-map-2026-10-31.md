@@ -115,6 +115,20 @@ The live catalog has now been captured for `instant_adult_calls`, `instant_adult
 
 PR #58 contains three later-timestamp candidate migrations for live versions `20261024134332`, `20261024134355`, and `20261024134732`; PR #59 contains a later-timestamp push-subscription candidate for live version `20261024142032`. This catalog capture is the comparison baseline, not proof of exact SQL provenance. Compare complete constraints, indexes, RLS policies, table ACLs, RPC signatures/definitions/ACLs, helper functions and dependencies before restoring the applied filenames.
 
+## COO automation catalog and control-path inspection
+
+A read-only inspection of the live COO schema and routines confirms:
+- `coo_automation_settings` enforces a daily limit between 1 and 25 and `autonomy='routine'`; the setting is currently disabled.
+- The live reservation routine serializes quota checks, enforces the 25-per-Africa/Johannesburg-day limit, one campaign per tutor, a 72-hour cooldown, active-account checks and the suppression table.
+- The live reservation routine rejects known opt-out values but accepts NULL or unknown `communication_preferences` values. The source-controlled `cooTutorOnboarding` Edge Function separately uses a strict allowlist (`all`, `email`, `email_only`, `email_enabled`) and therefore fails closed on that execution path. The database routine should independently apply the allowlist as defence in depth, since it is a privileged service-role RPC.
+- Unsubscribe token issuance/redemption is service-role-only. Redemption consumes all outstanding tokens for the tutor and records suppression, but currently does not check token age. The unsubscribe endpoint source is present in PR #71, but the corresponding function source/config/migration are not present on main. The live registry reports `coo-reminder-unsubscribe` ACTIVE; therefore source-controlled deployment provenance is incomplete.
+- `coo_reenable_reminders()` allows an authenticated active tutor to remove suppression and set preference to `email`. It is identity-scoped, but this action and its UX should be reviewed against the intended consent model.
+- The COO reservation function is defined with `search_path=public`, not an empty search path; schema-qualifying object references and setting an empty path would reduce SECURITY DEFINER search-path risk.
+- Daily reporting is based on the email log and the private capture routine. A report row is not evidence that a delivery occurred; provider acceptance/delivery/bounce states must be reconciled from signed Resend events.
+- The live scheduler remains disabled. No reminder emails were sent and no settings were changed during this inspection.
+
+PR #71 provides candidate source for the opt-out endpoint, suppression/token routines and re-enable routine. Its SQL timestamp `20261025223500` and `20261025224500` are repository candidates, not the nine live COO version identifiers. The exact executed SQL for the nine live COO migration versions has not been recovered. Do not blindly map or rename PR #71 candidate files to live versions. Before production activation, restore a coherent migration chain, add database-level fail-closed consent and a bounded token lifetime, test the GET-confirm/POST-opt-out flow, and verify that the deployed function matches source.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
