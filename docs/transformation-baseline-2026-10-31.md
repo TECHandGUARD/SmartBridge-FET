@@ -24,6 +24,22 @@ A feature is not complete merely because code exists. Track each item as **imple
 - The current quality workflow runs on pull requests and pushes to main. Its application job uses synthetic public Supabase values and includes a broad browser test suite. Passing this workflow is not proof of live provider integrations or production user journeys.
 - The repository contains extensive prior repair, rollout and operational documentation. Some documents describe historical checkpoints and must be reconciled against current live state before being treated as current truth.
 
+## Current live-state reconciliation (31 October 2026)
+
+A second read-only pass against the live database corrects several historical audit statements:
+
+- Supabase migration history contains **66 applied migrations**.
+- All **103 public tables** have RLS enabled. A direct catalogue query found **9 public tables with no policies**: `adult_call_push_subscriptions`, `coo_automation_settings`, `coo_daily_reports`, `coo_reminder_suppressions`, `coo_reminder_unsubscribe_tokens`, `coo_tutor_email_log`, `peer_call_age_verifications`, `peer_call_guardian_grants` and `peer_call_moderators`. These are operational/safeguarding tables; their deny-by-default behavior appears intentional pending individual access review.
+- The security advisor's **34 RLS-without-policy** findings include tables in the non-public `smartbridge_private` schema. They must not be treated as 34 public application tables or repaired by adding broad client policies.
+- The advisor flags one anonymous-executable and 27 authenticated-executable SECURITY DEFINER functions in the exposed `public` schema. This is an execution-surface review list, not proof of vulnerabilities. For example, the anonymous `public_tutors` function returns a limited verified-tutor directory projection; admin review RPCs inspected so far contain server-side permission checks. Every flagged function still requires individual review and negative tests.
+- The repository's `main` branch currently reports `protected=false` with no required status checks. This is a release-governance gap. No branch-protection change has been made because the available GitHub connection does not expose repository ruleset administration.
+- The latest `main` commit is `246643caa822009d80e82cfcd85f8413af60e53f` (30 October 2026). Its commit-status endpoint returned no status records. The available workflow-run lookup is PR-filtered, so this is not evidence that no GitHub Actions runs exist; it does mean CI evidence for that commit has not yet been verified.
+- Current AI Board tables contain 1 training record, 0 executive reviews, 0 proposals and 1 training-audit row. These counts do not demonstrate that any executive has passed certification or is operating autonomously.
+- The private scheduled-job configuration has `subscriptions` enabled; `coo-onboarding` and the other listed jobs are disabled. This is configuration state, not proof of scheduler delivery or execution.
+- The Yoco payment-order table currently contains 7 rows: 2 paid live-mode, 1 pending live-mode, 2 paid test-mode and 2 pending test-mode. This is not a merchant-dashboard reconciliation and does not prove successful live checkout-to-settlement end-to-end.
+
+The older `docs/functional-audit.md` is explicitly a historical 11 October repair checkpoint. Its statements that core migrations are staged, and that 18 named relations are missing, must be reconciled with the 66 current migrations and current catalogue before they are used to direct new work.
+
 ## Current Supabase advisor baseline
 
 ### Security
@@ -50,6 +66,7 @@ Advisor counts are findings, not a count of confirmed exploitable vulnerabilitie
 ## Priority risks requiring resolution
 
 1. **Public source exposure controls:** Public visibility is an intentional founder decision for now. Audit repository history and current files for accidentally committed credentials, tokens, private learner/tutor data and other secrets. Rotate any exposed credentials and remove sensitive data from history using an approved procedure; never publish secrets in source.
+2. **Release governance:** `main` is not protected and has no required status checks. Establish pull-request review, required CI checks and a controlled release path before relying on the public repository for production changes.
 2. **Privileged database functions:** Review all 28 SECURITY DEFINER functions, starting with anonymous execution and administrator/AI/payment functions. Confirm caller authorization, fixed search_path, least-privilege grants and auditability.
 3. **RLS policy correctness:** Build a table-by-table access matrix for learner, parent, tutor, administrator, staff, anonymous and service contexts. Test cross-account isolation, parent-child relationship scope, tutor booking scope and staff delegation.
 4. **Payment integrity:** Reconcile Yoco checkout/webhook verification, idempotency, order/subscription state transitions, refunds and ledger records. No live payment was initiated.
@@ -86,7 +103,7 @@ A release must not be called production-ready until the relevant evidence exists
 ## Immediate next actions
 
 1. Audit public repository contents and history for secrets and personal data; remediate any exposure with a controlled rotation and history-cleanup plan.
-2. Map the main branch, open PRs, deployment commit and Amplify branch/environment state.
+2. Map the main branch, open PRs, deployment commit and Amplify branch/environment state; add reviewed branch protection and required checks once the existing workflow is confirmed stable.
 3. Read the existing functional audit, action items, release gates and migration baseline; reconcile historical claims with the live project.
 4. Produce a table/function-level security review and access matrix before changing RLS or grants.
 5. Run local lint, typecheck, unit, database, Edge, build and browser checks from a clean checkout or reproducible CI environment.
