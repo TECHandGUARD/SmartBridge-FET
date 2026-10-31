@@ -83,6 +83,12 @@ The two remaining AI training migrations are still source-recovery blockers. A r
 
 This catalog is sufficient to design a reconstruction candidate, but not to claim exact recovery of the two original migrations. The original source was not found in PR #64 or #74. Before restoring the live version identifiers `20261025205645` and `20261025205923`, recover the original SQL from commit history or explicitly label any catalog-derived reconstruction as such, then compare the rebuilt schema and test administrator/non-administrator boundaries. Separately design an append-only audit mechanism with a narrow server-side writer, deny client writes, and immutable audit semantics; do not add it to a historical migration unless source evidence proves it existed there.
 
+## AI training schema reconstruction branch
+
+Draft PR #98 (`recovery/reconstruct-ai-training-migrations`) now contains schema-equivalent reconstructions for live version identifiers `20261025205645` and `20261025205923`. The migrations are explicitly labelled as catalog-derived reconstructions because the original executed SQL could not be recovered from PR #64/#74 or the available commit history.
+
+The reconstruction captures the live table columns, checks, foreign keys and RLS policies. It deliberately tightens table grants compared with the current live ACL: authenticated receives only SELECT/INSERT/UPDATE on training and SELECT on the audit table; anon receives none. This intentional ACL difference must be reviewed and followed by a separately approved forward migration for production if accepted. The audit table remains read-only to clients and has no invented trigger/RPC writer. PR #98 CI is pending; no production SQL was executed.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
