@@ -92,6 +92,10 @@ Several live-only versions have similarly named repository migrations with diffe
 
 **Release hold:** Do not run `supabase db push`, apply the seven pending repository migrations, reset production migration history, or merge a backend migration rollout until every mismatch has been classified as (a) equivalent migration with reconciled versioning, (b) live-only change requiring recovered source, or (c) obsolete/intentional change with a documented replacement. Build a clean disposable replay from the repository, compare its resulting schema with the live schema snapshot, and test all changes in an isolated staging project before requesting production approval.
 
+### Supabase branch / staging status
+
+The Supabase branch listing currently returns only one branch, `main`; no separate staging/development branch is listed. Its branch record reports `MIGRATIONS_FAILED`, while the parent project itself reports `ACTIVE_HEALTHY`. These are distinct status fields: do not interpret the branch status as proof that the production project is down, but do treat it as an unresolved migration/branching signal. No new Supabase branch was created because the migration-history mismatch must be resolved first and branch creation can incur additional cost.
+
 ## Current Supabase advisor baseline
 
 ### Security
