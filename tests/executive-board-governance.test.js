@@ -64,3 +64,16 @@ test('Every executive has competency scenarios, missing-guidance preparation, an
  assert.match(records,/status:'draft'/);
  assert.match(records,/None were automatically approved/);
 });
+
+test('Reconstructed AI training schema keeps draft access admin-scoped and audit client-read-only',()=>{
+ const training=readFileSync(new URL('../supabase/migrations/20261025205645_ai_executive_training_phase1.sql',import.meta.url),'utf8');
+ const audit=readFileSync(new URL('../supabase/migrations/20261025205923_ai_training_review_actions.sql',import.meta.url),'utf8');
+ assert.match(training,/RECONSTRUCTION NOTICE/);
+ assert.match(training,/enable row level security/);
+ assert.match(training,/admins create own draft training/);
+ assert.match(training,/created_by=\(select auth\.uid\(\)\)/);
+ assert.match(training,/grant select,insert,update on public\.ai_executive_training to authenticated/);
+ assert.match(audit,/admin audit read/);
+ assert.match(audit,/grant select on public\.ai_executive_training_audit to authenticated/);
+ assert.doesNotMatch(audit,/create trigger|create or replace function/i);
+});
