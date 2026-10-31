@@ -171,3 +171,23 @@ entrypoint = "./functions/cooAiScenarioTest/entry.ts"
 [functions.executive-ai-scenario-test]
 verify_jwt = true
 entrypoint = "./functions/executiveAiScenarioTest/entry.ts"
+ 
+[functions.groq-study-assistant]
+verify_jwt = true
+entrypoint = "./functions/groqStudyAssistant/index.ts"
+
+[functions.gateway-readiness-diagnostic]
+verify_jwt = false
+entrypoint = "./functions/gatewayReadinessDiagnostic/index.ts"
+
+[functions.coo-delivery-smoke]
+verify_jwt = true
+entrypoint = "./functions/cooDeliverySmoke/index.ts"
+
+[functions.coo-reminder-unsubscribe]
+verify_jwt = false
+entrypoint = "./functions/cooReminderUnsubscribe/entry.ts"
+
+[functions.index-learning-documents]
+verify_jwt = true
+entrypoint = "./functions/indexLearningDocuments/entry.ts"

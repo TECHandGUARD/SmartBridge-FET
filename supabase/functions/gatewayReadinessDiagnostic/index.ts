@@ -1,0 +1,1 @@
+Deno.serve(()=>new Response('Diagnostic closed',{status:410}));
