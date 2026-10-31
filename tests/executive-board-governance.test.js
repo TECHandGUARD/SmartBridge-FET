@@ -30,7 +30,7 @@ test('Executive Training Lab includes human-reviewed scoring with hard privacy a
 test('Executive board records evaluations and non-executable founder proposals',()=>{
  const lab=readFileSync(new URL('../src/components/admin/ExecutiveTrainingLab.jsx',import.meta.url),'utf8');
  const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
- const migration=readFileSync(new URL('../supabase/migrations/20261026153000_ai_executive_reviews_and_proposals.sql',import.meta.url),'utf8');
+ const migration=readFileSync(new URL('../supabase/migrations/20261026134125_ai_executive_reviews_and_proposals.sql',import.meta.url),'utf8');
  assert.match(lab,/ai_executive_reviews/);
  assert.match(board,/ai_executive_proposals/);
  assert.match(board,/pending_founder_review/);
@@ -41,7 +41,7 @@ test('Executive board records evaluations and non-executable founder proposals',
 });
 
 test('Read-only snapshot is administrator-scoped and excludes personal details and financial amounts',()=>{
- const sql=readFileSync(new URL('../supabase/migrations/20261026153100_ai_board_operating_snapshot.sql',import.meta.url),'utf8');
+ const sql=readFileSync(new URL('../supabase/migrations/20261026134129_ai_board_operating_snapshot.sql',import.meta.url),'utf8');
  const board=readFileSync(new URL('../src/components/admin/ExecutivePerformanceBoard.jsx',import.meta.url),'utf8');
  assert.match(sql,/smartbridge_private.is_admin\(auth.uid\(\)\)/);
  assert.match(sql,/revoke all on function public.ai_board_operating_snapshot/);
