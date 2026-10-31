@@ -106,7 +106,7 @@ test('study reminders accept stored seconds and record acceptance to skip a repe
 
 test('restored Groq study assistant uses its standalone Deno entrypoint and retains server-side admin and quota gates',()=>{
  const source=fs.readFileSync('supabase/functions/groqStudyAssistant/index.ts','utf8');
- assert.match(source,/Deno\\.serve/);
+ assert.match(source,/Deno\.serve/);
  assert.match(source,/req\.method==='OPTIONS'/);
  assert.match(source,/db\.auth\.getUser/);
  assert.match(source,/profile\.role!=='admin'/);
