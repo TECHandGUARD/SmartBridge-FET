@@ -24,7 +24,7 @@ export function edgeRuntime(name, {client, env={}, fetch, research, Date: Clock=
   }
   const root=path.resolve('supabase');
   const helpers={http:load(path.join(root,'shared/http.ts')),config:load(path.join(root,'shared/config.ts')),email:load(path.join(root,'shared/email.ts'))};
-  if(name)load(path.join(root,`functions/${name}/entry.ts`));
+  if(name){const folder=path.join(root,`functions/${name}`);const entry=fs.existsSync(path.join(folder,'entry.ts'))?'entry.ts':'index.ts';load(path.join(folder,entry));}
   return {handle:request=>handler(request),...helpers};
 }
 export function fakeClient(profile={id:'user-id',role:'student',is_active:true,is_super_admin:false}, resolve=()=>({data:[],error:null})) {
