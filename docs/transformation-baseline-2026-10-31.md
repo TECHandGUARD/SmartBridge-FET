@@ -96,6 +96,10 @@ Several live-only versions have similarly named repository migrations with diffe
 
 The Supabase branch listing currently returns only one branch, `main`; no separate staging/development branch is listed. Its branch record reports `MIGRATIONS_FAILED`, while the parent project itself reports `ACTIVE_HEALTHY`. These are distinct status fields: do not interpret the branch status as proof that the production project is down, but do treat it as an unresolved migration/branching signal. No new Supabase branch was created because the migration-history mismatch must be resolved first and branch creation can incur additional cost.
 
+### Dependency supply-chain snapshot
+
+The GitHub Actions install on the current baseline ran `npm ci --include=dev` and reported **19 dependency vulnerabilities across 680 audited packages**: 4 low, 14 moderate and 1 high. The same install reported deprecated Recharts 2.15.4 and an unsupported ESLint 9.39.5 release. The install output did not include the advisory details, so affected package paths, whether the high finding reaches production bundles, and safe upgrade paths remain to be investigated. Do not run a blanket `npm audit fix --force`; prepare a dependency-by-dependency update with regression tests. Add a reviewed audit report and an appropriate production-dependency security gate after classifying the current findings.
+
 ## Current Supabase advisor baseline
 
 ### Security
