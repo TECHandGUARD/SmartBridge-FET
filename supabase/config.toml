@@ -187,3 +187,7 @@ entrypoint = "./functions/cooDeliverySmoke/index.ts"
 [functions.coo-reminder-unsubscribe]
 verify_jwt = false
 entrypoint = "./functions/cooReminderUnsubscribe/entry.ts"
+
+[functions.index-learning-documents]
+verify_jwt = true
+entrypoint = "./functions/indexLearningDocuments/entry.ts"
