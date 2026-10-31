@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {edgeRuntime,fakeClient} from './helpers/edge-runtime.js';
 const names=fs.readdirSync('supabase/functions');
+const closedDiagnosticFunctions=new Set(['gatewayReadinessDiagnostic','cooDeliverySmoke']);
 const request=(body={},headers={Authorization:'Bearer test-user'})=>new Request('https://example.test/function',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 
 test('all user/job function handlers handle preflight and reject missing authentication before querying or sending', async()=>{
- for(const name of names.filter(name=>!['yocoWebhook','resendWebhook'].includes(name))){
+ for(const name of names.filter(name=>!['yocoWebhook','resendWebhook'].includes(name)&&!closedDiagnosticFunctions.has(name))){
   const client=fakeClient();const runtime=edgeRuntime(name,{client});
   const preflight=await runtime.handle(new Request('https://example.test/function',{method:'OPTIONS'}));
   assert.equal(preflight.status,200,name);assert.ok(preflight.headers.get('Access-Control-Allow-Headers').includes('x-job-secret'));
@@ -100,4 +101,13 @@ test('study reminders accept stored seconds and record acceptance to skip a repe
  const runtime=edgeRuntime('sendStudyReminders',{client,Date:Clock,env:{JOB_AUTH_SECRET:'job'},fetch:async()=>{sends++;return Response.json({id:'accepted-id'});}});
  const first=await runtime.handle(request({}, {'x-job-secret':'job'}));assert.equal((await first.json()).sent,1);
  const second=await runtime.handle(request({}, {'x-job-secret':'job'}));assert.equal((await second.json()).sent,0);assert.equal(sends,1);assert.equal(reminder.last_notified_at,'2026-10-11T14:00:00.000Z');
+});
+
+
+test('closed diagnostic and delivery smoke endpoints remain inert HTTP 410 tombstones',async()=>{
+ for(const [folder,file] of [['gatewayReadinessDiagnostic','index.ts'],['cooDeliverySmoke','index.ts']]){
+  const source=fs.readFileSync(`supabase/functions/${folder}/${file}`,'utf8');
+  assert.match(source,/Deno\\.serve/);
+  assert.match(source,/status:\\s*410/);
+ }
 });
