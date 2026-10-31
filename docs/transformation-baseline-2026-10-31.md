@@ -40,6 +40,30 @@ A second read-only pass against the live database corrects several historical au
 
 The older `docs/functional-audit.md` is explicitly a historical 11 October repair checkpoint. Its statements that core migrations are staged, and that 18 named relations are missing, must be reconciled with the 66 current migrations and current catalogue before they are used to direct new work.
 
+## Live Edge Function and permission review (31 October 2026)
+
+A read-only comparison of Supabase's live Edge Function registry with the repository manifest found:
+
+- **48 live Edge Functions, all reporting ACTIVE.**
+- The repository deployment manifest contains **42 slugs**; all 42 are present live, but **six live slugs are absent from the manifest**: `groq-study-assistant`, `gateway-readiness-diagnostic`, `coo-tutor-onboarding`, `coo-delivery-smoke`, `coo-reminder-unsubscribe` and `coo-ai-scenario-test`.
+- `coo-tutor-onboarding` and `coo-ai-scenario-test` have corresponding source files in the repository but are not yet represented in the manifest. `groq-study-assistant` and `coo-reminder-unsubscribe` have live source but no matching repository source file. `gateway-readiness-diagnostic` and `coo-delivery-smoke` currently return HTTP 410 and are closed diagnostic endpoints; their continued deployment should be reviewed and either tracked or retired deliberately.
+- **18 functions have gateway JWT verification disabled.** Source review found expected alternate controls for the main categories: signed Yoco/Paystack/Resend webhooks; job-secret or administrator-JWT authorization for scheduled jobs and notification handlers; and a one-time UUID confirmation token for the public COO unsubscribe page. This is not a blanket finding of unauthenticated access. The one-time unsubscribe token is currently non-expiring, and the live unsubscribe function is not represented in source control. Its token issuance/redeeming database primitives are service-role-only.
+- The current COO onboarding Edge Function is source-controlled but not included in the deployment manifest. It has a dedicated scheduler-token check, defaults to dry-run, requires explicit automation enablement and fails closed for unsupported communication-preference values. Its database scheduler setting is currently disabled. The current email body does not include the separate unsubscribe endpoint, so the unsubscribe path is not yet demonstrated end-to-end.
+- The `groq-study-assistant` live function requires a valid Supabase user session, restricts use to active administrators and applies the shared AI quota. It is a separate admin-only pilot, not proof of learner-facing AI readiness.
+- The `coo-ai-scenario-test` function is admin-only and explicitly returns simulation mode with zero emails sent and zero actions taken. It is not autonomous execution.
+
+### Database role-boundary spot checks
+
+- All **103 public tables have RLS enabled**. The 9 policy-less public tables remain deny-by-default pending individual review; do not add broad policies to silence advisor warnings.
+- Anonymous execution is granted to one public SECURITY DEFINER RPC, `public_tutors(uuid)`. Its inspected projection contains only verified/active tutor directory fields (name, biography, avatar, subjects, grades, rate and free-intro flag), not tutor email or private account fields. This appears intentional public-directory behavior but should remain covered by an anonymous-access test.
+- The 27 authenticated-executable public SECURITY DEFINER functions inspected include admin RPCs with database-side permission checks, account-owned actions and session/call functions. Continue individual review; do not revoke them as a group.
+- Public-schema CREATE privilege is false for both `anon` and `authenticated`; the private schema is also non-writable to those roles. This reduces the risk from older SECURITY DEFINER functions whose `search_path` is not empty, but empty/fixed search paths should remain the standard for new or revised functions.
+- The `users` self-update policy is paired with a trigger that blocks privilege, identity and protected onboarding-field changes. Tutor profile changes have a separate privilege guard. Booking updates have multiple database triggers protecting cancellation, financial receipts, sponsorship and booking-finance fields. These controls need explicit negative tests (attempt to self-promote, self-verify, alter prices/receipts, change another person's booking, or bypass parent consent).
+- Parent–learner link reads are restricted to participants and require an active account. Payment orders expose owner/admin reads; writes are intended to occur through server-side RPCs.
+- AI executive training, reviews and proposals have administrator-only table policies. Proposal insertion requires a pending-founder-review state and marks CFO proposals as requiring founder approval. The founder-approval transition itself still needs a dedicated end-to-end authorization test.
+
+These checks are focused spot checks, not a penetration test or a complete policy proof. The public repository search did not find obvious live credential values in the checked key patterns; matches were configuration variable names or explicit test fixtures. GitHub secret-scanning alert access was not available through the connected integration, and full Git-history secret scanning remains outstanding.
+
 ## Current Supabase advisor baseline
 
 ### Security
