@@ -104,6 +104,17 @@ PR #57 contains a later-timestamp candidate series (`20261024140000`–`20261024
 
 The three instant-adult-call migrations and push-subscription migration remain a separate recovery batch. Their PR #58/#59 candidates also use later timestamps and require the same comparison process.
 
+## Instant adult-call and push-subscription catalog inspection
+
+The live catalog has now been captured for `instant_adult_calls`, `instant_adult_call_signals`, and `adult_call_push_subscriptions`. The live schema confirms:
+- Instant calls distinguish audio/video and ringing/accepted/declined/missed/ended; a call request expires after 45 seconds and caller/callee must differ.
+- Signaling is recipient-scoped, participant-checked, limited to approved signal kinds, capped at 16 KB in the table (8 KB in the RPC), and defaults to five-minute expiry.
+- Adult call history is visible only to either participant when the adult-account helper passes.
+- Push subscriptions enforce unique endpoints, a 2,048-character endpoint limit and an 8 KB JSON payload limit. Registration validates HTTPS endpoints and required Web Push keys; the RPC is adult-account gated.
+- The inspected public RPCs use SECURITY DEFINER with an empty search path and enforce caller/callee identity and adult-account checks. Signaling includes a per-sender rate limit.
+
+PR #58 contains three later-timestamp candidate migrations for live versions `20261024134332`, `20261024134355`, and `20261024134732`; PR #59 contains a later-timestamp push-subscription candidate for live version `20261024142032`. This catalog capture is the comparison baseline, not proof of exact SQL provenance. Compare complete constraints, indexes, RLS policies, table ACLs, RPC signatures/definitions/ACLs, helper functions and dependencies before restoring the applied filenames.
+
 ## Safe reconciliation procedure
 
 1. Preserve the live migration ledger and database state. Do not delete, rewrite or mark migrations as applied in production to silence drift.
