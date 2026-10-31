@@ -1,0 +1,1 @@
+Deno.serve(() => Response.json({error:'Smoke test disabled after verification'},{status:410}));
