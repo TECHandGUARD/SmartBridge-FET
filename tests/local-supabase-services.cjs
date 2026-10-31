@@ -26,6 +26,8 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'TEST-SACE':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
   return {client,id:signup.user.id,email,token:signup.session.access_token};}
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
+const trainingAdmin=await account('student');
+ ok(await admin.from('users').update({role:'admin',is_active:true}).eq('id',trainingAdmin.id));
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
