@@ -15,7 +15,7 @@ A feature is not complete merely because code exists. Track each item as **imple
 ## Verified inventory
 
 - GitHub repository exists and the latest commit returned by the connected GitHub account is `246643caa822009d80e82cfcd85f8413af60e53f`.
-- The GitHub repository metadata currently reports **public** visibility. This conflicts with the README's statement that the repository is private and confidential. Treat this as a high-priority ownership/IP exposure issue. No visibility change has been made.
+- The repository owner has explicitly confirmed that **public visibility is intentional for now** to support development and collaboration. Treat this as a deliberate founder decision, not an outstanding defect. Reassess only if the owner requests it. Public source visibility does not permit publishing secrets, production credentials, private learner records, identity documents, payment data or confidential tutor information.
 - Supabase project reports `ACTIVE_HEALTHY`, PostgreSQL 17.6.1.
 - The public schema inventory contains **103 tables**.
 - Supabase reports **48 active Edge Functions**.
@@ -49,7 +49,7 @@ Advisor counts are findings, not a count of confirmed exploitable vulnerabilitie
 
 ## Priority risks requiring resolution
 
-1. **Repository visibility mismatch:** GitHub metadata says public while repository documentation says private/confidential. Confirm intended visibility with the owner and restrict access if required. No change made.
+1. **Public source exposure controls:** Public visibility is an intentional founder decision for now. Audit repository history and current files for accidentally committed credentials, tokens, private learner/tutor data and other secrets. Rotate any exposed credentials and remove sensitive data from history using an approved procedure; never publish secrets in source.
 2. **Privileged database functions:** Review all 28 SECURITY DEFINER functions, starting with anonymous execution and administrator/AI/payment functions. Confirm caller authorization, fixed search_path, least-privilege grants and auditability.
 3. **RLS policy correctness:** Build a table-by-table access matrix for learner, parent, tutor, administrator, staff, anonymous and service contexts. Test cross-account isolation, parent-child relationship scope, tutor booking scope and staff delegation.
 4. **Payment integrity:** Reconcile Yoco checkout/webhook verification, idempotency, order/subscription state transitions, refunds and ledger records. No live payment was initiated.
@@ -85,7 +85,7 @@ A release must not be called production-ready until the relevant evidence exists
 
 ## Immediate next actions
 
-1. Confirm repository visibility intent; do not assume README text overrides GitHub metadata.
+1. Audit public repository contents and history for secrets and personal data; remediate any exposure with a controlled rotation and history-cleanup plan.
 2. Map the main branch, open PRs, deployment commit and Amplify branch/environment state.
 3. Read the existing functional audit, action items, release gates and migration baseline; reconcile historical claims with the live project.
 4. Produce a table/function-level security review and access matrix before changing RLS or grants.
