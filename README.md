@@ -6,24 +6,16 @@ SmartBridge FET is an EdTech platform built for South African learners, parents,
 
 ---
 
-## 🔒 Important: Private Repository
+## Repository visibility and intellectual property
 
-**This repository is private and confidential.**
+This repository is **publicly viewable by founder decision** to support development, review and collaboration. Public visibility does not grant permission to reuse, redistribute, rebrand or commercially exploit the code, designs, content or documentation. No open-source licence is granted by this notice; all rights remain with Tech & GUARD Pty Ltd unless a separate written licence says otherwise.
 
-- **Do NOT fork** this repository
-- **Do NOT share** access with unauthorized persons
-- **All code, designs, and documentation** are proprietary to Tech & GUARD Pty Ltd
-- **Unauthorized distribution** will result in legal action
+- Do not commit API keys, passwords, access tokens, signing secrets, service-role credentials or populated environment files.
+- Do not commit learner, parent, tutor or staff personal information, identity documents, private messages, payment records or production exports.
+- Keep production credentials in the relevant provider's server-side secret manager. All `VITE_*` variables are public and become visible in the browser bundle.
+- Write access remains limited to people explicitly authorised by the repository owner.
+- Report suspected secret or personal-data exposure immediately so credentials can be rotated and affected history remediated.
 
----
-
-## 👥 Authorized Access Only
-
-| Role | Access Level |
-|------|--------------|
-| **Founder/Lead Developer** | Full access |
-| **Development Team** | Read/write access (by invitation only) |
-| **External Contractors** | Limited access (specific branches only) |
 
 ---
 
