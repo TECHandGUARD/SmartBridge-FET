@@ -7,7 +7,7 @@ const closedDiagnosticFunctions=new Set(['gatewayReadinessDiagnostic','cooDelive
 const request=(body={},headers={Authorization:'Bearer test-user'})=>new Request('https://example.test/function',{method:'POST',headers:{'Content-Type':'application/json',...headers},body:JSON.stringify(body)});
 
 test('all user/job function handlers handle preflight and reject missing authentication before querying or sending', async()=>{
- for(const name of names.filter(name=>!['yocoWebhook','resendWebhook','cooReminderUnsubscribe'].includes(name)&&!closedDiagnosticFunctions.has(name))){
+ for(const name of names.filter(name=>!['yocoWebhook','resendWebhook','cooReminderUnsubscribe','groqStudyAssistant'].includes(name)&&!closedDiagnosticFunctions.has(name))){
   const client=fakeClient();const runtime=edgeRuntime(name,{client});
   const preflight=await runtime.handle(new Request('https://example.test/function',{method:'OPTIONS'}));
   assert.equal(preflight.status,200,name);assert.ok(preflight.headers.get('Access-Control-Allow-Headers').includes('x-job-secret'));
@@ -103,6 +103,16 @@ test('study reminders accept stored seconds and record acceptance to skip a repe
  const second=await runtime.handle(request({}, {'x-job-secret':'job'}));assert.equal((await second.json()).sent,0);assert.equal(sends,1);assert.equal(reminder.last_notified_at,'2026-10-11T14:00:00.000Z');
 });
 
+
+test('restored Groq study assistant uses its standalone Deno entrypoint and retains server-side admin and quota gates',()=>{
+ const source=fs.readFileSync('supabase/functions/groqStudyAssistant/index.ts','utf8');
+ assert.match(source,/Deno\\.serve/);
+ assert.match(source,/req\.method==='OPTIONS'/);
+ assert.match(source,/db\.auth\.getUser/);
+ assert.match(source,/profile\.role!=='admin'/);
+ assert.match(source,/consume_api_quota/);
+ assert.match(source,/GROQ_API_KEY/);
+});
 
 test('closed diagnostic and delivery smoke endpoints remain inert HTTP 410 tombstones',async()=>{
  for(const [folder,file] of [['gatewayReadinessDiagnostic','index.ts'],['cooDeliverySmoke','index.ts']]){
