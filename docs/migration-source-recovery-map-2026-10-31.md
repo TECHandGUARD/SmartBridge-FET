@@ -142,3 +142,38 @@ PR #71 provides candidate source for the opt-out endpoint, suppression/token rou
 ## Explicit hold
 
 Until the mismatch is resolved, do not run `supabase db push`, reset or repair production migration history, apply the seven repository-only files, merge backend migration changes, or enable peer-call/COO schedulers. No production database changes were made as part of this inventory.
+
+## COO migration candidate-to-live comparison — 31 October 2026
+
+A second read-only comparison used the live migration ledger, PostgreSQL function definitions and table catalog metadata, and the SQL patches in PRs #66, #68 and #71. It narrows the recovery decision but does **not** establish original SQL byte equivalence.
+
+### What the live catalog proves
+
+The live ledger contains nine separately applied COO versions:
+
+- 20261025183150_coo_tutor_onboarding
+- 20261025184443_coo_onboarding_disabled_schedule
+- 20261025184627_coo_resend_vault_signing_key_access
+- 20261025184847_coo_scheduler_secret_and_control
+- 20261025185139_coo_service_role_acl_based_auth
+- 20261025185407_coo_daily_executive_reporting
+- 20261025185515_coo_tutor_72_hour_cooldown
+- 20261025195021_coo_admin_reminders_opt_out
+- 20261025195318_coo_reenable_reminders
+
+The recovered PR candidates are not a one-to-one history: PR #66 has a single onboarding/log/reservation migration at 20261025203000; PR #68 combines scheduler secrets, reporting and a cron setup in 20261025220000; PR #71 combines opt-out and reservation changes in 20261025223500, then adds re-enable logic at 20261025224500. Their timestamps and transaction boundaries differ from the nine live versions. Do not split or rename those combined candidates into historical versions without recovering the original commits or documenting a reconstruction decision.
+
+### Material differences between candidate SQL and live routines
+
+- The live public.coo_reserve_email(uuid,text,text,text[]) accepts only profile_48h and profile_72h, serializes the daily quota with an advisory transaction lock, requires an active tutor account, checks the preference field, checks the suppression table, enforces a 72-hour cooldown, caps the Africa/Johannesburg day at 25, and uses a unique tutor/campaign reservation.
+- PR #66's initial candidate includes an explicit service-role claim check and daily quota, but does not include the later active-account, preference, suppression or cooldown checks.
+- PR #68's combined candidate adds the 72-hour cooldown and scheduler/reporting routines, but its reservation routine does not include the later preference and suppression checks.
+- PR #71's candidate adds the preference denylist, suppression and 72-hour cooldown, but does not prove the exact live function body or historical point at which each control was introduced. The live function's effective execution boundary must be confirmed from its ACL, not inferred from the body alone.
+- The live preference check is still not fail-closed: it rejects known opt-out strings but allows NULL and unknown values. The tracked Edge Function has a stricter explicit allowlist. A future forward migration should make the database RPC independently fail closed; do not silently rewrite a historical migration to pretend that control already existed.
+- The live unsubscribe token table has a created_at column but no expiry column. The live issue/redeem functions use search_path=public; redemption records suppression, changes the tutor preference to none, and consumes all outstanding tokens for that tutor. Token age is not checked. These are confirmed current-state gaps, not evidence that the original migration lacked other logic.
+- The live coo_reenable_reminders() is identity-scoped to the authenticated active tutor, removes that tutor's suppression and sets the preference to email. Its consent semantics need product/legal review before reminder automation is enabled.
+- The scheduler setting is disabled in the live database. The PR #68 candidate contains cron scheduling SQL, but that source does not mean the live scheduler is currently enabled. Preserve the disabled state.
+
+### Recovery decision
+
+PR #66/#68/#71 provide useful candidate provenance, but their SQL is materially different from the current live function definitions and combines several changes that the live ledger records as separate versions. The exact SQL for all nine versions remains **unrecovered**. Next, inspect the original commit history for the exact nine versioned files; if that fails, create clearly labelled catalog-derived reconstruction candidates with a per-object comparison matrix and separate them from any forward security hardening. No production changes or scheduler activation were performed.
