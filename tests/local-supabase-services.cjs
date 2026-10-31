@@ -27,6 +27,18 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   return {client,id:signup.user.id,email,token:signup.session.access_token};}
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
+ const trainingAdmin=await account('student');
+ ok(await admin.from('users').update({role:'admin',is_active:true}).eq('id',trainingAdmin.id));
+ const trainingDraft=ok(await trainingAdmin.client.from('ai_executive_training').insert({executive:'COO',instruction:'Use consent-aware onboarding and human approval.',status:'draft',version:1,created_by:trainingAdmin.id}).select('id').single());
+ assert.equal(ok(await trainingAdmin.client.from('ai_executive_training').select('id').eq('id',trainingDraft.id).single()).id,trainingDraft.id);
+ for(const accountRow of [student,other,parent,tutor]){
+  assert.deepEqual(ok(await accountRow.client.from('ai_executive_training').select('id').eq('id',trainingDraft.id)),[],'Only active administrators may read executive training drafts');
+  assert.deepEqual(ok(await accountRow.client.from('ai_executive_training_audit').select('id')),[],'Non-admin roles cannot read training audit records');
+  assert.ok((await accountRow.client.from('ai_executive_training').insert({executive:'CFO',instruction:'Attempted unauthorized training instruction.',created_by:accountRow.id,status:'draft',version:1})).error,'Non-admin cannot create executive training');
+ }
+ assert.ok((await trainingAdmin.client.from('ai_executive_training').update({status:'approved'}).eq('id',trainingDraft.id)).error,'Admin draft cannot be activated through direct update');
+ assert.ok((await trainingAdmin.client.from('ai_executive_training_audit').insert({id:900001,training_id:trainingDraft.id,actor_id:trainingAdmin.id,old_status:'draft',new_status:'approved'})).error,'Audit records cannot be fabricated through client insert');
+ console.log('PASS: executive training is admin-only, draft-only, and audit records are not client-writable');
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
