@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 // This is a route visibility checklist, not a deployment-status service.
 // A successful HTTP response cannot establish role permissions or feature health.
 const features = [
-  ['AI Executive Boardroom', '/admin/ai-boardroom', 'Admin only · preview'],
   ['Communication Hub', '/communication', 'Role-dependent'],
   ['Learning Hub', '/learning-hub', 'Role-dependent'],
   ['Practice & Assessments', '/practice-hub', 'Role-dependent'],
