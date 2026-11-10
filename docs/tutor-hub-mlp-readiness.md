@@ -1,39 +1,43 @@
 # Tutor Hub MLP implementation readiness
 
-## Scope delivered on this branch
+## Scope implemented on this branch
 
-This branch repairs and hardens the existing tutor workspace rather than adding a second dashboard or introducing paid services. The navigation now defines ten destinations and separates Profile from Reviews. Students and Earnings remain release-gated, so eight destinations are currently visible.
+This branch repairs and hardens the existing tutor workspace rather than adding a second dashboard or paid services. Navigation defines ten destinations and separates Profile from Reviews. Students and Earnings remain release-gated, leaving eight visible destinations.
 
-- **Learner progress:** reads the live `student_progress` and `study_sessions` tables, joins by `student_id`, and starts from bookings owned by the authenticated tutor. It no longer queries the absent `study_progress` view or missing `users.grade` / `users.parent_email` fields.
-- **Learner CRM:** loads notes and bookings using `tutor_id`, keeps learner identity by UUID, and writes `student_id` with each note. It only builds the tutor's learner list from confirmed/completed bookings. Notes default to private; tutors can explicitly share or unshare a note. RLS allows learner reads only when the note is shared, non-confidential and not archived. Parent accounts do not receive note access through this policy. A further RLS migration now requires a confirmed/completed tutor-booking relationship when a tutor creates or reassigns a note.
-- **Lesson-plan privacy:** the base `lesson_plans` row includes tutor-only reflection notes. The new migration removes the learner SELECT policy so students cannot read those private fields. The existing email action sends only the safe lesson-plan projection (title, objectives, resources and homework), after verifying the tutor and booking relationship.
-- **Lesson-plan archiving:** adds an `is_archived` column, filters archived plans from the tutor list and replaces a DELETE action (not allowed by live RLS) with an owner-scoped archive update. Tutor creation/update RLS also requires a confirmed/completed booking relationship with the learner.
-- **Lesson planning:** scopes plans/bookings by tutor UUID, links plans to learner UUIDs, reads canonical progress rows, and stores the selected booking reference in the existing `metadata` JSON column because `lesson_plans.booking_id` is not in the live schema.
-- **Booking requests:** scopes list/realtime updates to the authenticated tutor UUID and constrains session completion to the tutor's own confirmed booking. The calendar is now read-only for status changes and routes pending requests to Booking Requests, preventing a second path from bypassing payment checks.
-- **Resource management:** loads tutor-owned active resources by UUID and archives a resource by setting `is_archived=true` and `is_approved=false`. It no longer calls a DELETE operation that the live tutor RLS policy does not permit.
+- **Learner progress:** reads canonical `student_progress`, `study_sessions`, and `tutor_bookings` data using learner UUIDs and the authenticated tutor's booking relationships. It no longer queries the absent `study_progress` view or missing `users.grade` / `users.parent_email` fields. It shows an explicit no-data state rather than inventing scores.
+- **Learner CRM:** uses tutor and learner UUIDs. Notes default to private; tutors can explicitly share/unshare notes. A migration restricts learner reads to shared, non-confidential, non-archived notes. Parent accounts do not receive note access through this policy. Another migration requires a confirmed/completed tutor booking before a tutor can create or reassign a note.
+- **Lesson-plan privacy:** the underlying `lesson_plans` row contains private tutor reflection notes. A migration removes the learner SELECT policy so learners cannot read the raw row. The existing `sendEmail` lesson-plan action was inspected: it checks verified tutor role, tutor ownership, and a confirmed/completed booking, and emails only title, objectives, resources and homework.
+- **Lesson-plan archiving:** adds `is_archived`, filters archived plans from the active list, and replaces a tutor DELETE operation with an owner-scoped archive update. Tutor create/update RLS also requires a confirmed/completed booking relationship.
+- **Booking workflow:** scopes requests and realtime updates to the authenticated tutor UUID. Completion is constrained to the tutor's own confirmed booking. The calendar is read-only for booking state changes and routes pending requests to Booking Requests, preserving the payment gate.
+- **Availability:** scopes loading and deletion to the authenticated tutor UUID.
+- **Resources:** loads tutor-owned active resources by UUID and archives owned resources by setting `is_archived=true` and `is_approved=false`. A migration adds a database trigger that prevents tutors from self-approving, rejecting, featuring, or changing moderation/engagement metrics. Tutors can still edit their own content and archive it; administrator/service-role moderation remains available.
+- **CSV export:** escapes spreadsheet formula-leading values to reduce formula-injection risk.
 
-## Live evidence checked
+## Live evidence inspected (read-only)
 
-The connected Supabase project currently reports:
-
+The connected Supabase project reported:
 - 6 tutor profile rows
 - 1 confirmed booking, 1 pending booking and 4 cancelled bookings
 - 0 rows in `student_progress`
 - 0 rows in `study_sessions`
 
-Therefore the learner analytics UI can be made schema-correct, but real score/progress charts cannot yet be validated against live learner activity. The UI explicitly shows when learning data has not been recorded and does not invent scores.
+Live RLS policies and table columns were inspected for tutor bookings, learner progress, study sessions, lesson plans, CRM notes, resources, availability and tutor profiles. The migrations in this branch have **not** been applied to production.
 
-## Release gates that remain
+Because live progress/session tables are empty, real score/progress charts cannot yet be validated against learner activity. The UI shows an explicit awaiting-data state.
 
-1. **Do not enable the Students section yet.** The live `student_notes` student-read policy currently checks only `auth.uid() = student_id`; it does not enforce `is_shared_with_student`, `is_confidential`, or archive state. Decide the intended student/parent visibility model and tighten/test RLS before presenting tutor notes as confidential.
-2. **Populate and verify learning data.** Complete an authenticated student study session and confirm that `student_progress` and `study_sessions` update; then verify that only the tutor with a confirmed/completed booking can read those rows.
-3. **Run end-to-end tutor tests with separate tutor and learner accounts.** Cover profile save/reload, availability changes, booking request transitions, lesson-plan create/edit, CRM note create/read, resource upload/archive, and messaging.
-4. **Keep earnings and banking disabled.** Payout details, payout ledger, fee calculation, statements and reconciliation still require a private server-side design and separate tests.
-5. **Keep rescheduling and attendance disabled** until the relevant backend contracts, schema and ownership checks are confirmed.
+## Release gates remaining
+
+1. Run the latest local Supabase Auth/PostgREST tests against the new note-sharing, tutor/learner relationship, lesson-plan privacy/archive and resource moderation migrations.
+2. Complete the full GitHub Actions suite, including build and Playwright browser suites. The unrelated Opportunities browser test timed out in an earlier run; latest run status is tracked in PR #103.
+3. Perform authenticated end-to-end acceptance with separate tutor and learner accounts: profile save/reload, availability, booking request transitions, lesson-plan create/edit/email share, CRM note privacy/share/unshare, resource upload/archive/moderation, and messaging.
+4. Apply reviewed database migrations and deploy the matching code only after CI and acceptance tests pass. Then verify the live app with non-production test accounts before enabling the Students section.
+5. Generate real learner progress and completed study-session records and verify that only the tutor with a confirmed/completed booking can read the learner data.
+6. Keep Earnings/banking disabled until private payout details, ledger, fee calculation, statements and reconciliation have a secure server-side implementation.
+7. Keep rescheduling and attendance disabled until their backend contracts, schema and ownership checks are confirmed.
 
 ## Verification status
 
 - Six focused Node unit tests for learner aggregation, risk flags, grade filtering, date cutoffs and CSV escaping passed in an isolated local test run.
-- Full repository install/build/lint and authenticated browser tests have not yet run in this environment.
+- On the latest full Actions run snapshot before the most recent RLS/resource tests, mobile checks, ESLint, TypeScript, repository unit tests, Python tests, database/API/Edge checks and production build passed. The local Supabase service and Playwright suites were still running at last check.
 - No production schema, user data, payment configuration or production deployment was changed.
-- This branch is a draft implementation for review; it is not a live release.
+- PR #103 remains a draft. This branch is not a live release.
