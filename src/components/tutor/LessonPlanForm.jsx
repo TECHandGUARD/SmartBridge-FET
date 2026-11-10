@@ -99,7 +99,7 @@ export default function LessonPlanForm({
     homework_assigned: plan?.homework_assigned || '',
     notes: plan?.notes || '',
     status: plan?.status || 'draft',
-    booking_id: plan?.booking_id || ''
+    booking_id: plan?.metadata?.booking_id || ''
   });
   const set = (key, val) => setForm(prev => ({
     ...prev,
@@ -151,6 +151,7 @@ export default function LessonPlanForm({
     const stu = students.find(s => s.email === email);
     set('student_email', email);
     set('student_name', stu?.name || email);
+    set('student_id', stu?.id || '');
   };
   const selectBooking = bookingId => {
     const booking = upcomingBookings.find(b => b.id === bookingId);
@@ -158,6 +159,7 @@ export default function LessonPlanForm({
       set('booking_id', bookingId);
       set('student_email', booking.student_email);
       set('student_name', booking.student_name || booking.student_email);
+      set('student_id', booking.student_id || '');
       set('subject', booking.subject);
       set('session_date', booking.date);
       toast.success('Linked to booking! You can now edit details if needed.');
@@ -262,12 +264,15 @@ export default function LessonPlanForm({
         homework_assigned: form.homework_assigned,
         notes: form.notes,
         status: form.status,
-        booking_id: form.booking_id || null,
+        student_id: form.student_id || null,
+        metadata: { ...(plan?.metadata || {}), booking_id: form.booking_id || null },
         updated_at: new Date().toISOString()
       };
       const {
         data: progRecords
-      } = await supabase.from('study_progress').select('id').eq('user_email', form.student_email).eq('subject', form.subject).maybeSingle();
+      } = form.student_id
+        ? await supabase.from('student_progress').select('id').eq('student_id', form.student_id).eq('subject', form.subject).maybeSingle()
+        : { data: null };
       if (progRecords) {
         payload.student_progress_id = progRecords.id;
       }
