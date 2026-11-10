@@ -33,7 +33,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
  const relationship=ok(await admin.from('tutor_bookings').insert({
   tutor_id:tutor.id,student_id:student.id,tutor_email:tutor.email,student_email:student.email,
-  subject:'Mathematics',date:'2099-12-01',time:'10:00',status:'confirmed'
+  subject:'Mathematics',date:'2099-12-02',time:'15:00',status:'confirmed'
  }).select('id').single());
 
  // Learner notes stay private until a tutor explicitly shares a non-confidential note.
