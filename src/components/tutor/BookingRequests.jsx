@@ -134,7 +134,7 @@ export default function BookingRequests({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadData]);
+  }, [user?.id, loadData]);
 
   const accept = async booking => {
     if (!bookingFundingReady(booking) || booking.proposed_date) { toast.error('Verified payment or acceptance of the proposed time is required.'); return; }
