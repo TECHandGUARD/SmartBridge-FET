@@ -31,6 +31,10 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  // Tutor-only RLS requires a verified, active tutor profile.
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
+ const relationship=ok(await admin.from('tutor_bookings').insert({
+  tutor_id:tutor.id,student_id:student.id,tutor_email:tutor.email,student_email:student.email,
+  subject:'Mathematics',date:'2099-12-01',time:'10:00',status:'confirmed'
+ }).select('id').single());
 
  // Learner notes stay private until a tutor explicitly shares a non-confidential note.
  const privateNote=ok(await tutor.client.from('student_notes').insert({
@@ -39,6 +43,11 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  }).select('*').single());
  assert.equal(privateNote.is_shared_with_student,false);
  assert.equal(privateNote.is_confidential,false);
+ assert.ok((await tutor.client.from('student_notes').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:other.email,student_id:other.id,
+  student_name:'Unrelated learner',note:'Must be denied',subject:'Mathematics'
+ })).error,'Tutor cannot create notes for a learner without a confirmed/completed booking');
+ assert.ok((await tutor.client.from('student_notes').update({student_id:other.id,student_email:other.email}).eq('id',privateNote.id)).error,'Tutor cannot reassign a note to an unrelated learner');
  assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
  assert.deepEqual(ok(await parent.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
  assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
@@ -63,6 +72,11 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await student.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
  assert.deepEqual(ok(await parent.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
  assert.deepEqual(ok(await other.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:other.email,student_id:other.id,
+  student_name:'Unrelated learner',session_date:'2099-12-02',session_title:'Unauthorized plan',
+  subject:'Mathematics',grade:'Grade 10',objectives:['Test'],notes:'Should be denied'
+ })).error,'Tutor cannot create lesson plans for an unrelated learner');
  ok(await tutor.client.from('lesson_plans').update({is_archived:true}).eq('id',plan.id).eq('tutor_id',tutor.id));
  assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id).eq('is_archived',true)).length,1);
  console.log('PASS: private lesson-plan base rows are tutor-only and archive state is writable by owner');
