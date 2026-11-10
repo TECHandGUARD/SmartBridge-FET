@@ -105,7 +105,7 @@ const assert=require('node:assert/strict');
  const monthLabel=now.toLocaleString('en-US',{month:'long'});
  bookingRows=[{id:'booking-pending-calendar',tutor_id:profile.id,student_id:'learner-1',student_email:'learner@example.test',student_name:'Test Learner',subject:'Mathematics',date:today,time:'10:00',duration_hours:1,amount:20,status:'pending'}];
  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=availability');
- await page.getByText('Booking Calendar',{exact:true}).waitFor();
+ await page.getByRole('heading',{name:/Booking Calendar/}).waitFor();
  await page.getByRole('button',{name:`${now.getDate()} ${monthLabel} ${now.getFullYear()} - 1 bookings`}).click();
  await page.getByRole('link',{name:'Manage request',exact:true}).waitFor();
  assert.equal(await page.getByRole('button',{name:/confirm|decline/i}).count(),0,'Calendar must not expose a direct booking confirmation or decline action');
