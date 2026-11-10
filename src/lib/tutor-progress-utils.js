@@ -97,7 +97,11 @@ export function buildTutorProgressSummary({ bookings = [], progress = [], sessio
 }
 
 export function toCsv(rows) {
-  const quote = (value) => '"' + String(value ?? '').replace(/"/g, '""') + '"';
+  const quote = (value) => {
+    const raw = String(value ?? '');
+    const safe = /^[\\s]*[=+\\-@]/.test(raw) ? `'${raw}` : raw;
+    return '"' + safe.replace(/"/g, '""') + '"';
+  };
   const headers = ['Learner', 'Grade', 'Subjects', 'Completed sessions', 'Average score (%)', 'Progress (%)', 'At risk', 'Last activity'];
   const body = rows.map((learner) => [
     learner.name, learner.grade, learner.subjects.join('; '), learner.sessions,
