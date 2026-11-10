@@ -90,6 +90,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  // Tutors can archive their own resources but cannot self-approve or alter moderation fields.
  const resource=ok(await tutor.client.from('resources').insert({
   title:'Local test resource',subject:'Mathematics',grade:'Grade 10',type:'Notes',
+  file_url:`storage://tutor-resources/${tutor.id}/local-test.pdf`,
   tutor_id:tutor.id,tutor_email:tutor.email,is_approved:false,is_rejected:false,is_archived:false
  }).select('*').single());
  assert.ok((await tutor.client.from('resources').update({is_approved:true}).eq('id',resource.id)).error,'Tutor cannot self-approve resources');
