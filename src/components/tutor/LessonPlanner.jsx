@@ -59,7 +59,7 @@ function LessonPlannerImplementation({
       const {
         data: plansData,
         error: plansError
-      } = await supabase.from('lesson_plans').select('*').eq('tutor_id', user.id).order('session_date', {
+      } = await supabase.from('lesson_plans').select('*').eq('tutor_id', user.id).eq('is_archived', false).order('session_date', {
         ascending: false
       });
       if (plansError) throw plansError;
@@ -191,7 +191,7 @@ function LessonPlannerImplementation({
         status: 'completed',
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }).eq('id', plan.id);
+      }).eq('id', plan.id).eq('tutor_id', user.id).eq('is_archived', false);
       if (updateError) throw updateError;
       setPlans(prev => prev.map(p => p.id === plan.id ? {
         ...p,
@@ -281,18 +281,20 @@ function LessonPlannerImplementation({
     }
   };
   const handleDelete = async id => {
-    if (!confirm('Are you sure you want to delete this lesson plan? This action cannot be undone.')) return;
+    if (!confirm('Archive this lesson plan? It will be removed from your active lesson plans.')) return;
     try {
-      const {
-        error
-      } = await supabase.from('lesson_plans').delete().eq('id', id);
+      const { error } = await supabase.from('lesson_plans')
+        .update({ is_archived: true, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('tutor_id', user.id)
+        .eq('is_archived', false);
       if (error) throw error;
       setPlans(prev => prev.filter(p => p.id !== id));
-      toast.success('Lesson plan deleted');
+      toast.success('Lesson plan archived');
       if (onLessonUpdate) onLessonUpdate();
     } catch (err) {
-      console.error('Error deleting lesson plan:', err);
-      toast.error('Failed to delete lesson plan');
+      console.error('Error archiving lesson plan:', err);
+      toast.error('Failed to archive lesson plan');
     }
   };
   const exportPlans = () => {
