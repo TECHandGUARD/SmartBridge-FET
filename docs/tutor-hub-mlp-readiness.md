@@ -2,7 +2,7 @@
 
 ## Scope delivered on this branch
 
-This branch repairs and hardens the existing tutor workspace rather than adding a second dashboard or introducing paid services. The navigation now separates Profile and Reviews into distinct destinations, bringing the tutor hub to ten navigation sections.
+This branch repairs and hardens the existing tutor workspace rather than adding a second dashboard or introducing paid services. The navigation now defines ten destinations and separates Profile from Reviews. Students and Earnings remain release-gated, so eight destinations are currently visible.
 
 - **Learner progress:** reads the live `student_progress` and `study_sessions` tables, joins by `student_id`, and starts from bookings owned by the authenticated tutor. It no longer queries the absent `study_progress` view or missing `users.grade` / `users.parent_email` fields.
 - **Learner CRM:** loads notes and bookings using `tutor_id`, keeps learner identity by UUID, and writes `student_id` with each note. It only builds the tutor's learner list from confirmed/completed bookings.
