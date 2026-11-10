@@ -88,10 +88,15 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  }).select('*').single());
  assert.ok((await tutor.client.from('resources').update({is_approved:true}).eq('id',resource.id)).error,'Tutor cannot self-approve resources');
  assert.ok((await tutor.client.from('resources').update({is_featured:true}).eq('id',resource.id)).error,'Tutor cannot feature resources');
- ok(await tutor.client.from('resources').update({is_archived:true,is_approved:false}).eq('id',resource.id).eq('tutor_id',tutor.id));
- assert.equal(ok(await tutor.client.from('resources').select('is_archived,is_approved').eq('id',resource.id).single()).is_archived,true);
  assert.equal(ok(await admin.from('resources').update({is_approved:true,approved_at:new Date().toISOString()}).eq('id',resource.id).select('is_approved').single()).is_approved,true);
- console.log('PASS: tutor resource archive works; self-approval/featuring denied; service-role moderation remains available');
+ assert.equal(ok(await student.client.from('resources').select('id').eq('id',resource.id)).length,1,'Approved, active resources are publicly visible');
+ assert.ok((await tutor.client.from('resources').update({is_approved:false}).eq('id',resource.id)).error,'Tutor cannot alter admin approval status');
+ ok(await tutor.client.from('resources').update({is_archived:true}).eq('id',resource.id).eq('tutor_id',tutor.id));
+ const archivedResource=ok(await tutor.client.from('resources').select('is_archived,is_approved').eq('id',resource.id).single());
+ assert.equal(archivedResource.is_archived,true);
+ assert.equal(archivedResource.is_approved,true,'Archiving must not overwrite admin approval history');
+ assert.deepEqual(ok(await student.client.from('resources').select('id').eq('id',resource.id)),[],'Archived resources are hidden from public listings');
+ console.log('PASS: tutors cannot self-approve or change moderation; archiving preserves approval history and hides the resource publicly');
 
 
  // Presentations use real authenticated REST and private account ownership.
