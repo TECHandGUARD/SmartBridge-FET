@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { CalendarDays, ChevronLeft, ChevronRight, CheckCircle, XCircle, Clock, Loader2, AlertCircle, Shield } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Loader2, AlertCircle, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -44,14 +45,13 @@ export default function BookingCalendar({ user }) {
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
   const [selected, setSelected] = useState(null);
-  const [processingId, setProcessingId] = useState(null);
 
   // ============================================================
   // Load Bookings
   // ============================================================
 
   const loadBookings = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -63,7 +63,7 @@ export default function BookingCalendar({ user }) {
       const { data, error: bookingsError } = await supabase
         .from('tutor_bookings')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_id', user.id)
         .order('date', { ascending: true });
 
       if (bookingsError) throw bookingsError;
@@ -75,7 +75,7 @@ export default function BookingCalendar({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
 
   // ============================================================
   // Real-time Subscription
@@ -84,7 +84,7 @@ export default function BookingCalendar({ user }) {
   useEffect(() => {
     loadBookings();
 
-    if (!user?.email) return;
+    if (!user?.id) return;
 
     const channel = supabase
       .channel('booking_calendar')
@@ -94,7 +94,7 @@ export default function BookingCalendar({ user }) {
           event: '*',
           schema: 'public',
           table: 'tutor_bookings',
-          filter: `tutor_email=eq.${user.email}`,
+          filter: `tutor_id=eq.${user.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -112,99 +112,11 @@ export default function BookingCalendar({ user }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadBookings]);
+  }, [user?.id, loadBookings]);
 
   // ============================================================
   // Confirm Booking
   // ============================================================
-
-  const confirm = async (booking) => {
-    setProcessingId(booking.id);
-
-    try {
-      const { error: updateError } = await supabase
-        .from('tutor_bookings')
-        .update({
-          status: 'confirmed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-
-      if (updateError) throw updateError;
-
-      setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'confirmed' } : b));
-
-      // Log activity for POPIA compliance
-      await Promise.resolve(supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'booking_confirmed',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: `Confirmed booking for ${booking.student_email} - ${booking.subject}`,
-          metadata: {
-            booking_id: booking.id,
-            student_email: booking.student_email,
-            subject: booking.subject,
-            date: booking.date,
-            time: booking.time
-          }
-        }))
-        .catch(() => {});
-
-      toast.success('Booking confirmed!');
-    } catch (err) {
-      console.error('Error confirming booking:', err);
-      toast.error('Failed to confirm booking');
-    } finally {
-      setProcessingId(null);
-    }
-  };
-
-  // ============================================================
-  // Cancel Booking
-  // ============================================================
-
-  const cancel = async (booking) => {
-    setProcessingId(booking.id);
-
-    try {
-      const { error: updateError } = await supabase
-        .from('tutor_bookings')
-        .update({
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-
-      if (updateError) throw updateError;
-
-      setBookings(prev => prev.map(b => b.id === booking.id ? { ...b, status: 'cancelled' } : b));
-
-      // Log activity for POPIA compliance
-      await Promise.resolve(supabase
-        .from('activity_log')
-        .insert({
-          event_type: 'booking_cancelled',
-          user_email: user.email,
-          user_id: user.id || null,
-          description: `Cancelled booking for ${booking.student_email} - ${booking.subject}`,
-          metadata: {
-            booking_id: booking.id,
-            student_email: booking.student_email,
-            subject: booking.subject
-          }
-        }))
-        .catch(() => {});
-
-      toast.info('Booking cancelled.');
-    } catch (err) {
-      console.error('Error cancelling booking:', err);
-      toast.error('Failed to cancel booking');
-    } finally {
-      setProcessingId(null);
-    }
-  };
 
   // ============================================================
   // Navigation
@@ -397,34 +309,9 @@ export default function BookingCalendar({ user }) {
                       {b.message && <p className="text-xs text-muted-foreground italic truncate">"{b.message}"</p>}
                     </div>
                     {b.status === 'pending' && (
-                      <div className="flex gap-1 flex-shrink-0">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-green-600 hover:bg-green-50 dark:hover:bg-green-950/20"
-                          onClick={() => confirm(b)}
-                          disabled={processingId === b.id}
-                        >
-                          {processingId === b.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <CheckCircle className="w-4 h-4" />
-                          )}
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:bg-red-50 dark:hover:bg-red-950/20"
-                          onClick={() => cancel(b)}
-                          disabled={processingId === b.id}
-                        >
-                          {processingId === b.id ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : (
-                            <XCircle className="w-4 h-4" />
-                          )}
-                        </Button>
-                      </div>
+                      <Link to="/tutor-dashboard?section=bookings" className="shrink-0 text-xs font-medium text-primary underline underline-offset-2">
+                        Manage request
+                      </Link>
                     )}
                   </div>
                 ))}
@@ -438,7 +325,7 @@ export default function BookingCalendar({ user }) {
           <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center gap-2 dark:bg-amber-950/20 dark:border-amber-800">
             <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-              {pendingCount} pending booking request{pendingCount !== 1 ? 's' : ''}
+              {pendingCount} pending booking request{pendingCount !== 1 ? 's' : ''}. Manage requests in Booking Requests.
             </p>
             <Button
               size="sm"
