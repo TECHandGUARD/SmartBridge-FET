@@ -39,7 +39,7 @@ export default function StudentCRM({
     mood: 'Neutral'
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -49,14 +49,14 @@ export default function StudentCRM({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('date', {
+      } = await supabase.from('tutor_bookings').select('id, student_id, student_email, student_name, subject, date, amount, status').eq('tutor_id', user.id).in('status', ['confirmed', 'completed']).order('date', {
         ascending: false
       });
       if (bookingsError) throw bookingsError;
       const {
         data: notesData,
         error: notesError
-      } = await supabase.from('student_notes').select('*').eq('tutor_email', user.email).order('created_at', {
+      } = await supabase.from('student_notes').select('*').eq('tutor_id', user.id).order('created_at', {
         ascending: false
       });
       if (notesError) throw notesError;
@@ -69,37 +69,37 @@ export default function StudentCRM({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   const students = useMemo(() => {
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.student_email]) {
-        map[b.student_email] = {
-          email: b.student_email,
-          sessions: 0,
-          subjects: new Set(),
-          lastSession: null,
-          totalSpent: 0
+      if (!b.student_id) return;
+      if (!map[b.student_id]) {
+        map[b.student_id] = {
+          id: b.student_id, email: b.student_email, name: b.student_name || b.student_email,
+          sessions: 0, subjects: new Set(), lastSession: null, totalBookedValue: 0
         };
       }
-      map[b.student_email].sessions++;
-      map[b.student_email].subjects.add(b.subject);
-      map[b.student_email].totalSpent += b.amount || 0;
-      if (!map[b.student_email].lastSession || b.date > map[b.student_email].lastSession) {
-        map[b.student_email].lastSession = b.date;
-      }
+      map[b.student_id].sessions++;
+      if (b.subject) map[b.student_id].subjects.add(b.subject);
+      map[b.student_id].totalBookedValue += b.amount || 0;
+      if (!map[b.student_id].lastSession || b.date > map[b.student_id].lastSession) map[b.student_id].lastSession = b.date;
     });
     return Object.values(map).map(s => ({
       ...s,
       subjects: [...s.subjects]
     })).sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
   }, [bookings]);
-  const filteredStudents = students.filter(s => s.email.toLowerCase().includes(search.toLowerCase()));
-  const studentNotes = selectedStudent ? notes.filter(n => n.student_email === selectedStudent.email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
+  const filteredStudents = students.filter(s => (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.email || '').toLowerCase().includes(search.toLowerCase()));
+  const studentNotes = selectedStudent ? notes.filter(n => n.student_id === selectedStudent.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
   const handleAddNote = async () => {
+    if (!selectedStudent?.id) {
+      toast.error('Choose a linked learner before adding a note.');
+      return;
+    }
     if (!noteForm.note.trim()) {
       toast.error('Please write a note.');
       return;
@@ -114,7 +114,8 @@ export default function StudentCRM({
         tutor_email: user.email,
         tutor_id: user.id || null,
         student_email: selectedStudent.email,
-        student_name: selectedStudent.email,
+        student_id: selectedStudent.id,
+        student_name: selectedStudent.name,
         note: noteForm.note.trim(),
         subject: noteForm.subject || null,
         session_date: noteForm.session_date || null,
@@ -209,13 +210,14 @@ export default function StudentCRM({
                 </p>
               </div> : <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
                 {filteredStudents.map(s => {
-            const noteCount = notes.filter(n => n.student_email === s.email).length;
+            const noteCount = notes.filter(n => n.student_id === s.id).length;
             return <button key={s.email} onClick={() => setSelectedStudent(s)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {s.email[0].toUpperCase()}
+                        {(s.name || s.email || 'L')[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{s.email}</p>
+                        <p className="text-sm font-semibold truncate">{s.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{s.email}</p>
                         <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mt-0.5">
                           <span>{s.sessions} sessions</span>
                           <span>•</span>
@@ -224,7 +226,7 @@ export default function StudentCRM({
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-semibold text-primary">R{s.totalSpent.toLocaleString()}</p>
+                        <p className="text-xs font-semibold text-primary">R{s.totalBookedValue.toLocaleString()}</p>
                         {s.lastSession && <p className="text-[10px] text-muted-foreground">{s.lastSession}</p>}
                       </div>
                     </button>;
@@ -239,10 +241,11 @@ export default function StudentCRM({
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                {selectedStudent.email[0].toUpperCase()}
+                {(selectedStudent.name || selectedStudent.email || 'L')[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{selectedStudent.email}</p>
+                <p className="text-sm font-semibold truncate">{selectedStudent.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{selectedStudent.email}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {selectedStudent.sessions} sessions · {selectedStudent.subjects.join(', ')}
                 </p>
@@ -260,7 +263,7 @@ export default function StudentCRM({
               </div>
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">R{selectedStudent.totalSpent.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Revenue</p>
+                <p className="text-[10px] text-muted-foreground">Booked value</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">{studentNotes.length}</p>
