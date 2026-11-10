@@ -55,7 +55,7 @@ const assert=require('node:assert/strict');
  await page.waitForURL('**/tutor-dashboard');
  for(const width of [375,1280]) {
   await page.setViewportSize({width,height:900});
-  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=reviews');
+  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=profile');
   await page.getByText('Edit My Profile',{exact:true}).waitFor();
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('1200.50');
   await page.getByLabel('Mathematics (R/hour)').fill('20');
