@@ -57,7 +57,7 @@ export default function TutorAvailabilityManager({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadSlots();
     if (!user?.id) return;
@@ -273,7 +273,7 @@ export default function TutorAvailabilityManager({
     try {
       const {
         error: deleteError
-      } = await supabase.from('tutor_availability').delete().eq('id', id);
+      } = await supabase.from('tutor_availability').delete().eq('id', id).eq('tutor_id', user.id);
       if (deleteError) throw deleteError;
       setSlots(prev => prev.filter(s => s.id !== id));
       toast.success('Slot removed.');
