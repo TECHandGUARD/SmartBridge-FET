@@ -91,6 +91,7 @@ export default function LessonPlanForm({
     session_title: plan?.session_title || '',
     student_email: plan?.student_email || '',
     student_name: plan?.student_name || '',
+    student_id: plan?.student_id || '',
     session_date: plan?.session_date || new Date().toISOString().split('T')[0],
     subject: plan?.subject || '',
     grade: plan?.grade || 'Grade 12',
