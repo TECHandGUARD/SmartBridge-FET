@@ -75,7 +75,8 @@ const propTypes = {
     earnings: PropTypes.number,
     messages: PropTypes.number,
     bookings: PropTypes.number,
-    profile: PropTypes.number,\n    reviews: PropTypes.number,
+    profile: PropTypes.number,
+    reviews: PropTypes.number,
     'lesson-studio': PropTypes.number,
     sessions: PropTypes.number
   })
