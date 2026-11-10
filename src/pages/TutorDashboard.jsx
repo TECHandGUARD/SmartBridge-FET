@@ -85,7 +85,8 @@ export default function TutorDashboard() {
       const { data: resourceData, error: resourceError } = await supabase
         .from('resources')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_id', user.id)
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('created_at', { ascending: false });
 
       if (resourceError) throw resourceError;
@@ -124,7 +125,7 @@ export default function TutorDashboard() {
           if (payload.eventType === 'INSERT') {
             setResources(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+            setResources(prev => payload.new.is_archived ? prev.filter(r => r.id !== payload.new.id) : prev.map(r => r.id === payload.new.id ? payload.new : r));
           } else if (payload.eventType === 'DELETE') {
             setResources(prev => prev.filter(r => r.id !== payload.old.id));
           }
@@ -152,7 +153,7 @@ export default function TutorDashboard() {
       toast.success('Resource archived.');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete resource.');
+      toast.error('Failed to archive resource.');
     }
   };
 
