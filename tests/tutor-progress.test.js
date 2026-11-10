@@ -51,3 +51,8 @@ test('CSV export quotes commas and embedded quotation marks', () => {
   const csv = toCsv([{ name: 'Learner, "One"', grade: 'Grade 12', subjects: ['Maths'], sessions: 2, averageScore: 80, averageProgress: 70, atRisk: false, lastActivity: '2026-11-10' }]);
   assert.match(csv, /"Learner, ""One"""/);
 });
+
+test('CSV export neutralises spreadsheet formula values', () => {
+  const csv = toCsv([{ name: '=HYPERLINK("https://example.test","click")', grade: 'Grade 12', subjects: ['Maths'], sessions: 1, averageScore: null, averageProgress: null, atRisk: false, lastActivity: null }]);
+  assert.match(csv, /"'=HYPERLINK/);
+});
