@@ -28,7 +28,7 @@ Because live progress/session tables are empty, real score/progress charts canno
 
 ## Release gates remaining
 
-1. Complete the latest local Supabase Auth/PostgREST test run against the note-sharing, tutor/learner relationship, lesson-plan privacy/archive, resource moderation and expanded public tutor directory. A previous run exposed an invalid test fixture (unsupported study-year and teaching-style values); the fixture and profile choices now use the live database's allowed values.
+1. The local Supabase Auth/PostgREST suite passed on a recent snapshot after the profile choices and fixtures were aligned with live study-year and teaching-style constraints. The newest run adds a numeric SACE redaction regression across both qualifications and certifications; that run is still pending.
 2. Complete the full GitHub Actions suite, including build and Playwright browser suites. The unrelated Opportunities browser test timed out in an earlier run; latest run status is tracked in PR #103.
 3. Perform authenticated end-to-end acceptance with separate tutor and learner accounts: profile save/reload, availability, booking request transitions, lesson-plan create/edit/email share, CRM note privacy/share/unshare, resource upload/archive/moderation, and messaging.
 4. Apply reviewed database migrations and deploy the matching code only after CI and acceptance tests pass. Then verify the live app with non-production test accounts before enabling the Students section.
@@ -39,6 +39,6 @@ Because live progress/session tables are empty, real score/progress charts canno
 ## Verification status
 
 - Six focused Node unit tests for learner aggregation, risk flags, grade filtering, date cutoffs and CSV escaping passed in an isolated local test run.
-- On the latest full Actions run snapshot before the most recent RLS/resource tests, mobile checks, ESLint, TypeScript, repository unit tests, Python tests, database/API/Edge checks and production build passed. The local Supabase service and Playwright suites were still running at last check.
+- On the latest full Actions snapshot, mobile checks, ESLint, TypeScript, repository unit tests, Python tests, database/API/Edge checks and production build passed. Local Supabase Auth/PostgREST tests passed on a recent snapshot; the latest numeric SACE-redaction test and the Playwright suites are still running. A further tutor-modal browser test now checks that experience, approach, delivery modes, certification and SACE-submission wording render correctly.
 - No production schema, user data, payment configuration or production deployment was changed.
 - PR #103 remains a draft. This branch is not a live release.
