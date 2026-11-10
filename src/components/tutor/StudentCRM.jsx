@@ -36,7 +36,8 @@ export default function StudentCRM({
     strengths: '',
     areas_to_improve: '',
     next_steps: '',
-    mood: 'Neutral'
+    mood: 'Neutral',
+    share_with_student: false
   });
   const loadData = useCallback(async () => {
     if (!user?.id) {
@@ -162,7 +163,7 @@ export default function StudentCRM({
     }
   };
   const toggleNoteSharing = async (note) => {
-    const nextShared = !note.is_shared_with_student;
+    const nextShared = !(note.is_shared_with_student && !note.is_confidential);
     if (nextShared && !window.confirm('Share this note with the learner? They will be able to read it in their account.')) return;
     setSaving(true);
     try {
