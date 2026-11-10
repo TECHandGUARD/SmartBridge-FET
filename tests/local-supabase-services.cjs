@@ -28,6 +28,28 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
+
+ // Learner notes stay private until a tutor explicitly shares a non-confidential note.
+ const privateNote=ok(await tutor.client.from('student_notes').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:student.email,student_id:student.id,
+  student_name:'Disposable learner',note:'Private progress note',subject:'Mathematics'
+ }).select('*').single());
+ assert.equal(privateNote.is_shared_with_student,false);
+ assert.equal(privateNote.is_confidential,false);
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.deepEqual(ok(await parent.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
+ const sharedNote=ok(await tutor.client.from('student_notes').update({is_shared_with_student:true,shared_at:new Date().toISOString()}).eq('id',privateNote.id).select('*').single());
+ assert.equal(sharedNote.is_shared_with_student,true);
+ assert.equal(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
+ ok(await tutor.client.from('student_notes').update({is_confidential:true}).eq('id',privateNote.id));
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ ok(await tutor.client.from('student_notes').update({is_confidential:false,is_archived:true}).eq('id',privateNote.id));
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.ok((await other.client.from('student_notes').select('id').eq('id',privateNote.id)).error === null);
+ assert.deepEqual(ok(await other.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ ok(await admin.from('student_notes').delete().eq('id',privateNote.id));
+ console.log('PASS: tutor notes private by default, explicit sharing, confidential/archive denial and student/parent isolation');
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
 
