@@ -757,10 +757,11 @@ export default function TutorProfileEditor({
                 <SelectTrigger id="tutor-teaching-style"><SelectValue placeholder="Choose your approach" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mixed">Flexible / mixed methods</SelectItem>
-                  <SelectItem value="learner-centred">Learner-centred</SelectItem>
-                  <SelectItem value="inquiry-based">Inquiry-based</SelectItem>
-                  <SelectItem value="structured">Structured / step-by-step</SelectItem>
-                  <SelectItem value="practical">Practical / applied learning</SelectItem>
+                  <SelectItem value="formal">Structured / step-by-step</SelectItem>
+                  <SelectItem value="interactive">Interactive / discussion-based</SelectItem>
+                  <SelectItem value="student_centered">Learner-centred</SelectItem>
+                  <SelectItem value="project_based">Practical / project-based</SelectItem>
+                  <SelectItem value="adaptive">Adaptive / responsive</SelectItem>
                 </SelectContent>
               </Select>
             </div>
