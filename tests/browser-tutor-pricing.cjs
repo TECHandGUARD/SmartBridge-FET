@@ -17,7 +17,7 @@ const assert=require('node:assert/strict');
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
 
- let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,metadata:{}};
+ let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,teaching_experience_years:4,tutoring_experience_years:2,teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true,certifications:['TEFL'],sace_details_submitted:true,metadata:{}};
  const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let bookingRows=[];const checkoutCalls=[];
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**',async route=>{
@@ -116,6 +116,13 @@ const assert=require('node:assert/strict');
  await page.getByRole('button',{name:'Book',exact:true}).click();
  const modal=page.getByRole('dialog');
  await modal.getByText('R20.00',{exact:true}).waitFor();
+ await modal.getByText('4 years',{exact:true}).waitFor();
+ await modal.getByText('2 years',{exact:true}).waitFor();
+ await modal.getByText('Approach: Learner-centred',{exact:true}).waitFor();
+ await modal.getByText('Online sessions',{exact:true}).waitFor();
+ await modal.getByText('In-person sessions',{exact:true}).waitFor();
+ await modal.getByText('TEFL',{exact:true}).waitFor();
+ await modal.getByText('SACE details submitted',{exact:true}).waitFor();
  await modal.getByRole('checkbox',{name:/[Ff]ree 30-minute/}).check();
  await modal.getByText('Free',{exact:true}).waitFor();
  assert.equal(await modal.getByRole('combobox').nth(1).isDisabled(),true);
