@@ -3,8 +3,8 @@
 CREATE OR REPLACE FUNCTION public.guard_resource_moderation_fields()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY INVOKER
-SET search_path = public, pg_temp
+SECURITY DEFINER
+SET search_path = ''
 AS $$
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role'
