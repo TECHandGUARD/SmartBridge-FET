@@ -34,7 +34,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
   institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
   qualifications:['BSc Mathematics','SACE Registered: TEST-SACE'],specializations:['Calculus'],teaching_languages:['English'],
-  certifications:['TEFL'],teaching_experience_years:4,tutoring_experience_years:2,
+  certifications:['TEFL','SACE number 1234567890'],teaching_experience_years:4,tutoring_experience_years:2,
   teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true
  }).eq('user_id',tutor.id).select('id').single());
  const relationship=ok(await admin.from('tutor_bookings').insert({
@@ -188,7 +188,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(learnerDirectory.offers_online_tutoring,true);
  assert.equal(learnerDirectory.offers_in_person_tutoring,true);
  assert.equal(learnerDirectory.institution,'Test University');
- assert.deepEqual(learnerDirectory.certifications,['TEFL']);
+ assert.deepEqual(learnerDirectory.certifications,['TEFL'],'SACE registration numbers embedded in certifications must be redacted');
  assert.deepEqual(learnerDirectory.qualifications,['BSc Mathematics'],'Public qualifications must omit SACE registration data embedded during onboarding');
  assert.equal(learnerDirectory.sace_details_submitted,true);
  assert.equal('sace_number' in learnerDirectory,false,'Directory must never expose the personal SACE registration number');
