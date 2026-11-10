@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION public.guard_resource_moderation_fields()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path TO ''
 AS $$
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role'
@@ -53,7 +53,7 @@ CREATE OR REPLACE FUNCTION smartbridge_private.protect_resource_record()
 RETURNS trigger
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path = ''
+SET search_path TO ''
 AS $$
 BEGIN
   IF TG_OP = 'UPDATE'
