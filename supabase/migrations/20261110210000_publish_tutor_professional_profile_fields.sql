@@ -51,7 +51,14 @@ BEGIN
     t.id, t.user_id, t.user_email, t.full_name, t.bio, t.avatar_url,
     t.subjects, t.grades, t.hourly_rate, t.rating, t.total_reviews, t.is_verified,
     NULLIF(t.metadata->>'video_url',''), t.subject_rates, t.offers_free_intro,
-    t.institution, t.study_field, t.study_year, t.qualifications, t.specializations,
+    t.institution, t.study_field, t.study_year,
+    ARRAY(
+      SELECT q.value
+      FROM unnest(COALESCE(t.qualifications, ARRAY[]::text[])) WITH ORDINALITY AS q(value, position)
+      WHERE q.value !~* '^SACE Registered:'
+      ORDER BY q.position
+    ),
+    t.specializations,
     t.teaching_languages, t.certifications,
     COALESCE(t.teaching_experience_years,0), COALESCE(t.tutoring_experience_years,0),
     t.teaching_style, COALESCE(t.offers_online_tutoring,true),
