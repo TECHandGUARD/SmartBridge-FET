@@ -35,7 +35,7 @@ const propTypes = {
     rating: PropTypes.number,
     is_verified: PropTypes.bool,
     is_premium: PropTypes.bool,
-    sace_registered: PropTypes.bool,
+    sace_details_submitted: PropTypes.bool,
     institution: PropTypes.string,
     study_field: PropTypes.string,
     study_year: PropTypes.string,
@@ -195,7 +195,7 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                     {tutor.full_name}
                   </DialogTitle>
                   {tutor.is_verified && (
-                    tutor.sace_registered ? (
+                    tutor.sace_details_submitted ? (
                       <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
                     ) : (
                       <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
@@ -204,9 +204,9 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {tutor.is_verified && (
-                    tutor.sace_registered ? (
+                    tutor.sace_details_submitted ? (
                       <Badge className="bg-green-100 text-green-700 border-green-200 text-xs gap-1 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
-                        <ShieldCheck className="w-3 h-3" /> SACE Registered
+                        <ShieldCheck className="w-3 h-3" /> SACE details submitted
                       </Badge>
                     ) : (
                       <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs gap-1 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
@@ -301,12 +301,12 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
           )}
 
           {/* Never display a tutor's personal SACE registration number publicly. */}
-          {tutor.sace_registered && (
+          {tutor.sace_details_submitted && (
             <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 dark:bg-green-950/20 dark:border-green-800">
               <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 dark:text-green-400" />
               <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-400">SACE registration recorded</p>
-                <p className="text-xs text-green-800 dark:text-green-300">Registration details are kept private.</p>
+                <p className="text-xs font-semibold text-green-700 dark:text-green-400">SACE details submitted</p>
+                <p className="text-xs text-green-800 dark:text-green-300">The registration number is kept private.</p>
               </div>
             </div>
           )}
