@@ -32,10 +32,10 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({
   is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
-  institution:'Test University',study_field:'BSc Mathematics',study_year:'Final Year',
+  institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
   qualifications:['BSc Mathematics'],specializations:['Calculus'],teaching_languages:['English'],
   certifications:['TEFL'],teaching_experience_years:4,tutoring_experience_years:2,
-  teaching_style:'inquiry-based',offers_online_tutoring:true,offers_in_person_tutoring:true
+  teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true
  }).eq('user_id',tutor.id).select('id').single());
  const relationship=ok(await admin.from('tutor_bookings').insert({
   tutor_id:tutor.id,student_id:student.id,tutor_email:tutor.email,student_email:student.email,
@@ -184,7 +184,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(learnerDirectory.subject_rates.Mathematics,20);assert.equal(learnerDirectory.offers_free_intro,true);
  assert.equal(learnerDirectory.teaching_experience_years,4);
  assert.equal(learnerDirectory.tutoring_experience_years,2);
- assert.equal(learnerDirectory.teaching_style,'inquiry-based');
+ assert.equal(learnerDirectory.teaching_style,'student_centered');
  assert.equal(learnerDirectory.offers_online_tutoring,true);
  assert.equal(learnerDirectory.offers_in_person_tutoring,true);
  assert.equal(learnerDirectory.institution,'Test University');
