@@ -10,7 +10,7 @@ This branch repairs and hardens the existing tutor workspace rather than adding 
 - **Lesson-plan archiving:** adds `is_archived`, filters archived plans from the active list, and replaces a tutor DELETE operation with an owner-scoped archive update. Tutor create/update RLS also requires a confirmed/completed booking relationship.
 - **Booking workflow:** scopes requests and realtime updates to the authenticated tutor UUID. Completion is constrained to the tutor's own confirmed booking. The calendar is read-only for booking state changes and routes pending requests to Booking Requests, preserving the payment gate.
 - **Availability:** scopes loading and deletion to the authenticated tutor UUID.
-- **Resources:** loads tutor-owned active resources by UUID and archives owned resources by setting `is_archived=true` and `is_approved=false`. A migration adds a database trigger that prevents tutors from self-approving, rejecting, featuring, or changing moderation/engagement metrics. Tutors can still edit their own content and archive it; administrator/service-role moderation remains available.
+- **Resources:** loads tutor-owned active resources by UUID and archives owned resources by setting `is_archived=true` without changing administrator approval history. RLS hides archived resources from public listings. A database trigger prevents tutors from self-approving, rejecting, featuring, or changing moderation/engagement metrics. Tutors can still edit their own content and archive it; administrator/service-role moderation remains available.
 - **CSV export:** escapes spreadsheet formula-leading values to reduce formula-injection risk.
 
 ## Live evidence inspected (read-only)
