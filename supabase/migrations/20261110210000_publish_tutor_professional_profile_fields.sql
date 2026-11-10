@@ -55,11 +55,19 @@ BEGIN
     ARRAY(
       SELECT q.value
       FROM unnest(COALESCE(t.qualifications, ARRAY[]::text[])) WITH ORDINALITY AS q(value, position)
-      WHERE q.value !~* '^SACE Registered:'
+      WHERE q.value !~* '^SACE([[:space:]:#-]|$)'
+        AND q.value !~* 'SACE[^0-9]{0,30}[0-9]{8,12}'
       ORDER BY q.position
     ),
     t.specializations,
-    t.teaching_languages, t.certifications,
+    t.teaching_languages,
+    ARRAY(
+      SELECT cert.value
+      FROM unnest(COALESCE(t.certifications, ARRAY[]::text[])) WITH ORDINALITY AS cert(value, position)
+      WHERE cert.value !~* '^SACE([[:space:]:#-]|$)'
+        AND cert.value !~* 'SACE[^0-9]{0,30}[0-9]{8,12}'
+      ORDER BY cert.position
+    ),
     COALESCE(t.teaching_experience_years,0), COALESCE(t.tutoring_experience_years,0),
     t.teaching_style, COALESCE(t.offers_online_tutoring,true),
     COALESCE(t.offers_in_person_tutoring,false),
