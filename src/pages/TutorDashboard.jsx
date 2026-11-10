@@ -143,7 +143,7 @@ export default function TutorDashboard() {
     try {
       const { error } = await supabase
         .from('resources')
-        .update({ is_archived: true, is_approved: false, updated_at: new Date().toISOString() })
+        .update({ is_archived: true, updated_at: new Date().toISOString() })
         .eq('id', id)
         .eq('tutor_id', user.id);
 
