@@ -169,7 +169,7 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
   const specializationsList = getSpecializationsArray(tutor.specializations);
   const certificationsList = getQualificationsArray(tutor.certifications);
   const totalReviews = tutor.total_reviews || reviews.length;
-  const teachingStyleLabels = { mixed: 'Flexible / mixed methods', 'learner-centred': 'Learner-centred', 'inquiry-based': 'Inquiry-based', structured: 'Structured / step-by-step', practical: 'Practical / applied learning' };
+  const teachingStyleLabels = { mixed: 'Flexible / mixed methods', formal: 'Structured / step-by-step', interactive: 'Interactive / discussion-based', student_centered: 'Learner-centred', project_based: 'Practical / project-based', adaptive: 'Adaptive / responsive' };
 
   // ============================================================
   // Render
