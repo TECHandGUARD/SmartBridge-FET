@@ -23,7 +23,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   assert.ok(signup.session,'Local signup must create a session');
   const profile=ok(await client.from('users').select('role,is_super_admin').eq('id',signup.user.id).single());
   assert.equal(profile.role,'user');assert.equal(profile.is_super_admin,false);
-  ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'TEST-SACE':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
+  ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'1234567890':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
   return {client,id:signup.user.id,email,token:signup.session.access_token};}
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
@@ -33,7 +33,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const profile=ok(await admin.from('tutor_profiles').update({
   is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
   institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
-  qualifications:['BSc Mathematics','SACE Registered: TEST-SACE'],specializations:['Calculus'],teaching_languages:['English'],
+  qualifications:['BSc Mathematics','SACE Registered: 1234567890'],specializations:['Calculus'],teaching_languages:['English'],
   certifications:['TEFL','SACE number 1234567890'],teaching_experience_years:4,tutoring_experience_years:2,
   teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true
  }).eq('user_id',tutor.id).select('id').single());
@@ -192,7 +192,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(learnerDirectory.qualifications,['BSc Mathematics'],'Public qualifications must omit SACE registration data embedded during onboarding');
  assert.equal(learnerDirectory.sace_details_submitted,true);
  assert.equal('sace_number' in learnerDirectory,false,'Directory must never expose the personal SACE registration number');
- assert.equal(JSON.stringify(learnerDirectory).includes('TEST-SACE'),false,'SACE registration number must not leak through another public field');
+ assert.equal(JSON.stringify(learnerDirectory).includes('1234567890'),false,'SACE registration number must not leak through another public field');
  assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
  const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
  assert.equal(Number(subjectBooking.amount),30);
