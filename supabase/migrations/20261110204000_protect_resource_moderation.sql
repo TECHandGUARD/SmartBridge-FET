@@ -8,6 +8,7 @@ SET search_path = public, pg_temp
 AS $$
 BEGIN
   IF auth.role() IS DISTINCT FROM 'service_role'
+     AND NOT COALESCE(smartbridge_private.has_staff_permission('resources'), false)
      AND NOT COALESCE(public.is_admin(auth.uid()), false)
      AND (
        NEW.is_approved IS DISTINCT FROM OLD.is_approved
