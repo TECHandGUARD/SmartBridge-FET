@@ -370,7 +370,7 @@ export default function LessonPlanForm({
             <p>{form.homework_assigned || 'No homework assigned'}</p>
 
             {form.notes && <>
-                <h3 className="text-md font-semibold mt-4 mb-2">📝 Private Notes</h3>
+                <h3 className="text-md font-semibold mt-4 mb-2">📝 Session Notes</h3>
                 <p className="text-muted-foreground">{form.notes}</p>
               </>}
           </div>
