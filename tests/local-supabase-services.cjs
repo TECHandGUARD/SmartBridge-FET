@@ -48,7 +48,6 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
  assert.ok((await other.client.from('student_notes').select('id').eq('id',privateNote.id)).error === null);
  assert.deepEqual(ok(await other.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
- ok(await admin.from('student_notes').delete().eq('id',privateNote.id));
  console.log('PASS: tutor notes private by default, explicit sharing, confidential/archive denial and student/parent isolation');
 
  // Lesson plan rows include private tutor notes, so only the owning tutor may read the base row.
@@ -63,7 +62,6 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await other.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
  ok(await tutor.client.from('lesson_plans').update({is_archived:true}).eq('id',plan.id).eq('tutor_id',tutor.id));
  assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id).eq('is_archived',true)).length,1);
- ok(await admin.from('lesson_plans').delete().eq('id',plan.id));
  console.log('PASS: private lesson-plan base rows are tutor-only and archive state is writable by owner');
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
