@@ -191,7 +191,7 @@ export default function StudentCRM({
             <Badge className="bg-primary/10 text-primary text-xs ml-1">{students.length}</Badge>
           </CardTitle>
           <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-            <Shield className="w-3 h-3 text-green-500" /> Private
+            <Shield className="w-3 h-3 text-green-500" /> Tutor records
           </Badge>
         </div>
       </CardHeader>
