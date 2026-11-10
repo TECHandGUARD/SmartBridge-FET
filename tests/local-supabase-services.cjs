@@ -30,7 +30,13 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  // Tutor-only RLS requires a verified, active tutor profile.
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
- const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
+ const profile=ok(await admin.from('tutor_profiles').update({
+  is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
+  institution:'Test University',study_field:'BSc Mathematics',study_year:'Final Year',
+  qualifications:['BSc Mathematics'],specializations:['Calculus'],teaching_languages:['English'],
+  certifications:['TEFL'],teaching_experience_years:4,tutoring_experience_years:2,
+  teaching_style:'inquiry-based',offers_online_tutoring:true,offers_in_person_tutoring:true
+ }).eq('user_id',tutor.id).select('id').single());
  const relationship=ok(await admin.from('tutor_bookings').insert({
   tutor_id:tutor.id,student_id:student.id,tutor_email:tutor.email,student_email:student.email,
   subject:'Mathematics',date:'2099-12-02',time:'15:00',status:'confirmed'
@@ -175,6 +181,15 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(Number(edited.hourly_rate),1250.5);assert.equal(Number(edited.session_price_per_hour),1250.5);
  const learnerDirectory=ok(await student.client.from('tutor_directory').select('*').eq('id',profile.id).single());
  assert.equal(learnerDirectory.subject_rates.Mathematics,20);assert.equal(learnerDirectory.offers_free_intro,true);
+ assert.equal(learnerDirectory.teaching_experience_years,4);
+ assert.equal(learnerDirectory.tutoring_experience_years,2);
+ assert.equal(learnerDirectory.teaching_style,'inquiry-based');
+ assert.equal(learnerDirectory.offers_online_tutoring,true);
+ assert.equal(learnerDirectory.offers_in_person_tutoring,true);
+ assert.equal(learnerDirectory.institution,'Test University');
+ assert.deepEqual(learnerDirectory.certifications,['TEFL']);
+ assert.equal(learnerDirectory.sace_registered,true);
+ assert.equal('sace_number' in learnerDirectory,false,'Directory must never expose the personal SACE registration number');
  assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
  const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
  assert.equal(Number(subjectBooking.amount),30);
