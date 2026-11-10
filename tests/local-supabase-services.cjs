@@ -28,6 +28,9 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
+ // Tutor-only RLS requires a verified, active tutor profile.
+ ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
+ const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
 
  // Learner notes stay private until a tutor explicitly shares a non-confidential note.
  const privateNote=ok(await tutor.client.from('student_notes').insert({
@@ -63,8 +66,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('lesson_plans').update({is_archived:true}).eq('id',plan.id).eq('tutor_id',tutor.id));
  assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id).eq('is_archived',true)).length,1);
  console.log('PASS: private lesson-plan base rows are tutor-only and archive state is writable by owner');
- ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
- const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
+
 
  // Presentations use real authenticated REST and private account ownership.
  const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
