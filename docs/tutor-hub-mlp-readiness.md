@@ -35,10 +35,12 @@ Because live progress/session tables are empty, real score/progress charts canno
 5. Generate real learner progress and completed study-session records and verify that only the tutor with a confirmed/completed booking can read the learner data.
 6. Keep Earnings/banking disabled until private payout details, ledger, fee calculation, statements and reconciliation have a secure server-side implementation.
 7. Keep rescheduling and attendance disabled until their backend contracts, schema and ownership checks are confirmed.
+8. Review the dependency audit before launch. `npm ci` currently reports 9 dependency vulnerabilities (4 low, 4 moderate and 1 high); identify affected direct/transitive packages and apply only compatible, tested fixes.
 
 ## Verification status
 
 - Six focused Node unit tests for learner aggregation, risk flags, grade filtering, date cutoffs and CSV escaping passed in an isolated local test run.
 - Mobile checks, ESLint, TypeScript, repository unit tests, Python tests, database/API/Edge checks and production build have passed on recent full Actions snapshots. Local Supabase Auth/PostgREST tests passed, including the numeric SACE-redaction regression. The broad Playwright suite passed content, Opportunities, marketing, staff, payments, drafts, presentations, meetings, live-classroom, config and audit on a recent run; the tutor-specific browser test exposed an exact-heading selector issue in the calendar test. That selector is corrected, and the latest run adds public-profile display assertions for experience, approach, delivery modes, certifications and SACE-submission wording.
+- Dependency installation reports 9 advisories in the current dependency tree (4 low, 4 moderate, 1 high); remediation is a pre-launch gate and has not been attempted blindly.
 - No production schema, user data, payment configuration or production deployment was changed.
 - PR #103 remains a draft. This branch is not a live release.
