@@ -321,11 +321,17 @@ export default function TutorDashboard() {
           </div>
         )}
 
-        {/* My Reviews + Profile Editor */}
-        {activeSection === 'reviews' && (
-          <div className="mb-6 space-y-4">
-            <TutorReviews tutorEmail={user?.email} />
+        {/* Professional Profile */}
+        {activeSection === 'profile' && (
+          <div className="mb-6">
             {profile && <TutorProfileEditor profile={profile} user={user} onProfileUpdate={setProfile} />}
+          </div>
+        )}
+
+        {/* Tutor Reviews */}
+        {activeSection === 'reviews' && (
+          <div className="mb-6">
+            <TutorReviews tutorEmail={user?.email} />
           </div>
         )}
 
