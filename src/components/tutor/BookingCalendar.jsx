@@ -115,10 +115,9 @@ export default function BookingCalendar({ user }) {
   }, [user?.id, loadBookings]);
 
   // ============================================================
-  // Confirm Booking
+  // Booking state changes are handled in Booking Requests so payment and ownership checks stay centralised.
   // ============================================================
 
-  // ============================================================
   // Navigation
   // ============================================================
 
@@ -335,8 +334,10 @@ export default function BookingCalendar({ user }) {
                 // Find the first pending booking and select its day
                 const pendingBooking = bookings.find(b => b.status === 'pending');
                 if (pendingBooking) {
-                  const day = parseInt(pendingBooking.date.split('-')[2]);
-                  setSelected(day);
+                  const [pendingYear, pendingMonth, pendingDay] = pendingBooking.date.split('-').map(Number);
+                  setYear(pendingYear);
+                  setMonth(pendingMonth - 1);
+                  setSelected(pendingDay);
                 }
               }}
             >
