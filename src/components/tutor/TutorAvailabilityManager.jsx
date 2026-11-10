@@ -35,7 +35,7 @@ export default function TutorAvailabilityManager({
   const [bulkEnd, setBulkEnd] = useState('17:00');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const loadSlots = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -45,7 +45,7 @@ export default function TutorAvailabilityManager({
       const {
         data,
         error: queryError
-      } = await supabase.from('tutor_availability').select('*').eq('tutor_email', user.email).order('day_of_week', {
+      } = await supabase.from('tutor_availability').select('*').eq('tutor_id', user.id).order('day_of_week', {
         ascending: true
       });
       if (queryError) throw queryError;
@@ -60,12 +60,12 @@ export default function TutorAvailabilityManager({
   }, [user?.email]);
   useEffect(() => {
     loadSlots();
-    if (!user?.email) return;
+    if (!user?.id) return;
     const channel = supabase.channel('tutor_availability').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'tutor_availability',
-      filter: `tutor_email=eq.${user.email}`
+      filter: `tutor_id=eq.${user.id}`
     }, payload => {
       if (payload.eventType === 'INSERT') {
         setSlots(prev => [...prev, payload.new]);
@@ -78,7 +78,7 @@ export default function TutorAvailabilityManager({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadSlots]);
+  }, [user?.id, loadSlots]);
   const hasConflict = useCallback((day, start, end, excludeId = null) => {
     return slots.some(slot => slot.day_of_week === day && slot.id !== excludeId && slot.is_available && (start >= slot.start_time && start < slot.end_time || end > slot.start_time && end <= slot.end_time || start <= slot.start_time && end >= slot.end_time));
   }, [slots]);
@@ -226,7 +226,7 @@ export default function TutorAvailabilityManager({
         notes: form.notes || null,
         is_available: form.is_available,
         updated_at: new Date().toISOString()
-      }).eq('id', editingSlot);
+      }).eq('id', editingSlot).eq('tutor_id', user.id);
       if (updateError) throw updateError;
       setSlots(prev => prev.map(s => s.id === editingSlot ? {
         ...s,
@@ -257,7 +257,7 @@ export default function TutorAvailabilityManager({
       } = await supabase.from('tutor_availability').update({
         is_available: newStatus,
         updated_at: new Date().toISOString()
-      }).eq('id', slot.id);
+      }).eq('id', slot.id).eq('tutor_id', user.id);
       if (updateError) throw updateError;
       setSlots(prev => prev.map(s => s.id === slot.id ? {
         ...s,
