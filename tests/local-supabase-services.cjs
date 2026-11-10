@@ -81,6 +81,18 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id).eq('is_archived',true)).length,1);
  console.log('PASS: private lesson-plan base rows are tutor-only and archive state is writable by owner');
 
+ // Tutors can archive their own resources but cannot self-approve or alter moderation fields.
+ const resource=ok(await tutor.client.from('resources').insert({
+  title:'Local test resource',subject:'Mathematics',grade:'Grade 10',type:'Notes',
+  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:false,is_rejected:false,is_archived:false
+ }).select('*').single());
+ assert.ok((await tutor.client.from('resources').update({is_approved:true}).eq('id',resource.id)).error,'Tutor cannot self-approve resources');
+ assert.ok((await tutor.client.from('resources').update({is_featured:true}).eq('id',resource.id)).error,'Tutor cannot feature resources');
+ ok(await tutor.client.from('resources').update({is_archived:true,is_approved:false}).eq('id',resource.id).eq('tutor_id',tutor.id));
+ assert.equal(ok(await tutor.client.from('resources').select('is_archived,is_approved').eq('id',resource.id).single()).is_archived,true);
+ assert.equal(ok(await admin.from('resources').update({is_approved:true,approved_at:new Date().toISOString()}).eq('id',resource.id).select('is_approved').single()).is_approved,true);
+ console.log('PASS: tutor resource archive works; self-approval/featuring denied; service-role moderation remains available');
+
 
  // Presentations use real authenticated REST and private account ownership.
  const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
