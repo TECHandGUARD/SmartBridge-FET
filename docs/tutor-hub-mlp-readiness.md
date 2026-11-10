@@ -31,7 +31,7 @@ Therefore the learner analytics UI can be made schema-correct, but real score/pr
 
 ## Verification status
 
-- Five focused Node unit tests for learner aggregation, risk flags, grade filtering, date cutoffs and CSV escaping passed in an isolated local test run.
+- Six focused Node unit tests for learner aggregation, risk flags, grade filtering, date cutoffs and CSV escaping passed in an isolated local test run.
 - Full repository install/build/lint and authenticated browser tests have not yet run in this environment.
 - No production schema, user data, payment configuration or production deployment was changed.
 - This branch is a draft implementation for review; it is not a live release.
