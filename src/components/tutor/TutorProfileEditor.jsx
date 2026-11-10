@@ -742,19 +742,19 @@ export default function TutorProfileEditor({
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">Teaching experience (years)</Label>
-              <Input type="number" min="0" max="60" step="1" value={form.teaching_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, teaching_experience_years: e.target.value }))} />
+              <Label htmlFor="tutor-teaching-experience" className="text-xs">Teaching experience (years)</Label>
+              <Input id="tutor-teaching-experience" type="number" min="0" max="60" step="1" value={form.teaching_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, teaching_experience_years: e.target.value }))} />
               <p className="text-[10px] text-muted-foreground">Formal classroom or school-based teaching experience.</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Tutoring experience (years)</Label>
-              <Input type="number" min="0" max="60" step="1" value={form.tutoring_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, tutoring_experience_years: e.target.value }))} />
+              <Label htmlFor="tutor-tutoring-experience" className="text-xs">Tutoring experience (years)</Label>
+              <Input id="tutor-tutoring-experience" type="number" min="0" max="60" step="1" value={form.tutoring_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, tutoring_experience_years: e.target.value }))} />
               <p className="text-[10px] text-muted-foreground">Private, group or online tutoring experience.</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Teaching approach</Label>
+              <Label htmlFor="tutor-teaching-style" className="text-xs">Teaching approach</Label>
               <Select value={form.teaching_style} onValueChange={v => handleFormChange(prev => ({ ...prev, teaching_style: v }))}>
-                <SelectTrigger><SelectValue placeholder="Choose your approach" /></SelectTrigger>
+                <SelectTrigger id="tutor-teaching-style"><SelectValue placeholder="Choose your approach" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="mixed">Flexible / mixed methods</SelectItem>
                   <SelectItem value="learner-centred">Learner-centred</SelectItem>
