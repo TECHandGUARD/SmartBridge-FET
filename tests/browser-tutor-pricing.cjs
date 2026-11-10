@@ -122,7 +122,7 @@ const assert=require('node:assert/strict');
  await modal.getByText('Online sessions',{exact:true}).waitFor();
  await modal.getByText('In-person sessions',{exact:true}).waitFor();
  await modal.getByText('TEFL',{exact:true}).waitFor();
- await modal.getByText('SACE details submitted',{exact:true}).waitFor();
+ await modal.getByText('SACE details submitted',{exact:true}).first().waitFor();
  await modal.getByRole('checkbox',{name:/[Ff]ree 30-minute/}).check();
  await modal.getByText('Free',{exact:true}).waitFor();
  assert.equal(await modal.getByRole('combobox').nth(1).isDisabled(),true);
