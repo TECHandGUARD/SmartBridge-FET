@@ -189,8 +189,10 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(learnerDirectory.offers_in_person_tutoring,true);
  assert.equal(learnerDirectory.institution,'Test University');
  assert.deepEqual(learnerDirectory.certifications,['TEFL']);
+ assert.deepEqual(learnerDirectory.qualifications,['BSc Mathematics'],'Public qualifications must omit SACE registration data embedded during onboarding');
  assert.equal(learnerDirectory.sace_details_submitted,true);
  assert.equal('sace_number' in learnerDirectory,false,'Directory must never expose the personal SACE registration number');
+ assert.equal(JSON.stringify(learnerDirectory).includes('TEST-SACE'),false,'SACE registration number must not leak through another public field');
  assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
  const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
  assert.equal(Number(subjectBooking.amount),30);
