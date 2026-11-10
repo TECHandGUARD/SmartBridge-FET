@@ -7,7 +7,7 @@ This branch repairs and hardens the existing tutor workspace rather than adding 
 - **Learner progress:** reads the live `student_progress` and `study_sessions` tables, joins by `student_id`, and starts from bookings owned by the authenticated tutor. It no longer queries the absent `study_progress` view or missing `users.grade` / `users.parent_email` fields.
 - **Learner CRM:** loads notes and bookings using `tutor_id`, keeps learner identity by UUID, and writes `student_id` with each note. It only builds the tutor's learner list from confirmed/completed bookings.
 - **Lesson planning:** scopes plans/bookings by tutor UUID, links plans to learner UUIDs, reads canonical progress rows, and stores the selected booking reference in the existing `metadata` JSON column because `lesson_plans.booking_id` is not in the live schema.
-- **Booking requests:** scopes list/realtime updates to the authenticated tutor UUID and constrains session completion to the tutor's own confirmed booking.
+- **Booking requests:** scopes list/realtime updates to the authenticated tutor UUID and constrains session completion to the tutor's own confirmed booking. The calendar is now read-only for status changes and routes pending requests to Booking Requests, preventing a second path from bypassing payment checks.
 - **Resource management:** loads tutor-owned active resources by UUID and archives a resource by setting `is_archived=true` and `is_approved=false`. It no longer calls a DELETE operation that the live tutor RLS policy does not permit.
 
 ## Live evidence checked
