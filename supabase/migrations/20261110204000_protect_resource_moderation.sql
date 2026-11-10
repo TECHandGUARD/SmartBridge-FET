@@ -30,7 +30,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$;
+$$;
 REVOKE ALL ON FUNCTION public.guard_resource_moderation_fields() FROM PUBLIC, anon, authenticated;
 
 DROP TRIGGER IF EXISTS guard_resource_moderation_fields ON public.resources;
