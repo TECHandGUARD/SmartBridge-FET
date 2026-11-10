@@ -244,8 +244,8 @@ export default function LessonPlanForm({
     setDraftLoaded(true);
   };
   const handleSave = async () => {
-    if (!form.session_title || !form.student_email || !form.subject) {
-      toast.error('Please fill in title, student, and subject.');
+    if (!form.session_title || !form.student_email || !form.student_id || !form.subject) {
+      toast.error('Choose a linked learner and complete the title and subject.');
       return;
     }
     setSaving(true);
@@ -318,7 +318,7 @@ export default function LessonPlanForm({
   };
   const validation = {
     title: form.session_title.trim().length > 0,
-    student: !!form.student_email,
+    student: !!form.student_id,
     subject: !!form.subject,
     objectives: form.objectives.length > 0
   };
