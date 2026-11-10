@@ -32,7 +32,7 @@ RETURNS TABLE(
   teaching_style text,
   offers_online_tutoring boolean,
   offers_in_person_tutoring boolean,
-  sace_registered boolean
+  sace_details_submitted boolean
 )
 LANGUAGE plpgsql
 STABLE
