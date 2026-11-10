@@ -334,15 +334,6 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
             </div>
           )}
 
-          {certificationsList.length > 0 && (
-            <div>
-              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2"><Award className="w-4 h-4 text-primary" /> Certifications</h3>
-              <div className="flex flex-wrap gap-1.5">
-                {certificationsList.map((item, i) => <Badge key={i} variant="outline" className="text-xs">{item}</Badge>)}
-              </div>
-            </div>
-          )}
-
           {/* Specializations */}
           {specializationsList.length > 0 && (
             <div>
