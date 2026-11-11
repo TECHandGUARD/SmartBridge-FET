@@ -9,7 +9,7 @@
 - Deactivation is reversible and retains the account profile and related records.
 
 ## Security model
-The browser calls the `admin-manage-user` Supabase Edge Function. The function validates the caller's JWT, loads the caller's role from `public.users`, enforces super-admin restrictions for permanent deletion, and uses the service-role key only on the server. Never put the service-role key in Vite/client environment variables.
+The browser calls the `admin-manage-user` Supabase Edge Function. The function validates the caller's JWT, loads the caller's role from `public.users`, enforces super-admin restrictions for permanent deletion, bans/unbans authentication sessions during deactivation/reactivation, and uses the service-role key only on the server. Never put the service-role key in Vite/client environment variables.
 
 The SQL migration `20261111000000_admin_user_deletion_safety.sql` adds a security-definer dependency-check function. Execution is revoked from public/anon/authenticated and granted only to service_role. The Edge Function fails closed if the RPC is missing or returns an error.
 
