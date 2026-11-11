@@ -501,7 +501,12 @@ export default function AdminDashboard() {
     setAccountActionLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('admin-manage-user', { body: { action: accountAction.action, targetUserId: accountAction.user.id, confirmation: accountAction.action === 'delete' ? accountActionPhrase : undefined } });
-      if (error) throw error;
+      if (error) {
+        let details = null;
+        try { details = await error.context?.json?.(); } catch { /* use the SDK message below */ }
+        const linked = details?.linkedRecords?.length ? ` Linked records: ${details.linkedRecords.join(', ')}.` : '';
+        throw new Error((details?.error || error.message || 'Account action failed.') + linked);
+      }
       if (data?.error) throw new Error(data.error);
       toast.success(data?.message || 'Account updated.');
       setAccountAction(null); setAccountActionPhrase('');
