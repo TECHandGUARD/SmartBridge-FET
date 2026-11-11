@@ -13,123 +13,6 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 // Each reference below is checked before deletion. The service-role client is
 // used only inside this function; no privileged key is exposed to the browser.
-const protectedReferences: Array<{ table: string; column: string; value: "id" | "email" }> = [
-  { table: "account_deletion_requests", column: "user_id", value: "id" },
-  { table: "adult_call_push_subscriptions", column: "user_id", value: "id" },
-  { table: "application_documents", column: "student_email", value: "email" },
-  { table: "banner_clicks", column: "user_id", value: "id" },
-  { table: "banner_clicks", column: "user_email", value: "email" },
-  { table: "legal_acceptances", column: "user_id", value: "id" },
-  { table: "payment_orders", column: "user_id", value: "id" },
-  { table: "peer_study_call_members", column: "user_id", value: "id" },
-  { table: "presentation_decks", column: "owner_id", value: "id" },
-  { table: "resource_bookmarks", column: "user_id", value: "id" },
-  { table: "resource_bookmarks", column: "user_email", value: "email" },
-  { table: "resource_ratings", column: "user_id", value: "id" },
-  { table: "resource_ratings", column: "user_email", value: "email" },
-  { table: "staff_accounts", column: "user_id", value: "id" },
-  { table: "student_notes", column: "student_email", value: "email" },
-  { table: "student_notes", column: "tutor_email", value: "email" },
-  { table: "subscriptions", column: "user_id", value: "id" },
-  { table: "subscriptions", column: "user_email", value: "email" },
-  { table: "study_room_memberships", column: "user_id", value: "id" },
-  { table: "study_room_reactions", column: "user_id", value: "id" },
-  { table: "tutor_availability", column: "tutor_email", value: "email" },
-  { table: "tutor_bookings", column: "student_email", value: "email" },
-  { table: "tutor_bookings", column: "tutor_email", value: "email" },
-  { table: "tutor_directory", column: "user_id", value: "id" },
-  { table: "tutor_directory", column: "user_email", value: "email" },
-  { table: "tutor_payouts", column: "tutor_email", value: "email" },
-  { table: "tutor_profiles", column: "user_id", value: "id" },
-  { table: "tutor_profiles", column: "user_email", value: "email" },
-  { table: "tutor_reviews", column: "student_email", value: "email" },
-  { table: "tutor_reviews", column: "tutor_email", value: "email" },
-  { table: "user_consents", column: "user_id", value: "id" },
-  { table: "virtual_meeting_participants", column: "user_id", value: "id" },
-  { table: "ai_executive_training", column: "created_by", value: "id" },
-  { table: "application_deadlines", column: "created_by", value: "id" },
-  { table: "application_documents", column: "student_id", value: "id" },
-  { table: "application_documents", column: "created_by", value: "id" },
-  { table: "bursaries", column: "created_by", value: "id" },
-  { table: "caps_documents", column: "created_by", value: "id" },
-  { table: "chat_messages", column: "sender_id", value: "id" },
-  { table: "classroom_signals", column: "sender_id", value: "id" },
-  { table: "counselor_student_links", column: "student_id", value: "id" },
-  { table: "direct_messages", column: "sender_id", value: "id" },
-  { table: "discussion_answers", column: "author_id", value: "id" },
-  { table: "discussion_posts", column: "author_id", value: "id" },
-  { table: "exam_schedule", column: "student_id", value: "id" },
-  { table: "exam_schedule", column: "created_by", value: "id" },
-  { table: "forum_comments", column: "author_id", value: "id" },
-  { table: "forum_posts", column: "author_id", value: "id" },
-  { table: "instant_adult_call_signals", column: "sender_id", value: "id" },
-  { table: "legal_documents", column: "owner_user_id", value: "id" },
-  { table: "lesson_plans", column: "student_id", value: "id" },
-  { table: "lesson_plans", column: "tutor_id", value: "id" },
-  { table: "nbt_planner_progress", column: "student_id", value: "id" },
-  { table: "nbt_registrations", column: "student_id", value: "id" },
-  { table: "nbt_registrations", column: "created_by", value: "id" },
-  { table: "nbt_test_dates", column: "created_by", value: "id" },
-  { table: "opportunity_guides", column: "created_by", value: "id" },
-  { table: "parent_student_links", column: "parent_id", value: "id" },
-  { table: "parent_student_links", column: "student_id", value: "id" },
-  { table: "peer_call_age_verifications", column: "student_id", value: "id" },
-  { table: "peer_call_guardian_grants", column: "student_id", value: "id" },
-  { table: "peer_study_call_signals", column: "sender_id", value: "id" },
-  { table: "pending_application_deadlines", column: "created_by", value: "id" },
-  { table: "pending_opportunity_guides", column: "created_by", value: "id" },
-  { table: "pending_university_prospectuses", column: "created_by", value: "id" },
-  { table: "platform_announcements", column: "created_by", value: "id" },
-  { table: "quiz_results", column: "student_id", value: "id" },
-  { table: "quizzes", column: "created_by", value: "email" },
-  { table: "resources", column: "tutor_id", value: "id" },
-  { table: "school_counselors", column: "created_by", value: "id" },
-  { table: "sponsorship_allocations", column: "student_id", value: "id" },
-  { table: "sponsorship_allocations", column: "created_by", value: "id" },
-  { table: "sponsorship_programmes", column: "created_by", value: "id" },
-  { table: "student_notes", column: "student_id", value: "id" },
-  { table: "student_notes", column: "tutor_id", value: "id" },
-  { table: "student_progress", column: "student_id", value: "id" },
-  { table: "student_progress", column: "created_by", value: "id" },
-  { table: "study_progress", column: "student_id", value: "id" },
-  { table: "study_progress", column: "created_by", value: "id" },
-  { table: "study_reminders", column: "student_id", value: "id" },
-  { table: "study_reminders", column: "created_by", value: "id" },
-  { table: "study_room_posts", column: "author_id", value: "id" },
-  { table: "study_room_posts", column: "created_by", value: "id" },
-  { table: "study_room_replies", column: "author_id", value: "id" },
-  { table: "study_sessions", column: "student_id", value: "id" },
-  { table: "study_sessions", column: "created_by", value: "id" },
-  { table: "subjects", column: "created_by", value: "id" },
-  { table: "subscriptions", column: "created_by", value: "id" },
-  { table: "syllabus_progress", column: "student_id", value: "id" },
-  { table: "tutor_assessment_submissions", column: "student_id", value: "id" },
-  { table: "tutor_assessments", column: "tutor_id", value: "id" },
-  { table: "tutor_assessments", column: "student_id", value: "id" },
-  { table: "tutor_availability", column: "tutor_id", value: "id" },
-  { table: "tutor_availability", column: "tutor_profile_id", value: "id" },
-  { table: "tutor_availability", column: "created_by", value: "id" },
-  { table: "tutor_bookings", column: "student_id", value: "id" },
-  { table: "tutor_bookings", column: "tutor_id", value: "id" },
-  { table: "tutor_bookings", column: "tutor_profile_id", value: "id" },
-  { table: "tutor_bookings", column: "created_by", value: "id" },
-  { table: "tutor_payouts", column: "tutor_id", value: "id" },
-  { table: "tutor_payouts", column: "tutor_profile_id", value: "id" },
-  { table: "tutor_payouts", column: "created_by", value: "id" },
-  { table: "tutor_profiles", column: "created_by", value: "id" },
-  { table: "tutor_reviews", column: "tutor_id", value: "id" },
-  { table: "tutor_reviews", column: "student_id", value: "id" },
-  { table: "tutor_reviews", column: "tutor_profile_id", value: "id" },
-  { table: "university_applications", column: "student_id", value: "id" },
-  { table: "university_applications", column: "created_by", value: "id" },
-  { table: "university_prospectuses", column: "created_by", value: "id" },
-  { table: "video_lessons", column: "tutor_id", value: "id" },
-  { table: "video_lessons", column: "created_by", value: "id" },
-  { table: "virtual_meeting_signals", column: "sender_id", value: "id" },
-  { table: "weekly_goals", column: "student_id", value: "id" },
-  { table: "weekly_goals", column: "created_by", value: "id" },
-];
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
@@ -177,16 +60,13 @@ Deno.serve(async (req: Request) => {
 
   if (confirmation !== "DELETE") return json({ error: "Permanent deletion requires the exact confirmation phrase." }, 400);
 
-  const blockers: string[] = [];
-  for (const ref of protectedReferences) {
-    const value = ref.value === "id" ? target.id : target.email;
-    const { count, error } = await adminClient.from(ref.table).select("*", { count: "exact", head: true }).eq(ref.column, value);
-    if (error) {
-      // Fail closed: a failed reference check must never be interpreted as safe to delete.
-      console.error("Unable to verify deletion dependency:", ref.table, ref.column, error);
-      return json({ error: "Deletion safety checks could not be completed. No data was deleted; contact the technical administrator." }, 503);
-    }
-    if ((count || 0) > 0 && !blockers.includes(ref.table)) blockers.push(ref.table);
+  const { data: blockers, error: dependencyError } = await adminClient.rpc("admin_user_deletion_blockers", {
+    p_user_id: target.id,
+    p_user_email: target.email,
+  });
+  if (dependencyError || !Array.isArray(blockers)) {
+    console.error("Unable to verify deletion dependencies:", dependencyError);
+    return json({ error: "Deletion safety checks could not be completed. No data was deleted; contact the technical administrator." }, 503);
   }
   if (blockers.length) return json({
     error: "This account has linked records that must be retained or handled before permanent deletion.",
