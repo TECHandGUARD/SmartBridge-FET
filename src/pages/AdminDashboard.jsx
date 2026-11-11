@@ -742,8 +742,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/20 py-6 sm:py-8">
+      <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 xl:px-8">
         <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div data-tour="dashboard-heading" className="flex items-center gap-3 mb-8">
@@ -799,10 +799,13 @@ export default function AdminDashboard() {
           <div className="mb-4 lg:hidden">
             <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
             <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e=>setActiveAdminTab(e.target.value)}>
-              {ADMIN_MOBILE_SECTIONS.map(section=><option key={section.value} value={section.value}>{section.label}</option>)}
+              <optgroup label="People & access">{ADMIN_MOBILE_SECTIONS.filter(s=>['registrations','staff-accounts','verification','users','user-viewer'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Teaching & learning">{ADMIN_MOBILE_SECTIONS.filter(s=>['tutors','leaderboard','content','caps','ratings','study-moderation','assessment-moderation','documents','opportunities','knowledge'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Finance & growth">{ADMIN_MOBILE_SECTIONS.filter(s=>['marketing','earnings','payouts','sponsorship','subscription-pricing','payment-gateways','financial'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Operations & governance">{ADMIN_MOBILE_SECTIONS.filter(s=>['reports','legal-documents','operations','university-directory','activity','announcements','moderation','feature-flags','ai-config','system'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
             </select>
           </div>
-          <TabsList className="mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
+          <TabsList aria-label="Admin dashboard sections" className="sticky top-14 z-20 mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border bg-background/95 p-2 pb-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:flex-wrap lg:overflow-visible">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
             <TabsTrigger value="marketing">Marketing</TabsTrigger>
             <TabsTrigger value="staff-accounts">Staff Accounts</TabsTrigger>
