@@ -45,7 +45,6 @@ const protectedReferences: Array<{ table: string; column: string; value: "id" | 
   { table: "tutor_reviews", column: "student_email", value: "email" },
   { table: "tutor_reviews", column: "tutor_email", value: "email" },
   { table: "user_consents", column: "user_id", value: "id" },
-  { table: "user_profiles", column: "email", value: "email" },
   { table: "virtual_meeting_participants", column: "user_id", value: "id" },
 ];
 
@@ -128,10 +127,15 @@ Deno.serve(async (req: Request) => {
   const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(target.id);
   if (authDeleteError) return json({ error: "The authentication account could not be deleted. No profile data was removed." }, 500);
 
+  const { error: userProfileError } = await adminClient.from("user_profiles").delete().eq("email", target.email);
+  if (userProfileError) {
+    console.error("Auth identity deleted but user_profiles cleanup failed:", userProfileError);
+    return json({ error: "The login was deleted, but secondary profile cleanup failed. Contact the technical administrator.", partial: true, accountId: target.id }, 500);
+  }
   const { error: profileDeleteError } = await adminClient.from("users").delete().eq("id", target.id);
   if (profileDeleteError) {
-    console.error("Auth identity deleted but profile row cleanup failed:", profileDeleteError);
-    return json({ error: "The login was deleted, but profile cleanup failed. Contact the technical administrator with the account ID.", partial: true, accountId: target.id }, 500);
+    console.error("Auth identity deleted but users profile cleanup failed:", profileDeleteError);
+    return json({ error: "The login was deleted, but the main profile cleanup failed. Contact the technical administrator.", partial: true, accountId: target.id }, 500);
   }
-  return json({ success: true, message: "Account permanently deleted. The administrative audit record was retained." });
+  return json({ success: true, message: "Account permanently deleted. Required administrative audit history was retained." });
 });
