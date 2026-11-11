@@ -15,7 +15,7 @@ The SQL migration `20261111000000_admin_user_deletion_safety.sql` adds a securit
 
 ## Deployment order
 1. Review and apply the SQL migration to the intended Supabase project.
-2. Deploy `supabase/functions/admin-manage-user/index.ts` with JWT verification enabled.
+2. Deploy `supabase/functions/admin-manage-user/entry.ts` with JWT verification enabled.
 3. Confirm the Edge Function has the standard `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` secrets.
 4. Deploy the frontend branch to a non-production preview and test with dedicated admin, super-admin and test accounts.
 5. Verify deactivation blocks sign-in, reactivation restores sign-in, regular admins cannot permanently delete, and deletion is blocked for users with linked records.
