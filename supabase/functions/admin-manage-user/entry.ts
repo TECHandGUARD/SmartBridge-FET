@@ -46,8 +46,14 @@ serve(async (req: Request) => {
 
   if (action === "deactivate" || action === "reactivate") {
     const active = action === "reactivate";
+    // Ban/unban through Auth Admin as well as updating the profile flag. This
+    // prevents refresh-token renewal for deactivated users, not just new logins.
+    const { error: authStatusError } = await adminClient.auth.admin.updateUserById(targetUserId, {
+      ban_duration: active ? "none" : "876000h",
+    });
+    if (authStatusError) return json({ error: "The authentication status could not be changed. The profile was left unchanged." }, 500);
     const { error } = await adminClient.from("users").update({ is_active: active, updated_at: new Date().toISOString() }).eq("id", targetUserId);
-    if (error) return json({ error: "The account status could not be updated." }, 500);
+    if (error) return json({ error: "Authentication status changed, but the profile flag could not be updated. Contact the technical administrator." }, 500);
     const { error: logError } = await adminClient.from("activity_log").insert({
       event_type: active ? "user_reactivated_by_admin" : "user_deactivated_by_admin",
       user_email: actor.email,
