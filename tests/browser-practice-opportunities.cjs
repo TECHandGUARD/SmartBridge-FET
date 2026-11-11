@@ -24,6 +24,7 @@ const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
       const profile = { id: '00000000-0000-4000-8000-000000000101', email: 'learner@example.test', full_name: 'Test Learner', role: 'student', onboarding_complete: true, is_active: true, trial_started_at: new Date().toISOString() };
       const authUser = { id: profile.id, email: profile.email, user_metadata: { full_name: profile.full_name }, role: 'authenticated', aud: 'authenticated' };
       const session = { access_token: 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test', refresh_token: 'fixture-only', expires_at: 4102444800, expires_in: 3600, token_type: 'bearer', user: authUser };
+      await page.clock.install({ time: new Date('2026-11-11T12:00:00+02:00') });
       await context.addInitScript(({ session, key }) => localStorage.setItem(key, JSON.stringify(session)), { session, key: `sb-${project}-auth-token` });
       let savedDates = [];
       await context.route('**/*', route => {
@@ -98,7 +99,8 @@ const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
       await page.getByRole('heading', { name: 'Find funding for your future.' }).waitFor();
       await page.getByRole('status').filter({ hasText: '8 funding opportunities' }).waitFor();
       await page.getByLabel('Application status').selectOption('Open');
-      await page.getByRole('status').filter({ hasText: '4 funding opportunities' }).waitFor();
+      // On 11 Nov 2026, three of the eight published fixture windows are open.
+      await page.getByRole('status').filter({ hasText: '3 funding opportunities' }).waitFor();
       await page.getByLabel('Search bursaries').fill('Funza');
       await page.getByText(/Returning bursars:/).waitFor();
       await page.getByLabel('Search bursaries').fill('');

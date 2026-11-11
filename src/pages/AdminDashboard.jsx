@@ -21,11 +21,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   Users, FileText, DollarSign, Activity, Shield, TrendingUp,
   BookOpen, Mail, Send, Loader2, RefreshCw, Star, Megaphone, Database, Cpu,
   BarChart2, Trophy, UserCheck, GraduationCap, ToggleLeft, ShieldCheck,
-  Settings, CheckCircle, XCircle, Clock
+  Settings, CheckCircle, XCircle, Clock, Search, UserX, UserCheck2, Trash2, ShieldAlert
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -140,98 +141,78 @@ function SafeSubComponent({ children }) {
 // 📊 Paginated Users Table Component
 // ============================================================
 
-function PaginatedUsersTable({ users, totalCount, loading, onLoadMore, hasMore }) {
+function PaginatedUsersTable({ users, totalCount, loading, onLoadMore, hasMore, onManageUser, isSuperAdmin, currentUserId }) {
   const [searchTerm, setSearchTerm] = useState('');
-
-  const filteredUsers = useMemo(() => {
-    if (!searchTerm.trim()) return users;
-    return users.filter(u =>
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.full_name?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [users, searchTerm]);
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const roles = useMemo(() => [...new Set(users.map(u => u.role || 'user'))].sort(), [users]);
+  const filteredUsers = useMemo(() => users.filter(u => {
+    const query = searchTerm.trim().toLowerCase();
+    const matchesSearch = !query || [u.email, u.full_name, u.display_name, u.phone].some(value => value?.toLowerCase().includes(query));
+    const matchesRole = roleFilter === 'all' || (u.role || 'user') === roleFilter;
+    const matchesStatus = statusFilter === 'all' || (statusFilter === 'active' ? u.is_active !== false : u.is_active === false);
+    return matchesSearch && matchesRole && matchesStatus;
+  }), [users, searchTerm, roleFilter, statusFilter]);
 
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <CardTitle className="font-playfair">
-            Registered Users ({totalCount.toLocaleString()})
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Input
-              placeholder="Search users..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-xs h-8 text-xs"
-            />
-            <Badge variant="outline" className="text-xs">
-              Showing {users.length} of {totalCount.toLocaleString()}
-            </Badge>
+      <CardHeader className="pb-4">
+        <div className="space-y-4">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+              <CardTitle className="font-playfair text-xl">User management</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">Review accounts, access status and subscription type.</p>
+            </div>
+            <Badge variant="outline" className="w-fit text-xs">Loaded {users.length.toLocaleString()} of {totalCount.toLocaleString()}</Badge>
           </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_180px] gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input aria-label="Search users" placeholder="Search name, email or phone..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="pl-9 min-h-10" />
+            </div>
+            <select aria-label="Filter by role" value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="min-h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <option value="all">All roles</option>
+              {roles.map(role => <option key={role} value={role}>{role.replaceAll('_', ' ')}</option>)}
+            </select>
+            <select aria-label="Filter by account status" value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="min-h-10 rounded-md border border-input bg-background px-3 text-sm">
+              <option value="all">All account statuses</option><option value="active">Active</option><option value="inactive">Deactivated</option>
+            </select>
+          </div>
+          <p className="text-xs text-muted-foreground" aria-live="polite">Showing {filteredUsers.length} matching accounts in the loaded records.</p>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
+        <div className="overflow-x-auto rounded-lg border">
+          <table className="w-full min-w-[900px] text-sm">
+            <thead className="bg-muted/50">
               <tr className="border-b border-border text-xs text-muted-foreground uppercase tracking-wider">
-                <th className="text-left py-2 pr-4">Name</th>
-                <th className="text-left py-2 pr-4">Email</th>
-                <th className="text-left py-2 pr-4">Role</th>
-                <th className="text-left py-2">Subscription</th>
+                <th className="text-left py-3 px-3">Name</th><th className="text-left py-3 px-3">Email</th><th className="text-left py-3 px-3">Role</th><th className="text-left py-3 px-3">Subscription</th><th className="text-left py-3 px-3">Status</th><th className="text-right py-3 px-3">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredUsers.map(u => (
-                <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                  <td className="py-2.5 pr-4 font-medium">{u.full_name || '—'}</td>
-                  <td className="py-2.5 pr-4 text-muted-foreground text-xs">{u.email}</td>
-                  <td className="py-2.5 pr-4">
-                    <Badge variant="outline" className="text-xs capitalize">{u.role || 'user'}</Badge>
-                  </td>
-                  <td className="py-2.5">
-                    {u.is_premium ? (
-                      <Badge className="bg-amber-100 text-amber-700 text-xs gap-1">
-                        <Star className="w-2.5 h-2.5 fill-current" /> Premium
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">Free</Badge>
-                    )}
+                <tr key={u.id} className="border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+                  <td className="py-3 px-3 font-medium">{u.full_name || u.display_name || '—'}</td>
+                  <td className="py-3 px-3 text-muted-foreground text-xs">{u.email}</td>
+                  <td className="py-3 px-3"><Badge variant="outline" className="text-xs capitalize">{(u.role || 'user').replaceAll('_', ' ')}</Badge></td>
+                  <td className="py-3 px-3">{u.is_premium ? <Badge className="bg-amber-100 text-amber-700 text-xs gap-1"><Star className="w-2.5 h-2.5 fill-current" /> Premium</Badge> : <Badge variant="secondary" className="text-xs">Free</Badge>}</td>
+                  <td className="py-3 px-3"><Badge variant={u.is_active === false ? 'destructive' : 'secondary'} className="text-xs">{u.is_active === false ? 'Deactivated' : 'Active'}</Badge></td>
+                  <td className="py-3 px-3 text-right">
+                    <div className="inline-flex flex-wrap justify-end gap-1.5">
+                      {u.id !== currentUserId && (u.is_active === false
+                        ? <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => onManageUser(u, 'reactivate')}><UserCheck2 className="h-3.5 w-3.5" /> Reactivate</Button>
+                        : <Button size="sm" variant="outline" className="h-8 gap-1" onClick={() => onManageUser(u, 'deactivate')}><UserX className="h-3.5 w-3.5" /> Deactivate</Button>)}
+                      {isSuperAdmin && u.id !== currentUserId && !u.is_super_admin && <Button size="sm" variant="destructive" className="h-8 gap-1" onClick={() => onManageUser(u, 'delete')}><Trash2 className="h-3.5 w-3.5" /> Delete</Button>}
+                      {u.id === currentUserId && <span className="text-xs text-muted-foreground">Your account</span>}
+                    </div>
                   </td>
                 </tr>
               ))}
-              {filteredUsers.length === 0 && (
-                <tr><td colSpan={4} className="text-center py-8 text-muted-foreground">{CONFIG.MESSAGES.NO_DATA}</td></tr>
-              )}
+              {filteredUsers.length === 0 && <tr><td colSpan={6} className="text-center py-10 text-muted-foreground">{CONFIG.MESSAGES.NO_DATA}</td></tr>}
             </tbody>
           </table>
         </div>
-
-        {/* Load More Button */}
-        {hasMore && !searchTerm && (
-          <div className="mt-4 flex justify-center">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLoadMore}
-              disabled={loading}
-              className="gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  {CONFIG.MESSAGES.LOADING_MORE}
-                </>
-              ) : (
-                <>
-                  <Users className="w-3.5 h-3.5" />
-                  Load More Users
-                </>
-              )}
-            </Button>
-          </div>
-        )}
+        {hasMore && !searchTerm && <div className="mt-4 flex justify-center"><Button variant="outline" size="sm" onClick={onLoadMore} disabled={loading} className="gap-2">{loading ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{CONFIG.MESSAGES.LOADING_MORE}</> : <><Users className="w-3.5 h-3.5" />Load More Users</>}</Button></div>}
       </CardContent>
     </Card>
   );
@@ -289,6 +270,9 @@ export default function AdminDashboard() {
   const [testEmailTarget, setTestEmailTarget] = useState('');
   const [testEmailSending, setTestEmailSending] = useState(false);
   const [emailLogs, setEmailLogs] = useState([]);
+  const [accountAction, setAccountAction] = useState(null);
+  const [accountActionPhrase, setAccountActionPhrase] = useState('');
+  const [accountActionLoading, setAccountActionLoading] = useState(false);
 
   // ---------- Architectural Guard Rails ----------
   const isFetchingRef = useRef(false);
@@ -509,6 +493,29 @@ export default function AdminDashboard() {
       });
     };
   }, [user?.email, loadDashboardData]);
+
+  // ---------- Account management (all privileged actions run server-side) ----------
+  const handleAccountAction = async () => {
+    if (!accountAction?.user?.id || !accountAction?.action) return;
+    if (accountAction.action === 'delete' && accountActionPhrase !== 'DELETE') return;
+    setAccountActionLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-manage-user', { body: { action: accountAction.action, targetUserId: accountAction.user.id, confirmation: accountAction.action === 'delete' ? accountActionPhrase : undefined } });
+      if (error) {
+        let details = null;
+        try { details = await error.context?.json?.(); } catch { /* use the SDK message below */ }
+        const linked = details?.linkedRecords?.length ? ` Linked records: ${details.linkedRecords.join(', ')}.` : '';
+        throw new Error((details?.error || error.message || 'Account action failed.') + linked);
+      }
+      if (data?.error) throw new Error(data.error);
+      toast.success(data?.message || 'Account updated.');
+      setAccountAction(null); setAccountActionPhrase('');
+      await loadDashboardData(true); await loadUserCount();
+    } catch (error) {
+      console.error('Admin account action failed:', error);
+      toast.error(error.message || 'Could not complete account action.');
+    } finally { setAccountActionLoading(false); }
+  };
 
   // ---------- Resource Approval/Rejection ----------
   const handleApproveResource = async (resource) => {
@@ -740,8 +747,8 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-muted/20 py-6 sm:py-8">
+      <div className="max-w-screen-2xl mx-auto px-3 sm:px-6 xl:px-8">
         <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div data-tour="dashboard-heading" className="flex items-center gap-3 mb-8">
@@ -797,10 +804,13 @@ export default function AdminDashboard() {
           <div className="mb-4 lg:hidden">
             <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
             <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e=>setActiveAdminTab(e.target.value)}>
-              {ADMIN_MOBILE_SECTIONS.map(section=><option key={section.value} value={section.value}>{section.label}</option>)}
+              <optgroup label="People & access">{ADMIN_MOBILE_SECTIONS.filter(s=>['registrations','staff-accounts','verification','users','user-viewer'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Teaching & learning">{ADMIN_MOBILE_SECTIONS.filter(s=>['tutors','leaderboard','content','caps','ratings','study-moderation','assessment-moderation','documents','opportunities','knowledge'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Finance & growth">{ADMIN_MOBILE_SECTIONS.filter(s=>['marketing','earnings','payouts','sponsorship','subscription-pricing','payment-gateways','financial'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
+              <optgroup label="Operations & governance">{ADMIN_MOBILE_SECTIONS.filter(s=>['reports','legal-documents','operations','university-directory','activity','announcements','moderation','feature-flags','ai-config','system'].includes(s.value)).map(s=><option key={s.value} value={s.value}>{s.label}</option>)}</optgroup>
             </select>
           </div>
-          <TabsList className="mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
+          <TabsList aria-label="Admin dashboard sections" className="hidden sticky top-14 z-20 mb-6 h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto rounded-xl border bg-background/95 p-2 pb-2 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:flex lg:flex-wrap lg:overflow-visible">
             <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
             <TabsTrigger value="marketing">Marketing</TabsTrigger>
             <TabsTrigger value="staff-accounts">Staff Accounts</TabsTrigger>
@@ -853,13 +863,7 @@ export default function AdminDashboard() {
 
           <TabsContent value="users">
             <SafeSubComponent>
-              <PaginatedUsersTable
-                users={users}
-                totalCount={totalUserCount}
-                loading={loadingMore}
-                onLoadMore={loadMoreUsers}
-                hasMore={hasMoreUsers}
-              />
+              <PaginatedUsersTable users={users} totalCount={totalUserCount} loading={loadingMore} onLoadMore={loadMoreUsers} hasMore={hasMoreUsers} onManageUser={(targetUser, action) => { setAccountAction({ user: targetUser, action }); setAccountActionPhrase(''); }} isSuperAdmin={isSuperAdmin} currentUserId={user?.id} />
             </SafeSubComponent>
           </TabsContent>
 
@@ -1236,6 +1240,16 @@ export default function AdminDashboard() {
             </SafeSubComponent>
           </TabsContent>
         </Tabs></div>
+        <Dialog open={!!accountAction} onOpenChange={open => { if (!open && !accountActionLoading) { setAccountAction(null); setAccountActionPhrase(''); } }}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader><DialogTitle className="flex items-center gap-2">{accountAction?.action === 'delete' ? <ShieldAlert className="h-5 w-5 text-destructive" /> : <UserX className="h-5 w-5 text-primary" />}{accountAction?.action === 'delete' ? 'Permanently delete account?' : accountAction?.action === 'reactivate' ? 'Reactivate account?' : 'Deactivate account?'}</DialogTitle>
+              <DialogDescription>{accountAction?.action === 'delete' ? 'This removes the login and profile only when the server confirms that no protected linked records remain. Payment, legal and audit records must be retained.' : accountAction?.action === 'reactivate' ? 'The user will be able to sign in and use their account again.' : 'The user will be prevented from signing in. Their profile and related records remain available for future reactivation.'}</DialogDescription>
+            </DialogHeader>
+            {accountAction?.user && <div className="rounded-lg border bg-muted/30 p-3 text-sm"><p className="font-semibold">{accountAction.user.full_name || accountAction.user.email}</p><p className="text-muted-foreground">{accountAction.user.email} · {accountAction.user.role || 'user'}</p></div>}
+            {accountAction?.action === 'delete' && <div className="space-y-2"><label htmlFor="confirm-delete-user" className="text-sm font-medium">Type DELETE to confirm</label><Input id="confirm-delete-user" value={accountActionPhrase} onChange={e => setAccountActionPhrase(e.target.value)} placeholder="DELETE" autoComplete="off" /></div>}
+            <DialogFooter><Button variant="outline" onClick={() => setAccountAction(null)} disabled={accountActionLoading}>Cancel</Button><Button variant={accountAction?.action === 'delete' ? 'destructive' : 'default'} onClick={handleAccountAction} disabled={accountActionLoading || (accountAction?.action === 'delete' && accountActionPhrase !== 'DELETE')}>{accountActionLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}{accountAction?.action === 'delete' ? 'Permanently delete' : accountAction?.action === 'reactivate' ? 'Reactivate account' : 'Deactivate account'}</Button></DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

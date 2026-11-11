@@ -3,6 +3,19 @@
   "production_changed": true,
   "functions": [
     {
+      "slug": "admin-manage-user",
+      "entrypoint": "supabase/functions/admin-manage-user/entry.ts",
+      "access": "admin",
+      "verify_jwt": true,
+      "provider": null,
+      "dependencies": [],
+      "required_migrations": [
+        "supabase/migrations/20261111000000_admin_user_deletion_safety.sql"
+      ],
+      "reconciled_entrypoint_sha256": "8f27f6a80502a74172da01841d27a137e4bc3625fe96bc95872eca759488c614",
+      "dependency_sha256": {}
+    },
+    {
       "slug": "approve-opportunity-content",
       "entrypoint": "supabase/functions/approveOpportunityContent/entry.ts",
       "access": "admin",
@@ -1207,7 +1220,7 @@
       ]
     }
   ],
-  "updated_date": "2026-10-19",
+  "updated_date": "2026-11-11",
   "ordered_migrations": [
     "supabase/migrations/20260822153131_create_tech_guard_website_tables.sql",
     "supabase/migrations/20260822153132_capture_live_schema_baseline.sql",
@@ -1218,6 +1231,7 @@
     "supabase/migrations/20261013103838_payment_gateway_settings.sql",
     "supabase/migrations/20261013123603_operational_integrations.sql",
     "supabase/migrations/20261013143001_study_room_moderation.sql",
-    "supabase/migrations/20261014065749_admin_subscription_pricing.sql"
+    "supabase/migrations/20261014065749_admin_subscription_pricing.sql",
+    "supabase/migrations/20261111000000_admin_user_deletion_safety.sql"
   ]
 }
