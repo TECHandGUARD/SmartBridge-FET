@@ -1,5 +1,9 @@
 project_id = "SmartBridge-FET"
 
+[functions.admin-manage-user]
+verify_jwt = true
+entrypoint = "./functions/admin-manage-user/entry.ts"
+
 [functions.approve-opportunity-content]
 verify_jwt = true
 entrypoint = "./functions/approveOpportunityContent/entry.ts"
