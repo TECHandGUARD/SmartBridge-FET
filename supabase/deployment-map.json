@@ -12,7 +12,7 @@
       "required_migrations": [
         "supabase/migrations/20261111000000_admin_user_deletion_safety.sql"
       ],
-      "reconciled_entrypoint_sha256": "c1e0dbdd830f2a18e881a8be04c0afdcbaf5e5d6f7cb63ce41ef0ac07152aae4",
+      "reconciled_entrypoint_sha256": "8f27f6a80502a74172da01841d27a137e4bc3625fe96bc95872eca759488c614",
       "dependency_sha256": {}
     },
     {
