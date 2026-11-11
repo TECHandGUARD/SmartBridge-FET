@@ -11,8 +11,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json" },
 });
 
-// Each reference below is checked before deletion. The service-role client is
-// used only inside this function; no privileged key is exposed to the browser.
+// The database migration checks every configured identity reference before deletion.
+// The service-role client is used only inside this function; no privileged key reaches the browser.
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed." }, 405);
