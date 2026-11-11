@@ -89,6 +89,11 @@ Deno.serve(async (req: Request) => {
   const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(target.id);
   if (authDeleteError) return json({ error: "The authentication account could not be deleted. No profile data was removed." }, 500);
 
+  const { error: legacyProfileError } = await adminClient.from("profiles").delete().eq("id", target.id);
+  if (legacyProfileError) {
+    console.error("Auth identity deleted but profiles cleanup failed:", legacyProfileError);
+    return json({ error: "The login was deleted, but legacy profile cleanup failed. Contact the technical administrator.", partial: true, accountId: target.id }, 500);
+  }
   const { error: userProfileError } = await adminClient.from("user_profiles").delete().eq("email", target.email);
   if (userProfileError) {
     console.error("Auth identity deleted but user_profiles cleanup failed:", userProfileError);
