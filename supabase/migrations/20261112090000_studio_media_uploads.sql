@@ -60,7 +60,7 @@ begin
   if (jsonb_typeof(slide)='object' and jsonb_typeof(slide->'title')='string' and length(btrim(slide->>'title')) between 1 and 100 and jsonb_typeof(slide->'body')='string' and length(slide->>'body')<=1600 and jsonb_typeof(slide->'notes')='string' and length(slide->>'notes')<=2000 and slide->>'layout' in ('title','content')) is distinct from true then return false;end if;
   if slide ? 'media' and slide->'media'<>'null'::jsonb then
    media:=slide->'media';
-   if jsonb_typeof(media)<>'object' or media->>'kind' not in ('image','video') or jsonb_typeof(media->'path')<>'string' or length(media->>'path')>500 or coalesce(length(media->>'caption'),0)>240 then return false;end if;
+   if jsonb_typeof(media)<>'object' or coalesce(media->>'kind','') not in ('image','video') or jsonb_typeof(media->'path') is distinct from 'string' or length(media->>'path')>500 or coalesce(length(media->>'caption'),0)>240 then return false;end if;
    if split_part(media->>'path','/',1)='' then return false;end if;
   end if;
  end loop;return true;
