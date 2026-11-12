@@ -5,6 +5,12 @@ import { Upload, Calendar, Users, Wallet, MessageCircle, BookOpen, Star, Video, 
 import PropTypes from 'prop-types';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const actions = [{
+  key: 'classroom',
+  label: 'Live Classroom',
+  icon: Video,
+  color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/30 dark:text-indigo-300',
+  activeColor: 'bg-indigo-600 text-white dark:bg-indigo-700'
+}, {
   key: 'lesson-studio',
   label: 'Lesson Studio',
   icon: ClipboardList,

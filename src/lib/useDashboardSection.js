@@ -3,7 +3,7 @@ import { isDashboardSectionEnabled } from './release-scope';
 const SECTIONS = {
   student: ['subjects', 'progress', 'ai', 'goals', 'simulations', 'bookmarks', 'messages', 'applications'],
   parent: ['child', 'progress', 'subjects', 'tutors', 'reports', 'premium', 'messages'],
-  tutor: ['lesson-studio', 'upload', 'availability', 'students', 'earnings', 'messages', 'bookings', 'reviews', 'sessions'],
+  tutor: ['classroom', 'lesson-studio', 'upload', 'availability', 'students', 'earnings', 'messages', 'bookings', 'reviews', 'sessions'],
 };
 /** @returns {[string|null, (key:string)=>void]} */
 export function useDashboardSection(role) {
