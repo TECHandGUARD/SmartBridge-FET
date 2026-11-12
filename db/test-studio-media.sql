@@ -12,6 +12,7 @@ begin
  if not smartbridge_private.valid_presentation(video_deck) then raise exception 'Video deck rejected';end if;
  if smartbridge_private.valid_presentation(invalid_deck) then raise exception 'Invalid media type accepted';end if;
  if not exists(select 1 from storage.buckets where id='lesson-media' and public=false) then raise exception 'Private lesson media bucket missing';end if;
- if not exists(select 1 from storage.buckets where id='marketing-media' and public=true) then raise exception 'Public campaign media bucket missing';end if;
+ if not exists(select 1 from storage.buckets where id='marketing-media' and public=false) then raise exception 'Private campaign media bucket missing';end if;
+ if not exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname='marketing_media_published_read') then raise exception 'Published campaign media read policy missing';end if;
 end $$;
 rollback;
