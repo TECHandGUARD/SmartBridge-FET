@@ -28,3 +28,14 @@ test('unauthorized presenter and invalid/oversized transfer cannot display slide
   send({type:'start',id:'bad',title:'Bad',page:1,total:1,size:3});send({type:'chunk',id:'bad',data:'abc'});send({type:'end',id:'bad'});assert.equal(p.received.length,0);
   assert.throws(()=>p.a.publish({...slide,image:'A'.repeat(2000001)}),/too large/);
 });
+
+test('signed lesson media is transmitted only with validated HTTPS URLs',async()=>{
+  const p=pair();
+  const media={kind:'video',url:'https://project.supabase.co/storage/v1/object/sign/lesson-media/clip.mp4?token=temporary',caption:'Lab demonstration'};
+  p.a.publish({...slide,media});await tick();
+  assert.deepEqual(p.received.at(-1).value.media,media);
+  const invalid=pair();const send=m=>invalid.receiver.onmessage({data:JSON.stringify(m)});
+  send({type:'start',id:'bad-media',title:'Bad',page:1,total:1,size:3,media:{kind:'video',url:'javascript:alert(1)',caption:'bad'}});
+  send({type:'chunk',id:'bad-media',data:'abc'});send({type:'end',id:'bad-media'});
+  assert.equal(invalid.received.length,0);
+});
