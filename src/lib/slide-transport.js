@@ -19,7 +19,7 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
     try {
       if (!value) { await send({type:'stop'});return; }
       const id = crypto.randomUUID();
-      if (!await send({type:'start',id,title:value.title,page:value.page,total:value.total,size:value.image.length})) return;
+      if (!await send({type:'start',id,title:value.title,page:value.page,total:value.total,size:value.image.length,media:value.media||null})) return;
       for (let offset=0;offset<value.image.length;offset+=CHUNK) {
         if (!await send({type:'chunk',id,data:value.image.slice(offset,offset+CHUNK)})) return;
       }
@@ -38,6 +38,8 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
       if (message.type === 'start') {
         entry.pending=null;
         if (typeof message.id !== 'string' || message.id.length>64 || typeof message.title !== 'string' || message.title.length>120 || !Number.isInteger(message.page) || !Number.isInteger(message.total) || message.page<1 || message.page>message.total || message.total>150 || !Number.isInteger(message.size) || message.size<1 || message.size>MAX) return;
+        const media=message.media;
+        if(media!==null&&media!==undefined&&(typeof media!=='object'||!['image','video'].includes(media.kind)||typeof media.url!=='string'||media.url.length>2048||!/^https:\/\//.test(media.url)||typeof (media.caption||'')!=='string'||(media.caption||'').length>240))return;
         entry.pending={...message,parts:[],length:0,expires:Date.now()+30000};return;
       }
       const pending=entry.pending;
@@ -51,7 +53,7 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
         if (pending.length!==pending.size) return;
         const image=pending.parts.join('');
         if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image)) return;
-        onSlide(id,{title:pending.title,page:pending.page,total:pending.total,image});
+        onSlide(id,{title:pending.title,page:pending.page,total:pending.total,image,media:pending.media||null});
       }
     };
     channel.onclose=()=>{if(connections.get(id)===entry){connections.delete(id);onSlide(id,null);}};
