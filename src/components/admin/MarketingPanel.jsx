@@ -15,14 +15,14 @@ export default function MarketingPanel(){
  async function save(e){
   e.preventDefault();if(saving.current)return;saving.current=true;setBusy(true);setError('');setNotice('');
   try{
-   let previousMedia=null;if(form.id){const {data:existingMedia,error:existingMediaError}=await withTimeout(supabase.from('marketing_post_media').select('object_path').eq('post_id',form.id).maybeSingle());if(existingMediaError)throw existingMediaError;previousMedia=existingMedia?.object_path||null;}
+   let cleanupWarning=false;let previousMedia=null;if(form.id){const {data:existingMedia,error:existingMediaError}=await withTimeout(supabase.from('marketing_post_media').select('object_path').eq('post_id',form.id).maybeSingle());if(existingMediaError)throw existingMediaError;previousMedia=existingMedia?.object_path||null;}
    const {data:savedId,error:saveError}=await withTimeout(supabase.rpc('save_marketing_post',{p_id:form.id,p_slug:form.slug,p_title:form.title,p_summary:form.summary,p_body:form.body,p_kind:form.kind,p_event_at:form.event_at?new Date(form.event_at).toISOString():null,p_published:form.published,p_version:form.version}));
    if(saveError)throw saveError;
    if(!savedId)throw new Error('The post was saved without returning its identifier. Refresh before retrying.');
    if(form.media?.path){const {error:mediaError}=await withTimeout(supabase.from('marketing_post_media').upsert({post_id:savedId,object_path:form.media.path,media_type:form.media.kind,alt_text:form.media.caption||''},{onConflict:'post_id'}));if(mediaError)throw mediaError;}
    else {const {error:mediaError}=await withTimeout(supabase.from('marketing_post_media').delete().eq('post_id',savedId));if(mediaError)throw mediaError;}
-   if(previousMedia&&previousMedia!==form.media?.path){const {error:cleanupError}=await supabase.storage.from('marketing-media').remove([previousMedia]);if(cleanupError)setNotice('Post saved, but its replaced media file could not be removed.');}
-   setForm(EMPTY);setNotice('Post and campaign media saved.');await load();
+   if(previousMedia&&previousMedia!==form.media?.path){const {error:cleanupError}=await supabase.storage.from('marketing-media').remove([previousMedia]);if(cleanupError)cleanupWarning=true;}
+   setForm(EMPTY);setNotice(cleanupWarning?'Post saved, but its replaced media file could not be removed.':'Post and campaign media saved.');await load();
   }catch(e){setError(e.message+' Refresh the list before retrying to confirm whether your post was saved.');}
   finally{saving.current=false;setBusy(false);}
  }
