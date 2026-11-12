@@ -2,7 +2,7 @@
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values
  ('lesson-media','lesson-media',false,31457280,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm']),
- ('marketing-media','marketing-media',true,31457280,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'])
+ ('marketing-media','marketing-media',false,31457280,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'])
 on conflict(id) do update set public=excluded.public,file_size_limit=excluded.file_size_limit,allowed_mime_types=excluded.allowed_mime_types;
 
 drop policy if exists lesson_media_owner_read on storage.objects;
@@ -49,6 +49,20 @@ create policy admins_manage_post_media on public.marketing_post_media for all to
  using(smartbridge_private.is_admin(auth.uid())) with check(smartbridge_private.is_admin(auth.uid()));
 create policy active_account_required on public.marketing_post_media as restrictive for all to authenticated
  using((select smartbridge_private.enabled_account())) with check((select smartbridge_private.enabled_account()));
+
+-- Campaign files are private objects. Anonymous visitors can obtain signed URLs only
+-- for media attached to published posts; administrators can preview their own drafts.
+drop policy if exists marketing_media_published_read on storage.objects;
+create policy marketing_media_published_read on storage.objects for select to anon
+ using(bucket_id='marketing-media' and exists(
+  select 1 from public.marketing_post_media m join public.marketing_posts p on p.id=m.post_id
+  where m.object_path=name and p.published=true));
+drop policy if exists marketing_media_member_read on storage.objects;
+create policy marketing_media_member_read on storage.objects for select to authenticated
+ using(bucket_id='marketing-media' and (
+  smartbridge_private.is_admin(auth.uid()) or exists(
+   select 1 from public.marketing_post_media m join public.marketing_posts p on p.id=m.post_id
+   where m.object_path=name and p.published=true))));
 
 -- Extend slide validation without invalidating legacy text-only presentations.
 create or replace function smartbridge_private.valid_presentation(content jsonb) returns boolean language plpgsql immutable security invoker set search_path='' as $$
