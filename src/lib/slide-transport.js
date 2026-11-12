@@ -53,7 +53,7 @@ export function createSlideTransport({onSlide,canReceive = (_id) => true}) {
         if (pending.length!==pending.size) return;
         const image=pending.parts.join('');
         if (!/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(image)) return;
-        onSlide(id,{title:pending.title,page:pending.page,total:pending.total,image,media:pending.media||null});
+        onSlide(id,{title:pending.title,page:pending.page,total:pending.total,image,...(pending.media?{media:pending.media}:{})});
       }
     };
     channel.onclose=()=>{if(connections.get(id)===entry){connections.delete(id);onSlide(id,null);}};
