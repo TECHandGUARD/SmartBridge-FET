@@ -4,7 +4,7 @@ export const newSlide=()=>({title:'New slide',body:'',notes:'',layout:'content'}
 export const newDeck=()=>({theme:'forest',show_author:false,slides:[{title:'Your presentation',body:'Subject · Grade · Topic',notes:'',layout:'title'}]});
 export function validateDeck(content){
  if(!content||!DECK_THEMES[content.theme]||typeof content.show_author!=='boolean'||!Array.isArray(content.slides)||content.slides.length<1||content.slides.length>MAX_SLIDES)return false;
- return content.slides.every(s=>s&&typeof s.title==='string'&&s.title.trim().length>0&&s.title.length<=100&&typeof s.body==='string'&&s.body.length<=1600&&typeof s.notes==='string'&&s.notes.length<=2000&&['title','content'].includes(s.layout));
+ return content.slides.every(s=>s&&typeof s.title==='string'&&s.title.trim().length>0&&s.title.length<=100&&typeof s.body==='string'&&s.body.length<=1600&&typeof s.notes==='string'&&s.notes.length<=2000&&['title','content'].includes(s.layout)&&(!s.media||(s.media===null)||(typeof s.media==='object'&&['image','video'].includes(s.media.kind)&&typeof s.media.path==='string'&&s.media.path.length<=500&&String(s.media.caption||'').length<=240)));
 }
 export function buildLessonDeck(topic){
  const name=topic.trim().slice(0,100)||'My lesson';
@@ -33,15 +33,16 @@ function textBlock(ctx,text,{x,y,width,height,size,min=18,color,weight='400'}){
  ctx.fillStyle=color;ctx.textBaseline='top';lines.slice(0,Math.floor(height/step)).forEach((line,i)=>ctx.fillText(line,x,y+i*step,width));
 }
 // The fixed footer is drawn into the pixels, so it survives PDF export and live sharing.
-export function renderDeckSlide(canvas,slide,themeName,page,total,author=''){
+export function renderDeckSlide(canvas,slide,themeName,page,total,author='',mediaPreview=null){
  const theme=DECK_THEMES[themeName]||DECK_THEMES.forest;canvas.width=1280;canvas.height=720;
  const ctx=canvas.getContext('2d');if(!ctx)throw new Error('Slide preview is unavailable in this browser.');
  ctx.fillStyle=theme.background;ctx.fillRect(0,0,1280,720);
  ctx.fillStyle=theme.accent;ctx.fillRect(0,0,16,720);ctx.globalAlpha=0.12;ctx.beginPath();ctx.arc(1200,0,320,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
  const cover=slide.layout==='title';
- textBlock(ctx,slide.title,{x:76,y:cover?150:62,width:1120,height:cover?210:140,size:cover?64:48,min:30,color:theme.ink,weight:'700'});
+ textBlock(ctx,slide.title,{x:76,y:cover?150:62,width:mediaPreview?650:1120,height:cover?210:140,size:cover?64:48,min:30,color:theme.ink,weight:'700'});
  ctx.fillStyle=theme.accent;ctx.fillRect(78,cover?382:214,92,5);
- textBlock(ctx,slide.body,{x:78,y:cover?420:250,width:1110,height:cover?190:365,size:cover?32:34,min:18,color:theme.ink});
+ textBlock(ctx,slide.body,{x:78,y:cover?420:250,width:mediaPreview?650:1110,height:cover?190:365,size:cover?32:34,min:18,color:theme.ink});
+ if(mediaPreview){const x=790,y=250,w=410,h=330;ctx.fillStyle=theme.panel;ctx.fillRect(x,y,w,h);if(mediaPreview.image){const iw=mediaPreview.image.naturalWidth||mediaPreview.image.width,ih=mediaPreview.image.naturalHeight||mediaPreview.image.height,scale=Math.min((w-24)/iw,(h-64)/ih),dw=iw*scale,dh=ih*scale;ctx.drawImage(mediaPreview.image,x+(w-dw)/2,y+12+(h-64-dh)/2,dw,dh);}else{textBlock(ctx,'Video attached · available during live presentation',{x:x+24,y:y+110,width:w-48,height:100,size:24,min:18,color:theme.ink,weight:'700'});}if(mediaPreview.caption){textBlock(ctx,mediaPreview.caption,{x:x+16,y:y+h-48,width:w-32,height:40,size:16,min:12,color:theme.ink});}}
  ctx.fillStyle=theme.panel;ctx.fillRect(16,656,1264,64);
  ctx.fillStyle=theme.accent;ctx.font='700 28px Arial, sans-serif';ctx.textBaseline='middle';ctx.fillText('SmartBridge FET',44,688);
  if(author){ctx.font='18px Arial, sans-serif';ctx.fillStyle=theme.ink;ctx.fillText('Author: '+author.slice(0,80),340,688,750);}
@@ -53,10 +54,10 @@ export function addPdfBrand(canvas,page,total,author=''){
  if(author){ctx.font=Math.max(10,Math.round(canvas.width*0.014))+'px Arial, sans-serif';ctx.fillText('Author: '+author.slice(0,80),canvas.width*0.27,canvas.height-height/2,canvas.width*0.56);}
  ctx.textAlign='right';ctx.font=Math.max(10,Math.round(canvas.width*0.014))+'px Arial, sans-serif';ctx.fillText(page+' / '+total,canvas.width-12,canvas.height-height/2);ctx.textAlign='left';
 }
-export async function exportDeckPdf(deck,author=''){
+export async function exportDeckPdf(deck,author='',mediaUrls={}){
  const {jsPDF}=await import('jspdf');const pdf=new jsPDF({orientation:'landscape',unit:'mm',format:[320,180]});
  const canvas=document.createElement('canvas');
- deck.content.slides.forEach((slide,i)=>{if(i)pdf.addPage([320,180],'landscape');renderDeckSlide(canvas,slide,deck.content.theme,i+1,deck.content.slides.length,deck.content.show_author?author:'');pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,320,180);});
+ for(let i=0;i<deck.content.slides.length;i++){const slide=deck.content.slides[i];if(i)pdf.addPage([320,180],'landscape');let mediaPreview=null;if(slide.media?.kind==='image'&&mediaUrls[slide.media.path]){const image=new Image();image.crossOrigin='anonymous';image.src=mediaUrls[slide.media.path];await image.decode();mediaPreview={image,caption:slide.media.caption||''};}else if(slide.media?.kind==='video'){mediaPreview={video:true,caption:slide.media.caption||''};}renderDeckSlide(canvas,slide,deck.content.theme,i+1,deck.content.slides.length,deck.content.show_author?author:'',mediaPreview);pdf.addImage(canvas.toDataURL('image/jpeg',0.9),'JPEG',0,0,320,180);}
  pdf.setProperties({title:deck.title,author:deck.content.show_author?author:'SmartBridge FET',creator:'SmartBridge FET'});
  pdf.save((deck.title.replace(/[^a-zA-Z0-9 _-]/g,'').trim()||'Presentation')+'.pdf');
 }
