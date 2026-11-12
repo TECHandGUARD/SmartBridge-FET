@@ -4,7 +4,7 @@ export const newSlide=()=>({title:'New slide',body:'',notes:'',layout:'content'}
 export const newDeck=()=>({theme:'forest',show_author:false,slides:[{title:'Your presentation',body:'Subject · Grade · Topic',notes:'',layout:'title'}]});
 export function validateDeck(content){
  if(!content||!DECK_THEMES[content.theme]||typeof content.show_author!=='boolean'||!Array.isArray(content.slides)||content.slides.length<1||content.slides.length>MAX_SLIDES)return false;
- return content.slides.every(s=>s&&typeof s.title==='string'&&s.title.trim().length>0&&s.title.length<=100&&typeof s.body==='string'&&s.body.length<=1600&&typeof s.notes==='string'&&s.notes.length<=2000&&['title','content'].includes(s.layout));
+ return content.slides.every(s=>s&&typeof s.title==='string'&&s.title.trim().length>0&&s.title.length<=100&&typeof s.body==='string'&&s.body.length<=1600&&typeof s.notes==='string'&&s.notes.length<=2000&&['title','content'].includes(s.layout)&&(!s.media||(s.media===null)||(typeof s.media==='object'&&['image','video'].includes(s.media.kind)&&typeof s.media.path==='string'&&s.media.path.length<=500&&String(s.media.caption||'').length<=240)));
 }
 export function buildLessonDeck(topic){
  const name=topic.trim().slice(0,100)||'My lesson';
