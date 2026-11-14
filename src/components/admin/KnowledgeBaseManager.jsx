@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Trash2, ExternalLink, Loader2, BookOpen, Search, Edit, X, ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -189,27 +190,11 @@ const ResourceForm = ({
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Subject *</Label>
-          <Select value={form.subject} onValueChange={v => setForm(p => ({
-          ...p,
-          subject: v
-        }))}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select subject" /></SelectTrigger>
-            <SelectContent>
-              {SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SelectWithOther value={form.subject} onValueChange={v => setForm(p => ({ ...p, subject: v }))} options={SUBJECTS} placeholder="Select subject" inputPlaceholder="Enter subject name" className="h-8 text-xs" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">Grade *</Label>
-          <Select value={form.grade} onValueChange={v => setForm(p => ({
-          ...p,
-          grade: v
-        }))}>
-            <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select grade" /></SelectTrigger>
-            <SelectContent>
-              {GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}
-            </SelectContent>
-          </Select>
+          <SelectWithOther value={form.grade} onValueChange={v => setForm(p => ({ ...p, grade: v }))} options={GRADES} placeholder="Select grade" inputPlaceholder="Enter grade" className="h-8 text-xs" />
         </div>
         <div className="space-y-1">
           <Label className="text-xs">CAPS Alignment Tag</Label>
