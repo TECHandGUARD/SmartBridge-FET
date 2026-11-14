@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Textarea } from '@/components/ui/textarea';
 import { Upload, FileText, BookOpen, ClipboardList, Lightbulb, Star, Loader2, ArrowLeft, Shield, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -196,17 +197,14 @@ export default function ResourceTemplateUploader({
 
             <div className="space-y-1.5">
               <Label>Subject *</Label>
-              <Select value={form.subject} onValueChange={v => setForm({
-              ...form,
-              subject: v
-            })} disabled={uploading}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithOther
+                value={form.subject}
+                onValueChange={v => setForm(previous => ({ ...previous, subject: v }))}
+                options={SUBJECTS.map(s => s.name)}
+                placeholder="Select subject"
+                inputPlaceholder="Enter subject name"
+                disabled={uploading}
+              />
             </div>
 
             <div className="space-y-1.5">

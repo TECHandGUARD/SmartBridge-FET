@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Plus, Trash2, CheckCircle, Brain, Save, Play, Sparkles, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { SUBJECTS } from '@/lib/subjects';
@@ -387,16 +388,7 @@ function QuizBuilderImplementation({ user }) {
             </div>
             <div className="space-y-1">
               <Label className="text-sm">Subject *</Label>
-              <Select value={subject} onValueChange={setSubject}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select subject..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECTS.map(s => (
-                    <SelectItem key={s.name} value={s.name}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SelectWithOther value={subject} onValueChange={setSubject} options={SUBJECTS.map(s => s.name)} placeholder="Select subject..." inputPlaceholder="Enter subject name" />
             </div>
             <div className="space-y-1">
               <Label className="text-sm">Grade *</Label>

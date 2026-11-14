@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Plus, Trash2, Loader2, Calendar, Clock, Brain, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react';
 import { SUBJECTS } from '@/lib/subjects';
@@ -247,15 +248,14 @@ Respond with a structured JSON study plan.`,
                 <div className="grid sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <Label className="text-xs">Subject *</Label>
-                    <Select value={newExam.subject} onValueChange={v => setNewExam({
-                ...newExam,
-                subject: v
-              })}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select subject" /></SelectTrigger>
-                      <SelectContent>
-                        {SUBJECTS.map(s => <SelectItem key={s.code} value={s.name}>{s.name}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <SelectWithOther
+                      value={newExam.subject}
+                      onValueChange={v => setNewExam(previous => ({ ...previous, subject: v }))}
+                      options={SUBJECTS.map(s => s.name)}
+                      placeholder="Select subject"
+                      inputPlaceholder="Enter subject name"
+                      className="h-8 text-xs"
+                    />
                   </div>
                   <div className="space-y-1">
                     <Label className="text-xs">Grade *</Label>

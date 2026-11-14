@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Input } from '@/components/ui/input';
 import { Bell, Plus, Trash2, Loader2, AlertCircle, Shield } from 'lucide-react';
 import { toast } from 'sonner';
@@ -224,19 +225,13 @@ export default function StudyReminderManager({
         {showForm && <div className="bg-muted/30 border border-border rounded-xl p-3.5 space-y-3">
             <div>
               <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wide block mb-1">Subject *</label>
-              <Select value={form.subject} onValueChange={v => setForm(f => ({
-            ...f,
-            subject: v
-          }))}>
-                <SelectTrigger className="text-xs h-8">
-                  <SelectValue placeholder="Select subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECT_OPTIONS.map(s => <SelectItem key={s.name} value={s.name} className="text-xs font-medium">
-                      {s.icon} {s.name}
-                    </SelectItem>)}
-                </SelectContent>
-              </Select>
+              <SelectWithOther
+                value={form.subject}
+                onValueChange={v => setForm(previous => ({ ...previous, subject: v }))}
+                options={SUBJECT_OPTIONS.map(subject => subject.name)}
+                placeholder="Select subject"
+                inputPlaceholder="Enter subject name"
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
