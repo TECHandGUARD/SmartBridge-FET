@@ -70,7 +70,7 @@ using (
 
 -- Preserve any legacy private content written by the older UI before
 -- clearing it from learner-readable lesson-plan rows.
-do $
+do $migration$
 begin
   if exists (
     select 1
@@ -81,7 +81,7 @@ begin
     raise exception 'Cannot safely migrate private lesson-plan content without a tutor_id';
   end if;
 end
-$;
+$migration$;
 
 insert into public.tutor_lesson_reflections (
   lesson_plan_id,
