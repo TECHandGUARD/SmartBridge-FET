@@ -25,11 +25,13 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   assert.equal(profile.role,'user');assert.equal(profile.is_super_admin,false);
   ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'1234567890':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
   return {client,id:signup.user.id,email,token:signup.session.access_token};}
- const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
+ const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor'),administrator=await account('student');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  // Tutor-only RLS requires a verified, active tutor profile.
- ok(await admin.from('users').update({role:'sace_tutor',is_verified:true,is_active:true}).eq('id',tutor.id));
+ ok(await admin.from('users').update({role:'admin',is_super_admin:true,is_active:true}).eq('id',administrator.id));
+ const approval=ok(await administrator.client.rpc('approve_account',{target_id:tutor.id,approved_role:'sace_tutor'}));
+ assert.equal(approval.role,'sace_tutor','Tutor must be approved through the real administrator workflow');
   const authUser=await tutor.client.auth.getUser();
   assert.equal(authUser.data.user.id,tutor.id,'Tutor API session must belong to the new tutor');
   const userState=ok(await admin.from('users').select('id,is_active,role').eq('id',tutor.id).single());
@@ -40,7 +42,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   assert.equal(profileState.is_active,true,'Admin-approved tutor profile must be active');
   assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),true,'Admin-approved active SACE tutor must pass the shared tutor eligibility helper');
  const profile=ok(await admin.from('tutor_profiles').update({
-  is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
+  subjects:['Mathematics'],hourly_rate:100,
   institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
   qualifications:['BSc Mathematics','SACE Registered: 1234567890'],specializations:['Calculus'],teaching_languages:['English'],
   certifications:['TEFL','SACE number 1234567890'],teaching_experience_years:4,tutoring_experience_years:2,
