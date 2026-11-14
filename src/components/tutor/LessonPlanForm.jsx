@@ -125,11 +125,11 @@ export default function LessonPlanForm({
     }
     setReflectionLoading(true);
     setReflectionLoadError(false);
-    supabase.from('tutor_lesson_reflections')
+    Promise.resolve(supabase.from('tutor_lesson_reflections')
       .select('preparation_notes, what_went_well, areas_for_improvement, next_session_goals, confidence_rating')
       .eq('lesson_plan_id', plan.id)
       .eq('tutor_id', user.id)
-      .maybeSingle()
+      .maybeSingle())
       .then(({ data, error: reflectionError }) => {
         if (!active) return;
         if (reflectionError) {
