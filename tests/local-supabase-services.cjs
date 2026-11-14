@@ -99,6 +99,68 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(receipt.payment_status,'test_paid');assert.equal(Number(receipt.amount_paid),0);
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
+
+ // Tutor Hub privacy/ownership hardening: exercise the new RLS policies with real JWTs.
+ const privateNote=ok(await tutor.client.from('student_notes').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  student_name:'Disposable learner',note:'Private session observation',subject:'Mathematics',
+  is_confidential:true,is_shared_with_student:false
+ }).select('id').single());
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
+  'Learner cannot read a private tutor note');
+ assert.deepEqual(ok(await other.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
+  'Unrelated learner cannot read another learner note');
+ assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1,
+  'Owning tutor can read their note');
+ ok(await tutor.client.from('student_notes').update({is_confidential:false,is_shared_with_student:true})
+  .eq('id',privateNote.id));
+ assert.equal(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1,
+  'Learner can read only after tutor explicitly shares a non-confidential note');
+ ok(await tutor.client.from('student_notes').update({is_confidential:true,is_shared_with_student:false})
+  .eq('id',privateNote.id));
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
+  'Unsharing immediately revokes learner read access');
+ assert.ok((await tutor.client.from('student_notes').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:other.id,student_email:other.email,
+  note:'Must be rejected',is_confidential:true,is_shared_with_student:false
+ })).error,'Tutor cannot create notes for a learner without a confirmed/completed booking');
+ assert.ok((await tutor.client.from('student_notes').insert({
+  tutor_id:other.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  note:'Forged tutor identity',is_confidential:true,is_shared_with_student:false
+ })).error,'Tutor cannot forge note ownership');
+ console.log('PASS: real tutor-note RLS, private-by-default, explicit share/unshare revocation and booked-learner enforcement');
+
+ const availability=ok(await tutor.client.from('tutor_availability').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,day_of_week:'Monday',start_time:'10:00',end_time:'11:00',
+  is_available:true,notes:'Private availability fixture'
+ }).select('id').single());
+ assert.equal(ok(await tutor.client.from('tutor_availability').select('id').eq('id',availability.id)).length,1,
+  'Tutor can read their own availability');
+ assert.deepEqual(ok(await student.client.from('tutor_availability').select('id').eq('id',availability.id)),[],
+  'Learner cannot read tutor availability rows');
+ assert.deepEqual(ok(await other.client.from('tutor_availability').select('id').eq('id',availability.id)),[],
+  'Unrelated account cannot read tutor availability rows');
+ const anonymous=createClient(url,status.ANON_KEY,options);
+ assert.deepEqual(ok(await anonymous.from('tutor_availability').select('id').eq('id',availability.id)),[],
+  'Anonymous users cannot read tutor availability rows');
+ ok(await tutor.client.from('tutor_availability').delete().eq('id',availability.id));
+ console.log('PASS: real availability RLS, owner access and anonymous/cross-account denial');
+
+ const ownDraft=ok(await tutor.client.from('resources').insert({
+  title:'Disposable tutor draft',subject:'Mathematics',grade:'Grade 12',type:'Worksheet',
+  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:false
+ }).select('id').single());
+ const deletedDraft=ok(await tutor.client.from('resources').delete().eq('id',ownDraft.id).select('id').maybeSingle());
+ assert.equal(deletedDraft.id,ownDraft.id,'Tutor can delete their own unapproved resource');
+ const approvedResource=ok(await admin.from('resources').insert({
+  title:'Disposable approved resource',subject:'Mathematics',grade:'Grade 12',type:'Worksheet',
+  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:true
+ }).select('id').single());
+ assert.equal(ok(await tutor.client.from('resources').delete().eq('id',approvedResource.id).select('id').maybeSingle()),null,
+  'Tutor cannot delete an approved resource');
+ ok(await admin.from('resources').delete().eq('id',approvedResource.id));
+ console.log('PASS: real resource delete RLS, own unapproved allowed and approved resource protected');
+
  console.log('PASS: real booking retries, server price, ownership, unpaid rejection, verified test receipt and tutor confirmation');
 
  // Exercise flexible tutor prices through real PostgREST, not a mocked save response.
