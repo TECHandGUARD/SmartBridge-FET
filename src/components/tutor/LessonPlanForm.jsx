@@ -78,7 +78,8 @@ export default function LessonPlanForm({
   onSaved,
   onCancel
 }) {
-  const isEditing = !!plan?.id;
+  const [savedPlanId, setSavedPlanId] = useState(plan?.id || null);
+  const isEditing = !!savedPlanId;
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -332,17 +333,18 @@ export default function LessonPlanForm({
       if (progressError) throw progressError;
       payload.student_progress_id = progressRecord?.id || null;
 
-      let savedPlanId = plan?.id || null;
+      let persistedPlanId = savedPlanId;
+      const wasNewPlan = !plan?.id;
       if (isEditing) {
         const { data: updatedPlan, error: updateError } = await supabase
           .from('lesson_plans')
           .update(payload)
-          .eq('id', plan.id)
+          .eq('id', savedPlanId)
           .eq('tutor_id', user.id)
           .select('id')
           .single();
         if (updateError) throw updateError;
-        savedPlanId = updatedPlan.id;
+        persistedPlanId = updatedPlan.id;
         toast.success('Lesson plan updated.');
       } else {
         const { data: createdPlan, error: insertError } = await supabase
@@ -351,7 +353,8 @@ export default function LessonPlanForm({
           .select('id')
           .single();
         if (insertError) throw insertError;
-        savedPlanId = createdPlan.id;
+        persistedPlanId = createdPlan.id;
+        setSavedPlanId(createdPlan.id);
         toast.success('Lesson plan created!');
         await Promise.resolve(supabase.from('activity_log').insert({
           event_type: 'lesson_plan_created',
@@ -359,7 +362,7 @@ export default function LessonPlanForm({
           user_id: user.id,
           description: `Created lesson plan for ${form.subject} - ${form.student_email}`,
           metadata: {
-            plan_id: savedPlanId,
+            plan_id: persistedPlanId,
             subject: form.subject,
             student: form.student_email,
             status: form.status
@@ -368,7 +371,7 @@ export default function LessonPlanForm({
       }
 
       const reflectionPayload = {
-        lesson_plan_id: savedPlanId,
+        lesson_plan_id: persistedPlanId,
         tutor_id: user.id,
         preparation_notes: form.notes.trim() || null,
         what_went_well: reflection.what_went_well.trim() || null,
@@ -386,13 +389,13 @@ export default function LessonPlanForm({
       );
       const reflectionResult = hasPrivateReflection
         ? await supabase.from('tutor_lesson_reflections').upsert(reflectionPayload, { onConflict: 'lesson_plan_id,tutor_id' })
-        : await supabase.from('tutor_lesson_reflections').delete().eq('lesson_plan_id', savedPlanId).eq('tutor_id', user.id);
+        : await supabase.from('tutor_lesson_reflections').delete().eq('lesson_plan_id', persistedPlanId).eq('tutor_id', user.id);
       if (reflectionResult.error) {
-        toast.error('Lesson plan saved, but the private reflection could not be saved. Reopen the plan to retry.');
-        onSaved?.();
+        setError('The lesson plan is saved, but the private reflection did not save. Your notes remain in this form; try saving again.');
+        toast.error('Lesson plan saved, but the private reflection needs another save attempt.');
         return;
       }
-      if (!isEditing) clearDraft();
+      if (wasNewPlan) clearDraft();
       onSaved?.();
     } catch (err) {
       console.error('Save error:', err);
@@ -704,7 +707,7 @@ export default function LessonPlanForm({
 
         {}
         <div className="flex gap-3 pt-2">
-          <Button onClick={handleSave} disabled={saving || !isValid} className="bg-primary gap-2 flex-1">
+          <Button onClick={handleSave} disabled={saving || !isValid || reflectionLoading || reflectionLoadError} className="bg-primary gap-2 flex-1">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Saving…' : isEditing ? 'Update Plan' : 'Save Lesson Plan'}
           </Button>
