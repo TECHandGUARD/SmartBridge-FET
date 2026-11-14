@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { MessageSquare, Plus, ChevronDown, ChevronUp, CheckCircle2, ThumbsUp, Search, GraduationCap } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
@@ -271,17 +272,13 @@ function DiscussionBoardImplementation({ user }) {
           <div className="border border-border rounded-xl p-4 bg-muted/30 space-y-3">
             <p className="text-sm font-semibold">New Question</p>
             <div className="grid sm:grid-cols-2 gap-3">
-              <Select 
-                value={form.subject} 
+              <SelectWithOther
+                value={form.subject}
                 onValueChange={v => setForm(f => ({ ...f, subject: v, topic: '' }))}
-              >
-                <SelectTrigger className="text-sm">
-                  <SelectValue placeholder="Select subject *" />
-                </SelectTrigger>
-                <SelectContent>
-                  {SUBJECT_NAMES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
+                options={SUBJECT_NAMES}
+                placeholder="Select subject *"
+                inputPlaceholder="Enter subject name"
+              />
               <Select 
                 value={form.topic} 
                 onValueChange={v => setForm(f => ({ ...f, topic: v }))} 
