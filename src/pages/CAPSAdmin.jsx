@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { toast } from 'sonner';
 import {
   Upload, Trash2, FileText, Loader2, PlusCircle, X,
@@ -399,18 +400,9 @@ export default function CAPSAdmin() {
               </div>
               <Input placeholder="Description (optional)" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               <div className="grid sm:grid-cols-3 gap-3">
-                <Select value={form.document_type} onValueChange={v => setForm(f => ({ ...f, document_type: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Type *" /></SelectTrigger>
-                  <SelectContent>{DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Subject *" /></SelectTrigger>
-                  <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-                <Select value={form.grade} onValueChange={v => setForm(f => ({ ...f, grade: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Grade *" /></SelectTrigger>
-                  <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-                </Select>
+                <SelectWithOther value={form.document_type} onValueChange={v => setForm(f => ({ ...f, document_type: v }))} options={DOC_TYPES} placeholder="Type *" inputPlaceholder="Enter document type" />
+                <SelectWithOther value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v }))} options={SUBJECTS} placeholder="Subject *" inputPlaceholder="Enter subject name" />
+                <SelectWithOther value={form.grade} onValueChange={v => setForm(f => ({ ...f, grade: v }))} options={GRADES} placeholder="Grade *" inputPlaceholder="Enter grade" />
               </div>
               <Input type="number" placeholder="Year (e.g. 2025)" value={form.year} onChange={e => setForm(f => ({ ...f, year: e.target.value }))} className="w-40" />
               <div className="flex items-center gap-3">
