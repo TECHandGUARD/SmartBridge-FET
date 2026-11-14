@@ -240,6 +240,7 @@ export default function LessonPlanForm({
     set('student_email', student.email);
     set('student_name', student.name || student.email || 'Learner');
     set('booking_id', '');
+    set('session_date', '');
   };
   const selectBooking = bookingId => {
     const booking = upcomingBookings.find(b => b.id === bookingId);
