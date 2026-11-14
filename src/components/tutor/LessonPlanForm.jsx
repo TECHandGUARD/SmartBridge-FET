@@ -152,7 +152,12 @@ export default function LessonPlanForm({
             const draft = JSON.parse(localStorage.getItem(getDraftKey(user.email)) || 'null');
             const matchesPlan = draft?.student_id === plan.student_id && draft?.session_title === plan.session_title;
             if (matchesPlan && draft.privateReflection) {
-              setReflection(draft.privateReflection);
+              setReflection({
+                what_went_well: draft.privateReflection.what_went_well || '',
+                areas_for_improvement: draft.privateReflection.areas_for_improvement || '',
+                next_session_goals: Array.isArray(draft.privateReflection.next_session_goals) ? draft.privateReflection.next_session_goals : [],
+                confidence_rating: draft.privateReflection.confidence_rating ? String(draft.privateReflection.confidence_rating) : ''
+              });
               set('notes', draft.notes || '');
             } else {
               setReflection({ what_went_well: '', areas_for_improvement: '', next_session_goals: [], confidence_rating: '' });
@@ -185,8 +190,13 @@ export default function LessonPlanForm({
           if (draft.session_title || draft.objectives?.length > 0) {
             if (window.confirm('You have an unsaved draft from your last session. Load it?')) {
               const { privateReflection, ...formDraft } = draft;
-              setForm(formDraft);
-              if (privateReflection) setReflection(privateReflection);
+              setForm({ ...formDraft, student_id: formDraft.student_id || '', booking_id: formDraft.booking_id || '', notes: formDraft.notes || '' });
+              if (privateReflection) setReflection({
+                what_went_well: privateReflection.what_went_well || '',
+                areas_for_improvement: privateReflection.areas_for_improvement || '',
+                next_session_goals: Array.isArray(privateReflection.next_session_goals) ? privateReflection.next_session_goals : [],
+                confidence_rating: privateReflection.confidence_rating ? String(privateReflection.confidence_rating) : ''
+              });
               setDraftLoaded(true);
               toast.info('Draft loaded');
             }
@@ -392,10 +402,10 @@ export default function LessonPlanForm({
       const reflectionPayload = {
         lesson_plan_id: persistedPlanId,
         tutor_id: user.id,
-        preparation_notes: form.notes.trim() || null,
-        what_went_well: reflection.what_went_well.trim() || null,
-        areas_for_improvement: reflection.areas_for_improvement.trim() || null,
-        next_session_goals: reflection.next_session_goals.map(goal => goal.trim()).filter(Boolean),
+        preparation_notes: String(form.notes || '').trim() || null,
+        what_went_well: String(reflection.what_went_well || '').trim() || null,
+        areas_for_improvement: String(reflection.areas_for_improvement || '').trim() || null,
+        next_session_goals: (Array.isArray(reflection.next_session_goals) ? reflection.next_session_goals : []).map(goal => String(goal).trim()).filter(Boolean),
         confidence_rating: reflection.confidence_rating ? Number(reflection.confidence_rating) : null,
         updated_at: new Date().toISOString()
       };
