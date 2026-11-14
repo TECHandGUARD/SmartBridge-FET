@@ -56,7 +56,7 @@
     },
     "notes": {
       "type": "string",
-      "description": "Tutor private session notes"
+      "description": "Legacy field; must remain null. Private preparation and reflection notes are stored in TutorLessonReflection."
     },
     "status": {
       "type": "string",
@@ -70,6 +70,25 @@
     "student_progress_id": {
       "type": "string",
       "description": "Linked StudentProgress record ID"
+    },
+    "tutor_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Canonical tutor account UUID used for ownership and RLS"
+    },
+    "student_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Canonical learner account UUID used for ownership and learner access"
+    },
+    "booking_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Optional confirmed/completed tutoring booking linked to this plan"
+    },
+    "reflection_notes": {
+      "type": "string",
+      "description": "Legacy field; must remain null. Private reflections are stored in TutorLessonReflection."
     }
   },
   "required": [
@@ -78,22 +97,21 @@
     "session_date",
     "session_title",
     "subject",
-    "grade"
+    "grade",
+    "tutor_id",
+    "student_id"
   ],
   "rls": {
     "create": {
-      "data.tutor_email": "{{user.email}}"
+      "data.tutor_id": "{{user.id}}"
     },
     "read": {
       "$or": [
         {
-          "data.tutor_email": "{{user.email}}"
+          "data.tutor_id": "{{user.id}}"
         },
         {
-          "data.student_email": "{{user.email}}"
-        },
-        {
-          "data.student_email": "{{user.data.linked_student_email}}"
+          "data.student_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -105,7 +123,7 @@
     "update": {
       "$or": [
         {
-          "data.tutor_email": "{{user.email}}"
+          "data.tutor_id": "{{user.id}}"
         },
         {
           "user_condition": {
@@ -117,7 +135,7 @@
     "delete": {
       "$or": [
         {
-          "data.tutor_email": "{{user.email}}"
+          "data.tutor_id": "{{user.id}}"
         },
         {
           "user_condition": {
