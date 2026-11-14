@@ -167,8 +167,8 @@ function TutorStudentProgressChartImplementation({ user }) {
       });
 
       const changes = {};
-      Object.keys(currentCounts).forEach((key) => {
-        changes[key] = currentCounts[key] - (previousCounts[key] || 0);
+      new Set([...Object.keys(currentCounts), ...Object.keys(previousCounts)]).forEach((key) => {
+        changes[key] = (currentCounts[key] || 0) - (previousCounts[key] || 0);
       });
 
       setStudentProfiles(profilesMap);
