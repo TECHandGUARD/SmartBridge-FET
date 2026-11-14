@@ -125,12 +125,15 @@ export default function LessonPlanForm({
     }
     setReflectionLoading(true);
     setReflectionLoadError(false);
-    Promise.resolve(supabase.from('tutor_lesson_reflections')
-      .select('preparation_notes, what_went_well, areas_for_improvement, next_session_goals, confidence_rating')
-      .eq('lesson_plan_id', plan.id)
-      .eq('tutor_id', user.id)
-      .maybeSingle())
-      .then(({ data, error: reflectionError }) => {
+
+    const loadPrivateReflection = async () => {
+      try {
+        const { data, error: reflectionError } = await supabase
+          .from('tutor_lesson_reflections')
+          .select('preparation_notes, what_went_well, areas_for_improvement, next_session_goals, confidence_rating')
+          .eq('lesson_plan_id', plan.id)
+          .eq('tutor_id', user.id)
+          .maybeSingle();
         if (!active) return;
         if (reflectionError) {
           setReflectionLoadError(true);
@@ -168,16 +171,17 @@ export default function LessonPlanForm({
             set('notes', '');
           }
         }
-      })
-      .catch((reflectionError) => {
+      } catch (reflectionError) {
         if (!active) return;
         console.error('Could not load private tutor reflection:', reflectionError);
         setReflectionLoadError(true);
         setError('Private reflection could not be loaded. Saving is disabled to protect your existing notes.');
-      })
-      .finally(() => {
+      } finally {
         if (active) setReflectionLoading(false);
-      });
+      }
+    };
+
+    loadPrivateReflection();
     return () => { active = false; };
   }, [plan?.id, plan?.student_id, plan?.session_title, user?.id, user?.email]);
   useEffect(() => {
