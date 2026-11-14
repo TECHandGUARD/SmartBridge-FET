@@ -126,7 +126,7 @@ function TutorStudentProgressChartImplementation({ user }) {
       const dateFilter = getDateFilter(timeFrame);
       const currentStart = new Date(dateFilter.gte);
       const currentEnd = new Date(dateFilter.lte || new Date().toISOString().split('T')[0]);
-      const periodDays = Math.max(1, Math.round((currentEnd - currentStart) / 86400000) + 1);
+      const periodDays = Math.max(1, Math.round((currentEnd.getTime() - currentStart.getTime()) / 86400000) + 1);
       const previousEnd = new Date(currentStart);
       previousEnd.setDate(previousEnd.getDate() - 1);
       const previousStart = new Date(previousEnd);
