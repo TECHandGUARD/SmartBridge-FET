@@ -65,3 +65,6 @@ The latest pre-integration PR #109 CI run passed all configured checks, includin
 
 
 Implementation review is tracked in PR #110. The integrated branch is based directly on the current main commit so the PR contains only the outstanding MLP changes, not a duplicate of the merged privacy hardening.
+
+
+Migration ordering note: the already-merged 20261114170000 privacy migration is preserved unchanged. Follow-on migrations are versioned after it; the learner-note archive visibility policy is a separate follow-on migration, and the lesson-plan relationship migration does not duplicate the note policies already installed by #109.
