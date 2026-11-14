@@ -422,13 +422,13 @@ function TutorStudentProgressChartImplementation({ user }) {
         )}
 
         {/* Needs Focus Subjects */}
-        {needsFocusSubjects.length > 0 && (
+        {lowActivitySubjects.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
               <BookOpen className="w-3.5 h-3.5" /> Subjects with Low Recorded Activity
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {needsFocusSubjects.map(s => (
+              {lowActivitySubjects.map(s => (
                 <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
                   {s.fullSubject} — avg {s.avgSessions} per active learner
                 </Badge>
