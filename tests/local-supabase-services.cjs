@@ -144,7 +144,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.ok((await student.client.from('tutor_lesson_reflections').insert({
   lesson_plan_id:lessonPlan.id,tutor_id:student.id,preparation_notes:'Learner-forged reflection'
  })).error,'Learner cannot create tutor-only reflections');
- assert.equal(ok(await tutor.client.from('lesson_plans').update({student_id:other.id}).eq('id',lessonPlan.id).select('id').maybeSingle()),null,
+ assert.ok((await tutor.client.from('lesson_plans').update({student_id:other.id}).eq('id',lessonPlan.id).select('id').maybeSingle()).error,
   'Tutor cannot reassign a lesson plan to an unbooked learner');
  const removedPlan=ok(await tutor.client.from('lesson_plans').delete().eq('id',lessonPlan.id).select('id').single());
  assert.equal(removedPlan.id,lessonPlan.id,'Tutor can delete their own lesson plan');
