@@ -137,13 +137,32 @@ export default function LessonPlanForm({
           setError('Private reflection could not be loaded. Saving is disabled to protect your existing notes.');
           return;
         }
-        setReflection({
-          what_went_well: data?.what_went_well || '',
-          areas_for_improvement: data?.areas_for_improvement || '',
-          next_session_goals: data?.next_session_goals || [],
-          confidence_rating: data?.confidence_rating ? String(data.confidence_rating) : ''
-        });
-        set('notes', data?.preparation_notes || '');
+        if (data) {
+          setReflection({
+            what_went_well: data.what_went_well || '',
+            areas_for_improvement: data.areas_for_improvement || '',
+            next_session_goals: data.next_session_goals || [],
+            confidence_rating: data.confidence_rating ? String(data.confidence_rating) : ''
+          });
+          set('notes', data.preparation_notes || '');
+        } else {
+          // Recover a local draft if the previous save created the plan but the
+          // separate private-reflection write had to be retried.
+          try {
+            const draft = JSON.parse(localStorage.getItem(getDraftKey(user.email)) || 'null');
+            const matchesPlan = draft?.student_id === plan.student_id && draft?.session_title === plan.session_title;
+            if (matchesPlan && draft.privateReflection) {
+              setReflection(draft.privateReflection);
+              set('notes', draft.notes || '');
+            } else {
+              setReflection({ what_went_well: '', areas_for_improvement: '', next_session_goals: [], confidence_rating: '' });
+              set('notes', '');
+            }
+          } catch {
+            setReflection({ what_went_well: '', areas_for_improvement: '', next_session_goals: [], confidence_rating: '' });
+            set('notes', '');
+          }
+        }
       })
       .catch((reflectionError) => {
         if (!active) return;
@@ -155,7 +174,7 @@ export default function LessonPlanForm({
         if (active) setReflectionLoading(false);
       });
     return () => { active = false; };
-  }, [plan?.id, user?.id]);
+  }, [plan?.id, plan?.student_id, plan?.session_title, user?.id, user?.email]);
   useEffect(() => {
     if (!isEditing && !draftLoaded) {
       const draftKey = getDraftKey(user?.email);
