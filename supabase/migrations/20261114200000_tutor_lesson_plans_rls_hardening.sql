@@ -1,6 +1,32 @@
 -- Harden lesson-plan ownership and separate private tutor notes from
 -- learner-visible lesson-plan records. Apply after the compatible UI is deployed.
 
+-- Keep private reflections accessible only to their owner on an active
+-- account. Tutor verification is not an authorization boundary for reading
+-- previously created personal teaching reflections.
+drop policy if exists "Tutors manage own lesson reflections" on public.tutor_lesson_reflections;
+create policy "Tutors manage own lesson reflections"
+on public.tutor_lesson_reflections
+for all to authenticated
+using (
+  tutor_id = (select auth.uid())
+  and (select smartbridge_private.enabled_account())
+  and exists (
+    select 1 from public.lesson_plans p
+    where p.id = tutor_lesson_reflections.lesson_plan_id
+      and p.tutor_id = (select auth.uid())
+  )
+)
+with check (
+  tutor_id = (select auth.uid())
+  and (select smartbridge_private.enabled_account())
+  and exists (
+    select 1 from public.lesson_plans p
+    where p.id = tutor_lesson_reflections.lesson_plan_id
+      and p.tutor_id = (select auth.uid())
+  )
+);
+
 drop policy if exists "Students can view lesson plans" on public.lesson_plans;
 create policy "Students view their linked lesson plans"
 on public.lesson_plans
