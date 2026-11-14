@@ -16,7 +16,7 @@ export function SelectWithOther({
   placeholder = 'Select an option',
   otherLabel = 'Other (type your own)',
   disabled = false,
-  className,
+  className = 'w-full',
   inputPlaceholder = 'Enter your option',
 }) {
   const [customValue, setCustomValue] = useState('');
