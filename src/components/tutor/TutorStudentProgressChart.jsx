@@ -220,10 +220,10 @@ function TutorStudentProgressChartImplementation({ user }) {
       const lastAccess = profile.lastAccess ? new Date(profile.lastAccess) : null;
       if (!lastAccess || lastAccess < inactiveCutoff) {
         newAlerts.push({
-          type: 'inactive_student',
+          type: 'engagement_follow_up',
           student_id: profile.id,
           student_name: profile.full_name || 'Learner',
-          severity: 'critical',
+          severity: 'warning',
           message: `${profile.full_name || 'A learner'} has no recorded study activity in ${INACTIVE_THRESHOLD_DAYS} days`,
           recommendedAction: 'Review engagement and arrange a learner follow-up'
         });
@@ -232,7 +232,7 @@ function TutorStudentProgressChartImplementation({ user }) {
     subjectStats.forEach((subject) => {
       if (subject.lowActivity) {
         newAlerts.push({
-          type: 'subject_struggle',
+          type: 'low_activity_subject',
           subject: subject.fullSubject,
           severity: 'warning',
           message: `${subject.studentCount} learner(s) are below the ${activityBenchmark}-session activity benchmark in ${subject.fullSubject}`,
