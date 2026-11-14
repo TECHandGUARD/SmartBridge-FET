@@ -30,6 +30,14 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  // Tutor-only RLS requires a verified, active tutor profile.
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true,is_active:true}).eq('id',tutor.id));
+  const authUser=await tutor.client.auth.getUser();
+  assert.equal(authUser.data.user.id,tutor.id,'Tutor API session must belong to the new tutor');
+  const userState=ok(await admin.from('users').select('id,is_active,role').eq('id',tutor.id).single());
+  const profileState=ok(await admin.from('tutor_profiles').select('user_id,is_verified,is_active').eq('user_id',tutor.id).single());
+  assert.equal(userState.is_active,true,'Admin-approved test account must be active');
+  assert.equal(profileState.user_id,tutor.id);
+  assert.equal(profileState.is_verified,true,'Admin-approved tutor profile must be verified');
+  assert.equal(profileState.is_active,true,'Admin-approved tutor profile must be active');
   assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),true,'Admin-approved active SACE tutor must pass the shared tutor eligibility helper');
  const profile=ok(await admin.from('tutor_profiles').update({
   is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
