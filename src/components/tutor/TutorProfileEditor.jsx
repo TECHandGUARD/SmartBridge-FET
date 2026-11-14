@@ -656,10 +656,12 @@ export default function TutorProfileEditor({
             <ShieldCheck className="w-4 h-4 text-primary" /> Your Verification Badge
           </p>
           <div className="flex gap-3 items-center">
-            {form.sace_number ? <Badge className="bg-green-100 text-green-700 border-green-200 text-sm gap-1.5 py-1.5 px-3 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
+            {user?.role === 'sace_tutor' && profile?.is_verified === true && Boolean(profile?.sace_number) ? <Badge className="bg-green-100 text-green-700 border-green-200 text-sm gap-1.5 py-1.5 px-3 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
                 <ShieldCheck className="w-4 h-4" /> SACE Verified
-              </Badge> : <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm gap-1.5 py-1.5 px-3 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
+              </Badge> : profile?.is_verified === true ? <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-sm gap-1.5 py-1.5 px-3 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
                 <CheckCircle className="w-4 h-4" /> Admin Verified
+              </Badge> : <Badge variant="outline" className="text-muted-foreground text-sm gap-1.5 py-1.5 px-3">
+                <AlertCircle className="w-4 h-4" /> Verification Pending
               </Badge>}
           </div>
         </div>
