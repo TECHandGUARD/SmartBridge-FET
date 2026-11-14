@@ -17,7 +17,7 @@ import {
 import { toast } from 'sonner';
 
 // This is an engagement indicator, not an academic attainment or risk score.
-const INACTIVE_THRESHOLD_DAYS = 14;
+const NO_ACTIVITY_THRESHOLD_DAYS = 14;
 
 const TIME_FRAMES = {
   'current': { label: 'Last 90 days', days: 90 },
@@ -214,17 +214,17 @@ function TutorStudentProgressChartImplementation({ user }) {
   }, [progress, activityBenchmark]);
   useEffect(() => {
     const newAlerts = [];
-    const inactiveCutoff = new Date();
-    inactiveCutoff.setDate(inactiveCutoff.getDate() - INACTIVE_THRESHOLD_DAYS);
+    const noActivityCutoff = new Date();
+    noActivityCutoff.setDate(noActivityCutoff.getDate() - NO_ACTIVITY_THRESHOLD_DAYS);
     Object.values(studentProfiles).forEach((profile) => {
       const lastAccess = profile.lastAccess ? new Date(profile.lastAccess) : null;
-      if (!lastAccess || lastAccess < inactiveCutoff) {
+      if (!lastAccess || lastAccess < noActivityCutoff) {
         newAlerts.push({
           type: 'engagement_follow_up',
           student_id: profile.id,
           student_name: profile.full_name || 'Learner',
           severity: 'warning',
-          message: `${profile.full_name || 'A learner'} has no recorded study activity in ${INACTIVE_THRESHOLD_DAYS} days`,
+          message: `${profile.full_name || 'A learner'} has no recorded study activity in ${NO_ACTIVITY_THRESHOLD_DAYS} days`,
           recommendedAction: 'Review engagement and arrange a learner follow-up'
         });
       }
@@ -271,20 +271,20 @@ function TutorStudentProgressChartImplementation({ user }) {
           subjects: data.subjectNames.size,
           sessions: data.sessions,
           lastAccessDays,
-          isInactive: lastAccessDays === null || lastAccessDays > INACTIVE_THRESHOLD_DAYS,
+          hasNoRecentActivity: lastAccessDays === null || lastAccessDays > NO_ACTIVITY_THRESHOLD_DAYS,
           trend: Object.entries(trendData).filter(([key]) => key.startsWith(`${studentId}_`)).reduce((sum, [, value]) => sum + value, 0)
         };
       })
       .filter((student) => gradeFilter === 'all' || student.grade === gradeFilter)
       .sort((a, b) => {
-        if (a.isInactive && !b.isInactive) return -1;
-        if (!a.isInactive && b.isInactive) return 1;
+        if (a.hasNoRecentActivity && !b.hasNoRecentActivity) return -1;
+        if (!a.hasNoRecentActivity && b.hasNoRecentActivity) return 1;
         return b.sessions - a.sessions;
       });
   }, [progress, studentProfiles, gradeFilter, trendData]);
 
   const lowActivitySubjects = subjectStats.filter(s => s.lowActivity);
-  const inactiveStudents = studentStats.filter(s => s.isInactive);
+  const studentsWithoutRecentActivity = studentStats.filter(s => s.hasNoRecentActivity);
 
   const radarData = subjectStats.slice(0, 8).map(s => ({
     subject: s.subject,
@@ -299,7 +299,7 @@ function TutorStudentProgressChartImplementation({ user }) {
         ['Learner', 'Grade', 'Subjects', 'Completed Sessions', 'Engagement', 'Last Activity'],
         ...studentStats.map(s => [
           s.name, s.grade, s.subjects, s.sessions,
-          s.isInactive ? 'Needs follow-up' : 'Active',
+          s.hasNoRecentActivity ? 'Needs follow-up' : 'Active',
           s.lastAccessDays === null ? 'No recorded activity' : `${s.lastAccessDays} days ago`
         ])
       ];
@@ -421,7 +421,7 @@ function TutorStudentProgressChartImplementation({ user }) {
           </div>
         )}
 
-        {/* Needs Focus Subjects */}
+        {/* Low Recorded Activity Subjects */}
         {lowActivitySubjects.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
@@ -497,9 +497,9 @@ function TutorStudentProgressChartImplementation({ user }) {
         <div>
           <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5" /> Students ({studentStats.length})
-            {inactiveStudents.length > 0 && (
+            {studentsWithoutRecentActivity.length > 0 && (
               <Badge className="bg-red-100 text-red-700 text-[10px]">
-                {inactiveStudents.length} inactive
+                {studentsWithoutRecentActivity.length} with no recent activity
               </Badge>
             )}
           </p>
@@ -542,7 +542,7 @@ function TutorStudentProgressChartImplementation({ user }) {
                       </div>
                     </td>
                     <td className="py-2 px-2 text-center">
-                      {student.isInactive ? (
+                      {student.hasNoRecentActivity ? (
                         <Badge className="bg-red-100 text-red-700 text-[10px]">No recent activity</Badge>
                       ) : (
                         <Badge className="bg-green-100 text-green-700 text-[10px]">Recent activity</Badge>
@@ -565,13 +565,13 @@ function TutorStudentProgressChartImplementation({ user }) {
         </div>
 
         {/* Engagement follow-up reminder */}
-        {inactiveStudents.length > 0 && (
+        {studentsWithoutRecentActivity.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-red-700 mb-1 flex items-center gap-1.5">
               <Bell className="w-3.5 h-3.5" /> Learner Follow-up
             </p>
             <p className="text-xs text-red-600">
-              {inactiveStudents.length} student(s) have been inactive for {INACTIVE_THRESHOLD_DAYS}+ days.
+              {studentsWithoutRecentActivity.length} learner(s) have no recorded study session in the last {NO_ACTIVITY_THRESHOLD_DAYS}+ days.
               Review their recent activity and arrange a follow-up through the platform's approved communication channel.
             </p>
           </div>
