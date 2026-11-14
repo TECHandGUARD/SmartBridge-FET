@@ -36,10 +36,11 @@ export default function StudentCRM({
     strengths: '',
     areas_to_improve: '',
     next_steps: '',
-    mood: 'Neutral'
+    mood: 'Neutral',
+    is_shared_with_student: false
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -49,14 +50,14 @@ export default function StudentCRM({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('date', {
+      } = await supabase.from('tutor_bookings').select('*').eq('tutor_id', user.id).order('date', {
         ascending: false
       });
       if (bookingsError) throw bookingsError;
       const {
         data: notesData,
         error: notesError
-      } = await supabase.from('student_notes').select('*').eq('tutor_email', user.email).order('created_at', {
+      } = await supabase.from('student_notes').select('*').eq('tutor_id', user.id).order('created_at', {
         ascending: false
       });
       if (notesError) throw notesError;
@@ -69,27 +70,31 @@ export default function StudentCRM({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   const students = useMemo(() => {
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.student_email]) {
-        map[b.student_email] = {
+      const key = b.student_id || b.student_email;
+      if (!key) return;
+      if (!map[key]) {
+        map[key] = {
+          id: b.student_id || null,
           email: b.student_email,
+          name: b.student_name || b.student_email || 'Learner',
           sessions: 0,
           subjects: new Set(),
           lastSession: null,
           totalSpent: 0
         };
       }
-      map[b.student_email].sessions++;
-      map[b.student_email].subjects.add(b.subject);
-      map[b.student_email].totalSpent += b.amount || 0;
-      if (!map[b.student_email].lastSession || b.date > map[b.student_email].lastSession) {
-        map[b.student_email].lastSession = b.date;
+      map[key].sessions++;
+      map[key].subjects.add(b.subject);
+      map[key].totalSpent += b.amount || 0;
+      if (!map[key].lastSession || b.date > map[key].lastSession) {
+        map[key].lastSession = b.date;
       }
     });
     return Object.values(map).map(s => ({
@@ -97,8 +102,8 @@ export default function StudentCRM({
       subjects: [...s.subjects]
     })).sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
   }, [bookings]);
-  const filteredStudents = students.filter(s => s.email.toLowerCase().includes(search.toLowerCase()));
-  const studentNotes = selectedStudent ? notes.filter(n => n.student_email === selectedStudent.email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
+  const filteredStudents = students.filter(s => `${s.name || ''} ${s.email || ''}`.toLowerCase().includes(search.toLowerCase()));
+  const studentNotes = selectedStudent ? notes.filter(n => n.student_id === selectedStudent.id || (!n.student_id && n.student_email === selectedStudent.email)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
   const handleAddNote = async () => {
     if (!noteForm.note.trim()) {
       toast.error('Please write a note.');
@@ -113,8 +118,9 @@ export default function StudentCRM({
       } = await supabase.from('student_notes').insert({
         tutor_email: user.email,
         tutor_id: user.id || null,
+        student_id: selectedStudent.id,
         student_email: selectedStudent.email,
-        student_name: selectedStudent.email,
+        student_name: selectedStudent.name || selectedStudent.email,
         note: noteForm.note.trim(),
         subject: noteForm.subject || null,
         session_date: noteForm.session_date || null,
@@ -122,6 +128,8 @@ export default function StudentCRM({
         areas_to_improve: noteForm.areas_to_improve || null,
         next_steps: noteForm.next_steps || null,
         mood: noteForm.mood || 'Neutral',
+        is_confidential: !noteForm.is_shared_with_student,
+        is_shared_with_student: noteForm.is_shared_with_student,
         created_at: new Date().toISOString()
       }).select().single();
       if (insertError) throw insertError;
@@ -144,7 +152,8 @@ export default function StudentCRM({
         strengths: '',
         areas_to_improve: '',
         next_steps: '',
-        mood: 'Neutral'
+        mood: 'Neutral',
+        is_shared_with_student: false
       });
       setShowAddNote(false);
       toast.success('Session note saved!');
@@ -331,8 +340,17 @@ export default function StudentCRM({
               })} />
                   </div>
                 </div>
+                <label className="flex items-start gap-2 rounded-lg border border-border bg-background/70 p-3 text-xs">
+                  <input
+                    type="checkbox"
+                    checked={noteForm.is_shared_with_student}
+                    onChange={e => setNoteForm(previous => ({ ...previous, is_shared_with_student: e.target.checked }))}
+                    className="mt-0.5 h-4 w-4 rounded border-input"
+                  />
+                  <span><strong>Share this note with the learner</strong><span className="block text-muted-foreground">Notes stay private by default. Shared notes are visible to the learner in their account.</span></span>
+                </label>
                 <div className="flex gap-2">
-                  <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={handleAddNote} disabled={saving}>
+                  <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={handleAddNote} disabled={saving || !selectedStudent.id}>
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                     {saving ? 'Saving...' : 'Save Note'}
                   </Button>
@@ -354,6 +372,7 @@ export default function StudentCRM({
                   {studentNotes.map(n => <div key={n.id} className="p-3 rounded-xl bg-muted/40 space-y-1.5 border-l-4 border-primary/30 dark:bg-muted/20">
                       <div className="flex items-center gap-2 flex-wrap">
                         {n.subject && <Badge className="bg-primary/10 text-primary text-[10px]">{n.subject}</Badge>}
+                        <Badge variant="outline" className="text-[10px]">{n.is_shared_with_student && !n.is_confidential ? 'Shared with learner' : 'Private tutor note'}</Badge>
                         {n.mood && <span className="text-xs">{MOOD_ICONS[n.mood]} {n.mood}</span>}
                         <span className="text-[10px] text-muted-foreground ml-auto">
                           {n.session_date || new Date(n.created_at).toLocaleDateString('en-ZA')}
