@@ -337,6 +337,26 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  const submitted=await post();assert.equal(submitted.status,'pending');assert.equal((await post()).id,submitted.id);
  assert.deepEqual(ok(await other.client.from('study_room_posts').select('id').eq('id',submitted.id)),[]);
  console.log('PASS: real Edge authorization/runtime, queued study content and idempotent retry');
+ const deleteTarget=await account('student');
+ const deleteEndpoint=url+'/functions/v1/admin-delete-user';
+ async function deleteRequest(token,targetId,reason='Policy violation confirmed by admin review.'){
+  return fetch(deleteEndpoint,{method:'POST',headers:{Authorization:'Bearer '+token,apikey:status.ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({target_user_id:targetId,reason})});
+ }
+ const deniedDelete=await deleteRequest(student.token,deleteTarget.id);
+ assert.equal(deniedDelete.status,403,'Non-admin users cannot delete accounts');
+ assert.ok((await admin.auth.admin.getUserById(deleteTarget.id)).data.user,'Denied deletion must leave target account intact');
+ const selfDelete=await deleteRequest(moderator.token,moderator.id);
+ assert.equal(selfDelete.status,403,'Administrators cannot delete their own account');
+ const protectedAdmin=await deleteRequest(moderator.token,administrator.id);
+ assert.equal(protectedAdmin.status,403,'Administrators cannot delete another administrator/super-administrator');
+ const deletion=await deleteRequest(moderator.token,deleteTarget.id);
+ assert.equal(deletion.status,200,'Authorized administrator can delete a non-admin account');
+ const deletionResult=await deletion.json();assert.equal(deletionResult.success,true);
+ assert.ok((await admin.auth.admin.getUserById(deleteTarget.id)).error,'Deleted account must no longer exist in Auth');
+ const deletionAudit=ok(await admin.from('admin_account_deletion_audit').select('actor_user_id,target_user_id,outcome,reason').eq('id',deletionResult.audit_id).single());
+ assert.equal(deletionAudit.actor_user_id,moderator.id);assert.equal(deletionAudit.target_user_id,deleteTarget.id);
+ assert.equal(deletionAudit.outcome,'deleted');assert.ok(deletionAudit.reason.length>=10);
+ console.log('PASS: admin account deletion requires active admin, protects admin/self, removes Auth user and retains audit trail');
  const notificationResponse=await fetch(url+'/functions/v1/dispatch-notifications',{method:'POST',headers:{Authorization:'Bearer '+student.token,apikey:status.ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({event_ids:cancelled.notification_ids})});
  assert.equal(notificationResponse.status,200);const queued=await notificationResponse.json();assert.equal(queued.failed,2);assert.equal(queued.delivered,false);
  assert.equal(ok(await admin.from('action_notifications').select('email_status').eq('id',cancelled.notification_ids[0]).single()).email_status,'failed');
