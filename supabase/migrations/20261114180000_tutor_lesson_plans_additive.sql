@@ -69,3 +69,14 @@ with check (
       and p.tutor_id = (select auth.uid())
   )
 );
+
+-- Restore the delete action already presented in the Tutor Hub. This is
+-- additive/backward-compatible and restricted to the owning verified tutor.
+drop policy if exists "Tutors delete own lesson plans" on public.lesson_plans;
+create policy "Tutors delete own lesson plans"
+on public.lesson_plans
+for delete to authenticated
+using (
+  (tutor_id = (select auth.uid()) and public.is_tutor((select auth.uid())))
+  or public.is_admin((select auth.uid()))
+);
