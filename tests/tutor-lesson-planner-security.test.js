@@ -25,7 +25,7 @@ test('Private tutor reflections are saved outside learner-readable lesson plans'
   const integration = read('tests/local-supabase-services.cjs');
   assert.match(form, /notes: null/);
   assert.match(form, /from\('tutor_lesson_reflections'\)/);
-  assert.match(form, /preparation_notes: form\.notes\.trim\(\)/);
+  assert.match(form, /preparation_notes: String\(form\.notes \|\| ''\)\.trim\(\)/);
   assert.match(additive, /booking_id uuid/);
   assert.match(additive, /create table if not exists public\.tutor_lesson_reflections/);
   assert.match(additive, /for all to authenticated/);
