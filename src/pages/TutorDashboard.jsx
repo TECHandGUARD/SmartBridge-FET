@@ -146,7 +146,6 @@ export default function TutorDashboard() {
         .delete()
         .eq('id', id)
         .eq('tutor_id', user.id)
-        .eq('is_approved', false)
         .select('id,file_url')
         .maybeSingle();
 
