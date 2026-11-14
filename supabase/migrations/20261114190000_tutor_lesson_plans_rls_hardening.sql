@@ -72,4 +72,4 @@ using (
 -- written into it; tutor-only reflections live in tutor_lesson_reflections.
 alter table public.lesson_plans
   add constraint lesson_plans_private_notes_separated
-  check (notes is null and reflection_notes is null);
+  check (notes is null and reflection_notes is null and metadata is null);
