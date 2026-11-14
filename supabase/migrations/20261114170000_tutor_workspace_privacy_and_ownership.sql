@@ -21,12 +21,6 @@ with check (
   tutor_id = (select auth.uid())
   and public.is_tutor((select auth.uid()))
   and student_id is not null
-  and lower(trim(tutor_email)) = lower(trim((
-    select u.email from public.users u where u.id = (select auth.uid())
-  )))
-  and lower(trim(student_email)) = lower(trim((
-    select u.email from public.users u where u.id = student_notes.student_id
-  )))
   and not (coalesce(is_confidential, false) and coalesce(is_shared_with_student, false))
   and exists (
     select 1
@@ -52,12 +46,6 @@ with check (
     tutor_id = (select auth.uid())
     and public.is_tutor((select auth.uid()))
     and student_id is not null
-    and lower(trim(tutor_email)) = lower(trim((
-      select u.email from public.users u where u.id = (select auth.uid())
-    )))
-    and lower(trim(student_email)) = lower(trim((
-      select u.email from public.users u where u.id = student_notes.student_id
-    )))
     and not (coalesce(is_confidential, false) and coalesce(is_shared_with_student, false))
     and exists (
       select 1
