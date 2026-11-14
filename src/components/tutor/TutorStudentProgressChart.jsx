@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Users, TrendingUp, BookOpen, Download,
-  Mail, TrendingDown, TrendingUp as TrendUp,
+  TrendingDown, TrendingUp as TrendUp,
   Loader2, Bell
 } from 'lucide-react';
 import {
@@ -16,12 +16,11 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 
-// Subjects that score below this threshold are flagged as needing focus
-const FOCUS_THRESHOLD = 3;
-const INACTIVE_THRESHOLD_DAYS = 14;
+// This is an engagement indicator, not an academic attainment or risk score.
+const NO_ACTIVITY_THRESHOLD_DAYS = 14;
 
 const TIME_FRAMES = {
-  'current': { label: 'Current Term', days: 90 },
+  'current': { label: 'Last 90 days', days: 90 },
   'term1': { label: 'Term 1', start: '2026-01-15', end: '2026-03-20' },
   'term2': { label: 'Term 2', start: '2026-04-05', end: '2026-06-10' },
   'term3': { label: 'Term 3', start: '2026-07-15', end: '2026-09-20' },
@@ -46,296 +45,270 @@ const getDateFilter = (timeFrame) => {
   return { gte: date.toISOString().split('T')[0] };
 };
 
-function TutorStudentProgressChartImplementation({ user, onContactParent = undefined, schoolContext = null }) {
+function TutorStudentProgressChartImplementation({ user }) {
   const [progress, setProgress] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState({});
   const [loading, setLoading] = useState(true);
   const [timeFrame, setTimeFrame] = useState('current');
   const [gradeFilter, setGradeFilter] = useState('all');
-  const [schoolAverages, setSchoolAverages] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [alerts, setAlerts] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [trendData, setTrendData] = useState({});
+  const activityBenchmark = useMemo(() => {
+    const frame = TIME_FRAMES[timeFrame];
+    if (frame.start && frame.end) {
+      const days = Math.max(1, Math.round((new Date(frame.end).getTime() - new Date(frame.start).getTime()) / 86400000) + 1);
+      return Math.max(1, Math.round(days / 30));
+    }
+    return Math.max(1, Math.round((frame.days || 90) / 30));
+  }, [timeFrame]);
 
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      const dateFilter = getDateFilter(timeFrame);
-
-      // Load tutor's completed bookings
+      // Use immutable user UUIDs for all tutor/learner ownership checks.
       const { data: bookingsData, error: bookingsError } = await supabase
         .from('tutor_bookings')
-        .select('*')
-        .eq('tutor_email', user.email)
-        .eq('status', 'completed')
+        .select('student_id, student_email, student_name, subject, date')
+        .eq('tutor_id', user.id)
+        .in('status', ['confirmed', 'completed'])
         .order('date', { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (bookingsError) throw bookingsError;
 
-      const studentEmails = [...new Set((bookingsData || []).map(b => b.student_email).filter(Boolean))];
-      setBookings(bookingsData || []);
+      const profilesMap = {};
+      (bookingsData || []).forEach((booking) => {
+        if (!booking.student_id) return;
+        if (!profilesMap[booking.student_id]) {
+          profilesMap[booking.student_id] = {
+            id: booking.student_id,
+            email: booking.student_email || '',
+            full_name: booking.student_name || 'Learner',
+            grade: 'Not set',
+            lastAccess: null
+          };
+        }
+      });
 
-      if (studentEmails.length === 0) {
+      const studentIds = Object.keys(profilesMap);
+      if (studentIds.length === 0) {
         setProgress([]);
         setStudentProfiles({});
+        setTrendData({});
         setLoading(false);
         return;
       }
 
-      // Load student progress with date filter
-      let progressQuery = supabase
-        .from('study_progress')
-        .select('*')
-        .in('user_email', studentEmails);
+      // Grade is read through the security-invoker progress view, whose underlying
+      // RLS permits a tutor to see only learners with a confirmed/completed booking.
+      const [{ data: gradeRows, error: gradeError }, { data: sessionsData, error: sessionsError }] = await Promise.all([
+        supabase.from('study_progress').select('student_id, grade').in('student_id', studentIds),
+        supabase.from('study_sessions').select('student_id, subject, date').in('student_id', studentIds)
+          .eq('is_completed', true).order('date', { ascending: false }).limit(5000)
+      ]);
+      if (gradeError) throw gradeError;
+      if (sessionsError) throw sessionsError;
 
-      if (dateFilter.gte) {
-        progressQuery = progressQuery.gte('last_access', dateFilter.gte);
-      }
-      if (dateFilter.lte) {
-        progressQuery = progressQuery.lte('last_access', dateFilter.lte);
-      }
-
-      const { data: progressData, error: progressError } = await progressQuery;
-      if (progressError) throw progressError;
-
-      // Load student profiles (names, grades, parent emails)
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('users')
-        .select('email, full_name, grade, parent_email, phone')
-        .in('email', studentEmails);
-
-      if (profilesError) throw profilesError;
-
-      const profilesMap = {};
-      (profilesData || []).forEach(p => {
-        profilesMap[p.email] = p;
+      (gradeRows || []).forEach((row) => {
+        if (profilesMap[row.student_id] && row.grade) profilesMap[row.student_id].grade = row.grade;
       });
-      setStudentProfiles(profilesMap);
-      setProgress(progressData || []);
 
-      // Load school averages if available
-      if (schoolContext?.schoolId) {
-        const { data: avgData } = await supabase
-          .from('school_subject_averages')
-          .select('*')
-          .eq('school_id', schoolContext.schoolId);
-        if (avgData) {
-          const avgMap = {};
-          avgData.forEach(a => { avgMap[a.subject] = a.avg_resources; });
-          setSchoolAverages(avgMap);
+      const allSessions = sessionsData || [];
+      const latestByStudent = {};
+      allSessions.forEach((session) => {
+        if (!session.student_id || !session.date) return;
+        const current = latestByStudent[session.student_id];
+        if (!current || session.date > current) latestByStudent[session.student_id] = session.date;
+      });
+      Object.entries(profilesMap).forEach(([studentId, profile]) => {
+        profile.lastAccess = latestByStudent[studentId] || null;
+      });
+
+      const dateFilter = getDateFilter(timeFrame);
+      const currentStart = new Date(dateFilter.gte);
+      const currentEnd = new Date(dateFilter.lte || new Date().toISOString().split('T')[0]);
+      const periodDays = Math.max(1, Math.round((currentEnd.getTime() - currentStart.getTime()) / 86400000) + 1);
+      const previousEnd = new Date(currentStart);
+      previousEnd.setDate(previousEnd.getDate() - 1);
+      const previousStart = new Date(previousEnd);
+      previousStart.setDate(previousStart.getDate() - periodDays + 1);
+      const toDate = (date) => date.toISOString().split('T')[0];
+      const currentStartText = toDate(currentStart);
+      const currentEndText = toDate(currentEnd);
+      const previousStartText = toDate(previousStart);
+      const previousEndText = toDate(previousEnd);
+
+      const currentCounts = {};
+      const previousCounts = {};
+      const currentLastAccess = {};
+      allSessions.forEach((session) => {
+        if (!session.student_id || !session.subject || !session.date) return;
+        const key = `${session.student_id}_${session.subject}`;
+        if (session.date >= currentStartText && session.date <= currentEndText) {
+          currentCounts[key] = (currentCounts[key] || 0) + 1;
+          if (!currentLastAccess[session.student_id] || session.date > currentLastAccess[session.student_id]) {
+            currentLastAccess[session.student_id] = session.date;
+          }
+        } else if (session.date >= previousStartText && session.date <= previousEndText) {
+          previousCounts[key] = (previousCounts[key] || 0) + 1;
         }
-      }
+      });
 
-      // Calculate trends (compare to previous period)
-      await calculateTrends(studentEmails);
+      const progressRows = Object.entries(currentCounts).map(([key, count]) => {
+        const splitAt = key.indexOf('_');
+        const studentId = key.slice(0, splitAt);
+        const subject = key.slice(splitAt + 1);
+        return {
+          student_id: studentId,
+          subject,
+          study_sessions: count,
+          last_access: currentLastAccess[studentId] || null,
+        };
+      });
 
+      const changes = {};
+      new Set([...Object.keys(currentCounts), ...Object.keys(previousCounts)]).forEach((key) => {
+        changes[key] = (currentCounts[key] || 0) - (previousCounts[key] || 0);
+      });
+
+      setStudentProfiles(profilesMap);
+      setProgress(progressRows);
+      setTrendData(changes);
     } catch (err) {
       console.error('Error loading student progress:', err);
       toast.error('Failed to load student progress data');
     } finally {
       setLoading(false);
     }
-  }, [user?.email, timeFrame, schoolContext]);
-
-  const calculateTrends = async (studentEmails) => {
-    try {
-      const currentFilter = getDateFilter(timeFrame);
-      const prevDate = new Date();
-      if (currentFilter.gte) {
-        const prevStart = new Date(currentFilter.gte);
-        prevStart.setDate(prevStart.getDate() - 90);
-        const prevEnd = new Date(currentFilter.gte);
-        prevEnd.setDate(prevEnd.getDate() - 1);
-
-        const { data: prevData } = await supabase
-          .from('study_progress')
-          .select('*')
-          .in('user_email', studentEmails)
-          .gte('last_access', prevStart.toISOString().split('T')[0])
-          .lte('last_access', prevEnd.toISOString().split('T')[0]);
-
-        if (prevData) {
-          const trends = {};
-          prevData.forEach(p => {
-            const key = `${p.user_email}_${p.subject}`;
-            trends[key] = p.study_sessions || 0;
-          });
-
-          const currentTrends = {};
-          progress.forEach(p => {
-            const key = `${p.user_email}_${p.subject}`;
-            currentTrends[key] = p.study_sessions || 0;
-          });
-
-          const changes = {};
-          Object.keys(currentTrends).forEach(key => {
-            const prev = trends[key] || 0;
-            const current = currentTrends[key];
-            changes[key] = current - prev;
-          });
-          setTrendData(changes);
-        }
-      }
-    } catch (err) {
-      console.error('Error calculating trends:', err);
-    }
-  };
-
+  }, [user?.id, timeFrame]);
   useEffect(() => {
     loadData();
   }, [loadData]);
 
-  // Calculate alerts
-  // Aggregate: average study_sessions per subject across all students
+  // Engagement indicators are based on recorded platform activity, not academic attainment.
+  // Aggregate completed study sessions by subject and learner.
   const subjectStats = useMemo(() => {
     const map = {};
-    progress.forEach(p => {
-      if (!p.subject) return;
-      if (!map[p.subject]) map[p.subject] = { total: 0, count: 0, students: new Set() };
-      map[p.subject].total += (p.study_sessions || 0);
-      map[p.subject].count++;
-      map[p.subject].students.add(p.user_email);
+    progress.forEach((row) => {
+      if (!row.subject) return;
+      if (!map[row.subject]) map[row.subject] = { total: 0, count: 0, students: new Set() };
+      map[row.subject].total += Number(row.study_sessions) || 0;
+      map[row.subject].count++;
+      map[row.subject].students.add(row.student_id);
     });
     return Object.entries(map)
       .map(([subject, data]) => ({
         subject: subject.length > 14 ? subject.slice(0, 13) + '…' : subject,
         fullSubject: subject,
-        avgSessions: data.count > 0 ? Math.round((data.total / data.count) * 10) / 10 : 0,
+        avgSessions: data.count ? Math.round((data.total / data.count) * 10) / 10 : 0,
         studentCount: data.students.size,
-        needsFocus: (data.total / data.count) < FOCUS_THRESHOLD,
-        vsSchoolAvg: schoolAverages ?
-          Number(((data.total / data.count) - (schoolAverages[subject] || 0)).toFixed(1)) : null
+        lowActivity: data.count > 0 && data.total / data.count < activityBenchmark
       }))
       .sort((a, b) => b.avgSessions - a.avgSessions);
-  }, [progress, schoolAverages]);
-
+  }, [progress, activityBenchmark]);
   useEffect(() => {
     const newAlerts = [];
-
-    // Inactive students alert
-    const inactiveCutoff = new Date();
-    inactiveCutoff.setDate(inactiveCutoff.getDate() - INACTIVE_THRESHOLD_DAYS);
-
-    const activeStudents = new Set(progress.map(p => p.user_email));
-    const allStudents = Object.keys(studentProfiles);
-
-    allStudents.forEach(email => {
-      if (!activeStudents.has(email)) {
-        const profile = studentProfiles[email];
+    const noActivityCutoff = new Date();
+    noActivityCutoff.setDate(noActivityCutoff.getDate() - NO_ACTIVITY_THRESHOLD_DAYS);
+    Object.values(studentProfiles).forEach((profile) => {
+      const lastAccess = profile.lastAccess ? new Date(profile.lastAccess) : null;
+      if (!lastAccess || lastAccess < noActivityCutoff) {
         newAlerts.push({
-          type: 'inactive_student',
-          student_email: email,
-          student_name: profile?.full_name || email,
-          severity: 'critical',
-          message: `${profile?.full_name || email} has no study activity in ${INACTIVE_THRESHOLD_DAYS} days`,
-          recommendedAction: 'Contact parent immediately'
+          type: 'engagement_follow_up',
+          student_id: profile.id,
+          student_name: profile.full_name || 'Learner',
+          severity: 'warning',
+          message: `${profile.full_name || 'A learner'} has no recorded study activity in ${NO_ACTIVITY_THRESHOLD_DAYS} days`,
+          recommendedAction: 'Review engagement and arrange a learner follow-up'
         });
       }
     });
-
-    // Struggling subjects alert
-    subjectStats.forEach(subject => {
-      if (subject.needsFocus) {
+    subjectStats.forEach((subject) => {
+      if (subject.lowActivity) {
         newAlerts.push({
-          type: 'subject_struggle',
+          type: 'low_activity_subject',
           subject: subject.fullSubject,
           severity: 'warning',
-          message: `${subject.studentCount} student(s) averaging below ${FOCUS_THRESHOLD} sessions in ${subject.fullSubject}`,
-          recommendedAction: 'Schedule tutoring focus session'
+          message: `${subject.studentCount} learner(s) are below the ${activityBenchmark}-session activity benchmark in ${subject.fullSubject}`,
+          recommendedAction: 'Review learner context before planning support'
         });
       }
     });
-
     setAlerts(newAlerts);
-  }, [progress, studentProfiles, subjectStats]);
-
+  }, [studentProfiles, subjectStats, activityBenchmark]);
 
 
   // Per-student engagement with full names and grades
   const studentStats = useMemo(() => {
     const map = {};
-    progress.forEach(p => {
-      if (!map[p.user_email]) map[p.user_email] = { subjects: 0, sessions: 0, lastAccess: null };
-      map[p.user_email].subjects++;
-      map[p.user_email].sessions += (p.study_sessions || 0);
-      if (p.last_access && (!map[p.user_email].lastAccess || p.last_access > map[p.user_email].lastAccess)) {
-        map[p.user_email].lastAccess = p.last_access;
-      }
+    Object.entries(studentProfiles).forEach(([studentId, profile]) => {
+      map[studentId] = { subjects: 0, sessions: 0, lastAccess: profile.lastAccess || null, subjectNames: new Set() };
+    });
+    progress.forEach((row) => {
+      if (!map[row.student_id]) return;
+      map[row.student_id].sessions += Number(row.study_sessions) || 0;
+      map[row.student_id].subjectNames.add(row.subject);
+      map[row.student_id].lastAccess = row.last_access && (!map[row.student_id].lastAccess || row.last_access > map[row.student_id].lastAccess)
+        ? row.last_access : map[row.student_id].lastAccess;
     });
     return Object.entries(map)
-      .map(([email, data]) => {
-        const profile = studentProfiles[email];
-        const lastAccessDays = data.lastAccess ?
-          Math.ceil(((new Date()).getTime() - (new Date(data.lastAccess)).getTime()) / (1000 * 60 * 60 * 24)) : null;
+      .map(([studentId, data]) => {
+        const profile = studentProfiles[studentId];
+        const lastAccessDays = data.lastAccess
+          ? Math.max(0, Math.floor((Date.now() - new Date(data.lastAccess).getTime()) / (1000 * 60 * 60 * 24)))
+          : null;
         return {
-          email,
-          name: profile?.full_name || email.split('@')[0],
+          id: studentId,
+          email: profile?.email || '',
+          name: profile?.full_name || 'Learner',
           grade: profile?.grade || 'Not set',
-          parentEmail: profile?.parent_email,
-          phone: profile?.phone,
-          subjects: data.subjects,
+          subjects: data.subjectNames.size,
           sessions: data.sessions,
           lastAccessDays,
-          isInactive: lastAccessDays > INACTIVE_THRESHOLD_DAYS,
-          trend: trendData[email] || 0
+          hasNoRecentActivity: lastAccessDays === null || lastAccessDays > NO_ACTIVITY_THRESHOLD_DAYS,
+          trend: Object.entries(trendData).filter(([key]) => key.startsWith(`${studentId}_`)).reduce((sum, [, value]) => sum + value, 0)
         };
       })
-      .filter(s => gradeFilter === 'all' || s.grade === gradeFilter)
+      .filter((student) => gradeFilter === 'all' || student.grade === gradeFilter)
       .sort((a, b) => {
-        if (a.isInactive && !b.isInactive) return -1;
-        if (!a.isInactive && b.isInactive) return 1;
+        if (a.hasNoRecentActivity && !b.hasNoRecentActivity) return -1;
+        if (!a.hasNoRecentActivity && b.hasNoRecentActivity) return 1;
         return b.sessions - a.sessions;
       });
   }, [progress, studentProfiles, gradeFilter, trendData]);
 
-  const needsFocusSubjects = subjectStats.filter(s => s.needsFocus);
-  const inactiveStudents = studentStats.filter(s => s.isInactive);
+  const lowActivitySubjects = subjectStats.filter(s => s.lowActivity);
+  const studentsWithoutRecentActivity = studentStats.filter(s => s.hasNoRecentActivity);
 
   const radarData = subjectStats.slice(0, 8).map(s => ({
     subject: s.subject,
     engagement: s.avgSessions,
   }));
 
-  const handleContactParent = (student) => {
-    if (student.parentEmail) {
-      window.location.href = `mailto:${student.parentEmail}?subject=Academic%20Progress%20Update%20for%20${student.name}`;
-    } else {
-      toast.error(`No parent email on file for ${student.name}`);
-    }
-    if (onContactParent) onContactParent(student);
-  };
-
   const handleExportReport = async () => {
     setExporting(true);
     try {
-      const reportData = {
-        tutor: user.full_name,
-        date: new Date().toISOString(),
-        timeFrame: TIME_FRAMES[timeFrame].label,
-        students: studentStats,
-        strugglingSubjects: needsFocusSubjects,
-        alerts: alerts
-      };
-
       // Generate CSV
       const csvRows = [
-        ['Student Name', 'Grade', 'Subjects Studied', 'Total Sessions', 'Status', 'Parent Email'],
+        ['Learner', 'Grade', 'Subjects', 'Completed Sessions', 'Engagement', 'Last Activity'],
         ...studentStats.map(s => [
           s.name, s.grade, s.subjects, s.sessions,
-          s.isInactive ? 'Inactive' : 'Active',
-          s.parentEmail || 'Not provided'
+          s.hasNoRecentActivity ? 'Needs follow-up' : 'Active',
+          s.lastAccessDays === null ? 'No recorded activity' : `${s.lastAccessDays} days ago`
         ])
       ];
 
-      const csv = csvRows.map(row => row.join(',')).join('\n');
+      const csv = csvRows.map(row => row.map((value) => {
+        const text = String(value ?? '');
+        const safe = /^\s*[=+@\-\t\r]/.test(text) ? `'${text}` : text;
+        return `"${safe.replace(/"/g, '""')}"`;
+      }).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -359,14 +332,9 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
     return (
       <div className="bg-card border border-border rounded-lg px-3 py-2 shadow text-xs">
         <p className="font-semibold mb-0.5">{stat?.fullSubject || label}</p>
-        <p className="text-primary">Avg sessions: {payload[0]?.value}</p>
-        <p className="text-muted-foreground">{stat?.studentCount || 0} student(s)</p>
-        {stat?.vsSchoolAvg !== null && (
-          <p className={stat.vsSchoolAvg >= 0 ? 'text-green-600' : 'text-red-600'}>
-            {stat.vsSchoolAvg >= 0 ? '▲' : '▼'} {Math.abs(stat.vsSchoolAvg)} vs school avg
-          </p>
-        )}
-        {stat?.needsFocus && <p className="text-amber-600 font-medium mt-0.5">⚠ Needs focus</p>}
+        <p className="text-primary">Avg completed sessions per active learner: {payload[0]?.value}</p>
+        <p className="text-muted-foreground">{stat?.studentCount || 0} learner(s)</p>
+        {stat?.lowActivity && <p className="text-amber-600 font-medium mt-0.5">Below activity benchmark</p>}
       </div>
     );
   };
@@ -386,8 +354,8 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
       <Card className="border-border mb-6">
         <CardContent className="text-center py-12">
           <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-30" />
-          <p className="text-muted-foreground">No student progress data yet.</p>
-          <p className="text-xs text-muted-foreground mt-1">Complete sessions with students to see their progress here.</p>
+          <p className="text-muted-foreground">No learners are linked to your completed or confirmed sessions yet.</p>
+          <p className="text-xs text-muted-foreground mt-1">Once learners are booked and study sessions are recorded, their engagement will appear here.</p>
         </CardContent>
       </Card>
     );
@@ -453,19 +421,16 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
           </div>
         )}
 
-        {/* Needs Focus Subjects */}
-        {needsFocusSubjects.length > 0 && (
+        {/* Low Recorded Activity Subjects */}
+        {lowActivitySubjects.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" /> Subjects Needing Attention
+              <BookOpen className="w-3.5 h-3.5" /> Subjects with Low Recorded Activity
             </p>
             <div className="flex flex-wrap gap-1.5">
-              {needsFocusSubjects.map(s => (
+              {lowActivitySubjects.map(s => (
                 <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                  {s.fullSubject} — avg {s.avgSessions} sessions
-                  {s.vsSchoolAvg !== null && s.vsSchoolAvg < 0 && (
-                    <span className="ml-1 text-red-500">({s.vsSchoolAvg} below avg)</span>
-                  )}
+                  {s.fullSubject} — avg {s.avgSessions} per active learner
                 </Badge>
               ))}
             </div>
@@ -473,10 +438,10 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
         )}
 
         <div className="grid sm:grid-cols-2 gap-6">
-          {/* Bar chart: avg sessions per subject */}
+          {/* Bar chart: average sessions per subject */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" /> Average Study Sessions per Subject
+              <BookOpen className="w-3.5 h-3.5" /> Average Completed Sessions per Active Learner
             </p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={subjectStats} layout="vertical" margin={{ top: 0, right: 12, left: 4, bottom: 0 }}>
@@ -487,18 +452,15 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
                   {subjectStats.map((entry, i) => (
                     <Cell
                       key={entry.subject}
-                      fill={entry.needsFocus ? '#f59e0b' : SUBJECT_COLORS[i % SUBJECT_COLORS.length]}
+                      fill={entry.lowActivity ? '#f59e0b' : SUBJECT_COLORS[i % SUBJECT_COLORS.length]}
                     />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
             <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-amber-400 inline-block" /> Needs focus</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-amber-400 inline-block" /> Below activity benchmark</span>
               <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-green-600 inline-block" /> On track</span>
-              {schoolAverages && (
-                <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-blue-400 inline-block" /> Below school avg</span>
-              )}
             </div>
           </div>
 
@@ -535,9 +497,9 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
         <div>
           <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5" /> Students ({studentStats.length})
-            {inactiveStudents.length > 0 && (
+            {studentsWithoutRecentActivity.length > 0 && (
               <Badge className="bg-red-100 text-red-700 text-[10px]">
-                {inactiveStudents.length} inactive
+                {studentsWithoutRecentActivity.length} with no recent activity
               </Badge>
             )}
           </p>
@@ -551,12 +513,12 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
                   <th className="text-center py-2 px-2 font-semibold text-xs">Subjects</th>
                   <th className="text-center py-2 px-2 font-semibold text-xs">Sessions</th>
                   <th className="text-center py-2 px-2 font-semibold text-xs">Status</th>
-                  <th className="text-center py-2 px-2 font-semibold text-xs">Action</th>
+                  <th className="text-center py-2 px-2 font-semibold text-xs">Last Activity</th>
                 </tr>
               </thead>
               <tbody>
                 {studentStats.slice(0, 10).map((student) => (
-                  <tr key={student.email} className="border-b border-border/50 hover:bg-muted/30">
+                  <tr key={student.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-2 px-2">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-[10px]">
@@ -580,22 +542,14 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
                       </div>
                     </td>
                     <td className="py-2 px-2 text-center">
-                      {student.isInactive ? (
-                        <Badge className="bg-red-100 text-red-700 text-[10px]">Inactive</Badge>
+                      {student.hasNoRecentActivity ? (
+                        <Badge className="bg-red-100 text-red-700 text-[10px]">No recent activity</Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700 text-[10px]">Active</Badge>
+                        <Badge className="bg-green-100 text-green-700 text-[10px]">Recent activity</Badge>
                       )}
                     </td>
                     <td className="py-2 px-2 text-center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 w-6 p-0"
-                        onClick={() => handleContactParent(student)}
-                        title="Contact Parent"
-                      >
-                        <Mail className="w-3.5 h-3.5" />
-                      </Button>
+                      <span className="text-xs text-muted-foreground">{student.lastAccessDays === null ? 'No record' : student.lastAccessDays === 0 ? 'Today' : `${student.lastAccessDays}d ago`}</span>
                     </td>
                   </tr>
                 ))}
@@ -610,15 +564,15 @@ function TutorStudentProgressChartImplementation({ user, onContactParent = undef
           )}
         </div>
 
-        {/* Parent Contact Reminder */}
-        {inactiveStudents.length > 0 && (
+        {/* Engagement follow-up reminder */}
+        {studentsWithoutRecentActivity.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-red-700 mb-1 flex items-center gap-1.5">
-              <Mail className="w-3.5 h-3.5" /> Parent Contact Required
+              <Bell className="w-3.5 h-3.5" /> Learner Follow-up
             </p>
             <p className="text-xs text-red-600">
-              {inactiveStudents.length} student(s) have been inactive for {INACTIVE_THRESHOLD_DAYS}+ days.
-              Click the email icon next to their name to contact parents.
+              {studentsWithoutRecentActivity.length} learner(s) have no recorded study session in the last {NO_ACTIVITY_THRESHOLD_DAYS}+ days.
+              Review their recent activity and arrange a follow-up through the platform's approved communication channel.
             </p>
           </div>
         )}
