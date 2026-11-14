@@ -48,7 +48,6 @@ const getDateFilter = (timeFrame) => {
 
 function TutorStudentProgressChartImplementation({ user }) {
   const [progress, setProgress] = useState([]);
-  const [bookings, setBookings] = useState([]);
   const [studentProfiles, setStudentProfiles] = useState({});
   const [loading, setLoading] = useState(true);
   const [timeFrame, setTimeFrame] = useState('current');
@@ -92,7 +91,6 @@ function TutorStudentProgressChartImplementation({ user }) {
       });
 
       const studentIds = Object.keys(profilesMap);
-      setBookings(bookingsData || []);
       if (studentIds.length === 0) {
         setProgress([]);
         setStudentProfiles({});
@@ -313,7 +311,11 @@ function TutorStudentProgressChartImplementation({ user }) {
         ])
       ];
 
-      const csv = csvRows.map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
+      const csv = csvRows.map(row => row.map((value) => {
+        const text = String(value ?? '');
+        const safe = /^[\\s]*[=+@\\-\\t\\r]/.test(text) ? `'${text}` : text;
+        return `"${safe.replace(/"/g, '""')}"`;
+      }).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
