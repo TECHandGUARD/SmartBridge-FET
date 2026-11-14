@@ -68,3 +68,6 @@ Implementation review is tracked in PR #110. The integrated branch is based dire
 
 
 Migration ordering note: the already-merged 20261114170000 privacy migration is preserved unchanged. Follow-on migrations are versioned after it; the learner-note archive visibility policy is a separate follow-on migration, and the lesson-plan relationship migration does not duplicate the note policies already installed by #109.
+
+
+Production migration reconciliation: the privacy/ownership migration filename is aligned to the recorded Supabase version `20261114163002`; the follow-on MLP migrations start at `20261114175000` and remain pending until the reviewed release is applied.
