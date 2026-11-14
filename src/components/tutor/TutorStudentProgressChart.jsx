@@ -283,7 +283,7 @@ function TutorStudentProgressChartImplementation({ user }) {
       });
   }, [progress, studentProfiles, gradeFilter, trendData]);
 
-  const needsFocusSubjects = subjectStats.filter(s => s.lowActivity);
+  const lowActivitySubjects = subjectStats.filter(s => s.lowActivity);
   const inactiveStudents = studentStats.filter(s => s.isInactive);
 
   const radarData = subjectStats.slice(0, 8).map(s => ({
@@ -332,8 +332,8 @@ function TutorStudentProgressChartImplementation({ user }) {
     return (
       <div className="bg-card border border-border rounded-lg px-3 py-2 shadow text-xs">
         <p className="font-semibold mb-0.5">{stat?.fullSubject || label}</p>
-        <p className="text-primary">Avg sessions: {payload[0]?.value}</p>
-        <p className="text-muted-foreground">{stat?.studentCount || 0} student(s)</p>
+        <p className="text-primary">Avg completed sessions per active learner: {payload[0]?.value}</p>
+        <p className="text-muted-foreground">{stat?.studentCount || 0} learner(s)</p>
         {stat?.lowActivity && <p className="text-amber-600 font-medium mt-0.5">Below activity benchmark</p>}
       </div>
     );
