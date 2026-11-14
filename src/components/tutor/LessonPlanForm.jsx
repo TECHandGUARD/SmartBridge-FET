@@ -447,7 +447,7 @@ export default function LessonPlanForm({
                   Clear Draft
                 </Button>}
               <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-                <Shield className="w-3 h-3 text-green-500" /> Private
+                <Shield className="w-3 h-3 text-green-500" /> Tutor preview
               </Badge>
             </div>
           </div>
@@ -477,9 +477,13 @@ export default function LessonPlanForm({
             <h3 className="text-md font-semibold mt-4 mb-2">✏️ Homework</h3>
             <p>{form.homework_assigned || 'No homework assigned'}</p>
 
-            {form.notes && <>
-                <h3 className="text-md font-semibold mt-4 mb-2">📝 Private Notes</h3>
-                <p className="text-muted-foreground">{form.notes}</p>
+            {(form.notes || reflection.what_went_well || reflection.areas_for_improvement || reflection.next_session_goals.length) && <>
+                <h3 className="text-md font-semibold mt-4 mb-2">🔒 Tutor-only reflection</h3>
+                {form.notes && <p className="text-muted-foreground whitespace-pre-wrap">{form.notes}</p>}
+                {reflection.what_went_well && <p><strong>What went well:</strong> {reflection.what_went_well}</p>}
+                {reflection.areas_for_improvement && <p><strong>To adjust:</strong> {reflection.areas_for_improvement}</p>}
+                {reflection.next_session_goals.length > 0 && <p><strong>Next session goals:</strong> {reflection.next_session_goals.join('; ')}</p>}
+                {reflection.confidence_rating && <p><strong>Tutor confidence:</strong> {reflection.confidence_rating}/5</p>}
               </>}
           </div>
 
@@ -506,7 +510,7 @@ export default function LessonPlanForm({
               {isEditing ? 'Edit Lesson Plan' : 'New Lesson Plan'}
             </CardTitle>
             <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3 text-green-500" /> Private
+              <Shield className="w-3 h-3 text-green-500" /> Tutor workspace
             </Badge>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -642,6 +646,10 @@ export default function LessonPlanForm({
         </div>
 
         {}
+        <div className="rounded-lg border border-blue-200/70 bg-blue-50/40 p-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/10 dark:text-blue-100">
+          The linked learner can view the lesson title, objectives, resources and homework. Your preparation notes and teaching reflection are stored separately and remain tutor-only.
+        </div>
+
         <div className="space-y-1.5">
           <Label>Learning Objectives</Label>
           <div className="flex gap-2">
