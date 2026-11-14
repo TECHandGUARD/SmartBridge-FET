@@ -49,57 +49,59 @@ function LessonPlannerImplementation({
     draft: 0
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const {
-        data: plansData,
-        error: plansError
-      } = await supabase.from('lesson_plans').select('*').eq('tutor_email', user.email).order('session_date', {
-        ascending: false
-      });
+      const { data: plansData, error: plansError } = await supabase
+        .from('lesson_plans')
+        .select('*')
+        .eq('tutor_id', user.id)
+        .order('session_date', { ascending: false });
       if (plansError) throw plansError;
-      const {
-        data: bookingsData,
-        error: bookingsError
-      } = await supabase.from('tutor_bookings').select('student_email, student_name, id, date, subject').eq('tutor_email', user.email).eq('status', 'confirmed').gte('date', new Date().toISOString().split('T')[0]).order('date', {
-        ascending: true
-      });
+
+      const { data: bookingsData, error: bookingsError } = await supabase
+        .from('tutor_bookings')
+        .select('student_id, student_email, student_name, id, date, subject, status')
+        .eq('tutor_id', user.id)
+        .in('status', ['confirmed', 'completed'])
+        .order('date', { ascending: true });
       if (bookingsError) throw bookingsError;
+
       const studentMap = {};
-      (bookingsData || []).forEach(b => {
-        if (b.student_email && !studentMap[b.student_email]) {
-          studentMap[b.student_email] = {
-            email: b.student_email,
-            name: b.student_name || b.student_email
+      (bookingsData || []).forEach((booking) => {
+        if (!booking.student_id) return;
+        if (!studentMap[booking.student_id]) {
+          studentMap[booking.student_id] = {
+            id: booking.student_id,
+            email: booking.student_email || '',
+            name: booking.student_name || booking.student_email || 'Learner'
           };
         }
       });
-      (plansData || []).forEach(p => {
-        if (p.student_email && !studentMap[p.student_email]) {
-          studentMap[p.student_email] = {
-            email: p.student_email,
-            name: p.student_name || p.student_email
-          };
-        }
+      (plansData || []).forEach((plan) => {
+        if (!plan.student_id || studentMap[plan.student_id]) return;
+        studentMap[plan.student_id] = {
+          id: plan.student_id,
+          email: plan.student_email || '',
+          name: plan.student_name || plan.student_email || 'Learner'
+        };
       });
+
       setPlans(plansData || []);
       setStudents(Object.values(studentMap));
-      setUpcomingBookings(bookingsData || []);
+      const today = new Date().toISOString().split('T')[0];
+      setUpcomingBookings((bookingsData || []).filter((booking) =>
+        booking.status === 'confirmed' && booking.date >= today
+      ));
       const total = plansData?.length || 0;
-      const completed = plansData?.filter(p => p.status === 'completed').length || 0;
-      const planned = plansData?.filter(p => p.status === 'planned').length || 0;
-      const draft = plansData?.filter(p => p.status === 'draft').length || 0;
-      setStats({
-        total,
-        completed,
-        planned,
-        draft
-      });
+      const completed = plansData?.filter(plan => plan.status === 'completed').length || 0;
+      const planned = plansData?.filter(plan => plan.status === 'planned').length || 0;
+      const draft = plansData?.filter(plan => plan.status === 'draft').length || 0;
+      setStats({ total, completed, planned, draft });
     } catch (err) {
       console.error('Error loading lesson plans:', err);
       setError('Failed to load lesson plans');
@@ -107,17 +109,17 @@ function LessonPlannerImplementation({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     const channel = supabase.channel('tutor_lesson_plans').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'lesson_plans',
-      filter: `tutor_email=eq.${user.email}`
+      filter: `tutor_id=eq.${user.id}`
     }, payload => {
       if (payload.eventType === 'INSERT') {
         setPlans(prev => [payload.new, ...prev]);
@@ -131,7 +133,7 @@ function LessonPlannerImplementation({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email]);
+  }, [user?.id]);
   const toggleSelect = id => {
     const newSet = new Set(selectedPlans);
     if (newSet.has(id)) newSet.delete(id);else newSet.add(id);
@@ -173,7 +175,7 @@ function LessonPlannerImplementation({
     for (const id of selectedPlans) {
       const {
         error
-      } = await supabase.from('lesson_plans').delete().eq('id', id);
+      } = await supabase.from('lesson_plans').delete().eq('id', id).eq('tutor_id', user.id);
       if (!error) deletedCount++;
     }
     setPlans(prev => prev.filter(p => !selectedPlans.has(p.id)));
@@ -189,7 +191,7 @@ function LessonPlannerImplementation({
         status: 'completed',
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }).eq('id', plan.id);
+      }).eq('id', plan.id).eq('tutor_id', user.id);
       if (updateError) throw updateError;
       setPlans(prev => prev.map(p => p.id === plan.id ? {
         ...p,
@@ -205,7 +207,7 @@ function LessonPlannerImplementation({
     }
   };
   const shareWithStudent = async plan => {
-    if (!plan.student_email) {
+    if (!plan.student_id) {
       toast.error('No student linked to this plan');
       return;
     }
@@ -266,7 +268,9 @@ function LessonPlannerImplementation({
           homework_assigned: data.homework || '',
           notes: data.notes || '',
           status: 'draft',
-          student_email: ''
+          student_id: '',
+          student_email: '',
+          booking_id: ''
         });
         setShowForm(true);
         toast.success('AI-generated plan loaded! Review and adjust as needed.');
@@ -528,7 +532,7 @@ function LessonPlannerImplementation({
                     </div>
                   </div>
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {p.status !== 'completed' && p.student_email && <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Share with student" onClick={() => shareWithStudent(p)}>
+                    {p.status !== 'completed' && p.student_id && <Button size="sm" variant="ghost" className="h-8 w-8 p-0" title="Share with student" onClick={() => shareWithStudent(p)}>
                         <Mail className="w-3.5 h-3.5" />
                       </Button>}
                     {p.status !== 'completed' && <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-green-600" title="Mark complete" onClick={() => markPlanCompleted(p)}>
