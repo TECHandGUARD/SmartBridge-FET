@@ -63,6 +63,8 @@ export default function UserRegistrationsPanel() {
   const [processingId, setProcessingId] = useState(null);
   const [rejectingUserId, setRejectingUserId] = useState(null);
   const [rejectionReasons, setRejectionReasons] = useState({});
+  const [deletingUserId, setDeletingUserId] = useState(null);
+  const [deletionReasons, setDeletionReasons] = useState({});
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -160,6 +162,39 @@ export default function UserRegistrationsPanel() {
     } catch (err) {
       console.error('Reject error:', err);
       toast.error(`Failed to reject: ${err.message}`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+  const deleteUser = async u => {
+    const reason = deletionReasons[u.id]?.trim() || '';
+    if (reason.length < 10) {
+      toast.error('Please provide a clear reason of at least 10 characters.');
+      return;
+    }
+    const confirmed = window.confirm(
+      `Permanently delete ${u.full_name || u.email} and their sign-in account? This may remove linked records. Preserve any evidence required for a safeguarding investigation, dispute or legal hold before continuing.`
+    );
+    if (!confirmed) return;
+    setProcessingId(u.id + 'delete');
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-delete-user', {
+        body: { target_user_id: u.id, reason }
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Account deletion was not confirmed.');
+      setUsers(prev => prev.filter(x => x.id !== u.id));
+      setTutorProfiles(prev => prev.filter(x => x.user_id !== u.id && x.user_email !== u.email));
+      setDeletingUserId(null);
+      setDeletionReasons(prev => {
+        const next = { ...prev };
+        delete next[u.id];
+        return next;
+      });
+      toast.success(`${u.full_name || u.email} was deleted. The administrator action was recorded.`);
+    } catch (err) {
+      console.error('Account deletion error:', err);
+      toast.error(`Account was not deleted: ${err.message || 'Please try again.'}`);
     } finally {
       setProcessingId(null);
     }
@@ -305,6 +340,9 @@ export default function UserRegistrationsPanel() {
                       {u.role !== 'admin' && rejectingUserId !== u.id && <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-red-700 border-red-200 hover:bg-red-50" disabled={!!processingId} onClick={() => setRejectingUserId(u.id)}>
                           <XCircle className="w-3 h-3 mr-1" /> Reject
                         </Button>}
+                      {u.role !== 'admin' && u.is_super_admin !== true && <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-red-800 border-red-300 hover:bg-red-100" disabled={!!processingId} onClick={() => { setDeletingUserId(deletingUserId === u.id ? null : u.id); setRejectingUserId(null); }}>
+                          <XCircle className="w-3 h-3 mr-1" /> Delete account
+                        </Button>}
                     </div>
                   </div>
 
@@ -332,6 +370,18 @@ export default function UserRegistrationsPanel() {
                   }}>
                           Cancel
                         </Button>
+                      </div>
+                    </div>}
+                  {deletingUserId === u.id && <div className="mt-3 pt-3 border-t border-red-300 space-y-2">
+                      <p className="text-xs font-semibold text-red-800">Permanent account deletion</p>
+                      <p className="text-xs text-muted-foreground">This removes the sign-in account and may cascade into linked application records. Record the factual reason. If the account is connected to a safeguarding matter, suspected crime, complaint or legal hold, preserve required evidence first and follow the applicable retention process.</p>
+                      <Textarea className="text-xs min-h-[70px] border-red-300 focus-visible:ring-red-300" placeholder="Required reason (at least 10 characters)..." value={deletionReasons[u.id] || ''} onChange={e => setDeletionReasons(prev => ({ ...prev, [u.id]: e.target.value }))} />
+                      <div className="flex gap-2">
+                        <Button size="sm" className="h-7 px-3 text-xs bg-red-700 hover:bg-red-800 gap-1" disabled={processingId === u.id + 'delete' || (deletionReasons[u.id] || '').trim().length < 10} onClick={() => deleteUser(u)}>
+                          <XCircle className="w-3 h-3" />
+                          {processingId === u.id + 'delete' ? 'Deleting…' : 'Confirm permanent deletion'}
+                        </Button>
+                        <Button size="sm" variant="outline" className="h-7 px-3 text-xs" onClick={() => { setDeletingUserId(null); setDeletionReasons(prev => { const next = { ...prev }; delete next[u.id]; return next; }); }}>Cancel</Button>
                       </div>
                     </div>}
                 </div>;
