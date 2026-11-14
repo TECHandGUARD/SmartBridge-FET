@@ -68,7 +68,7 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
  assert.deepEqual(ok(await parent.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
  assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
- const sharedNote=ok(await tutor.client.from('student_notes').update({is_shared_with_student:true,shared_at:new Date().toISOString()}).eq('id',privateNote.id).select('*').single());
+ const sharedNote=ok(await tutor.client.from('student_notes').update({is_shared_with_student:true,is_confidential:false,shared_at:new Date().toISOString()}).eq('id',privateNote.id).select('*').single());
  assert.equal(sharedNote.is_shared_with_student,true);
  assert.equal(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
  ok(await tutor.client.from('student_notes').update({is_confidential:true,is_shared_with_student:false}).eq('id',privateNote.id));
