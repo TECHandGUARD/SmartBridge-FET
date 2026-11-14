@@ -28,9 +28,6 @@ export function SelectWithOther({
     if (isCustomValue) {
       setCustomValue(value);
       setIsEnteringOther(true);
-    } else if (!value) {
-      setCustomValue('');
-      setIsEnteringOther(false);
     }
   }, [value, isCustomValue]);
 
