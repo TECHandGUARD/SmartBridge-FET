@@ -29,7 +29,8 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  // Tutor-only RLS requires a verified, active tutor profile.
- ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
+ ok(await admin.from('users').update({role:'sace_tutor',is_verified:true,is_active:true}).eq('id',tutor.id));
+  assert.equal(ok(await tutor.client.rpc('is_tutor',{user_id:tutor.id})),true,'Admin-approved active SACE tutor must pass the shared tutor eligibility helper');
  const profile=ok(await admin.from('tutor_profiles').update({
   is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
   institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
