@@ -54,7 +54,6 @@ function TutorStudentProgressChartImplementation({ user }) {
   const [gradeFilter, setGradeFilter] = useState('all');
   const [exporting, setExporting] = useState(false);
   const [alerts, setAlerts] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
   const [trendData, setTrendData] = useState({});
 
   const loadData = useCallback(async () => {
@@ -288,15 +287,6 @@ function TutorStudentProgressChartImplementation({ user }) {
   const handleExportReport = async () => {
     setExporting(true);
     try {
-      const reportData = {
-        tutor: user.full_name,
-        date: new Date().toISOString(),
-        timeFrame: TIME_FRAMES[timeFrame].label,
-        students: studentStats,
-        strugglingSubjects: needsFocusSubjects,
-        alerts: alerts
-      };
-
       // Generate CSV
       const csvRows = [
         ['Learner', 'Grade', 'Subjects', 'Completed Sessions', 'Engagement', 'Last Activity'],
