@@ -100,6 +100,63 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
 
+ // Lesson plans use UUID ownership and expose only learner-facing content.
+ const lessonPlan=ok(await tutor.client.from('lesson_plans').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  student_name:'Disposable learner',booking_id:booking.id,session_date:'2099-12-01',
+  session_title:'Linear equations',subject:'Mathematics',grade:'Grade 12',
+  objectives:['Solve a two-step linear equation'],resources_used:['Practice worksheet'],
+  homework_assigned:'Complete questions 1-5',notes:null,reflection_notes:null,status:'planned'
+ }).select('id,student_id,booking_id').single());
+ assert.equal(lessonPlan.student_id,student.id);
+ assert.equal(lessonPlan.booking_id,booking.id);
+ const learnerPlan=ok(await student.client.from('lesson_plans').select('id,student_id,notes,reflection_notes').eq('id',lessonPlan.id).single());
+ assert.equal(learnerPlan.student_id,student.id);
+ assert.equal(learnerPlan.notes,null,'Learner-visible lesson plan has no private notes');
+ assert.equal(learnerPlan.reflection_notes,null,'Learner-visible lesson plan has no private reflection notes');
+ assert.deepEqual(ok(await other.client.from('lesson_plans').select('id').eq('id',lessonPlan.id)),[],
+  'Unrelated learner cannot read a lesson plan');
+ assert.ok((await student.client.from('lesson_plans').insert({
+  tutor_id:student.id,tutor_email:student.email,student_id:student.id,student_email:student.email,
+  session_date:'2099-12-03',session_title:'Learner-created plan',subject:'Mathematics',grade:'Grade 12',status:'draft'
+ })).error,'Learner cannot create tutor lesson plans');
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:other.id,student_email:other.email,
+  session_date:'2099-12-02',session_title:'Unbooked plan',subject:'Mathematics',grade:'Grade 12',status:'draft'
+ })).error,'Tutor cannot create a plan for a learner without a confirmed/completed booking');
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  booking_id:booking.id,session_date:'2099-12-01',session_title:'Leaking notes',subject:'Mathematics',
+  grade:'Grade 12',status:'draft',notes:'Private notes must not be stored on a learner-readable row'
+ })).error,'Private notes cannot be written to learner-readable lesson plans');
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  booking_id:booking.id,session_date:'2099-12-01',session_title:'Metadata leak',subject:'Mathematics',
+  grade:'Grade 12',status:'draft',metadata:{private_note:'Must not be exposed to the learner'}
+ })).error,'Arbitrary metadata cannot be written to learner-readable lesson plans');
+ const reflection=ok(await tutor.client.from('tutor_lesson_reflections').insert({
+  lesson_plan_id:lessonPlan.id,tutor_id:tutor.id,preparation_notes:'Private preparation',
+  what_went_well:'Worked examples helped',areas_for_improvement:'Slow down the first explanation',
+  next_session_goals:['Revisit equations','Check independent practice'],confidence_rating:4
+ }).select('id,lesson_plan_id').single());
+ assert.equal(reflection.lesson_plan_id,lessonPlan.id);
+ assert.equal(ok(await tutor.client.from('tutor_lesson_reflections').select('id').eq('id',reflection.id)).length,1,
+  'Owning tutor can read their private reflection');
+ assert.deepEqual(ok(await student.client.from('tutor_lesson_reflections').select('id').eq('id',reflection.id)),[],
+  'Learner cannot read tutor-only reflections');
+ assert.deepEqual(ok(await other.client.from('tutor_lesson_reflections').select('id').eq('id',reflection.id)),[],
+  'Unrelated account cannot read tutor-only reflections');
+ assert.ok((await student.client.from('tutor_lesson_reflections').insert({
+  lesson_plan_id:lessonPlan.id,tutor_id:student.id,preparation_notes:'Learner-forged reflection'
+ })).error,'Learner cannot create tutor-only reflections');
+ assert.ok((await tutor.client.from('lesson_plans').update({student_id:other.id}).eq('id',lessonPlan.id).select('id').maybeSingle()).error,
+  'Tutor cannot reassign a lesson plan to an unbooked learner');
+ const removedPlan=ok(await tutor.client.from('lesson_plans').delete().eq('id',lessonPlan.id).select('id').single());
+ assert.equal(removedPlan.id,lessonPlan.id,'Tutor can delete their own lesson plan');
+ assert.deepEqual(ok(await tutor.client.from('tutor_lesson_reflections').select('id').eq('id',reflection.id)),[],
+  'Deleting a lesson plan also deletes its private reflection');
+ console.log('PASS: lesson-plan UUID ownership, booked-learner enforcement, learner-safe fields, private reflection isolation and owner deletion');
+
  // Tutor Hub privacy/ownership hardening: exercise the new RLS policies with real JWTs.
  const privateNote=ok(await tutor.client.from('student_notes').insert({
   tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,

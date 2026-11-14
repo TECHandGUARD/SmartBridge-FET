@@ -78,7 +78,8 @@ export default function LessonPlanForm({
   onSaved,
   onCancel
 }) {
-  const isEditing = !!plan?.id;
+  const [savedPlanId, setSavedPlanId] = useState(plan?.id || null);
+  const isEditing = !!savedPlanId;
   const [saving, setSaving] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
@@ -89,6 +90,7 @@ export default function LessonPlanForm({
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [form, setForm] = useState({
     session_title: plan?.session_title || '',
+    student_id: plan?.student_id || '',
     student_email: plan?.student_email || '',
     student_name: plan?.student_name || '',
     session_date: plan?.session_date || new Date().toISOString().split('T')[0],
@@ -101,10 +103,87 @@ export default function LessonPlanForm({
     status: plan?.status || 'draft',
     booking_id: plan?.booking_id || ''
   });
+  const [reflection, setReflection] = useState({
+    what_went_well: '',
+    areas_for_improvement: '',
+    next_session_goals: [],
+    confidence_rating: ''
+  });
+  const [reflectionLoading, setReflectionLoading] = useState(!!plan?.id);
+  const [reflectionLoadError, setReflectionLoadError] = useState(false);
   const set = (key, val) => setForm(prev => ({
     ...prev,
     [key]: val
   }));
+  const setReflectionField = (key, value) => setReflection(prev => ({ ...prev, [key]: value }));
+
+  useEffect(() => {
+    let active = true;
+    if (!plan?.id || !user?.id) {
+      setReflectionLoading(false);
+      return () => { active = false; };
+    }
+    setReflectionLoading(true);
+    setReflectionLoadError(false);
+
+    const loadPrivateReflection = async () => {
+      try {
+        const { data, error: reflectionError } = await supabase
+          .from('tutor_lesson_reflections')
+          .select('preparation_notes, what_went_well, areas_for_improvement, next_session_goals, confidence_rating')
+          .eq('lesson_plan_id', plan.id)
+          .eq('tutor_id', user.id)
+          .maybeSingle();
+        if (!active) return;
+        if (reflectionError) {
+          setReflectionLoadError(true);
+          setError('Private reflection could not be loaded. Saving is disabled to protect your existing notes.');
+          return;
+        }
+        if (data) {
+          setReflection({
+            what_went_well: data.what_went_well || '',
+            areas_for_improvement: data.areas_for_improvement || '',
+            next_session_goals: data.next_session_goals || [],
+            confidence_rating: data.confidence_rating ? String(data.confidence_rating) : ''
+          });
+          set('notes', data.preparation_notes || '');
+        } else {
+          // Recover a local draft if the previous save created the plan but the
+          // separate private-reflection write had to be retried.
+          try {
+            const draft = JSON.parse(localStorage.getItem(getDraftKey(user.email)) || 'null');
+            const matchesPlan = draft?.student_id === plan.student_id && draft?.session_title === plan.session_title;
+            if (matchesPlan && draft.privateReflection) {
+              setReflection({
+                what_went_well: draft.privateReflection.what_went_well || '',
+                areas_for_improvement: draft.privateReflection.areas_for_improvement || '',
+                next_session_goals: Array.isArray(draft.privateReflection.next_session_goals) ? draft.privateReflection.next_session_goals : [],
+                confidence_rating: draft.privateReflection.confidence_rating ? String(draft.privateReflection.confidence_rating) : ''
+              });
+              set('notes', draft.notes || '');
+            } else {
+              setReflection({ what_went_well: '', areas_for_improvement: '', next_session_goals: [], confidence_rating: '' });
+              set('notes', '');
+            }
+          } catch {
+            setReflection({ what_went_well: '', areas_for_improvement: '', next_session_goals: [], confidence_rating: '' });
+            set('notes', '');
+          }
+        }
+      } catch (reflectionError) {
+        if (!active) return;
+        console.error('Could not load private tutor reflection:', reflectionError);
+        setReflectionLoadError(true);
+        setError('Private reflection could not be loaded. Saving is disabled to protect your existing notes.');
+      } finally {
+        if (active) setReflectionLoading(false);
+      }
+    };
+
+    loadPrivateReflection();
+    return () => { active = false; };
+  }, [plan?.id, plan?.student_id, plan?.session_title, user?.id, user?.email]);
   useEffect(() => {
     if (!isEditing && !draftLoaded) {
       const draftKey = getDraftKey(user?.email);
@@ -114,7 +193,14 @@ export default function LessonPlanForm({
           const draft = JSON.parse(savedDraft);
           if (draft.session_title || draft.objectives?.length > 0) {
             if (window.confirm('You have an unsaved draft from your last session. Load it?')) {
-              setForm(draft);
+              const { privateReflection, ...formDraft } = draft;
+              setForm({ ...formDraft, student_id: formDraft.student_id || '', booking_id: formDraft.booking_id || '', notes: formDraft.notes || '' });
+              if (privateReflection) setReflection({
+                what_went_well: privateReflection.what_went_well || '',
+                areas_for_improvement: privateReflection.areas_for_improvement || '',
+                next_session_goals: Array.isArray(privateReflection.next_session_goals) ? privateReflection.next_session_goals : [],
+                confidence_rating: privateReflection.confidence_rating ? String(privateReflection.confidence_rating) : ''
+              });
               setDraftLoaded(true);
               toast.info('Draft loaded');
             }
@@ -130,11 +216,11 @@ export default function LessonPlanForm({
     if (saving) return;
     const autoSaveInterval = setInterval(() => {
       const draftKey = getDraftKey(user?.email);
-      localStorage.setItem(draftKey, JSON.stringify(form));
+      localStorage.setItem(draftKey, JSON.stringify({ ...form, privateReflection: reflection }));
       console.log('📝 Draft auto-saved');
     }, AUTO_SAVE_INTERVAL);
     return () => clearInterval(autoSaveInterval);
-  }, [form, saving, user?.email]);
+  }, [form, reflection, saving, user?.email]);
   const addObjective = () => {
     if (!objectiveInput.trim()) return;
     set('objectives', [...form.objectives, objectiveInput.trim()]);
@@ -147,15 +233,20 @@ export default function LessonPlanForm({
     setResourceInput('');
   };
   const removeResource = i => set('resources_used', form.resources_used.filter((_, idx) => idx !== i));
-  const selectStudent = email => {
-    const stu = students.find(s => s.email === email);
-    set('student_email', email);
-    set('student_name', stu?.name || email);
+  const selectStudent = studentId => {
+    const student = students.find(item => item.id === studentId);
+    if (!student) return;
+    set('student_id', studentId);
+    set('student_email', student.email);
+    set('student_name', student.name || student.email || 'Learner');
+    set('booking_id', '');
+    set('session_date', '');
   };
   const selectBooking = bookingId => {
     const booking = upcomingBookings.find(b => b.id === bookingId);
     if (booking) {
       set('booking_id', bookingId);
+      set('student_id', booking.student_id);
       set('student_email', booking.student_email);
       set('student_name', booking.student_name || booking.student_email);
       set('subject', booking.subject);
@@ -241,7 +332,7 @@ export default function LessonPlanForm({
     setDraftLoaded(true);
   };
   const handleSave = async () => {
-    if (!form.session_title || !form.student_email || !form.subject) {
+    if (!form.session_title || !form.student_id || !form.student_email || !form.subject) {
       toast.error('Please fill in title, student, and subject.');
       return;
     }
@@ -250,8 +341,9 @@ export default function LessonPlanForm({
     try {
       const payload = {
         tutor_email: user.email,
-        tutor_id: user.id || null,
+        tutor_id: user.id,
         session_title: form.session_title,
+        student_id: form.student_id,
         student_email: form.student_email,
         student_name: form.student_name,
         session_date: form.session_date || null,
@@ -260,47 +352,84 @@ export default function LessonPlanForm({
         objectives: form.objectives,
         resources_used: form.resources_used,
         homework_assigned: form.homework_assigned,
-        notes: form.notes,
+        notes: null,
+        reflection_notes: null,
         status: form.status,
         booking_id: form.booking_id || null,
         updated_at: new Date().toISOString()
       };
-      const {
-        data: progRecords
-      } = await supabase.from('study_progress').select('id').eq('user_email', form.student_email).eq('subject', form.subject).maybeSingle();
-      if (progRecords) {
-        payload.student_progress_id = progRecords.id;
-      }
+      const { data: progressRecord, error: progressError } = await supabase
+        .from('study_progress')
+        .select('id')
+        .eq('student_id', form.student_id)
+        .eq('subject', form.subject)
+        .maybeSingle();
+      if (progressError) throw progressError;
+      payload.student_progress_id = progressRecord?.id || null;
+
+      let persistedPlanId = savedPlanId;
+      const wasNewPlan = !plan?.id;
       if (isEditing) {
-        const {
-          error: updateError
-        } = await supabase.from('lesson_plans').update(payload).eq('id', plan.id);
+        const { data: updatedPlan, error: updateError } = await supabase
+          .from('lesson_plans')
+          .update(payload)
+          .eq('id', savedPlanId)
+          .eq('tutor_id', user.id)
+          .select('id')
+          .single();
         if (updateError) throw updateError;
+        persistedPlanId = updatedPlan.id;
         toast.success('Lesson plan updated.');
       } else {
-        const {
-          data,
-          error: insertError
-        } = await supabase.from('lesson_plans').insert({
-          ...payload,
-          created_at: new Date().toISOString()
-        }).select().single();
+        const { data: createdPlan, error: insertError } = await supabase
+          .from('lesson_plans')
+          .insert({ ...payload, created_at: new Date().toISOString() })
+          .select('id')
+          .single();
         if (insertError) throw insertError;
-        clearDraft();
+        persistedPlanId = createdPlan.id;
+        setSavedPlanId(createdPlan.id);
         toast.success('Lesson plan created!');
         await Promise.resolve(supabase.from('activity_log').insert({
           event_type: 'lesson_plan_created',
           user_email: user.email,
-          user_id: user.id || null,
+          user_id: user.id,
           description: `Created lesson plan for ${form.subject} - ${form.student_email}`,
           metadata: {
-            plan_id: data?.id,
+            plan_id: persistedPlanId,
             subject: form.subject,
             student: form.student_email,
             status: form.status
           }
         })).catch(() => {});
       }
+
+      const reflectionPayload = {
+        lesson_plan_id: persistedPlanId,
+        tutor_id: user.id,
+        preparation_notes: String(form.notes || '').trim() || null,
+        what_went_well: String(reflection.what_went_well || '').trim() || null,
+        areas_for_improvement: String(reflection.areas_for_improvement || '').trim() || null,
+        next_session_goals: (Array.isArray(reflection.next_session_goals) ? reflection.next_session_goals : []).map(goal => String(goal).trim()).filter(Boolean),
+        confidence_rating: reflection.confidence_rating ? Number(reflection.confidence_rating) : null,
+        updated_at: new Date().toISOString()
+      };
+      const hasPrivateReflection = Boolean(
+        reflectionPayload.preparation_notes ||
+        reflectionPayload.what_went_well ||
+        reflectionPayload.areas_for_improvement ||
+        reflectionPayload.next_session_goals.length ||
+        reflectionPayload.confidence_rating
+      );
+      const reflectionResult = hasPrivateReflection
+        ? await supabase.from('tutor_lesson_reflections').upsert(reflectionPayload, { onConflict: 'lesson_plan_id,tutor_id' })
+        : await supabase.from('tutor_lesson_reflections').delete().eq('lesson_plan_id', persistedPlanId).eq('tutor_id', user.id);
+      if (reflectionResult.error) {
+        setError('The lesson plan is saved, but the private reflection did not save. Your notes remain in this form; try saving again.');
+        toast.error('Lesson plan saved, but the private reflection needs another save attempt.');
+        return;
+      }
+      if (wasNewPlan) clearDraft();
       onSaved?.();
     } catch (err) {
       console.error('Save error:', err);
@@ -312,7 +441,7 @@ export default function LessonPlanForm({
   };
   const validation = {
     title: form.session_title.trim().length > 0,
-    student: !!form.student_email,
+    student: !!form.student_id && !!form.student_email,
     subject: !!form.subject,
     objectives: form.objectives.length > 0
   };
@@ -333,7 +462,7 @@ export default function LessonPlanForm({
                   Clear Draft
                 </Button>}
               <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-                <Shield className="w-3 h-3 text-green-500" /> Private
+                <Shield className="w-3 h-3 text-green-500" /> Tutor preview
               </Badge>
             </div>
           </div>
@@ -363,9 +492,13 @@ export default function LessonPlanForm({
             <h3 className="text-md font-semibold mt-4 mb-2">✏️ Homework</h3>
             <p>{form.homework_assigned || 'No homework assigned'}</p>
 
-            {form.notes && <>
-                <h3 className="text-md font-semibold mt-4 mb-2">📝 Private Notes</h3>
-                <p className="text-muted-foreground">{form.notes}</p>
+            {(form.notes || reflection.what_went_well || reflection.areas_for_improvement || reflection.next_session_goals.length) && <>
+                <h3 className="text-md font-semibold mt-4 mb-2">🔒 Tutor-only reflection</h3>
+                {form.notes && <p className="text-muted-foreground whitespace-pre-wrap">{form.notes}</p>}
+                {reflection.what_went_well && <p><strong>What went well:</strong> {reflection.what_went_well}</p>}
+                {reflection.areas_for_improvement && <p><strong>To adjust:</strong> {reflection.areas_for_improvement}</p>}
+                {reflection.next_session_goals.length > 0 && <p><strong>Next session goals:</strong> {reflection.next_session_goals.join('; ')}</p>}
+                {reflection.confidence_rating && <p><strong>Tutor confidence:</strong> {reflection.confidence_rating}/5</p>}
               </>}
           </div>
 
@@ -373,7 +506,7 @@ export default function LessonPlanForm({
             <Button onClick={() => setPreviewMode(false)} variant="outline" className="flex-1">
               Back to Edit
             </Button>
-            <Button onClick={handleSave} disabled={saving || !isValid} className="bg-primary gap-2 flex-1">
+            <Button onClick={handleSave} disabled={saving || !isValid || reflectionLoading || reflectionLoadError} className="bg-primary gap-2 flex-1">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {saving ? 'Saving…' : isEditing ? 'Update Plan' : 'Save Plan'}
             </Button>
@@ -392,7 +525,7 @@ export default function LessonPlanForm({
               {isEditing ? 'Edit Lesson Plan' : 'New Lesson Plan'}
             </CardTitle>
             <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-              <Shield className="w-3 h-3 text-green-500" /> Private
+              <Shield className="w-3 h-3 text-green-500" /> Tutor workspace
             </Badge>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -475,12 +608,12 @@ export default function LessonPlanForm({
           </div>
           <div className="space-y-1.5">
             <Label>Student *</Label>
-            <Select value={form.student_email} onValueChange={selectStudent}>
+            <Select value={form.student_id} onValueChange={selectStudent}>
               <SelectTrigger>
                 <SelectValue placeholder="Select student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map(s => <SelectItem key={s.email} value={s.email}>{s.name || s.email}</SelectItem>)}
+                {students.map(student => <SelectItem key={student.id} value={student.id}>{student.name || student.email || 'Learner'}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -528,6 +661,10 @@ export default function LessonPlanForm({
         </div>
 
         {}
+        <div className="rounded-lg border border-blue-200/70 bg-blue-50/40 p-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/10 dark:text-blue-100">
+          When you share a plan, the learner receives its title, objectives, resources and homework. Your preparation notes and teaching reflection are stored separately and remain tutor-only.
+        </div>
+
         <div className="space-y-1.5">
           <Label>Learning Objectives</Label>
           <div className="flex gap-2">
@@ -572,14 +709,47 @@ export default function LessonPlanForm({
         </div>
 
         {}
-        <div className="space-y-1.5">
-          <Label>Session Notes (private)</Label>
-          <Textarea placeholder="e.g. Student struggled with sin/cos graphs — revisit next session." value={form.notes} onChange={e => set('notes', e.target.value)} rows={2} />
+        <div className="rounded-xl border border-amber-200/70 bg-amber-50/40 p-3 space-y-3 dark:border-amber-900/50 dark:bg-amber-950/10">
+          <div className="flex items-center gap-2">
+            <Shield className="w-4 h-4 text-amber-700 dark:text-amber-300" />
+            <div>
+              <p className="text-sm font-semibold">Tutor-only reflection</p>
+              <p className="text-xs text-muted-foreground">Private to your tutor account. Learners cannot read these notes.</p>
+            </div>
+          </div>
+          {reflectionLoading && <p className="text-xs text-muted-foreground">Loading saved reflection…</p>}
+          {reflectionLoadError && <p className="text-xs text-destructive">Your saved reflection could not be loaded. Saving is disabled to protect it.</p>}
+          <div className="space-y-1.5">
+            <Label>Preparation and private session notes</Label>
+            <Textarea placeholder="Teaching observations, preparation reminders and private notes…" value={form.notes} onChange={e => set('notes', e.target.value)} rows={3} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>What went well?</Label>
+            <Textarea placeholder="Which explanations, activities or approaches worked?" value={reflection.what_went_well} onChange={e => setReflectionField('what_went_well', e.target.value)} rows={2} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>What would you adjust next time?</Label>
+            <Textarea placeholder="Identify concepts to revisit or teaching approaches to improve…" value={reflection.areas_for_improvement} onChange={e => setReflectionField('areas_for_improvement', e.target.value)} rows={2} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Goals for the next session (one per line)</Label>
+            <Textarea placeholder="Revisit the worked examples\nCheck understanding with a short exercise" value={reflection.next_session_goals.join('\n')} onChange={e => setReflectionField('next_session_goals', e.target.value.split('\n').map(goal => goal.trim()).filter(Boolean))} rows={2} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Tutor confidence in lesson delivery</Label>
+            <Select value={reflection.confidence_rating} onValueChange={value => setReflectionField('confidence_rating', value)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Select a self-reflection rating" /></SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5].map(value => <SelectItem key={value} value={String(value)}>{value} / 5</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">This is your reflection on the lesson, not a learner grade or assessment score.</p>
+          </div>
         </div>
 
         {}
         <div className="flex gap-3 pt-2">
-          <Button onClick={handleSave} disabled={saving || !isValid} className="bg-primary gap-2 flex-1">
+          <Button onClick={handleSave} disabled={saving || !isValid || reflectionLoading || reflectionLoadError} className="bg-primary gap-2 flex-1">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {saving ? 'Saving…' : isEditing ? 'Update Plan' : 'Save Lesson Plan'}
           </Button>

@@ -1,0 +1,59 @@
+{
+  "name": "TutorLessonReflection",
+  "type": "object",
+  "properties": {
+    "lesson_plan_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Lesson plan this private reflection belongs to"
+    },
+    "tutor_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Tutor account that owns this reflection"
+    },
+    "preparation_notes": {
+      "type": "string",
+      "description": "Private preparation and session notes"
+    },
+    "what_went_well": {
+      "type": "string",
+      "description": "Tutor reflection on effective teaching strategies"
+    },
+    "areas_for_improvement": {
+      "type": "string",
+      "description": "Private tutor reflection on what to adjust"
+    },
+    "next_session_goals": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Private goals for the next session"
+    },
+    "confidence_rating": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "Tutor self-reflection rating, not a learner grade"
+    }
+  },
+  "required": [
+    "lesson_plan_id",
+    "tutor_id"
+  ],
+  "rls": {
+    "create": {
+      "data.tutor_id": "{{user.id}}"
+    },
+    "read": {
+      "data.tutor_id": "{{user.id}}"
+    },
+    "update": {
+      "data.tutor_id": "{{user.id}}"
+    },
+    "delete": {
+      "data.tutor_id": "{{user.id}}"
+    }
+  }
+}
