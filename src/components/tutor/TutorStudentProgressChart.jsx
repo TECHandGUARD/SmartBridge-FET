@@ -309,7 +309,7 @@ function TutorStudentProgressChartImplementation({ user }) {
 
       const csv = csvRows.map(row => row.map((value) => {
         const text = String(value ?? '');
-        const safe = /^[\\s]*[=+@\\-\\t\\r]/.test(text) ? `'${text}` : text;
+        const safe = /^\s*[=+@\-\t\r]/.test(text) ? `'${text}` : text;
         return `"${safe.replace(/"/g, '""')}"`;
       }).join(',')).join('\n');
       const blob = new Blob([csv], { type: 'text/csv' });
