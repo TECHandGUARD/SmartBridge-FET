@@ -62,3 +62,6 @@ The MLP implementation has now been combined with the 14 November privacy and ow
 The latest pre-integration PR #109 CI run passed all configured checks, including build, lint, typecheck, unit tests, local Supabase service tests and browser suites. The integrated commit must pass a fresh full CI run before it is considered release-ready.
 
 **Production rollout remains gated:** apply the reviewed migrations only after the integrated CI passes, then run separate tutor, learner and administrator acceptance tests in an isolated test environment. Keep Student CRM/Progress hidden until that migration and acceptance sequence is verified. Earnings/banking, rescheduling and attendance remain disabled.
+
+
+Implementation review is tracked in PR #110. The integrated branch is based directly on the current main commit so the PR contains only the outstanding MLP changes, not a duplicate of the merged privacy hardening.
