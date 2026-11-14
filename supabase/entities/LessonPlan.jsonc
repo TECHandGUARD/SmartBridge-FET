@@ -89,6 +89,10 @@
     "reflection_notes": {
       "type": "string",
       "description": "Legacy field; must remain null. Private reflections are stored in TutorLessonReflection."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Reserved field; must remain null on learner-readable plans. Private tutor reflections belong in TutorLessonReflection."
     }
   },
   "required": [
