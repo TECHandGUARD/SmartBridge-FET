@@ -287,7 +287,7 @@ function LessonPlannerImplementation({
     try {
       const {
         error
-      } = await supabase.from('lesson_plans').delete().eq('id', id);
+      } = await supabase.from('lesson_plans').delete().eq('id', id).eq('tutor_id', user.id);
       if (error) throw error;
       setPlans(prev => prev.filter(p => p.id !== id));
       toast.success('Lesson plan deleted');
@@ -300,7 +300,11 @@ function LessonPlannerImplementation({
   const exportPlans = () => {
     const headers = ['Title', 'Subject', 'Grade', 'Student', 'Status', 'Date', 'Objectives', 'Resources', 'Homework'];
     const rows = filtered.map(p => [p.session_title || '', p.subject || '', p.grade || '', p.student_name || p.student_email || 'Not assigned', p.status || '', p.session_date || 'TBD', p.objectives?.join('; ') || '', p.resources_used?.join('; ') || '', p.homework_assigned || '']);
-    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const csvContent = [headers, ...rows].map(row => row.map((cell) => {
+      const value = String(cell ?? '');
+      const safe = /^\s*[=+@\-\t\r]/.test(value) ? `'${value}` : value;
+      return `"${safe.replace(/"/g, '""')}"`;
+    }).join(',')).join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], {
       type: 'text/csv;charset=utf-8;'
     });
@@ -501,8 +505,8 @@ function LessonPlannerImplementation({
             {filtered.map(p => {
           const isPast = p.session_date && new Date(p.session_date) < new Date();
           const isToday = p.session_date && new Date(p.session_date).toDateString() === new Date().toDateString();
-          const student = students.find(s => s.email === p.student_email);
-          const linkedBooking = upcomingBookings.find(b => b.student_email === p.student_email && b.subject === p.subject && new Date(b.date).toDateString() === new Date(p.session_date).toDateString());
+          const student = students.find(s => s.id === p.student_id);
+          const linkedBooking = Boolean(p.booking_id);
           const isSelected = selectedPlans.has(p.id);
           return <div key={p.id} className={`flex items-start gap-3 p-3 rounded-xl transition-colors group ${isSelected ? 'bg-primary/10 border border-primary/30' : 'bg-muted/40 hover:bg-muted dark:bg-muted/20 dark:hover:bg-muted/30'}`}>
                   <input type="checkbox" checked={isSelected} onChange={() => toggleSelect(p.id)} className="mt-1 w-4 h-4 rounded border-gray-300" />
