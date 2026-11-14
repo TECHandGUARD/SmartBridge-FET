@@ -55,7 +55,7 @@ const {chromium}=require('playwright');const {spawn}=require('node:child_process
    const page=await context.newPage();page.setDefaultTimeout(25000);page.on('pageerror',e=>errors.push(e.message));
    await page.goto('http://127.0.0.1:5183'+(invitationPath||'/login'));await page.getByPlaceholder('Email address').fill(person.email);await page.getByPlaceholder('Password',{exact:true}).fill('TestPassword123');await page.getByRole('button',{name:'Sign In',exact:true}).click();await page.waitForURL(invitationPath?'**'+invitationPath:'**/'+(person.role==='admin'?'admin':person.role+'-dashboard'));
    if(invitationPath)return page;
-   try{await page.getByRole('link',{name:'Virtual Meetings →',exact:true}).click();}catch(e){console.error('Dashboard fixture failed for '+person.role,await page.locator('body').innerText(),errors);throw e;}await page.waitForURL('**/meetings');return page;
+   try{await page.getByRole('link',{name:/^Virtual Meetings(?: →)?$/}).click();}catch(e){console.error('Dashboard fixture failed for '+person.role,await page.locator('body').innerText(),errors);throw e;}await page.waitForURL('**/meetings');return page;
   }
   const pages=[];for(const person of people)pages.push(await open(person));const [admin,tutor,parent,peer,outsider]=pages;
   assert.equal(await parent.getByRole('button',{name:'Send meeting invitations',exact:true}).count(),0);

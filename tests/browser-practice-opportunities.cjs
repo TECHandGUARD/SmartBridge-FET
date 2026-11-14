@@ -5,6 +5,8 @@ const assert = require('node:assert/strict');
 const quizzes = JSON.parse(readFileSync('db/seeds/practice-20261021/quizzes.json'));
 const bursaries = JSON.parse(readFileSync('db/seeds/practice-20261021/bursaries.json'));
 const dates = JSON.parse(readFileSync('db/seeds/practice-20261021/nbt-dates.json'));
+const todayInSouthAfrica = new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Johannesburg', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+const expectedOpenBursaries = bursaries.filter(item => item.deadline && item.deadline >= todayInSouthAfrica && (!item.metadata?.opens_on || item.metadata.opens_on <= todayInSouthAfrica)).length;
 const base = process.env.TEST_BASE_URL || 'http://127.0.0.1:5192';
 const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
 
@@ -98,7 +100,7 @@ const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
       await page.getByRole('heading', { name: 'Find funding for your future.' }).waitFor();
       await page.getByRole('status').filter({ hasText: '8 funding opportunities' }).waitFor();
       await page.getByLabel('Application status').selectOption('Open');
-      await page.getByRole('status').filter({ hasText: '4 funding opportunities' }).waitFor();
+      await page.getByRole('status').filter({ hasText: `${expectedOpenBursaries} funding opportunities` }).waitFor();
       await page.getByLabel('Search bursaries').fill('Funza');
       await page.getByText(/Returning bursars:/).waitFor();
       await page.getByLabel('Search bursaries').fill('');

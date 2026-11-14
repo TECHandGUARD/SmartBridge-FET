@@ -1,4 +1,5 @@
 import FileLink from '@/components/operations/FileLink';
+import { removePrivate } from '@/lib/private-storage';
 import { Link } from 'react-router-dom';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
@@ -48,7 +49,7 @@ export default function TutorDashboard() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -85,7 +86,7 @@ export default function TutorDashboard() {
       const { data: resourceData, error: resourceError } = await supabase
         .from('resources')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_id', user.id)
         .order('created_at', { ascending: false });
 
       if (resourceError) throw resourceError;
@@ -97,7 +98,7 @@ export default function TutorDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
 
   // Set up real-time subscription for resources
   useEffect(() => {
@@ -108,17 +109,17 @@ export default function TutorDashboard() {
   useEffect(() => {
     loadData();
 
-    if (!user?.email) return;
+    if (!user?.id) return;
 
     const channel = supabase
-      .channel('tutor_resources')
+      .channel(`tutor_resources:${user.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'resources',
-          filter: `tutor_email=eq.${user.email}`,
+          filter: `tutor_id=eq.${user.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -135,20 +136,30 @@ export default function TutorDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadData]);
+  }, [user?.id, loadData]);
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
     try {
-      const { error } = await supabase
+      const { data: deleted, error } = await supabase
         .from('resources')
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('tutor_id', user.id)
+        .select('id,file_url')
+        .maybeSingle();
 
       if (error) throw error;
+      if (!deleted) throw new Error('Only your own resources awaiting review can be deleted.');
 
       setResources(prev => prev.filter(r => r.id !== id));
-      toast.success('Resource deleted.');
+      try {
+        if (deleted.file_url) await removePrivate(supabase, deleted.file_url);
+        toast.success('Resource and uploaded file deleted.');
+      } catch (cleanupError) {
+        console.warn('Private resource file cleanup requires follow-up:', cleanupError);
+        toast.warning('Resource removed. Its stored file could not be cleaned up automatically and needs administrator review.');
+      }
     } catch (error) {
       console.error('Delete error:', error);
       toast.error('Failed to delete resource.');
@@ -211,7 +222,7 @@ export default function TutorDashboard() {
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
         <div className="mb-4"><TutorEmailPreferences user={user} /></div>
-        <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
+        <div className="mb-4 rounded-xl border bg-card p-4"><nav aria-label="Professional workspace tools" className="flex flex-wrap gap-x-5 gap-y-2">{['tutor', 'sace_tutor', 'student_tutor'].includes(user?.role) && <Link to="/assessments" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Assessment Centre</Link>}<Link to="/meetings" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Virtual Meetings</Link><Link to="/presentations" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Presentation Studio</Link></nav><p className="mt-1 text-sm text-muted-foreground">Assessment design, tutor reflection and professional development.</p></div>
         {/* Header */}
         <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -407,6 +418,9 @@ function ResourcesList({ resources, onDelete }) {
                       <Star className="w-3 h-3 fill-current" /> Premium
                     </Badge>
                   )}
+                  <Badge variant={r.is_approved ? 'outline' : r.is_rejected ? 'destructive' : 'secondary'} className="text-[10px]">
+                    {r.is_approved ? 'Approved' : r.is_rejected ? 'Changes requested' : 'Pending review'}
+                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{r.subject} • {r.grade} • {r.type}</p>
               </div>
@@ -416,9 +430,9 @@ function ResourcesList({ resources, onDelete }) {
                     <span>View</span>
                   </FileLink>
                 )}
-                <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => onDelete(r.id)}>
+                {!r.is_approved && <Button size="sm" variant="ghost" className="text-destructive h-8" aria-label={`Delete ${r.title}`} onClick={() => onDelete(r.id)}>
                   <Trash2 className="w-4 h-4" />
-                </Button>
+                </Button>}
               </div>
             </div>
           ))}
