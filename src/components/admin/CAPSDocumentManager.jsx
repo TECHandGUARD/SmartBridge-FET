@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SelectWithOther } from '@/components/ui/select-with-other';
 import { toast } from 'sonner';
 import { Upload, Trash2, FileText, Loader2, PlusCircle, X, RefreshCw } from 'lucide-react';
 const SUBJECTS = ['Mathematics', 'Mathematical Literacy', 'Physical Sciences', 'Life Sciences', 'Geography', 'History', 'Accounting', 'Business Studies', 'Economics', 'English Home Language', 'Life Orientation', 'All Subjects'];
@@ -214,27 +215,9 @@ export default function CAPSDocumentManager() {
           description: e.target.value
         }))} />
             <div className="grid sm:grid-cols-3 gap-3">
-              <Select value={form.document_type} onValueChange={v => setForm(f => ({
-            ...f,
-            document_type: v
-          }))}>
-                <SelectTrigger><SelectValue placeholder="Document type *" /></SelectTrigger>
-                <SelectContent>{DOC_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-              </Select>
-              <Select value={form.subject} onValueChange={v => setForm(f => ({
-            ...f,
-            subject: v
-          }))}>
-                <SelectTrigger><SelectValue placeholder="Subject *" /></SelectTrigger>
-                <SelectContent>{SUBJECTS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-              <Select value={form.grade} onValueChange={v => setForm(f => ({
-            ...f,
-            grade: v
-          }))}>
-                <SelectTrigger><SelectValue placeholder="Grade *" /></SelectTrigger>
-                <SelectContent>{GRADES.map(g => <SelectItem key={g} value={g}>{g}</SelectItem>)}</SelectContent>
-              </Select>
+              <SelectWithOther value={form.document_type} onValueChange={v => setForm(f => ({ ...f, document_type: v }))} options={DOC_TYPES} placeholder="Document type *" inputPlaceholder="Enter document type" />
+              <SelectWithOther value={form.subject} onValueChange={v => setForm(f => ({ ...f, subject: v }))} options={SUBJECTS} placeholder="Subject *" inputPlaceholder="Enter subject name" />
+              <SelectWithOther value={form.grade} onValueChange={v => setForm(f => ({ ...f, grade: v }))} options={GRADES} placeholder="Grade *" inputPlaceholder="Enter grade" />
             </div>
             <Input type="number" placeholder="Year (e.g. 2024)" value={form.year} onChange={e => setForm(f => ({
           ...f,
