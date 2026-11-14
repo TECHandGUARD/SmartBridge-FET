@@ -44,3 +44,21 @@ Because live progress/session tables are empty, real score/progress charts canno
 - Dependency installation reports 9 advisories in the current dependency tree (4 low, 4 moderate, 1 high); remediation is a pre-launch gate and has not been attempted blindly.
 - No production schema, user data, payment configuration or production deployment was changed.
 - PR #103 remains a draft. This branch is not a live release.
+
+
+## Integrated readiness update — 14 November 2026
+
+The MLP implementation has now been combined with the 14 November privacy and ownership hardening work.
+
+- Tutor profiles distinguish formal classroom teaching experience from tutoring experience, record teaching approach and online/in-person delivery, and publish only approved professional fields. A typed SACE number is not treated as proof of verification.
+- Learner progress reads the live `student_progress`, `study_sessions` and tutor-booking relationship by learner UUID. Missing scores remain unrecorded; future bookings are not counted as learner activity.
+- Tutor CRM notes are private by default, can be explicitly shared/unshared, and are hidden from learners when confidential or archived. Notes and lesson plans require a confirmed/completed tutor relationship.
+- Lesson plans support archiving; learner access to the underlying tutor reflection record is removed.
+- Resource moderation remains administrator-controlled; tutors can archive their own resources without changing approval history.
+- Booking Calendar is read-only for booking state changes; Booking Requests remains the single place to accept/decline eligible requests and preserves payment checks.
+- Availability, bookings, CRM, lesson planning and upcoming-session queries use authenticated tutor UUIDs.
+- Profile and Reviews are separate destinations. Assessment Centre is discoverable in the professional workspace.
+
+The latest pre-integration PR #109 CI run passed all configured checks, including build, lint, typecheck, unit tests, local Supabase service tests and browser suites. The integrated commit must pass a fresh full CI run before it is considered release-ready.
+
+**Production rollout remains gated:** apply the reviewed migrations only after the integrated CI passes, then run separate tutor, learner and administrator acceptance tests in an isolated test environment. Keep Student CRM/Progress hidden until that migration and acceptance sequence is verified. Earnings/banking, rescheduling and attendance remain disabled.
