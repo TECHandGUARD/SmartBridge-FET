@@ -68,6 +68,57 @@ using (
   or public.is_admin((select auth.uid()))
 );
 
+-- Preserve any legacy private content written by the older UI before
+-- clearing it from learner-readable lesson-plan rows.
+do $
+begin
+  if exists (
+    select 1
+    from public.lesson_plans
+    where tutor_id is null
+      and (notes is not null or reflection_notes is not null or metadata is not null)
+  ) then
+    raise exception 'Cannot safely migrate private lesson-plan content without a tutor_id';
+  end if;
+end
+$;
+
+insert into public.tutor_lesson_reflections (
+  lesson_plan_id,
+  tutor_id,
+  preparation_notes,
+  updated_at
+)
+select
+  id,
+  tutor_id,
+  concat_ws(
+    E'\\n\\n',
+    nullif(notes, ''),
+    nullif(reflection_notes, ''),
+    case when metadata is not null then 'Legacy metadata: ' || metadata::text end
+  ),
+  now()
+from public.lesson_plans
+where tutor_id is not null
+  and (notes is not null or reflection_notes is not null or metadata is not null)
+on conflict (lesson_plan_id, tutor_id) do update
+set preparation_notes = concat_ws(
+      E'\\n\\n',
+      nullif(public.tutor_lesson_reflections.preparation_notes, ''),
+      nullif(excluded.preparation_notes, '')
+    ),
+    updated_at = now();
+
+update public.lesson_plans
+set notes = null,
+    reflection_notes = null,
+    metadata = null,
+    updated_at = now()
+where notes is not null
+   or reflection_notes is not null
+   or metadata is not null;
+
 -- The lesson_plans table is readable by learners. Private notes must never be
 -- written into it; tutor-only reflections live in tutor_lesson_reflections.
 alter table public.lesson_plans
