@@ -93,7 +93,7 @@ select
   id,
   tutor_id,
   concat_ws(
-    E'\\n\\n',
+    E'\n\n',
     nullif(notes, ''),
     nullif(reflection_notes, ''),
     case when metadata is not null then 'Legacy metadata: ' || metadata::text end
@@ -104,7 +104,7 @@ where tutor_id is not null
   and (notes is not null or reflection_notes is not null or metadata is not null)
 on conflict (lesson_plan_id, tutor_id) do update
 set preparation_notes = concat_ws(
-      E'\\n\\n',
+    E'\n\n',
       nullif(public.tutor_lesson_reflections.preparation_notes, ''),
       nullif(excluded.preparation_notes, '')
     ),
