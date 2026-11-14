@@ -50,7 +50,7 @@ export default function StudentCRM({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_id', user.id).order('date', {
+      } = await supabase.from('tutor_bookings').select('*').eq('tutor_id', user.id).in('status', ['confirmed', 'completed']).order('date', {
         ascending: false
       });
       if (bookingsError) throw bookingsError;
