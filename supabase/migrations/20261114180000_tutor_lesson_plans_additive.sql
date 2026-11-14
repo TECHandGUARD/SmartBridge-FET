@@ -53,6 +53,7 @@ on public.tutor_lesson_reflections
 for all to authenticated
 using (
   tutor_id = (select auth.uid())
+  and (select smartbridge_private.enabled_account())
   and public.is_tutor((select auth.uid()))
   and exists (
     select 1 from public.lesson_plans p
