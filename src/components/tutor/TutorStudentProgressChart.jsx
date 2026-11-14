@@ -158,7 +158,6 @@ function TutorStudentProgressChartImplementation({ user }) {
         const splitAt = key.indexOf('_');
         const studentId = key.slice(0, splitAt);
         const subject = key.slice(splitAt + 1);
-        const profile = profilesMap[studentId];
         return {
           student_id: studentId,
           subject,
@@ -187,7 +186,7 @@ function TutorStudentProgressChartImplementation({ user }) {
   }, [loadData]);
 
   // Calculate alerts
-  // Aggregate: average study_sessions per subject across all students
+  // Aggregate completed study sessions by subject and learner.
   const subjectStats = useMemo(() => {
     const map = {};
     progress.forEach((row) => {
