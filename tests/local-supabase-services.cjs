@@ -129,6 +129,11 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   booking_id:booking.id,session_date:'2099-12-01',session_title:'Leaking notes',subject:'Mathematics',
   grade:'Grade 12',status:'draft',notes:'Private notes must not be stored on a learner-readable row'
  })).error,'Private notes cannot be written to learner-readable lesson plans');
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
+  booking_id:booking.id,session_date:'2099-12-01',session_title:'Metadata leak',subject:'Mathematics',
+  grade:'Grade 12',status:'draft',metadata:{private_note:'Must not be exposed to the learner'}
+ })).error,'Arbitrary metadata cannot be written to learner-readable lesson plans');
  const reflection=ok(await tutor.client.from('tutor_lesson_reflections').insert({
   lesson_plan_id:lessonPlan.id,tutor_id:tutor.id,preparation_notes:'Private preparation',
   what_went_well:'Worked examples helped',areas_for_improvement:'Slow down the first explanation',
