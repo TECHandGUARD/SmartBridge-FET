@@ -20,7 +20,7 @@ test('Tutor lesson planner uses UUID ownership and exact booking relationships',
 
 test('Private tutor reflections are saved outside learner-readable lesson plans', () => {
   const form = read('src/components/tutor/LessonPlanForm.jsx');
-  const additive = read('supabase/migrations/20261114180000_tutor_lesson_plans_additive.sql');
+  const additive = read('supabase/migrations/20261114195008_tutor_lesson_plans_additive.sql');
   const hardening = read('supabase/migrations/20261114190000_tutor_lesson_plans_rls_hardening.sql');
   const integration = read('tests/local-supabase-services.cjs');
   assert.match(form, /notes: null/);
