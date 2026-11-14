@@ -55,7 +55,8 @@ const assert=require('node:assert/strict');
  await page.waitForURL('**/tutor-dashboard');
  for(const width of [375,1280]) {
   await page.setViewportSize({width,height:900});
-  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=reviews');
+  await page.goto('http://127.0.0.1:5173/tutor-dashboard');
+  await page.getByText('My Profile',{exact:true}).click();
   await page.getByText('Edit My Profile',{exact:true}).waitFor();
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('1200.50');
   await page.getByLabel('Mathematics (R/hour)').fill('20');
@@ -87,6 +88,9 @@ const assert=require('node:assert/strict');
   await page.getByRole('button',{name:'Save Changes',exact:true}).filter({disabled:false}).waitFor();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Tutor profile fits width '+width);
   await page.screenshot({path:'/tmp/smartbridge-tutor-'+width+'.png',fullPage:true});
+  await page.getByText('My Reviews',{exact:true}).click();
+  await page.getByText('Student Reviews',{exact:true}).first().waitFor();
+  assert.equal(await page.getByText('Edit My Profile',{exact:true}).count(),0,'My Profile and My Reviews must be separate workspace destinations');
  }
 
  profile={...profile,role:'student'};
