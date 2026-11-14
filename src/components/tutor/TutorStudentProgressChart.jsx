@@ -161,12 +161,9 @@ function TutorStudentProgressChartImplementation({ user }) {
         const profile = profilesMap[studentId];
         return {
           student_id: studentId,
-          student_email: profile?.email || '',
-          user_email: profile?.email || '',
           subject,
           study_sessions: count,
           last_access: currentLastAccess[studentId] || null,
-          grade_level: profile?.grade || 'Not set'
         };
       });
 
@@ -438,9 +435,6 @@ function TutorStudentProgressChartImplementation({ user }) {
               {needsFocusSubjects.map(s => (
                 <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
                   {s.fullSubject} — avg {s.avgSessions} sessions
-                  {s.vsSchoolAvg !== null && s.vsSchoolAvg < 0 && (
-                    <span className="ml-1 text-red-500">({s.vsSchoolAvg} below avg)</span>
-                  )}
                 </Badge>
               ))}
             </div>
