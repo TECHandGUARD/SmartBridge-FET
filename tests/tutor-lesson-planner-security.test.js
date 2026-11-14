@@ -29,11 +29,11 @@ test('Private tutor reflections are saved outside learner-readable lesson plans'
   assert.match(additive, /booking_id uuid/);
   assert.match(additive, /create table if not exists public\.tutor_lesson_reflections/);
   assert.match(additive, /for all to authenticated/);
-  assert.match(additive, /smartbridge_private\.enabled_account\(\)/);
+  assert.match(hardening, /smartbridge_private\.enabled_account\(\)/);
   assert.match(hardening, /student_id = \(select auth\.uid\(\)\)/);
   assert.match(hardening, /drop policy if exists "Tutors manage own lesson reflections"/);
   assert.match(hardening, /smartbridge_private\\.enabled_account\\(\\)/);
-  assert.match(hardening, /insert into public\\.tutor_lesson_reflections/);
+  assert.match(hardening, /insert into public\.tutor_lesson_reflections/);
   assert.match(hardening, /notes is null and reflection_notes is null and metadata is null/);
   assert.match(integration, /Learner cannot read tutor-only reflections/);
   assert.match(integration, /Private notes cannot be written to learner-readable lesson plans/);
