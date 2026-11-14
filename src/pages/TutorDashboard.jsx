@@ -48,7 +48,7 @@ export default function TutorDashboard() {
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -85,7 +85,8 @@ export default function TutorDashboard() {
       const { data: resourceData, error: resourceError } = await supabase
         .from('resources')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_id', user.id)
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('created_at', { ascending: false });
 
       if (resourceError) throw resourceError;
@@ -97,7 +98,7 @@ export default function TutorDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
 
   // Set up real-time subscription for resources
   useEffect(() => {
@@ -108,7 +109,7 @@ export default function TutorDashboard() {
   useEffect(() => {
     loadData();
 
-    if (!user?.email) return;
+    if (!user?.id) return;
 
     const channel = supabase
       .channel('tutor_resources')
@@ -118,13 +119,13 @@ export default function TutorDashboard() {
           event: '*',
           schema: 'public',
           table: 'resources',
-          filter: `tutor_email=eq.${user.email}`,
+          filter: `tutor_id=eq.${user.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
             setResources(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+            setResources(prev => payload.new.is_archived ? prev.filter(r => r.id !== payload.new.id) : prev.map(r => r.id === payload.new.id ? payload.new : r));
           } else if (payload.eventType === 'DELETE') {
             setResources(prev => prev.filter(r => r.id !== payload.old.id));
           }
@@ -135,23 +136,24 @@ export default function TutorDashboard() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadData]);
+  }, [user?.id, loadData]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
+    if (!confirm('Archive this resource? It will be removed from your tutor dashboard and public resource listings.')) return;
     try {
       const { error } = await supabase
         .from('resources')
-        .delete()
-        .eq('id', id);
+        .update({ is_archived: true, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('tutor_id', user.id);
 
       if (error) throw error;
 
       setResources(prev => prev.filter(r => r.id !== id));
-      toast.success('Resource deleted.');
+      toast.success('Resource archived.');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete resource.');
+      toast.error('Failed to archive resource.');
     }
   };
 
@@ -319,11 +321,17 @@ export default function TutorDashboard() {
           </div>
         )}
 
-        {/* My Reviews + Profile Editor */}
-        {activeSection === 'reviews' && (
-          <div className="mb-6 space-y-4">
-            <TutorReviews tutorEmail={user?.email} />
+        {/* Professional Profile */}
+        {activeSection === 'profile' && (
+          <div className="mb-6">
             {profile && <TutorProfileEditor profile={profile} user={user} onProfileUpdate={setProfile} />}
+          </div>
+        )}
+
+        {/* Tutor Reviews */}
+        {activeSection === 'reviews' && (
+          <div className="mb-6">
+            <TutorReviews tutorEmail={user?.email} />
           </div>
         )}
 
@@ -416,7 +424,7 @@ function ResourcesList({ resources, onDelete }) {
                     <span>View</span>
                   </FileLink>
                 )}
-                <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => onDelete(r.id)}>
+                <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => onDelete(r.id)} aria-label="Archive resource" title="Archive resource">
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>

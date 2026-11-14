@@ -91,6 +91,7 @@ export default function LessonPlanForm({
     session_title: plan?.session_title || '',
     student_email: plan?.student_email || '',
     student_name: plan?.student_name || '',
+    student_id: plan?.student_id || '',
     session_date: plan?.session_date || new Date().toISOString().split('T')[0],
     subject: plan?.subject || '',
     grade: plan?.grade || 'Grade 12',
@@ -99,7 +100,7 @@ export default function LessonPlanForm({
     homework_assigned: plan?.homework_assigned || '',
     notes: plan?.notes || '',
     status: plan?.status || 'draft',
-    booking_id: plan?.booking_id || ''
+    booking_id: plan?.metadata?.booking_id || ''
   });
   const set = (key, val) => setForm(prev => ({
     ...prev,
@@ -151,6 +152,7 @@ export default function LessonPlanForm({
     const stu = students.find(s => s.email === email);
     set('student_email', email);
     set('student_name', stu?.name || email);
+    set('student_id', stu?.id || '');
   };
   const selectBooking = bookingId => {
     const booking = upcomingBookings.find(b => b.id === bookingId);
@@ -158,6 +160,7 @@ export default function LessonPlanForm({
       set('booking_id', bookingId);
       set('student_email', booking.student_email);
       set('student_name', booking.student_name || booking.student_email);
+      set('student_id', booking.student_id || '');
       set('subject', booking.subject);
       set('session_date', booking.date);
       toast.success('Linked to booking! You can now edit details if needed.');
@@ -241,8 +244,8 @@ export default function LessonPlanForm({
     setDraftLoaded(true);
   };
   const handleSave = async () => {
-    if (!form.session_title || !form.student_email || !form.subject) {
-      toast.error('Please fill in title, student, and subject.');
+    if (!form.session_title || !form.student_email || !form.student_id || !form.subject) {
+      toast.error('Choose a linked learner and complete the title and subject.');
       return;
     }
     setSaving(true);
@@ -262,12 +265,15 @@ export default function LessonPlanForm({
         homework_assigned: form.homework_assigned,
         notes: form.notes,
         status: form.status,
-        booking_id: form.booking_id || null,
+        student_id: form.student_id || null,
+        metadata: { ...(plan?.metadata || {}), booking_id: form.booking_id || null },
         updated_at: new Date().toISOString()
       };
       const {
         data: progRecords
-      } = await supabase.from('study_progress').select('id').eq('user_email', form.student_email).eq('subject', form.subject).maybeSingle();
+      } = form.student_id
+        ? await supabase.from('student_progress').select('id').eq('student_id', form.student_id).eq('subject', form.subject).maybeSingle()
+        : { data: null };
       if (progRecords) {
         payload.student_progress_id = progRecords.id;
       }
@@ -312,7 +318,7 @@ export default function LessonPlanForm({
   };
   const validation = {
     title: form.session_title.trim().length > 0,
-    student: !!form.student_email,
+    student: !!form.student_id,
     subject: !!form.subject,
     objectives: form.objectives.length > 0
   };
@@ -364,7 +370,7 @@ export default function LessonPlanForm({
             <p>{form.homework_assigned || 'No homework assigned'}</p>
 
             {form.notes && <>
-                <h3 className="text-md font-semibold mt-4 mb-2">📝 Private Notes</h3>
+                <h3 className="text-md font-semibold mt-4 mb-2">📝 Session Notes</h3>
                 <p className="text-muted-foreground">{form.notes}</p>
               </>}
           </div>

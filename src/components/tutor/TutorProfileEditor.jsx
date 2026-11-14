@@ -98,7 +98,12 @@ const profileForm = profile => ({
     group_session_price: profile?.group_session_price ?? '',
     subject_rates: profile?.subject_rates || {},
     offers_free_intro: profile?.offers_free_intro || false,
-    teaching_languages: profile?.teaching_languages || []
+    teaching_languages: profile?.teaching_languages || [],
+    teaching_experience_years: profile?.teaching_experience_years ?? 0,
+    tutoring_experience_years: profile?.tutoring_experience_years ?? 0,
+    teaching_style: profile?.teaching_style || 'mixed',
+    offers_online_tutoring: profile?.offers_online_tutoring ?? true,
+    offers_in_person_tutoring: profile?.offers_in_person_tutoring ?? false
   });
 export default function TutorProfileEditor({
   profile,
@@ -468,6 +473,11 @@ export default function TutorProfileEditor({
         subject_rates: subjectRates,
         offers_free_intro: form.offers_free_intro,
         teaching_languages: form.teaching_languages,
+        teaching_experience_years: Math.max(0, Math.min(60, Math.trunc(Number(form.teaching_experience_years) || 0))),
+        tutoring_experience_years: Math.max(0, Math.min(60, Math.trunc(Number(form.tutoring_experience_years) || 0))),
+        teaching_style: form.teaching_style,
+        offers_online_tutoring: !!form.offers_online_tutoring,
+        offers_in_person_tutoring: !!form.offers_in_person_tutoring,
         avatar_url: avatarUrl,
         metadata: {
           ...profile?.metadata,
@@ -722,6 +732,49 @@ export default function TutorProfileEditor({
                 </SelectContent>
               </Select>
             </div>
+          </div>
+        </div>
+
+        {}
+        <div className="space-y-3">
+          <p className="text-sm font-semibold flex items-center gap-1.5">
+            <GraduationCap className="w-4 h-4 text-primary" /> Teaching Experience & Approach
+          </p>
+          <div className="grid sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="tutor-teaching-experience" className="text-xs">Teaching experience (years)</Label>
+              <Input id="tutor-teaching-experience" type="number" min="0" max="60" step="1" value={form.teaching_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, teaching_experience_years: e.target.value }))} />
+              <p className="text-[10px] text-muted-foreground">Formal classroom or school-based teaching experience.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tutor-tutoring-experience" className="text-xs">Tutoring experience (years)</Label>
+              <Input id="tutor-tutoring-experience" type="number" min="0" max="60" step="1" value={form.tutoring_experience_years} onChange={e => handleFormChange(prev => ({ ...prev, tutoring_experience_years: e.target.value }))} />
+              <p className="text-[10px] text-muted-foreground">Private, group or online tutoring experience.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="tutor-teaching-style" className="text-xs">Teaching approach</Label>
+              <Select value={form.teaching_style} onValueChange={v => handleFormChange(prev => ({ ...prev, teaching_style: v }))}>
+                <SelectTrigger id="tutor-teaching-style"><SelectValue placeholder="Choose your approach" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mixed">Flexible / mixed methods</SelectItem>
+                  <SelectItem value="formal">Structured / step-by-step</SelectItem>
+                  <SelectItem value="interactive">Interactive / discussion-based</SelectItem>
+                  <SelectItem value="student_centered">Learner-centred</SelectItem>
+                  <SelectItem value="project_based">Practical / project-based</SelectItem>
+                  <SelectItem value="adaptive">Adaptive / responsive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-4 rounded-xl border p-3">
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={!!form.offers_online_tutoring} onChange={e => handleFormChange(prev => ({ ...prev, offers_online_tutoring: e.target.checked }))} />
+              Offers online tutoring
+            </label>
+            <label className="flex items-center gap-2 text-xs">
+              <input type="checkbox" checked={!!form.offers_in_person_tutoring} onChange={e => handleFormChange(prev => ({ ...prev, offers_in_person_tutoring: e.target.checked }))} />
+              Offers in-person tutoring
+            </label>
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { Shield, AlertCircle } from 'lucide-react';
+import { Shield, AlertCircle, Share2, Lock } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,10 +36,11 @@ export default function StudentCRM({
     strengths: '',
     areas_to_improve: '',
     next_steps: '',
-    mood: 'Neutral'
+    mood: 'Neutral',
+    share_with_student: false
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -49,14 +50,14 @@ export default function StudentCRM({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('date', {
+      } = await supabase.from('tutor_bookings').select('id, student_id, student_email, student_name, subject, date, amount, status').eq('tutor_id', user.id).in('status', ['confirmed', 'completed']).order('date', {
         ascending: false
       });
       if (bookingsError) throw bookingsError;
       const {
         data: notesData,
         error: notesError
-      } = await supabase.from('student_notes').select('*').eq('tutor_email', user.email).order('created_at', {
+      } = await supabase.from('student_notes').select('*').eq('tutor_id', user.id).or('is_archived.is.null,is_archived.eq.false').order('created_at', {
         ascending: false
       });
       if (notesError) throw notesError;
@@ -69,37 +70,37 @@ export default function StudentCRM({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   const students = useMemo(() => {
     const map = {};
     bookings.forEach(b => {
-      if (!map[b.student_email]) {
-        map[b.student_email] = {
-          email: b.student_email,
-          sessions: 0,
-          subjects: new Set(),
-          lastSession: null,
-          totalSpent: 0
+      if (!b.student_id) return;
+      if (!map[b.student_id]) {
+        map[b.student_id] = {
+          id: b.student_id, email: b.student_email, name: b.student_name || b.student_email,
+          sessions: 0, subjects: new Set(), lastSession: null, totalBookedValue: 0
         };
       }
-      map[b.student_email].sessions++;
-      map[b.student_email].subjects.add(b.subject);
-      map[b.student_email].totalSpent += b.amount || 0;
-      if (!map[b.student_email].lastSession || b.date > map[b.student_email].lastSession) {
-        map[b.student_email].lastSession = b.date;
-      }
+      map[b.student_id].sessions++;
+      if (b.subject) map[b.student_id].subjects.add(b.subject);
+      map[b.student_id].totalBookedValue += b.amount || 0;
+      if (!map[b.student_id].lastSession || b.date > map[b.student_id].lastSession) map[b.student_id].lastSession = b.date;
     });
     return Object.values(map).map(s => ({
       ...s,
       subjects: [...s.subjects]
     })).sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
   }, [bookings]);
-  const filteredStudents = students.filter(s => s.email.toLowerCase().includes(search.toLowerCase()));
-  const studentNotes = selectedStudent ? notes.filter(n => n.student_email === selectedStudent.email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
+  const filteredStudents = students.filter(s => (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.email || '').toLowerCase().includes(search.toLowerCase()));
+  const studentNotes = selectedStudent ? notes.filter(n => n.student_id === selectedStudent.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
   const handleAddNote = async () => {
+    if (!selectedStudent?.id) {
+      toast.error('Choose a linked learner before adding a note.');
+      return;
+    }
     if (!noteForm.note.trim()) {
       toast.error('Please write a note.');
       return;
@@ -114,7 +115,8 @@ export default function StudentCRM({
         tutor_email: user.email,
         tutor_id: user.id || null,
         student_email: selectedStudent.email,
-        student_name: selectedStudent.email,
+        student_id: selectedStudent.id,
+        student_name: selectedStudent.name,
         note: noteForm.note.trim(),
         subject: noteForm.subject || null,
         session_date: noteForm.session_date || null,
@@ -122,6 +124,9 @@ export default function StudentCRM({
         areas_to_improve: noteForm.areas_to_improve || null,
         next_steps: noteForm.next_steps || null,
         mood: noteForm.mood || 'Neutral',
+        is_shared_with_student: !!noteForm.share_with_student,
+        is_confidential: false,
+        shared_at: noteForm.share_with_student ? new Date().toISOString() : null,
         created_at: new Date().toISOString()
       }).select().single();
       if (insertError) throw insertError;
@@ -144,7 +149,8 @@ export default function StudentCRM({
         strengths: '',
         areas_to_improve: '',
         next_steps: '',
-        mood: 'Neutral'
+        mood: 'Neutral',
+        share_with_student: false
       });
       setShowAddNote(false);
       toast.success('Session note saved!');
@@ -152,6 +158,27 @@ export default function StudentCRM({
       console.error('Error adding note:', err);
       setError(err.message || 'Failed to save note');
       toast.error('Failed to save note: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const toggleNoteSharing = async (note) => {
+    const nextShared = !(note.is_shared_with_student && !note.is_confidential);
+    if (nextShared && !window.confirm('Share this note with the learner? They will be able to read it in their account.')) return;
+    setSaving(true);
+    try {
+      const { data, error: updateError } = await supabase.from('student_notes').update({
+        is_shared_with_student: nextShared,
+        is_confidential: false,
+        shared_at: nextShared ? new Date().toISOString() : null,
+        updated_at: new Date().toISOString()
+      }).eq('id', note.id).eq('tutor_id', user.id).select().single();
+      if (updateError) throw updateError;
+      setNotes(prev => prev.map(item => item.id === note.id ? data : item));
+      toast.success(nextShared ? 'Note shared with learner.' : 'Note is private to you again.');
+    } catch (err) {
+      console.error('Could not update note sharing:', err);
+      toast.error('Could not update note sharing.');
     } finally {
       setSaving(false);
     }
@@ -190,7 +217,7 @@ export default function StudentCRM({
             <Badge className="bg-primary/10 text-primary text-xs ml-1">{students.length}</Badge>
           </CardTitle>
           <Badge variant="outline" className="text-[9px] text-muted-foreground flex items-center gap-1">
-            <Shield className="w-3 h-3 text-green-500" /> Private
+            <Shield className="w-3 h-3 text-green-500" /> Tutor records
           </Badge>
         </div>
       </CardHeader>
@@ -209,13 +236,14 @@ export default function StudentCRM({
                 </p>
               </div> : <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
                 {filteredStudents.map(s => {
-            const noteCount = notes.filter(n => n.student_email === s.email).length;
-            return <button key={s.email} onClick={() => setSelectedStudent(s)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
+            const noteCount = notes.filter(n => n.student_id === s.id).length;
+            return <button key={s.id} onClick={() => setSelectedStudent(s)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {s.email[0].toUpperCase()}
+                        {(s.name || s.email || 'L')[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{s.email}</p>
+                        <p className="text-sm font-semibold truncate">{s.name}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{s.email}</p>
                         <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mt-0.5">
                           <span>{s.sessions} sessions</span>
                           <span>•</span>
@@ -224,7 +252,7 @@ export default function StudentCRM({
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-semibold text-primary">R{s.totalSpent.toLocaleString()}</p>
+                        <p className="text-xs font-semibold text-primary">R{s.totalBookedValue.toLocaleString()}</p>
                         {s.lastSession && <p className="text-[10px] text-muted-foreground">{s.lastSession}</p>}
                       </div>
                     </button>;
@@ -239,10 +267,11 @@ export default function StudentCRM({
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                {selectedStudent.email[0].toUpperCase()}
+                {(selectedStudent.name || selectedStudent.email || 'L')[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{selectedStudent.email}</p>
+                <p className="text-sm font-semibold truncate">{selectedStudent.name}</p>
+                <p className="text-[10px] text-muted-foreground truncate">{selectedStudent.email}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {selectedStudent.sessions} sessions · {selectedStudent.subjects.join(', ')}
                 </p>
@@ -259,8 +288,8 @@ export default function StudentCRM({
                 <p className="text-[10px] text-muted-foreground">Sessions</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
-                <p className="text-lg font-bold">R{selectedStudent.totalSpent.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Revenue</p>
+                <p className="text-lg font-bold">R{selectedStudent.totalBookedValue.toLocaleString()}</p>
+                <p className="text-[10px] text-muted-foreground">Booked value</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">{studentNotes.length}</p>
@@ -331,6 +360,12 @@ export default function StudentCRM({
               })} />
                   </div>
                 </div>
+                <div className="flex items-center gap-2 rounded-lg border bg-background/70 p-3">
+                  <input id="share-note-with-student" type="checkbox" checked={!!noteForm.share_with_student} onChange={e => setNoteForm({ ...noteForm, share_with_student: e.target.checked })} />
+                  <label htmlFor="share-note-with-student" className="text-xs">
+                    Share this note with the learner. Notes are private by default.
+                  </label>
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={handleAddNote} disabled={saving}>
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
@@ -355,6 +390,8 @@ export default function StudentCRM({
                       <div className="flex items-center gap-2 flex-wrap">
                         {n.subject && <Badge className="bg-primary/10 text-primary text-[10px]">{n.subject}</Badge>}
                         {n.mood && <span className="text-xs">{MOOD_ICONS[n.mood]} {n.mood}</span>}
+                        <Badge variant="outline" className="text-[10px]">{n.is_shared_with_student && !n.is_confidential ? <><Share2 className="mr-1 h-3 w-3" /> Shared with learner</> : <><Lock className="mr-1 h-3 w-3" /> Private to tutor</>}</Badge>
+                        <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-[10px]" disabled={saving} onClick={() => toggleNoteSharing(n)}>{n.is_shared_with_student && !n.is_confidential ? 'Make private' : 'Share with learner'}</Button>
                         <span className="text-[10px] text-muted-foreground ml-auto">
                           {n.session_date || new Date(n.created_at).toLocaleDateString('en-ZA')}
                         </span>

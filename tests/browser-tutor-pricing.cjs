@@ -17,7 +17,7 @@ const assert=require('node:assert/strict');
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
 
- let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,metadata:{}};
+ let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,teaching_experience_years:4,tutoring_experience_years:2,teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true,certifications:['TEFL'],sace_details_submitted:true,metadata:{}};
  const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let bookingRows=[];const checkoutCalls=[];
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**',async route=>{
@@ -55,10 +55,15 @@ const assert=require('node:assert/strict');
  await page.waitForURL('**/tutor-dashboard');
  for(const width of [375,1280]) {
   await page.setViewportSize({width,height:900});
-  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=reviews');
+  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=profile');
   await page.getByText('Edit My Profile',{exact:true}).waitFor();
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('1200.50');
   await page.getByLabel('Mathematics (R/hour)').fill('20');
+  await page.getByLabel('Teaching experience (years)').fill('4');
+  await page.getByLabel('Tutoring experience (years)').fill('2');
+  await page.getByLabel('Teaching approach').click();
+  await page.getByRole('option',{name:'Learner-centred'}).click();
+  await page.getByLabel('Offers in-person tutoring').check();
   await page.getByRole('checkbox',{name:/Offer a free 30-minute/}).check();
   await page.getByRole('button',{name:'Save Changes',exact:true}).click();
   if(width===375) {
@@ -71,6 +76,11 @@ const assert=require('node:assert/strict');
   assert.equal(savedProfiles.at(-1).study_year,null,'Blank optional study year saves as null');
   assert.equal(savedProfiles.at(-1).subject_rates.Mathematics,20);
   assert.equal(savedProfiles.at(-1).offers_free_intro,true);
+  assert.equal(savedProfiles.at(-1).teaching_experience_years,4);
+  assert.equal(savedProfiles.at(-1).tutoring_experience_years,2);
+  assert.equal(savedProfiles.at(-1).teaching_style,'student_centered');
+  assert.equal(savedProfiles.at(-1).offers_online_tutoring,true);
+  assert.equal(savedProfiles.at(-1).offers_in_person_tutoring,true);
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('30');
   await page.getByRole('button',{name:'Discard Changes',exact:true}).click();
   assert.equal(await page.getByLabel('One-on-One Rate (ZAR / Hour)').inputValue(),'1200.5');
@@ -89,8 +99,30 @@ const assert=require('node:assert/strict');
   await page.screenshot({path:'/tmp/smartbridge-tutor-'+width+'.png',fullPage:true});
  }
 
+ // The calendar is a schedule view only; pending bookings must be managed through the payment-gated requests section.
+ const now=new Date();
+ const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+ const monthLabel=now.toLocaleString('en-US',{month:'long'});
+ bookingRows=[{id:'booking-pending-calendar',tutor_id:profile.id,student_id:'learner-1',student_email:'learner@example.test',student_name:'Test Learner',subject:'Mathematics',date:today,time:'10:00',duration_hours:1,amount:20,status:'pending'}];
+ await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=availability');
+ await page.getByText('Booking Calendar',{exact:false}).first().waitFor();
+ await page.getByRole('button',{name:`${now.getDate()} ${monthLabel} ${now.getFullYear()} - 1 bookings`}).click();
+ await page.getByRole('link',{name:'Manage request',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:/confirm|decline/i}).count(),0,'Calendar must not expose a direct booking confirmation or decline action');
+ console.log('PASS: calendar is read-only for booking state changes and routes pending requests to Booking Requests');
+
  profile={...profile,role:'student'};
  await page.goto('http://127.0.0.1:5173/tutors');
+ await page.getByRole('button',{name:'Profile',exact:true}).click();
+ const profileModal=page.getByRole('dialog');
+ await profileModal.getByText('4 years',{exact:true}).waitFor();
+ await profileModal.getByText('2 years',{exact:true}).waitFor();
+ await profileModal.getByText('Approach: Learner-centred',{exact:true}).waitFor();
+ await profileModal.getByText('Online sessions',{exact:true}).waitFor();
+ await profileModal.getByText('In-person sessions',{exact:true}).waitFor();
+ await profileModal.getByText('TEFL',{exact:true}).waitFor();
+ await profileModal.getByText('SACE details submitted',{exact:true}).first().waitFor();
+ await page.keyboard.press('Escape');
  await page.getByRole('button',{name:'Book',exact:true}).click();
  const modal=page.getByRole('dialog');
  await modal.getByText('R20.00',{exact:true}).waitFor();

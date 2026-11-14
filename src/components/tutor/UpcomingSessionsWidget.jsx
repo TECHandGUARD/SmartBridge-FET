@@ -67,7 +67,7 @@ export default function UpcomingSessionsWidget({ user }) {
   // ============================================================
 
   const loadBookings = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -80,7 +80,7 @@ export default function UpcomingSessionsWidget({ user }) {
       const { data, error: queryError } = await supabase
         .from('tutor_bookings')
         .select('*')
-        .eq('tutor_email', user.email)
+        .eq('tutor_id', user.id)
         .gte('date', todayStr)
         .order('date', { ascending: true })
         .limit(50);
@@ -94,7 +94,7 @@ export default function UpcomingSessionsWidget({ user }) {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
 
   // ============================================================
   // ✅ FIXED: Channel Isolation with unique ID
@@ -103,10 +103,10 @@ export default function UpcomingSessionsWidget({ user }) {
   useEffect(() => {
     loadBookings();
     
-    if (!user?.email) return;
+    if (!user?.id) return;
     
     // ✅ Unique channel name with user ID to prevent ghost subscriptions
-    const channelName = `tutor_upcoming_sessions_${user.id || user.email}`;
+    const channelName = `tutor_upcoming_sessions_${user.id}`;
     const channel = supabase
       .channel(channelName)
       .on(
@@ -115,7 +115,7 @@ export default function UpcomingSessionsWidget({ user }) {
           event: '*',
           schema: 'public',
           table: 'tutor_bookings',
-          filter: `tutor_email=eq.${user.email}`,
+          filter: `tutor_id=eq.${user.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -136,7 +136,7 @@ export default function UpcomingSessionsWidget({ user }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, user?.id, loadBookings]);
+  }, [user?.id, loadBookings]);
 
   // ============================================================
   // Memoized Calculations
