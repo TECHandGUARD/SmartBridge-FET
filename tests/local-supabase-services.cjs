@@ -116,6 +116,10 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(learnerPlan.reflection_notes,null,'Learner-visible lesson plan has no private reflection notes');
  assert.deepEqual(ok(await other.client.from('lesson_plans').select('id').eq('id',lessonPlan.id)),[],
   'Unrelated learner cannot read a lesson plan');
+ assert.ok((await student.client.from('lesson_plans').insert({
+  tutor_id:student.id,tutor_email:student.email,student_id:student.id,student_email:student.email,
+  session_date:'2099-12-03',session_title:'Learner-created plan',subject:'Mathematics',grade:'Grade 12',status:'draft'
+ })).error,'Learner cannot create tutor lesson plans');
  assert.ok((await tutor.client.from('lesson_plans').insert({
   tutor_id:tutor.id,tutor_email:tutor.email,student_id:other.id,student_email:other.email,
   session_date:'2099-12-02',session_title:'Unbooked plan',subject:'Mathematics',grade:'Grade 12',status:'draft'
@@ -137,6 +141,9 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   'Learner cannot read tutor-only reflections');
  assert.deepEqual(ok(await other.client.from('tutor_lesson_reflections').select('id').eq('id',reflection.id)),[],
   'Unrelated account cannot read tutor-only reflections');
+ assert.ok((await student.client.from('tutor_lesson_reflections').insert({
+  lesson_plan_id:lessonPlan.id,tutor_id:student.id,preparation_notes:'Learner-forged reflection'
+ })).error,'Learner cannot create tutor-only reflections');
  assert.equal(ok(await tutor.client.from('lesson_plans').update({student_id:other.id}).eq('id',lessonPlan.id).select('id').maybeSingle()),null,
   'Tutor cannot reassign a lesson plan to an unbooked learner');
  const removedPlan=ok(await tutor.client.from('lesson_plans').delete().eq('id',lessonPlan.id).select('id').single());
