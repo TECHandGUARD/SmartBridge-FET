@@ -1,7 +1,7 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { isDashboardSectionEnabled } from '@/lib/release-scope';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Calendar, Users, Wallet, MessageCircle, BookOpen, Star, Video, ClipboardList } from 'lucide-react';
+import { Upload, Calendar, Users, Wallet, MessageCircle, BookOpen, Star, Video, ClipboardList, UserRound } from 'lucide-react';
 import PropTypes from 'prop-types';
 const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const actions = [{
@@ -47,11 +47,17 @@ const actions = [{
   color: 'bg-rose-100 text-rose-700 dark:bg-rose-950/30 dark:text-rose-300',
   activeColor: 'bg-rose-600 text-white dark:bg-rose-700'
 }, {
-  key: 'reviews',
-  label: 'My Profile & Reviews',
-  icon: Star,
+  key: 'profile',
+  label: 'My Profile',
+  icon: UserRound,
   color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/30 dark:text-orange-300',
   activeColor: 'bg-orange-600 text-white dark:bg-orange-700'
+}, {
+  key: 'reviews',
+  label: 'My Reviews',
+  icon: Star,
+  color: 'bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-300',
+  activeColor: 'bg-amber-600 text-white dark:bg-amber-700'
 }, {
   key: 'sessions',
   label: 'Live Sessions',
@@ -69,6 +75,7 @@ const propTypes = {
     earnings: PropTypes.number,
     messages: PropTypes.number,
     bookings: PropTypes.number,
+    profile: PropTypes.number,
     reviews: PropTypes.number,
     'lesson-studio': PropTypes.number,
     sessions: PropTypes.number
@@ -81,7 +88,7 @@ export default function TutorQuickActions({
 }) {
   return <Card className="min-w-0 border-border bg-card/95 backdrop-blur-sm">
       <CardContent className="px-3 pt-4 pb-3 sm:px-6">
-        <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 gap-2">
+        <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-8 gap-2">
           {actions.filter(a => isDashboardSectionEnabled('tutor',a.key)).map(a => {
           const isActive = activeSection === a.key;
           return <button type="button" key={a.key} aria-pressed={isActive} aria-controls={a.key === 'lesson-studio' ? 'tutor-panel-lesson-studio' : undefined} onClick={() => onAction(a.key)} className={`flex flex-col items-center justify-center min-h-24 min-w-0 gap-1.5 p-3 rounded-xl border transition-colors relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${isActive ? 'bg-primary/10 border-primary shadow-sm text-foreground' : 'border-transparent bg-muted/20 hover:bg-muted/60 hover:border-border'}`}>

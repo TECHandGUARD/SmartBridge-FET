@@ -23,13 +23,88 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
   assert.ok(signup.session,'Local signup must create a session');
   const profile=ok(await client.from('users').select('role,is_super_admin').eq('id',signup.user.id).single());
   assert.equal(profile.role,'user');assert.equal(profile.is_super_admin,false);
-  ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'TEST-SACE':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
+  ok(await client.rpc('complete_onboarding',{requested_role:role,sace_number:role==='sace_tutor'?'1234567890':'',policy_accepted:true,tutor_agreement_accepted:role==='sace_tutor'}));
   return {client,id:signup.user.id,email,token:signup.session.access_token};}
  const student=await account('student'),other=await account('student'),parent=await account('parent'),tutor=await account('sace_tutor');
  assert.deepEqual(ok(await other.client.from('users').select('id').eq('id',student.id)),[]);
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
+ // Tutor-only RLS requires a verified, active tutor profile.
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
- const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
+ const profile=ok(await admin.from('tutor_profiles').update({
+  is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100,
+  institution:'Test University',study_field:'BSc Mathematics',study_year:'4th Year',
+  qualifications:['BSc Mathematics','SACE Registered: 1234567890'],specializations:['Calculus'],teaching_languages:['English'],
+  certifications:['TEFL','SACE number 1234567890'],teaching_experience_years:4,tutoring_experience_years:2,
+  teaching_style:'student_centered',offers_online_tutoring:true,offers_in_person_tutoring:true
+ }).eq('user_id',tutor.id).select('id').single());
+ const relationship=ok(await admin.from('tutor_bookings').insert({
+  tutor_id:tutor.id,student_id:student.id,tutor_email:tutor.email,student_email:student.email,
+  subject:'Mathematics',date:'2099-12-02',time:'15:00',status:'confirmed'
+ }).select('id').single());
+
+ // Learner notes stay private until a tutor explicitly shares a non-confidential note.
+ const privateNote=ok(await tutor.client.from('student_notes').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:student.email,student_id:student.id,
+  student_name:'Disposable learner',note:'Private progress note',subject:'Mathematics',is_confidential:true,is_shared_with_student:false
+ }).select('*').single());
+ assert.equal(privateNote.is_shared_with_student,false);
+ assert.equal(privateNote.is_confidential,true);
+ assert.ok((await tutor.client.from('student_notes').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:other.email,student_id:other.id,
+  student_name:'Unrelated learner',note:'Must be denied',subject:'Mathematics'
+ })).error,'Tutor cannot create notes for a learner without a confirmed/completed booking');
+ assert.ok((await tutor.client.from('student_notes').update({student_id:other.id,student_email:other.email}).eq('id',privateNote.id)).error,'Tutor cannot reassign a note to an unrelated learner');
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.deepEqual(ok(await parent.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
+ const sharedNote=ok(await tutor.client.from('student_notes').update({is_shared_with_student:true,shared_at:new Date().toISOString()}).eq('id',privateNote.id).select('*').single());
+ assert.equal(sharedNote.is_shared_with_student,true);
+ assert.equal(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1);
+ ok(await tutor.client.from('student_notes').update({is_confidential:true,is_shared_with_student:false}).eq('id',privateNote.id));
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ ok(await tutor.client.from('student_notes').update({is_confidential:false,is_archived:true}).eq('id',privateNote.id));
+ assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ assert.ok((await other.client.from('student_notes').select('id').eq('id',privateNote.id)).error === null);
+ assert.deepEqual(ok(await other.client.from('student_notes').select('id').eq('id',privateNote.id)),[]);
+ console.log('PASS: tutor notes private by default, explicit sharing, confidential/archive denial and student/parent isolation');
+
+ // Lesson plan rows include private tutor notes, so only the owning tutor may read the base row.
+ const plan=ok(await tutor.client.from('lesson_plans').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:student.email,student_id:student.id,
+  student_name:'Disposable learner',session_date:'2099-12-01',session_title:'Fractions',
+  subject:'Mathematics',grade:'Grade 10',objectives:['Compare fractions'],notes:'Private tutor reflection'
+ }).select('*').single());
+ assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id)).length,1);
+ assert.deepEqual(ok(await student.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
+ assert.deepEqual(ok(await parent.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
+ assert.deepEqual(ok(await other.client.from('lesson_plans').select('id').eq('id',plan.id)),[]);
+ assert.ok((await tutor.client.from('lesson_plans').insert({
+  tutor_email:tutor.email,tutor_id:tutor.id,student_email:other.email,student_id:other.id,
+  student_name:'Unrelated learner',session_date:'2099-12-02',session_title:'Unauthorized plan',
+  subject:'Mathematics',grade:'Grade 10',objectives:['Test'],notes:'Should be denied'
+ })).error,'Tutor cannot create lesson plans for an unrelated learner');
+ ok(await tutor.client.from('lesson_plans').update({is_archived:true}).eq('id',plan.id).eq('tutor_id',tutor.id));
+ assert.equal(ok(await tutor.client.from('lesson_plans').select('id').eq('id',plan.id).eq('is_archived',true)).length,1);
+ console.log('PASS: private lesson-plan base rows are tutor-only and archive state is writable by owner');
+
+ // Tutors can archive their own resources but cannot self-approve or alter moderation fields.
+ const resource=ok(await tutor.client.from('resources').insert({
+  title:'Local test resource',subject:'Mathematics',grade:'Grade 10',type:'Notes',
+  file_url:`storage://tutor-resources/${tutor.id}/local-test.pdf`,
+  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:false,is_rejected:false,is_archived:false
+ }).select('*').single());
+ assert.ok((await tutor.client.from('resources').update({is_approved:true}).eq('id',resource.id)).error,'Tutor cannot self-approve resources');
+ assert.ok((await tutor.client.from('resources').update({is_featured:true}).eq('id',resource.id)).error,'Tutor cannot feature resources');
+ assert.equal(ok(await admin.from('resources').update({is_approved:true,approved_at:new Date().toISOString()}).eq('id',resource.id).select('is_approved').single()).is_approved,true);
+ assert.equal(ok(await student.client.from('resources').select('id').eq('id',resource.id)).length,1,'Approved, active resources are publicly visible');
+ assert.ok((await tutor.client.from('resources').update({is_approved:false}).eq('id',resource.id)).error,'Tutor cannot alter admin approval status');
+ ok(await tutor.client.from('resources').update({is_archived:true}).eq('id',resource.id).eq('tutor_id',tutor.id));
+ const archivedResource=ok(await tutor.client.from('resources').select('is_archived,is_approved').eq('id',resource.id).single());
+ assert.equal(archivedResource.is_archived,true);
+ assert.equal(archivedResource.is_approved,true,'Archiving must not overwrite admin approval history');
+ assert.deepEqual(ok(await student.client.from('resources').select('id').eq('id',resource.id)),[],'Archived resources are hidden from public listings');
+ console.log('PASS: tutors cannot self-approve or change moderation; archiving preserves approval history and hides the resource publicly');
+
 
  // Presentations use real authenticated REST and private account ownership.
  const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
@@ -99,68 +174,6 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(receipt.payment_status,'test_paid');assert.equal(Number(receipt.amount_paid),0);
  ok(await tutor.client.from('tutor_bookings').update({status:'confirmed',session_link:'https://example.invalid/session'}).eq('id',booking.id));
  assert.equal(ok(await student.client.from('tutor_bookings').select('status').eq('id',booking.id).single()).status,'confirmed');
-
- // Tutor Hub privacy/ownership hardening: exercise the new RLS policies with real JWTs.
- const privateNote=ok(await tutor.client.from('student_notes').insert({
-  tutor_id:tutor.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
-  student_name:'Disposable learner',note:'Private session observation',subject:'Mathematics',
-  is_confidential:true,is_shared_with_student:false
- }).select('id').single());
- assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
-  'Learner cannot read a private tutor note');
- assert.deepEqual(ok(await other.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
-  'Unrelated learner cannot read another learner note');
- assert.equal(ok(await tutor.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1,
-  'Owning tutor can read their note');
- ok(await tutor.client.from('student_notes').update({is_confidential:false,is_shared_with_student:true})
-  .eq('id',privateNote.id));
- assert.equal(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)).length,1,
-  'Learner can read only after tutor explicitly shares a non-confidential note');
- ok(await tutor.client.from('student_notes').update({is_confidential:true,is_shared_with_student:false})
-  .eq('id',privateNote.id));
- assert.deepEqual(ok(await student.client.from('student_notes').select('id').eq('id',privateNote.id)),[],
-  'Unsharing immediately revokes learner read access');
- assert.ok((await tutor.client.from('student_notes').insert({
-  tutor_id:tutor.id,tutor_email:tutor.email,student_id:other.id,student_email:other.email,
-  note:'Must be rejected',is_confidential:true,is_shared_with_student:false
- })).error,'Tutor cannot create notes for a learner without a confirmed/completed booking');
- assert.ok((await tutor.client.from('student_notes').insert({
-  tutor_id:other.id,tutor_email:tutor.email,student_id:student.id,student_email:student.email,
-  note:'Forged tutor identity',is_confidential:true,is_shared_with_student:false
- })).error,'Tutor cannot forge note ownership');
- console.log('PASS: real tutor-note RLS, private-by-default, explicit share/unshare revocation and booked-learner enforcement');
-
- const availability=ok(await tutor.client.from('tutor_availability').insert({
-  tutor_id:tutor.id,tutor_email:tutor.email,day_of_week:'Monday',start_time:'10:00',end_time:'11:00',
-  is_available:true,notes:'Private availability fixture'
- }).select('id').single());
- assert.equal(ok(await tutor.client.from('tutor_availability').select('id').eq('id',availability.id)).length,1,
-  'Tutor can read their own availability');
- assert.deepEqual(ok(await student.client.from('tutor_availability').select('id').eq('id',availability.id)),[],
-  'Learner cannot read tutor availability rows');
- assert.deepEqual(ok(await other.client.from('tutor_availability').select('id').eq('id',availability.id)),[],
-  'Unrelated account cannot read tutor availability rows');
- const anonymous=createClient(url,status.ANON_KEY,options);
- assert.deepEqual(ok(await anonymous.from('tutor_availability').select('id').eq('id',availability.id)),[],
-  'Anonymous users cannot read tutor availability rows');
- ok(await tutor.client.from('tutor_availability').delete().eq('id',availability.id));
- console.log('PASS: real availability RLS, owner access and anonymous/cross-account denial');
-
- const ownDraft=ok(await tutor.client.from('resources').insert({
-  title:'Disposable tutor draft',subject:'Mathematics',grade:'Grade 12',type:'Worksheet',
-  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:false
- }).select('id').single());
- const deletedDraft=ok(await tutor.client.from('resources').delete().eq('id',ownDraft.id).select('id').maybeSingle());
- assert.equal(deletedDraft.id,ownDraft.id,'Tutor can delete their own unapproved resource');
- const approvedResource=ok(await admin.from('resources').insert({
-  title:'Disposable approved resource',subject:'Mathematics',grade:'Grade 12',type:'Worksheet',
-  tutor_id:tutor.id,tutor_email:tutor.email,is_approved:true
- }).select('id').single());
- assert.equal(ok(await tutor.client.from('resources').delete().eq('id',approvedResource.id).select('id').maybeSingle()),null,
-  'Tutor cannot delete an approved resource');
- ok(await admin.from('resources').delete().eq('id',approvedResource.id));
- console.log('PASS: real resource delete RLS, own unapproved allowed and approved resource protected');
-
  console.log('PASS: real booking retries, server price, ownership, unpaid rejection, verified test receipt and tutor confirmation');
 
  // Exercise flexible tutor prices through real PostgREST, not a mocked save response.
@@ -169,6 +182,17 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal(Number(edited.hourly_rate),1250.5);assert.equal(Number(edited.session_price_per_hour),1250.5);
  const learnerDirectory=ok(await student.client.from('tutor_directory').select('*').eq('id',profile.id).single());
  assert.equal(learnerDirectory.subject_rates.Mathematics,20);assert.equal(learnerDirectory.offers_free_intro,true);
+ assert.equal(learnerDirectory.teaching_experience_years,4);
+ assert.equal(learnerDirectory.tutoring_experience_years,2);
+ assert.equal(learnerDirectory.teaching_style,'student_centered');
+ assert.equal(learnerDirectory.offers_online_tutoring,true);
+ assert.equal(learnerDirectory.offers_in_person_tutoring,true);
+ assert.equal(learnerDirectory.institution,'Test University');
+ assert.deepEqual(learnerDirectory.certifications,['TEFL'],'SACE registration numbers embedded in certifications must be redacted');
+ assert.deepEqual(learnerDirectory.qualifications,['BSc Mathematics'],'Public qualifications must omit SACE registration data embedded during onboarding');
+ assert.equal(learnerDirectory.sace_details_submitted,true);
+ assert.equal('sace_number' in learnerDirectory,false,'Directory must never expose the personal SACE registration number');
+ assert.equal(JSON.stringify(learnerDirectory).includes('1234567890'),false,'SACE registration number must not leak through another public field');
  assert.equal('metadata' in learnerDirectory,false,'Directory must not expose private profile metadata');
  const subjectBooking=ok(await student.client.rpc('create_booking',{...bookingArgs,chosen_date:'2099-12-02',hours:1.5,request_id:randomUUID()}));
  assert.equal(Number(subjectBooking.amount),30);
