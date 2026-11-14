@@ -30,8 +30,8 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  console.log('PASS: real Auth signup, protected metadata, onboarding and REST account isolation');
  // Tutor-only RLS requires a verified, active tutor profile.
  ok(await admin.from('users').update({role:'admin',is_super_admin:true,is_active:true}).eq('id',administrator.id));
- const approval=ok(await administrator.client.rpc('approve_account',{target_id:tutor.id,approved_role:'sace_tutor'}));
- assert.equal(approval.role,'sace_tutor','Tutor must be approved through the real administrator workflow');
+ const saceApproval=ok(await administrator.client.rpc('approve_account',{target_id:tutor.id,approved_role:'sace_tutor'}));
+ assert.equal(saceApproval.role,'sace_tutor','Tutor must be approved through the real administrator workflow');
   const authUser=await tutor.client.auth.getUser();
   assert.equal(authUser.data.user.id,tutor.id,'Tutor API session must belong to the new tutor');
   const userState=ok(await admin.from('users').select('id,is_active,role').eq('id',tutor.id).single());
