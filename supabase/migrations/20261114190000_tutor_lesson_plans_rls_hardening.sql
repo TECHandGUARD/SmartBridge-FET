@@ -105,7 +105,7 @@ where tutor_id is not null
 on conflict (lesson_plan_id, tutor_id) do update
 set preparation_notes = concat_ws(
     E'\n\n',
-      nullif(public.tutor_lesson_reflections.preparation_notes, ''),
+      nullif(tutor_lesson_reflections.preparation_notes, ''),
       nullif(excluded.preparation_notes, '')
     ),
     updated_at = now();
