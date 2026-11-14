@@ -16,12 +16,11 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 
-// Subjects that score below this threshold are flagged as needing focus
-const FOCUS_THRESHOLD = 3;
+// This is an engagement indicator, not an academic attainment or risk score.
 const INACTIVE_THRESHOLD_DAYS = 14;
 
 const TIME_FRAMES = {
-  'current': { label: 'Current Term', days: 90 },
+  'current': { label: 'Last 90 days', days: 90 },
   'term1': { label: 'Term 1', start: '2026-01-15', end: '2026-03-20' },
   'term2': { label: 'Term 2', start: '2026-04-05', end: '2026-06-10' },
   'term3': { label: 'Term 3', start: '2026-07-15', end: '2026-09-20' },
@@ -55,6 +54,14 @@ function TutorStudentProgressChartImplementation({ user }) {
   const [exporting, setExporting] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [trendData, setTrendData] = useState({});
+  const activityBenchmark = useMemo(() => {
+    const frame = TIME_FRAMES[timeFrame];
+    if (frame.start && frame.end) {
+      const days = Math.max(1, Math.round((new Date(frame.end).getTime() - new Date(frame.start).getTime()) / 86400000) + 1);
+      return Math.max(1, Math.round(days / 30));
+    }
+    return Math.max(1, Math.round((frame.days || 90) / 30));
+  }, [timeFrame]);
 
   const loadData = useCallback(async () => {
     if (!user?.id) {
@@ -184,7 +191,7 @@ function TutorStudentProgressChartImplementation({ user }) {
     loadData();
   }, [loadData]);
 
-  // Calculate alerts
+  // Engagement indicators are based on recorded platform activity, not academic attainment.
   // Aggregate completed study sessions by subject and learner.
   const subjectStats = useMemo(() => {
     const map = {};
@@ -201,10 +208,10 @@ function TutorStudentProgressChartImplementation({ user }) {
         fullSubject: subject,
         avgSessions: data.count ? Math.round((data.total / data.count) * 10) / 10 : 0,
         studentCount: data.students.size,
-        needsFocus: data.count > 0 && data.total / data.count < FOCUS_THRESHOLD
+        lowActivity: data.count > 0 && data.total / data.count < activityBenchmark
       }))
       .sort((a, b) => b.avgSessions - a.avgSessions);
-  }, [progress]);
+  }, [progress, activityBenchmark]);
   useEffect(() => {
     const newAlerts = [];
     const inactiveCutoff = new Date();
@@ -223,18 +230,18 @@ function TutorStudentProgressChartImplementation({ user }) {
       }
     });
     subjectStats.forEach((subject) => {
-      if (subject.needsFocus) {
+      if (subject.lowActivity) {
         newAlerts.push({
           type: 'subject_struggle',
           subject: subject.fullSubject,
           severity: 'warning',
-          message: `${subject.studentCount} learner(s) averaging below ${FOCUS_THRESHOLD} completed study sessions in ${subject.fullSubject}`,
-          recommendedAction: 'Schedule a focused support session'
+          message: `${subject.studentCount} learner(s) are below the ${activityBenchmark}-session activity benchmark in ${subject.fullSubject}`,
+          recommendedAction: 'Review learner context before planning support'
         });
       }
     });
     setAlerts(newAlerts);
-  }, [studentProfiles, subjectStats]);
+  }, [studentProfiles, subjectStats, activityBenchmark]);
 
 
   // Per-student engagement with full names and grades
@@ -276,7 +283,7 @@ function TutorStudentProgressChartImplementation({ user }) {
       });
   }, [progress, studentProfiles, gradeFilter, trendData]);
 
-  const needsFocusSubjects = subjectStats.filter(s => s.needsFocus);
+  const needsFocusSubjects = subjectStats.filter(s => s.lowActivity);
   const inactiveStudents = studentStats.filter(s => s.isInactive);
 
   const radarData = subjectStats.slice(0, 8).map(s => ({
@@ -327,7 +334,7 @@ function TutorStudentProgressChartImplementation({ user }) {
         <p className="font-semibold mb-0.5">{stat?.fullSubject || label}</p>
         <p className="text-primary">Avg sessions: {payload[0]?.value}</p>
         <p className="text-muted-foreground">{stat?.studentCount || 0} student(s)</p>
-        {stat?.needsFocus && <p className="text-amber-600 font-medium mt-0.5">⚠ Needs focus</p>}
+        {stat?.lowActivity && <p className="text-amber-600 font-medium mt-0.5">Below activity benchmark</p>}
       </div>
     );
   };
@@ -418,12 +425,12 @@ function TutorStudentProgressChartImplementation({ user }) {
         {needsFocusSubjects.length > 0 && (
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-3">
             <p className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" /> Subjects Needing Attention
+              <BookOpen className="w-3.5 h-3.5" /> Subjects with Low Recorded Activity
             </p>
             <div className="flex flex-wrap gap-1.5">
               {needsFocusSubjects.map(s => (
                 <Badge key={s.subject} className="bg-blue-100 text-blue-800 border-blue-300 text-xs">
-                  {s.fullSubject} — avg {s.avgSessions} sessions
+                  {s.fullSubject} — avg {s.avgSessions} per active learner
                 </Badge>
               ))}
             </div>
@@ -431,10 +438,10 @@ function TutorStudentProgressChartImplementation({ user }) {
         )}
 
         <div className="grid sm:grid-cols-2 gap-6">
-          {/* Bar chart: avg sessions per subject */}
+          {/* Bar chart: average sessions per subject */}
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5" /> Completed Study Sessions by Subject
+              <BookOpen className="w-3.5 h-3.5" /> Average Completed Sessions per Active Learner
             </p>
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={subjectStats} layout="vertical" margin={{ top: 0, right: 12, left: 4, bottom: 0 }}>
@@ -445,14 +452,14 @@ function TutorStudentProgressChartImplementation({ user }) {
                   {subjectStats.map((entry, i) => (
                     <Cell
                       key={entry.subject}
-                      fill={entry.needsFocus ? '#f59e0b' : SUBJECT_COLORS[i % SUBJECT_COLORS.length]}
+                      fill={entry.lowActivity ? '#f59e0b' : SUBJECT_COLORS[i % SUBJECT_COLORS.length]}
                     />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
             <div className="flex gap-3 mt-1 text-[10px] text-muted-foreground">
-              <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-amber-400 inline-block" /> Needs focus</span>
+              <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-amber-400 inline-block" /> Below activity benchmark</span>
               <span className="flex items-center gap-1"><span className="w-3 h-2 rounded bg-green-600 inline-block" /> On track</span>
             </div>
           </div>
@@ -536,9 +543,9 @@ function TutorStudentProgressChartImplementation({ user }) {
                     </td>
                     <td className="py-2 px-2 text-center">
                       {student.isInactive ? (
-                        <Badge className="bg-red-100 text-red-700 text-[10px]">Inactive</Badge>
+                        <Badge className="bg-red-100 text-red-700 text-[10px]">No recent activity</Badge>
                       ) : (
-                        <Badge className="bg-green-100 text-green-700 text-[10px]">Active</Badge>
+                        <Badge className="bg-green-100 text-green-700 text-[10px]">Recent activity</Badge>
                       )}
                     </td>
                     <td className="py-2 px-2 text-center">
