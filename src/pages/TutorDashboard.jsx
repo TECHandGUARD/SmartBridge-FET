@@ -1,5 +1,4 @@
 import FileLink from '@/components/operations/FileLink';
-import { removePrivate } from '@/lib/private-storage';
 import { Link } from 'react-router-dom';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
@@ -87,6 +86,7 @@ export default function TutorDashboard() {
         .from('resources')
         .select('*')
         .eq('tutor_id', user.id)
+        .or('is_archived.is.null,is_archived.eq.false')
         .order('created_at', { ascending: false });
 
       if (resourceError) throw resourceError;
@@ -112,7 +112,7 @@ export default function TutorDashboard() {
     if (!user?.id) return;
 
     const channel = supabase
-      .channel(`tutor_resources:${user.id}`)
+      .channel('tutor_resources')
       .on(
         'postgres_changes',
         {
@@ -125,7 +125,7 @@ export default function TutorDashboard() {
           if (payload.eventType === 'INSERT') {
             setResources(prev => [payload.new, ...prev]);
           } else if (payload.eventType === 'UPDATE') {
-            setResources(prev => prev.map(r => r.id === payload.new.id ? payload.new : r));
+            setResources(prev => payload.new.is_archived ? prev.filter(r => r.id !== payload.new.id) : prev.map(r => r.id === payload.new.id ? payload.new : r));
           } else if (payload.eventType === 'DELETE') {
             setResources(prev => prev.filter(r => r.id !== payload.old.id));
           }
@@ -139,30 +139,21 @@ export default function TutorDashboard() {
   }, [user?.id, loadData]);
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this resource? This action cannot be undone.')) return;
+    if (!confirm('Archive this resource? It will be removed from your tutor dashboard and public resource listings.')) return;
     try {
-      const { data: deleted, error } = await supabase
+      const { error } = await supabase
         .from('resources')
-        .delete()
+        .update({ is_archived: true, updated_at: new Date().toISOString() })
         .eq('id', id)
-        .eq('tutor_id', user.id)
-        .select('id,file_url')
-        .maybeSingle();
+        .eq('tutor_id', user.id);
 
       if (error) throw error;
-      if (!deleted) throw new Error('Only your own resources awaiting review can be deleted.');
 
       setResources(prev => prev.filter(r => r.id !== id));
-      try {
-        if (deleted.file_url) await removePrivate(supabase, deleted.file_url);
-        toast.success('Resource and uploaded file deleted.');
-      } catch (cleanupError) {
-        console.warn('Private resource file cleanup requires follow-up:', cleanupError);
-        toast.warning('Resource removed. Its stored file could not be cleaned up automatically and needs administrator review.');
-      }
+      toast.success('Resource archived.');
     } catch (error) {
       console.error('Delete error:', error);
-      toast.error('Failed to delete resource.');
+      toast.error('Failed to archive resource.');
     }
   };
 
@@ -222,7 +213,7 @@ export default function TutorDashboard() {
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
         <div className="mb-4"><TutorEmailPreferences user={user} /></div>
-        <div className="mb-4 rounded-xl border bg-card p-4"><nav aria-label="Professional workspace tools" className="flex flex-wrap gap-x-5 gap-y-2">{['tutor', 'sace_tutor', 'student_tutor'].includes(user?.role) && <Link to="/assessments" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Assessment Centre</Link>}<Link to="/meetings" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Virtual Meetings</Link><Link to="/presentations" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Presentation Studio</Link></nav><p className="mt-1 text-sm text-muted-foreground">Assessment design, tutor reflection and professional development.</p></div>
+        <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
         {/* Header */}
         <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
@@ -234,7 +225,7 @@ export default function TutorDashboard() {
           <div className="flex items-center gap-2">
             {/* Verification Badge - Different for SACE vs Student Tutors */}
             {profile?.is_verified && (
-              profile?.sace_number ? (
+              user?.role === 'sace_tutor' && Boolean(profile?.sace_number) ? (
                 <Badge className="bg-green-100 text-green-700 border-green-200 gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" /> SACE Verified
                 </Badge>
@@ -330,11 +321,17 @@ export default function TutorDashboard() {
           </div>
         )}
 
-        {/* My Reviews + Profile Editor */}
-        {activeSection === 'reviews' && (
-          <div className="mb-6 space-y-4">
-            <TutorReviews tutorEmail={user?.email} />
+        {/* Professional Profile */}
+        {activeSection === 'profile' && (
+          <div className="mb-6">
             {profile && <TutorProfileEditor profile={profile} user={user} onProfileUpdate={setProfile} />}
+          </div>
+        )}
+
+        {/* Tutor Reviews */}
+        {activeSection === 'reviews' && (
+          <div className="mb-6">
+            <TutorReviews tutorEmail={user?.email} />
           </div>
         )}
 
@@ -418,9 +415,6 @@ function ResourcesList({ resources, onDelete }) {
                       <Star className="w-3 h-3 fill-current" /> Premium
                     </Badge>
                   )}
-                  <Badge variant={r.is_approved ? 'outline' : r.is_rejected ? 'destructive' : 'secondary'} className="text-[10px]">
-                    {r.is_approved ? 'Approved' : r.is_rejected ? 'Changes requested' : 'Pending review'}
-                  </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground">{r.subject} • {r.grade} • {r.type}</p>
               </div>
@@ -430,9 +424,9 @@ function ResourcesList({ resources, onDelete }) {
                     <span>View</span>
                   </FileLink>
                 )}
-                {!r.is_approved && <Button size="sm" variant="ghost" className="text-destructive h-8" aria-label={`Delete ${r.title}`} onClick={() => onDelete(r.id)}>
+                <Button size="sm" variant="ghost" className="text-destructive h-8" onClick={() => onDelete(r.id)} aria-label="Archive resource" title="Archive resource">
                   <Trash2 className="w-4 h-4" />
-                </Button>}
+                </Button>
               </div>
             </div>
           ))}

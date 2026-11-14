@@ -61,7 +61,7 @@ export default function TutorAvailabilityManager({
   useEffect(() => {
     loadSlots();
     if (!user?.id) return;
-    const channel = supabase.channel(`tutor_availability:${user.id}`).on('postgres_changes', {
+    const channel = supabase.channel('tutor_availability').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'tutor_availability',
@@ -226,7 +226,7 @@ export default function TutorAvailabilityManager({
         notes: form.notes || null,
         is_available: form.is_available,
         updated_at: new Date().toISOString()
-      }).eq('id', editingSlot);
+      }).eq('id', editingSlot).eq('tutor_id', user.id);
       if (updateError) throw updateError;
       setSlots(prev => prev.map(s => s.id === editingSlot ? {
         ...s,
@@ -257,7 +257,7 @@ export default function TutorAvailabilityManager({
       } = await supabase.from('tutor_availability').update({
         is_available: newStatus,
         updated_at: new Date().toISOString()
-      }).eq('id', slot.id);
+      }).eq('id', slot.id).eq('tutor_id', user.id);
       if (updateError) throw updateError;
       setSlots(prev => prev.map(s => s.id === slot.id ? {
         ...s,
@@ -273,7 +273,7 @@ export default function TutorAvailabilityManager({
     try {
       const {
         error: deleteError
-      } = await supabase.from('tutor_availability').delete().eq('id', id);
+      } = await supabase.from('tutor_availability').delete().eq('id', id).eq('tutor_id', user.id);
       if (deleteError) throw deleteError;
       setSlots(prev => prev.filter(s => s.id !== id));
       toast.success('Slot removed.');

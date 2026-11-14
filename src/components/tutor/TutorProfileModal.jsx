@@ -35,7 +35,7 @@ const propTypes = {
     rating: PropTypes.number,
     is_verified: PropTypes.bool,
     is_premium: PropTypes.bool,
-    sace_number: PropTypes.string,
+    sace_details_submitted: PropTypes.bool,
     institution: PropTypes.string,
     study_field: PropTypes.string,
     study_year: PropTypes.string,
@@ -44,6 +44,12 @@ const propTypes = {
     qualifications: PropTypes.oneOfType([PropTypes.array, PropTypes.string]),
     specializations: PropTypes.oneOfType([PropTypes.array, PropTypes.string]),
     teaching_languages: PropTypes.array,
+    certifications: PropTypes.array,
+    teaching_experience_years: PropTypes.number,
+    tutoring_experience_years: PropTypes.number,
+    teaching_style: PropTypes.string,
+    offers_online_tutoring: PropTypes.bool,
+    offers_in_person_tutoring: PropTypes.bool,
     total_reviews: PropTypes.number,
   }),
   user: PropTypes.object,
@@ -161,7 +167,9 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
 
   const qualificationsList = getQualificationsArray(tutor.qualifications);
   const specializationsList = getSpecializationsArray(tutor.specializations);
+  const certificationsList = getQualificationsArray(tutor.certifications);
   const totalReviews = tutor.total_reviews || reviews.length;
+  const teachingStyleLabels = { mixed: 'Flexible / mixed methods', formal: 'Structured / step-by-step', interactive: 'Interactive / discussion-based', student_centered: 'Learner-centred', project_based: 'Practical / project-based', adaptive: 'Adaptive / responsive' };
 
   // ============================================================
   // Render
@@ -187,7 +195,7 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                     {tutor.full_name}
                   </DialogTitle>
                   {tutor.is_verified && (
-                    tutor.sace_number ? (
+                    tutor.sace_details_submitted ? (
                       <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0" />
                     ) : (
                       <CheckCircle className="w-5 h-5 text-blue-600 flex-shrink-0" />
@@ -196,9 +204,9 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                 </div>
                 <div className="flex items-center gap-2 mt-1 flex-wrap">
                   {tutor.is_verified && (
-                    tutor.sace_number ? (
+                    tutor.sace_details_submitted ? (
                       <Badge className="bg-green-100 text-green-700 border-green-200 text-xs gap-1 dark:bg-green-950/30 dark:text-green-300 dark:border-green-800">
-                        <ShieldCheck className="w-3 h-3" /> SACE Verified
+                        <ShieldCheck className="w-3 h-3" /> SACE details submitted
                       </Badge>
                     ) : (
                       <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs gap-1 dark:bg-blue-950/30 dark:text-blue-300 dark:border-blue-800">
@@ -277,13 +285,28 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
             </div>
           )}
 
-          {/* SACE number */}
-          {tutor.sace_number && (
+          {(Number(tutor.teaching_experience_years) > 0 || Number(tutor.tutoring_experience_years) > 0 || tutor.teaching_style || tutor.offers_online_tutoring || tutor.offers_in_person_tutoring) && (
+            <div className="rounded-xl border px-4 py-3 space-y-3">
+              <h3 className="text-sm font-semibold flex items-center gap-1.5"><Users className="w-4 h-4 text-primary" /> Teaching Experience & Approach</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Number(tutor.teaching_experience_years) > 0 && <div><p className="text-lg font-semibold">{tutor.teaching_experience_years} {Number(tutor.teaching_experience_years) === 1 ? 'year' : 'years'}</p><p className="text-[11px] text-muted-foreground">Classroom teaching</p></div>}
+                {Number(tutor.tutoring_experience_years) > 0 && <div><p className="text-lg font-semibold">{tutor.tutoring_experience_years} {Number(tutor.tutoring_experience_years) === 1 ? 'year' : 'years'}</p><p className="text-[11px] text-muted-foreground">Tutoring experience</p></div>}
+              </div>
+              {tutor.teaching_style && <p className="text-xs text-muted-foreground">Approach: {teachingStyleLabels[tutor.teaching_style] || tutor.teaching_style}</p>}
+              <div className="flex flex-wrap gap-1.5">
+                {tutor.offers_online_tutoring && <Badge variant="outline">Online sessions</Badge>}
+                {tutor.offers_in_person_tutoring && <Badge variant="outline">In-person sessions</Badge>}
+              </div>
+            </div>
+          )}
+
+          {/* Never display a tutor's personal SACE registration number publicly. */}
+          {tutor.sace_details_submitted && (
             <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3 dark:bg-green-950/20 dark:border-green-800">
               <ShieldCheck className="w-5 h-5 text-green-600 flex-shrink-0 dark:text-green-400" />
               <div>
-                <p className="text-xs font-semibold text-green-700 dark:text-green-400">SACE Registration Number</p>
-                <p className="text-sm font-mono font-bold text-green-800 dark:text-green-300">{tutor.sace_number}</p>
+                <p className="text-xs font-semibold text-green-700 dark:text-green-400">SACE details submitted</p>
+                <p className="text-xs text-green-800 dark:text-green-300">The registration number is kept private.</p>
               </div>
             </div>
           )}
@@ -298,6 +321,15 @@ export default function TutorProfileModal({ tutor, user, open, onClose, onBook, 
                 {qualificationsList.map((q, i) => (
                   <Badge key={i} variant="secondary" className="text-xs dark:bg-muted/30">🎓 {q}</Badge>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {certificationsList.length > 0 && (
+            <div>
+              <h3 className="text-sm font-semibold flex items-center gap-1.5 mb-2"><Award className="w-4 h-4 text-primary" /> Certifications</h3>
+              <div className="flex flex-wrap gap-1.5">
+                {certificationsList.map((item, i) => <Badge key={i} variant="outline" className="text-xs">{item}</Badge>)}
               </div>
             </div>
           )}

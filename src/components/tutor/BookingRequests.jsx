@@ -76,7 +76,7 @@ export default function BookingRequests({
   const [selectedBookings, setSelectedBookings] = useState(new Set());
   const [rescheduleRequests, setRescheduleRequests] = useState({});
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -86,7 +86,7 @@ export default function BookingRequests({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_email', user.email).order('created_at', {
+      } = await supabase.from('tutor_bookings').select('*').eq('tutor_id', user.id).order('created_at', {
         ascending: false
       }).limit(50);
       if (bookingsError) throw bookingsError;
@@ -114,15 +114,15 @@ export default function BookingRequests({
     } finally {
       setLoading(false);
     }
-  }, [user?.email,user?.id]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
-    if (!user?.email) return;
+    if (!user?.id) return;
     const channel = supabase.channel('tutor_booking_requests').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'tutor_bookings',
-      filter: `tutor_email=eq.${user.email}`
+      filter: `tutor_id=eq.${user.id}`
     }, payload => {
       if (payload.eventType === 'INSERT') {
         setBookings(prev => [payload.new, ...prev]);
@@ -134,7 +134,7 @@ export default function BookingRequests({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email, loadData]);
+  }, [user?.id, loadData]);
 
   const accept = async booking => {
     if (!bookingFundingReady(booking) || booking.proposed_date) { toast.error('Verified payment or acceptance of the proposed time is required.'); return; }
@@ -192,7 +192,7 @@ export default function BookingRequests({
       } = await supabase.from('tutor_bookings').update({
         status: 'completed',
         updated_at: new Date().toISOString()
-      }).eq('id', booking.id);
+      }).eq('id', booking.id).eq('tutor_id', user.id).eq('status', 'confirmed');
       if (error) throw error;
       setBookings(prev => prev.map(b => b.id === booking.id ? {
         ...b,

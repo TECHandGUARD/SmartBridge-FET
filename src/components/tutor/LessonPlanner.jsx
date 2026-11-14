@@ -49,7 +49,7 @@ function LessonPlannerImplementation({
     draft: 0
   });
   const loadData = useCallback(async () => {
-    if (!user?.email) {
+    if (!user?.id) {
       setLoading(false);
       return;
     }
@@ -59,14 +59,14 @@ function LessonPlannerImplementation({
       const {
         data: plansData,
         error: plansError
-      } = await supabase.from('lesson_plans').select('*').eq('tutor_email', user.email).order('session_date', {
+      } = await supabase.from('lesson_plans').select('*').eq('tutor_id', user.id).eq('is_archived', false).order('session_date', {
         ascending: false
       });
       if (plansError) throw plansError;
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('student_email, student_name, id, date, subject').eq('tutor_email', user.email).eq('status', 'confirmed').gte('date', new Date().toISOString().split('T')[0]).order('date', {
+      } = await supabase.from('tutor_bookings').select('student_id, student_email, student_name, id, date, subject').eq('tutor_id', user.id).eq('status', 'confirmed').gte('date', new Date().toISOString().split('T')[0]).order('date', {
         ascending: true
       });
       if (bookingsError) throw bookingsError;
@@ -74,6 +74,7 @@ function LessonPlannerImplementation({
       (bookingsData || []).forEach(b => {
         if (b.student_email && !studentMap[b.student_email]) {
           studentMap[b.student_email] = {
+            id: b.student_id || null,
             email: b.student_email,
             name: b.student_name || b.student_email
           };
@@ -82,6 +83,7 @@ function LessonPlannerImplementation({
       (plansData || []).forEach(p => {
         if (p.student_email && !studentMap[p.student_email]) {
           studentMap[p.student_email] = {
+            id: p.student_id || null,
             email: p.student_email,
             name: p.student_name || p.student_email
           };
@@ -107,17 +109,17 @@ function LessonPlannerImplementation({
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [user?.id]);
   useEffect(() => {
     loadData();
   }, [loadData]);
   useEffect(() => {
-    if (!user?.email) return;
+    if (!user?.id) return;
     const channel = supabase.channel('tutor_lesson_plans').on('postgres_changes', {
       event: '*',
       schema: 'public',
       table: 'lesson_plans',
-      filter: `tutor_email=eq.${user.email}`
+      filter: `tutor_id=eq.${user.id}`
     }, payload => {
       if (payload.eventType === 'INSERT') {
         setPlans(prev => [payload.new, ...prev]);
@@ -131,7 +133,7 @@ function LessonPlannerImplementation({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user?.email]);
+  }, [user?.id]);
   const toggleSelect = id => {
     const newSet = new Set(selectedPlans);
     if (newSet.has(id)) newSet.delete(id);else newSet.add(id);
@@ -189,7 +191,7 @@ function LessonPlannerImplementation({
         status: 'completed',
         completed_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
-      }).eq('id', plan.id);
+      }).eq('id', plan.id).eq('tutor_id', user.id).eq('is_archived', false);
       if (updateError) throw updateError;
       setPlans(prev => prev.map(p => p.id === plan.id ? {
         ...p,
@@ -279,18 +281,20 @@ function LessonPlannerImplementation({
     }
   };
   const handleDelete = async id => {
-    if (!confirm('Are you sure you want to delete this lesson plan? This action cannot be undone.')) return;
+    if (!confirm('Archive this lesson plan? It will be removed from your active lesson plans.')) return;
     try {
-      const {
-        error
-      } = await supabase.from('lesson_plans').delete().eq('id', id);
+      const { error } = await supabase.from('lesson_plans')
+        .update({ is_archived: true, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('tutor_id', user.id)
+        .eq('is_archived', false);
       if (error) throw error;
       setPlans(prev => prev.filter(p => p.id !== id));
-      toast.success('Lesson plan deleted');
+      toast.success('Lesson plan archived');
       if (onLessonUpdate) onLessonUpdate();
     } catch (err) {
-      console.error('Error deleting lesson plan:', err);
-      toast.error('Failed to delete lesson plan');
+      console.error('Error archiving lesson plan:', err);
+      toast.error('Failed to archive lesson plan');
     }
   };
   const exportPlans = () => {
