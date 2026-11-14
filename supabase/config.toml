@@ -84,6 +84,10 @@ entrypoint = "./functions/notifyUserApproved/entry.ts"
 verify_jwt = true
 entrypoint = "./functions/notifyUserRejected/entry.ts"
 
+[functions.admin-delete-user]
+verify_jwt = true
+entrypoint = "./functions/adminDeleteUser/entry.ts"
+
 [functions.operations-status]
 verify_jwt = true
 entrypoint = "./functions/operationsStatus/entry.ts"
