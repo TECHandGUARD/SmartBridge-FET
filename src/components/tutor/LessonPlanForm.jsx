@@ -657,7 +657,7 @@ export default function LessonPlanForm({
 
         {}
         <div className="rounded-lg border border-blue-200/70 bg-blue-50/40 p-3 text-xs text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/10 dark:text-blue-100">
-          The linked learner can view the lesson title, objectives, resources and homework. Your preparation notes and teaching reflection are stored separately and remain tutor-only.
+          When you share a plan, the learner receives its title, objectives, resources and homework. Your preparation notes and teaching reflection are stored separately and remain tutor-only.
         </div>
 
         <div className="space-y-1.5">
