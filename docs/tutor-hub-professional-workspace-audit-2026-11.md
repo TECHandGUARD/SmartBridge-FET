@@ -44,6 +44,12 @@ The profile editor displayed “SACE Verified” whenever a SACE number was pres
 
 **Remediation prepared:** show “SACE Verified” only when the account role is `sace_tutor`, the profile is admin-verified, and a SACE number is present. Other approved tutor profiles display “Admin Verified”; unverified profiles display “Verification Pending”.
 
+### High priority — core tutor tools are hidden by release scope
+
+The dashboard contains Student Progress / Student CRM and Earnings sections, but `src/lib/release-scope.js` currently defers the `students` and `earnings` sections. `TutorQuickActions` filters these actions out, so tutors cannot reach them through the workspace. The CRM and full earnings dashboard also sit behind premium gates.
+
+This means the current dashboard is not yet a complete professional workspace for experienced tutors, and it limits qualified teachers and university student tutors from accessing learner-progress and reflective record tools. The features should be brought back only after the new note privacy migration is applied and role-specific end-to-end tests pass. The correct product decision is to expose safe core learner records to approved tutors and keep premium-only analytics or financial extras clearly distinguished, rather than hiding the entire learner-management workflow.
+
 ### Medium priority — assessment workflow discoverability
 
 The Assessment Centre already supports tutor-created assessments, moderation, publishing, submissions, marking and feedback, but it was not surfaced alongside the main Tutor Hub professional tools.
