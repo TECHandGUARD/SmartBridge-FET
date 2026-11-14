@@ -22,9 +22,9 @@ The Tutor Hub has a solid functional base, but the inspected implementation does
 
 The live `public.student_notes` table had a student SELECT policy based only on `auth.uid() = student_id`. It did not check `is_shared_with_student` or `is_confidential`. As a result, any note attached to a learner could be readable by that learner even if the tutor intended it to remain confidential.
 
-The live table currently contained **zero notes** at the time of inspection, so no existing note records were exposed in the count queried. The policy was nevertheless unsafe for future use.
+The live table currently contained **zero notes** and the availability table contained **one row** at the time of inspection. No existing note records were present in the queried count, but the policies were unsafe for future use.
 
-**Remediation prepared:** students can read only notes explicitly shared with them and marked non-confidential; tutors can create/update notes only for learners with a confirmed or completed booking; tutor and learner IDs/emails are bound to authenticated records; the UI now defaults to private and provides an explicit sharing control.
+**Remediation prepared:** students can read only notes explicitly shared with them and marked non-confidential; tutors can create/update notes only for learners with a confirmed or completed booking; tutor and learner UUIDs are bound to authenticated records; email values remain display snapshots; the UI now defaults to private and provides an explicit sharing control.
 
 ### High priority — tutor availability privacy
 
@@ -55,6 +55,9 @@ The Assessment Centre already supports tutor-created assessments, moderation, pu
 The live Supabase Security Advisor reported:
 - 34 tables with RLS enabled but no policies. Many are internal/private or intentionally deny all client access; this is not automatically a vulnerability, but each table's grants and intended server-only use should be verified.
 - One anonymous-executable `public_tutors(uuid)` SECURITY DEFINER function. Its inspected return shape is limited to public tutor-directory fields (name, bio, avatar, subjects, grades, rate and free-introduction availability), so anonymous access appears intentional for public discovery.
+- One `pg_net` extension installed in the `public` schema; assess moving it to a non-exposed schema without disrupting existing scheduled/webhook workflows.
+- Leaked-password protection is flagged as disabled in Auth settings. This is a project-level configuration item and cannot be corrected safely through the inspected repository migration.
+- Performance Advisor reports 133 unindexed foreign keys, 133 auth/RLS init-plan warnings, 276 unused indexes and 85 multiple-permissive-policy warnings. These require query-by-query prioritisation rather than blanket index or policy changes.
 - 27 SECURITY DEFINER functions callable by authenticated users. This is an advisor warning, not proof of exploitation. The inspected examples `admin_assessment_review_queue()`, `mark_tutor_assessment(...)` and `my_tutor_assessments()` contain role/ownership checks. Remaining functions still require a complete function-by-function authorization review.
 
 Existing positive controls observed include:
@@ -79,6 +82,7 @@ Existing positive controls observed include:
 - **The migration has not been applied to production.**
 - Authenticated browser testing with separate tutor, learner and administrator test accounts has not yet been completed.
 - A full WCAG 2.2 AA audit, independent penetration test, dependency/SCA review, edge-function authorization review and backup/restore exercise remain outstanding.
+- Auth leaked-password protection should be enabled in Supabase Auth settings by the project owner after confirming the intended password policy.
 - This review is not a legal compliance opinion, SACE endorsement or third-party security certification.
 
 ## Implementation note
