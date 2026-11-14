@@ -81,6 +81,7 @@ Existing positive controls observed include:
 - A remediation branch is being prepared for review.
 - **The migration has not been applied to production.**
 - Authenticated browser testing with separate tutor, learner and administrator test accounts has not yet been completed.
+- The CI dependency install reported **9 npm audit findings (4 low, 4 moderate, 1 high)**. The exact advisory/package triage remains outstanding; do not run a blanket `npm audit fix --force` without compatibility review.
 - A full WCAG 2.2 AA audit, independent penetration test, dependency/SCA review, edge-function authorization review and backup/restore exercise remain outstanding.
 - Auth leaked-password protection should be enabled in Supabase Auth settings by the project owner after confirming the intended password policy.
 - This review is not a legal compliance opinion, SACE endorsement or third-party security certification.
