@@ -10,13 +10,11 @@ using (
   student_id = (select auth.uid())
   and coalesce(is_shared_with_student, false) = true
   and coalesce(is_confidential, false) = false
-  and coalesce(is_archived, false) = false
 );
 
 -- Tutors may create notes only for learners with whom they have a real tutoring
 -- relationship. UUID ownership, not mutable email text, is the authorization boundary.
 drop policy if exists "Tutors can create notes" on public.student_notes;
-drop policy if exists "Tutors can create notes for booked learners" on public.student_notes;
 create policy "Verified tutors create notes for booked learners"
 on public.student_notes for insert to authenticated
 with check (
@@ -36,7 +34,6 @@ with check (
 -- Keep updates attached to the original tutor/learner relationship. Admins retain
 -- support access; tutors cannot reassign a note to an unrelated learner.
 drop policy if exists "Tutors can update own notes" on public.student_notes;
-drop policy if exists "Tutors can update own notes for booked learners" on public.student_notes;
 create policy "Tutors update notes for their booked learners"
 on public.student_notes for update to authenticated
 using (
