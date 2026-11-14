@@ -13,7 +13,7 @@ using (
 );
 
 -- Tutors may create notes only for learners with whom they have a real tutoring
--- relationship. Identity and email fields are bound to the authenticated records.
+-- relationship. UUID ownership, not mutable email text, is the authorization boundary.
 drop policy if exists "Tutors can create notes" on public.student_notes;
 create policy "Verified tutors create notes for booked learners"
 on public.student_notes for insert to authenticated
