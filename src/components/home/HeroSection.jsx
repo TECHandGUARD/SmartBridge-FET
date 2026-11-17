@@ -1,4 +1,5 @@
 import packs from '@/data/study-packs.json';
+import SmartBridgeBrand from '@/components/branding/SmartBridgeBrand';
 import { SUBJECTS } from '@/lib/subjects';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -28,12 +29,13 @@ export default function HeroSection() {
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left content */}
           <div>
+            <div className="mb-6"><SmartBridgeBrand /></div>
             <Badge className="mb-5 bg-primary/10 text-primary border-primary/20 hover:bg-primary/15">
               🇿🇦 CAPS-Aligned • Grades 10–12
             </Badge>
             <h1 className="font-playfair text-4xl sm:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
-              Learn Smarter.{' '}
-              <span className="text-primary">Achieve More.</span>
+              Learn. Get Support.{' '}
+              <span className="text-primary">Connect. Succeed.</span>
             </h1>
             <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
               A learning platform built for South African FET learners. Explore focused study guides,
