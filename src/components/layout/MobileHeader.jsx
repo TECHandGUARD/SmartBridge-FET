@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { BookOpen, ChevronLeft, Menu, UserRound, LogOut } from 'lucide-react';
 import { getDashboardPath, getNavigation, isNavigationActive } from '@/lib/navigation';
 import { useAuth } from '@/lib/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 
@@ -12,6 +13,8 @@ export default function MobileHeader({ user }) {
   const { signOut } = useAuth();
   const dashboard = getDashboardPath(user);
   const { primary, secondary } = getNavigation(user);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user?.email);
+  const visibleSecondary = !flagsLoading && isEnabled('opportunities') && ['tutor','sace_tutor','student_tutor'].includes(user?.role) ? [...secondary, { label: 'Student Opportunities', path: '/opportunities' }] : secondary;
   useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
   const renderLinks = links => links.map(link => <Link key={link.path} to={link.path} onClick={() => setOpen(false)}
     aria-current={isNavigationActive(location, link.path) ? 'page' : undefined}
@@ -29,7 +32,7 @@ export default function MobileHeader({ user }) {
           </SheetHeader>
           <nav aria-label="All SmartBridge pages" className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-3 py-4" style={{ WebkitOverflowScrolling: 'touch' }}>
             <section><h2 className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Main pages</h2>{renderLinks(primary)}</section>
-            <section><h2 className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">More features</h2>{renderLinks(secondary)}</section>
+            <section><h2 className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">More features</h2>{renderLinks(visibleSecondary)}</section>
             <section><h2 className="px-4 pb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">Company & legal</h2>{renderLinks([{label:'Terms of Service',path:'/terms'},{label:'Privacy Policy',path:'/privacy'},{label:'About Tech & GUARD',path:'/about-tech-guard'}])}</section>
           </nav>
           <div className="shrink-0 border-t bg-card p-4" style={{ paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))' }}>
