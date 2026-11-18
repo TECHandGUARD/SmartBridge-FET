@@ -12,7 +12,7 @@ export function useFeatureFlags(userEmail) {
     let active = true;
     setLoading(true);
     setError(null);
-    supabase.rpc('my_feature_access')
+    Promise.resolve(supabase.rpc('my_feature_access'))
       .then(({ data, error: fetchError }) => {
         if (!active) return;
         if (fetchError) { setError(fetchError); setFlags([]); }
