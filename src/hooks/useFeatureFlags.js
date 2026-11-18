@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 
-// The admin panel stores global switches and per-email exceptions in feature_toggles.
-// Keep the reader aligned with that schema; do not use the obsolete override table.
+// The server resolves the current user's email against admin-managed overrides.
+// The browser never receives other users' allow/deny email lists.
 export function useFeatureFlags(userEmail) {
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -12,8 +12,7 @@ export function useFeatureFlags(userEmail) {
     let active = true;
     setLoading(true);
     setError(null);
-    supabase.from('feature_toggles')
-      .select('feature_key,is_enabled,enabled_for_emails,disabled_for_emails,locked_message')
+    supabase.rpc('my_feature_access')
       .then(({ data, error: fetchError }) => {
         if (!active) return;
         if (fetchError) { setError(fetchError); setFlags([]); }
@@ -28,16 +27,13 @@ export function useFeatureFlags(userEmail) {
     return () => { active = false; };
   }, [userEmail, version]);
 
-  const normalizedEmail = typeof userEmail === 'string' ? userEmail.trim().toLowerCase() : '';
   const getFeatureStatus = useCallback(key => {
     const flag = flags.find(item => item.feature_key === key);
-    const normalize = values => Array.isArray(values) ? values.map(v => String(v).trim().toLowerCase()) : [];
-    const blocked = !!normalizedEmail && normalize(flag?.disabled_for_emails).includes(normalizedEmail);
-    const allowed = !!normalizedEmail && normalize(flag?.enabled_for_emails).includes(normalizedEmail);
-    // Explicit deny takes precedence; explicit allow overrides the global switch.
-    const isEnabled = !error && !blocked && (allowed || flag?.is_enabled !== false);
-    return { featureKey: key, globalEnabled: flag?.is_enabled !== false, userOverride: blocked ? 'DENY' : allowed ? 'ALLOW' : null, isEnabled, lockedMessage: flag?.locked_message || 'This feature is currently unavailable.' };
-  }, [flags, normalizedEmail, error]);
+    // A missing flag is unconfigured (enabled by default); fetch errors fail closed.
+    return { featureKey: key, globalEnabled: null, userOverride: null,
+      isEnabled: !error && flag?.is_enabled !== false,
+      lockedMessage: flag?.locked_message || 'This feature is currently unavailable.' };
+  }, [flags, error]);
   const isEnabled = useCallback(key => getFeatureStatus(key).isEnabled, [getFeatureStatus]);
   const getLockedMessage = useCallback(key => getFeatureStatus(key).lockedMessage, [getFeatureStatus]);
   const hasUserOverride = useCallback(key => getFeatureStatus(key).userOverride !== null, [getFeatureStatus]);
