@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import { useAuth } from '@/lib/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +39,7 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
   const { user, checkUser } = useAuth();
+  const { isEnabled: featureEnabled, loading: featureLoading } = useFeatureFlags(user?.email);
   const prices = useSubscriptionPrices();
   const price = prices.data?.find(row=>row.product==='tutor_pro')?.amount_cents;
   const subscriptionLabel = Number.isInteger(price) ? `R${(price/100).toFixed(2)}/month` : 'View current price';
@@ -263,6 +265,12 @@ export default function TutorDashboard() {
           </div>
         )}
 
+        {!featureLoading && featureEnabled('opportunities') && (
+          <Link to="/opportunities" className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4 hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+            <span><strong className="block">Student Opportunities</strong><span className="text-sm text-muted-foreground">University applications, bursaries and NBT preparation</span></span>
+            <span className="text-sm font-semibold text-primary">Explore →</span>
+          </Link>
+        )}
         {/* Navigation Hub — sticky */}
         <div data-tour="dashboard-navigation" className="mb-6">
           <TutorQuickActions onAction={toggleSection} activeSection={activeSection} />
