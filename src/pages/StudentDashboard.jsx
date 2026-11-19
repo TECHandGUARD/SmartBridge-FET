@@ -400,6 +400,39 @@ export default function StudentDashboard() {
               </CardContent>
             </Card>
 
+            {/* Account Deletion */}
+            <ReleaseGate feature="accountDeletion">
+            <div className="border border-destructive/20 rounded-2xl p-5">
+              <p className="text-sm font-semibold text-destructive flex items-center gap-1.5 mb-1">
+                <AlertTriangle className="w-4 h-4" /> Danger Zone
+              </p>
+              <p className="text-xs text-muted-foreground mb-3">Permanently delete your account and all associated data. This cannot be undone.</p>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="gap-2" disabled={deletingAccount}>
+                    <Trash2 className="w-4 h-4" /> Delete My Account
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete your student account and all your progress, bookmarks, and data. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteAccount}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {deletingAccount ? 'Deleting...' : 'Yes, delete my account'}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+            </ReleaseGate>
           </div>
         )}
       </div>
