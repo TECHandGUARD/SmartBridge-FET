@@ -31,6 +31,32 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  ok(await admin.from('users').update({role:'sace_tutor',is_verified:true}).eq('id',tutor.id));
  const profile=ok(await admin.from('tutor_profiles').update({is_verified:true,is_active:true,subjects:['Mathematics'],hourly_rate:100}).eq('user_id',tutor.id).select('id').single());
 
+ // A signed-in administrator can manage grants without exposing the allowlist to tutors.
+ const operator=await account('student');
+ ok(await admin.from('users').update({role:'admin'}).eq('id',operator.id));
+ const featureKey='opportunities-http-'+randomUUID();
+ const toggle=ok(await operator.client.from('feature_toggles').insert({
+  feature_key:featureKey,label:'Opportunities test',is_enabled:false,enabled_for_emails:[tutor.email],
+ }).select('id').single());
+ async function effectiveAccess(client) {
+  return ok(await client.rpc('my_feature_access')).find(flag=>flag.feature_key===featureKey);
+ }
+ assert.deepEqual(Object.keys(await effectiveAccess(tutor.client)).sort(),['feature_key','is_enabled','locked_message']);
+ assert.equal((await effectiveAccess(tutor.client)).is_enabled,true);
+ assert.equal((await effectiveAccess(other.client)).is_enabled,false);
+ assert.deepEqual(ok(await tutor.client.from('feature_toggles').select('enabled_for_emails').eq('id',toggle.id)),[]);
+ const anonymousAccess=await createClient(url,status.ANON_KEY,options).rpc('my_feature_access');
+ assert.ok(anonymousAccess.error,'Anonymous feature access must be denied');
+ ok(await operator.client.from('feature_toggles').update({
+  is_enabled:true,disabled_for_emails:[tutor.email],
+ }).eq('id',toggle.id).select('id').single());
+ assert.equal((await effectiveAccess(tutor.client)).is_enabled,false);
+ ok(await operator.client.from('feature_toggles').update({
+  is_enabled:false,enabled_for_emails:[],disabled_for_emails:[],
+ }).eq('id',toggle.id).select('id').single());
+ assert.equal((await effectiveAccess(tutor.client)).is_enabled,false);
+ console.log('PASS: real Auth sessions apply administrator grants, blocks, and revocations without exposing override emails');
+
  // Presentations use real authenticated REST and private account ownership.
  const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
  const deck=ok(await tutor.client.from('presentation_decks').insert({title:'Private lesson slides',content:deckContent}).select('*').single());
