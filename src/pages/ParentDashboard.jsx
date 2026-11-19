@@ -216,7 +216,7 @@ export default function ParentDashboard() {
                   Upgrade to Parent Premium — {subscriptionLabel}
                 </Button>
               </Link>
-              <p className="text-xs text-muted-foreground">Use your email as reference. Access starts after payment is confirmed.</p>
+              <p className="text-xs text-muted-foreground">See the available payment options on the Premium page.</p>
             </div>
           </div>
         )}
