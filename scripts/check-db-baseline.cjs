@@ -48,5 +48,7 @@ await db.exec('begin;');
 await db.exec(fs.readFileSync('db/publish-study-catalogue.sql','utf8'));
 for(const name of ['test-core-flows.sql','test-bookings-and-links.sql','test-api-integrations.sql','test-payment-gateways.sql','test-operations.sql','test-study-rooms.sql','test-mvp-access.sql','test-learning-progress.sql','test-improvements.sql','test-counselor.sql','test-subscription-pricing.sql','test-managed-legal.sql','test-tutor-pricing.sql','test-sponsorship.sql','test-direct-messaging.sql','test-booking-checkout.sql','test-live-classroom.sql','test-virtual-meetings.sql','test-meeting-emails.sql','test-meeting-admission.sql','test-presentation-studio.sql','test-mobile-call-improvements.sql','test-assessment-drafts.sql','test-staff-accounts.sql','test-security-marketing.sql']){
  console.log('TEST',name);await db.exec(fs.readFileSync(path.join(process.cwd(),'db',name),'utf8'));}
-await db.exec('rollback;');console.log('PASS: all twenty-five security/workflow SQL fixtures');
+console.log('TEST test-tutor-note-identity.sql');
+await db.exec(fs.readFileSync('db/test-tutor-note-identity.sql','utf8'));
+await db.exec('rollback;');console.log('PASS: all security/workflow SQL fixtures');
 }finally{await db.close();}})().catch(e=>{console.error('ERROR',e.message,e.where||'',e.detail||'');process.exit(1)});
