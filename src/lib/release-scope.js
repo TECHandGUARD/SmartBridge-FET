@@ -22,7 +22,7 @@ export const isReleaseFeatureEnabled = key => RELEASE_FEATURES[key] === true;
 export function isDashboardSectionEnabled(role, key) {
   const deferred = {
     student: [],
-    tutor: ['students', 'earnings'],
+    tutor: ['students'],
     parent: [],
   };
   return !!deferred[role] && !deferred[role].includes(key);

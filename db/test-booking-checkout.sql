@@ -82,3 +82,64 @@ end $$;
 reset role;
 select set_config('request.jwt.claims','{}',true);
 select 'PASS: booking payment ownership, verified amounts, test/live separation, replay, introductory proposals, parent payer and refund settlement' result;
+
+-- The earnings view follows a real receipt through completion and administrator payout.
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000009901","role":"authenticated"}',true);
+select public.create_booking('00000000-0000-4000-8000-000000009905','History',current_date+123,'10:00',1,'Payout fixture','00000000-0000-4000-8000-000000009914',false);
+do $$ begin
+ if exists(select 1 from public.my_tutor_earnings()) then raise exception 'Learner accessed tutor earnings'; end if;
+end $$;
+
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+do $$
+declare b public.tutor_bookings; payment jsonb;
+begin
+ select * into b from public.tutor_bookings where client_request_id='00000000-0000-4000-8000-000000009914';
+ payment := public.create_booking_payment_order(b.student_id,b.id,'live','yoco');
+ update public.payment_orders set checkout_id='earnings-live-checkout' where id=(payment->>'id')::uuid;
+ perform public.fulfill_gateway_payment('earnings-live-event','earnings-live-checkout','earnings-live-receipt',15000,'ZAR','live','yoco');
+ -- Move the disposable session into the past without weakening production checks.
+ update public.tutor_bookings set date=current_date-1,
+  start_time=now()-interval '2 hours',end_time=now()-interval '1 hour' where id=b.id;
+end $$;
+
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000009902","role":"authenticated"}',true);
+do $$ begin
+ if not exists(select 1 from public.my_tutor_earnings() where eligible_sessions=0 and awaiting_payout=0 and payouts_recorded=0) then
+  raise exception 'Pending, test, refunded or introductory bookings count as earnings';
+ end if;
+end $$;
+update public.tutor_bookings set status='confirmed' where client_request_id='00000000-0000-4000-8000-000000009914';
+update public.tutor_bookings set status='completed' where client_request_id='00000000-0000-4000-8000-000000009914';
+do $$ begin
+ if not exists(
+  select 1 from public.my_tutor_earnings() e cross join public.tutor_bookings b
+  where b.client_request_id='00000000-0000-4000-8000-000000009914'
+    and e.eligible_sessions=1 and e.awaiting_payout=b.tutor_net and e.awaiting_payout>0 and e.payouts_recorded=0
+ ) then raise exception 'Completed live booking is missing or wrong in pending earnings'; end if;
+end $$;
+
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000009904","role":"authenticated"}',true);
+select public.record_tutor_payout(id,'earnings-transfer-reference') from public.tutor_bookings
+where client_request_id='00000000-0000-4000-8000-000000009914';
+do $$ begin
+ if exists(select 1 from public.my_tutor_earnings()) then raise exception 'Tutor earnings RPC used an admin-wide scope'; end if;
+end $$;
+
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000009902","role":"authenticated"}',true);
+do $$ begin
+ if not exists(
+  select 1 from public.my_tutor_earnings() e cross join public.tutor_bookings b
+  where b.client_request_id='00000000-0000-4000-8000-000000009914'
+    and e.eligible_sessions=1 and e.awaiting_payout=0 and e.payouts_recorded=b.tutor_net and e.payouts_recorded>0
+ ) then raise exception 'Recorded transfer was not reflected in the earnings summary'; end if;
+end $$;
+set local role anon;
+do $$ begin
+ if has_function_privilege(current_user,'public.my_tutor_earnings()','EXECUTE') then raise exception 'Anonymous earnings access'; end if;
+end $$;
+reset role;
+select set_config('request.jwt.claims','{}',true);
