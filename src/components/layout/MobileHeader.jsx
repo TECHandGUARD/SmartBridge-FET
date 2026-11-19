@@ -13,7 +13,7 @@ export default function MobileHeader({ user }) {
   const { signOut } = useAuth();
   const dashboard = getDashboardPath(user);
   const { primary, secondary } = getNavigation(user);
-  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   const visibleSecondary = !flagsLoading && isEnabled('opportunities') && ['tutor','sace_tutor','student_tutor'].includes(user?.role) ? [...secondary, { label: 'Student Opportunities', path: '/opportunities' }] : secondary;
   useEffect(() => { setOpen(false); }, [location.pathname, location.search]);
   const renderLinks = links => links.map(link => <Link key={link.path} to={link.path} onClick={() => setOpen(false)}

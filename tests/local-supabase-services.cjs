@@ -57,6 +57,37 @@ const options={auth:{persistSession:false,autoRefreshToken:false,detectSessionIn
  assert.equal((await effectiveAccess(tutor.client)).is_enabled,false);
  console.log('PASS: real Auth sessions apply administrator grants, blocks, and revocations without exposing override emails');
 
+ // Admin overrides are evaluated independently of subscription entitlement.
+ const setOpportunityFlag=async (enabled,allow=[],deny=[]) => ok(await operator.client
+  .from('feature_toggles').upsert({feature_key:'opportunities',label:'Student Opportunities',
+   is_enabled:enabled,enabled_for_emails:allow,disabled_for_emails:deny},{onConflict:'feature_key'}).select('id').single());
+ const opportunityEnabled=async (account) => ok(await account.client.rpc('my_feature_access'))
+  .find(row=>row.feature_key==='opportunities')?.is_enabled;
+ const directory=ok(await admin.from('university_directory')
+  .insert({name:'Disposable test university',url:'https://example.invalid',is_active:true}).select('id').single());
+ const readDirectory=async (account) => ok(await account.client.from('university_directory').select('id').eq('id',directory.id));
+ const pendingTutor=await account('sace_tutor');
+ await setOpportunityFlag(false,[tutor.email,pendingTutor.email]);
+ assert.equal(await opportunityEnabled(tutor),true);
+ assert.equal(await opportunityEnabled(student),false);
+ assert.equal(await opportunityEnabled(pendingTutor),false);
+ assert.deepEqual(ok(await tutor.client.from('feature_toggles').select('feature_key')),[]);
+ assert.deepEqual(await readDirectory(tutor),[directory]);
+ ok(await admin.from('users').update({trial_started_at:new Date(Date.now()-4*86400000).toISOString()}).eq('id',tutor.id));
+ assert.deepEqual(await readDirectory(tutor),[]);
+ const paidAccess=ok(await admin.from('subscriptions').insert({user_id:tutor.id,user_email:tutor.email,plan:'premium',
+  status:'active',start_date:'2000-01-01',end_date:'2099-12-31',metadata:{product:'tutor_pro'}}).select('id').single());
+ assert.deepEqual(await readDirectory(tutor),[directory]);
+ await setOpportunityFlag(true,[tutor.email],[tutor.email]);
+ assert.equal(await opportunityEnabled(tutor),false);
+ assert.deepEqual(await readDirectory(tutor),[]);
+ await setOpportunityFlag(true);
+ assert.equal(await opportunityEnabled(tutor),true);
+ assert.deepEqual(await readDirectory(tutor),[directory]);
+ ok(await admin.from('subscriptions').delete().eq('id',paidAccess.id));
+ ok(await admin.from('users').update({trial_started_at:new Date().toISOString()}).eq('id',tutor.id));
+ console.log('PASS: real Auth, administration, private overrides, role bounds, Premium dates and catalogue RLS');
+
  // Presentations use real authenticated REST and private account ownership.
  const deckContent={theme:'forest',show_author:true,slides:[{title:'Fractions',body:'Compare values',notes:'Private tutor notes',layout:'content'}]};
  const deck=ok(await tutor.client.from('presentation_decks').insert({title:'Private lesson slides',content:deckContent}).select('*').single());

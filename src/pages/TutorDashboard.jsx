@@ -39,7 +39,7 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
   const { user, checkUser } = useAuth();
-  const { isEnabled: featureEnabled, loading: featureLoading } = useFeatureFlags(user);
+  const { isEnabled: featureEnabled, loading: featureLoading } = useFeatureFlags();
   const prices = useSubscriptionPrices();
   const price = prices.data?.find(row=>row.product==='tutor_pro')?.amount_cents;
   const subscriptionLabel = Number.isInteger(price) ? `R${(price/100).toFixed(2)}/month` : 'View current price';

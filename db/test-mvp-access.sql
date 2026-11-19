@@ -6,6 +6,7 @@ insert into auth.users(id,email,raw_user_meta_data) values
  ('00000000-0000-4000-8000-000000000804','mvp-inactive@example.invalid','{}');
 update public.users set role='student',onboarding_complete=true where id in
  ('00000000-0000-4000-8000-000000000801','00000000-0000-4000-8000-000000000802','00000000-0000-4000-8000-000000000804');
+update public.users set trial_started_at=now() where id='00000000-0000-4000-8000-000000000801';
 update public.users set role='admin',onboarding_complete=true where id='00000000-0000-4000-8000-000000000803';
 update public.users set is_active=false where id='00000000-0000-4000-8000-000000000804';
 insert into public.profiles(id,full_name,role) values

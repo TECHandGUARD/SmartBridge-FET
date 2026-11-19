@@ -197,7 +197,10 @@ function TestDateCard({
         </div>
 
         {expanded && <div className="mt-3 pt-3 border-t space-y-3">
-            {!isRegistered && !isPast && <div>
+            {!userEmail && !isPast && !registrationClosed && testDate.registration_link && (
+              <Button asChild size="sm" variant="outline"><a href={testDate.registration_link} target="_blank" rel="noopener noreferrer">Book on NBT site</a></Button>
+            )}
+            {userEmail && !isRegistered && !isPast && <div>
                 <p className="text-xs font-semibold mb-2">Choose tests to track (AQL includes AL and QL):</p>
                 <div className="flex gap-2 mb-3">
                   {TESTS.map(t => <button key={t} onClick={() => toggleTest(t)} className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${selectedTests.includes(t) ? 'bg-primary text-white border-primary' : 'bg-background border-border text-muted-foreground'}`}>

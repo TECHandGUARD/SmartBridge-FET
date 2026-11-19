@@ -313,7 +313,7 @@ export default function PersonalizedHome({
   useEffect(() => {
     loadData();
   }, [loadData]);
-  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   const role = user?.role || 'user';
   const config = ROLE_CONFIG[role] || ROLE_CONFIG['student'];
   const opportunitiesEnabled = !flagsLoading && isEnabled('opportunities');
