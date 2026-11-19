@@ -348,10 +348,18 @@ export default function TutorDashboard() {
           </div>
         )}
 
-        {/* Live Sessions */}
         {activeSection === 'sessions' && (
-          <div className="mb-6 space-y-4">
+          <section aria-label="Live sessions workspace" className="mb-6">
             <UpcomingSessionsWidget user={user} />
+          </section>
+        )}
+
+        {activeSection === 'teaching-toolkit' && (
+          <section aria-labelledby="teaching-toolkit-heading" className="mb-6 space-y-4">
+            <div className="rounded-xl border bg-card p-4 sm:p-5">
+              <h2 id="teaching-toolkit-heading" className="font-playfair text-xl font-bold">Teaching Toolkit</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Prepare session plans, explore STEM simulations, and build quizzes for your learners.</p>
+            </div>
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
               <LessonPlanner user={user} />
             </DashboardPremiumGate>
@@ -359,12 +367,14 @@ export default function TutorDashboard() {
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Quiz Builder">
               <QuizBuilder user={user} />
             </DashboardPremiumGate>
-          </div>
+          </section>
         )}
 
         {/* Default overview when nothing is selected */}
         {!activeSection && (
           <div className="space-y-6">
+            <UpcomingSessionsWidget user={user} />
+
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
@@ -381,9 +391,6 @@ export default function TutorDashboard() {
                 </Card>
               ))}
             </div>
-
-            {/* Upcoming Sessions */}
-            <UpcomingSessionsWidget user={user} />
 
             {/* Tutor Pro upsell */}
             {profile && !profile.is_premium && (
