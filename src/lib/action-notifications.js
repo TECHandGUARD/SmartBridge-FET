@@ -30,3 +30,9 @@ export async function dispatchMeetingNotifications(meetingId) {
     return { status: results.some(result=>result.status==='queued')?'queued':results.some(result=>result.status==='accepted')?'accepted':'none' };
   } catch { return { status: 'queued' }; }
 }
+
+export async function declineTutorApplication(userId) {
+  const { data, error } = await supabase.rpc('decline_tutor_application', { target_id: userId });
+  if (error) throw error;
+  return data;
+}

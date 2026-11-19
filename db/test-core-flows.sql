@@ -41,3 +41,61 @@ do $$ begin
 end $$;
 reset role;
 select 'PASS: signup, onboarding, ownership, quiz saving, billing and tutor approval boundaries' as result;
+
+-- A tutor decline is a durable, administrator-only decision.
+savepoint tutor_application_decline_fixture;
+select set_config('request.jwt.claims','{}',true);
+insert into auth.users(id,email) values
+ ('00000000-0000-4000-8000-000000001181','decline-admin@example.invalid');
+update public.users set role='admin',onboarding_complete=true where id='00000000-0000-4000-8000-000000001181';
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000102","role":"authenticated"}',true);
+do $$ begin
+ begin
+  perform public.decline_tutor_application(auth.uid());
+  raise exception 'Applicant can change their own decision';
+ exception when insufficient_privilege then null; end;
+ begin
+  update public.users set tutor_application_declined_at=now() where id=auth.uid();
+  raise exception 'Applicant could write a decision directly';
+ exception when insufficient_privilege then null; end;
+end $$;
+
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000001181","role":"authenticated"}',true);
+do $$
+declare applicant uuid := '00000000-0000-4000-8000-000000000102';
+declare first_decision timestamptz;
+begin
+ first_decision := public.decline_tutor_application(applicant);
+ if first_decision is null or public.decline_tutor_application(applicant) is distinct from first_decision then
+  raise exception 'Administrator retry changed the decision';
+ end if;
+ if not exists(select 1 from public.users where id=applicant and role='tutor_pending'
+   and not is_verified and tutor_application_declined_at=first_decision) then
+  raise exception 'Declined account lost or unlocked its pending role';
+ end if;
+ if exists(select 1 from public.tutor_profiles where user_id=applicant and (is_verified or is_active)) then
+  raise exception 'Declined tutor profile remained active';
+ end if;
+ if (select count(*) from public.activity_log where user_id=auth.uid() and event_type='tutor_rejected')<>1 then
+  raise exception 'Decline audit log is missing or duplicated';
+ end if;
+end $$;
+
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000102","role":"authenticated"}',true);
+do $$ begin
+ if not exists(select 1 from public.users where id=auth.uid() and tutor_application_declined_at is not null) then
+  raise exception 'Applicant cannot read their decision';
+ end if;
+end $$;
+
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000001181","role":"authenticated"}',true);
+select public.approve_account('00000000-0000-4000-8000-000000000102','sace_tutor');
+do $$ begin
+ if not exists(select 1 from public.users where id='00000000-0000-4000-8000-000000000102'
+   and role='sace_tutor' and is_verified and tutor_application_declined_at is null) then
+  raise exception 'Explicit administrator reconsideration did not resolve the decision';
+ end if;
+end $$;
+rollback to tutor_application_decline_fixture;
+release savepoint tutor_application_decline_fixture;
