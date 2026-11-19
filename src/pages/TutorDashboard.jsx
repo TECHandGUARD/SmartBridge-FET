@@ -359,14 +359,25 @@ export default function TutorDashboard() {
             <div className="rounded-xl border bg-card p-4 sm:p-5">
               <h2 id="teaching-toolkit-heading" className="font-playfair text-xl font-bold">Teaching Toolkit</h2>
               <p className="mt-1 text-sm text-muted-foreground">Prepare session plans, explore STEM simulations, and build quizzes for your learners.</p>
+              <nav aria-label="Jump to a teaching tool" className="mt-2 flex flex-wrap gap-x-5">
+                <a href="#tutor-lesson-planner" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Lesson Planner</a>
+                <a href="#tutor-stem-simulations" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">STEM simulations</a>
+                <a href="#tutor-quiz-builder" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Quiz Builder</a>
+              </nav>
             </div>
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
-              <LessonPlanner user={user} />
-            </DashboardPremiumGate>
-            <SimulationLab isTutor={true} />
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Quiz Builder">
-              <QuizBuilder user={user} />
-            </DashboardPremiumGate>
+            <section id="tutor-lesson-planner" aria-label="Lesson Planner" tabIndex={-1} className="scroll-mt-24">
+              <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
+                <LessonPlanner user={user} />
+              </DashboardPremiumGate>
+            </section>
+            <section id="tutor-stem-simulations" aria-label="STEM simulations" tabIndex={-1} className="scroll-mt-24">
+              <SimulationLab isTutor={true} />
+            </section>
+            <section id="tutor-quiz-builder" aria-label="Quiz Builder" tabIndex={-1} className="scroll-mt-24">
+              <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Quiz Builder">
+                <QuizBuilder user={user} />
+              </DashboardPremiumGate>
+            </section>
           </section>
         )}
 
