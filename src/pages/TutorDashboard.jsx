@@ -382,8 +382,8 @@ export default function TutorDashboard() {
               <div className="bg-gradient-to-r from-primary/10 to-green-dark/10 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex-1">
                   <p className="font-playfair font-bold text-lg text-foreground">Go Tutor Pro — {subscriptionLabel}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Eliminate the 10% platform commission on all your bookings. Featured listing + advanced analytics.</p>
-                  <p className="text-xs text-muted-foreground mt-1">Use your email as reference on Yoco. Access starts after payment is confirmed.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Review the current Tutor Pro benefits and booking fee terms.</p>
+                  <p className="text-xs text-muted-foreground mt-1">See the available payment options on the Premium page.</p>
                 </div>
                 <Link to="/premium">
                   <Button className="bg-primary gap-2 whitespace-nowrap">
