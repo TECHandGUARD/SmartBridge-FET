@@ -18,6 +18,7 @@ const assert=require('node:assert/strict');
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
 
  let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,metadata:{}};
+ const learnerId='00000000-0000-4000-8000-000000000102';
  const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let opportunitiesEnabled=true;let bookingRows=[];const checkoutCalls=[];
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**',async route=>{
@@ -36,6 +37,9 @@ const assert=require('node:assert/strict');
   }
   if(url.pathname==='/rest/v1/rpc/my_feature_access') {
     data=[{feature_key:'opportunities',is_enabled:opportunitiesEnabled,locked_message:'Opportunities access is disabled for this account.'}];
+  }
+  if(url.pathname==='/rest/v1/rpc/messaging_contacts') {
+    data=[{user_id:learnerId,full_name:'Demo Learner',role:'student',can_send:true}];
   }
   if(url.pathname==='/rest/v1/tutor_directory') data=[tutorProfile];
   if(url.pathname==='/rest/v1/tutor_bookings') data=bookingRows;
@@ -103,6 +107,12 @@ const assert=require('node:assert/strict');
  await page.reload();
  await page.getByRole('heading',{name:'Student Opportunities',exact:true}).waitFor();
  await page.getByRole('heading',{name:'Premium Feature',exact:true}).waitFor();
+ assert.equal(await page.getByRole('tab',{name:'My Applications',exact:true}).count(),0);
+ await page.getByRole('link',{name:'Message a learner',exact:true}).click();
+ await page.waitForURL('**/tutor-dashboard?section=messages');
+ await page.getByLabel('Conversation',{exact:true}).selectOption(learnerId);
+ await page.getByLabel('Your message',{exact:true}).waitFor();
+
  console.log('PASS: allowed tutor sees Opportunities on mobile and desktop, revoked tutor is blocked from the route, and a refreshed grant restores route access');
 
  profile={...profile,role:'student'};

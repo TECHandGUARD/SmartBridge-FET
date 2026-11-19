@@ -1,7 +1,9 @@
 // src/pages/StudentOpportunities.jsx
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { TUTOR_ROLES, getDashboardPath } from '@/lib/navigation';
 import {
   GraduationCap, BookOpen, Calendar, Download, Bot, Sparkles,
   ClipboardList, Zap, GitCompareArrows, CalendarCheck, Loader2, AlertCircle, RefreshCw, Star
@@ -132,6 +134,7 @@ export default function StudentOpportunities() {
   const { isPremium, isOnTrial, trialDaysLeft, loading: premiumLoading, error: premiumError, refresh } = usePremiumAccess(user);
   const isAdmin = user?.role === 'admin' || user?.is_super_admin === true;
   const canUseLearnerTools = user?.role === 'student';
+  const isTutor = TUTOR_ROLES.includes(user?.role) && user.role !== 'tutor_pending';
   const [activeTab, setActiveTab] = useState('universities');
 
   // ============================================================
@@ -239,6 +242,24 @@ export default function StudentOpportunities() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {(isTutor || canUseLearnerTools) && (
+          <section aria-labelledby="application-help" className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4">
+            <div>
+              <h2 id="application-help" className="font-semibold">Application guidance</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isTutor
+                  ? 'Choose an eligible learner in Messages to discuss university or bursary applications.'
+                  : 'Ask a verified tutor for help with a university or bursary application.'}
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link to={`${getDashboardPath(user)}?section=messages`}>
+                {isTutor ? 'Message a learner' : 'Message a tutor'}
+              </Link>
+            </Button>
+          </section>
+        )}
+
         {!isPremium ? (
           <PremiumGate />
         ) : (
