@@ -73,6 +73,13 @@ const assert=require('node:assert/strict');
   await toolkit.getByText('Lesson Planner — Premium',{exact:true}).waitFor();
   await toolkit.getByText('Quiz Builder — Premium',{exact:true}).waitFor();
   assert.equal(await toolkit.getByText('Upcoming Sessions',{exact:true}).count(),0);
+  for(const [name,anchor] of [['Quiz Builder','tutor-quiz-builder'],['STEM simulations','tutor-stem-simulations'],['Lesson Planner','tutor-lesson-planner']]) {
+   const link=toolkit.getByRole('link',{name,exact:true});
+   await link.focus();
+   await link.press('Enter');
+   await page.waitForURL(url=>url.searchParams.get('section')==='teaching-toolkit'&&url.hash==='#'+anchor);
+   assert.equal(await toolkit.getByRole('region',{name,exact:true}).evaluate(node=>document.activeElement===node),true);
+  }
   await page.reload();
   await toolkit.waitFor();
   await page.getByRole('button',{name:'My Profile & Reviews',exact:true}).click();
