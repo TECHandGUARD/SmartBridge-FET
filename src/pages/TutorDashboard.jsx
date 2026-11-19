@@ -1,9 +1,11 @@
+import WorkspaceHeader from '@/components/dashboard/WorkspaceHeader';
 import FileLink from '@/components/operations/FileLink';
 import { removePrivate } from '@/lib/private-storage';
 import { Link } from 'react-router-dom';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
 import { useAuth } from '@/lib/AuthContext';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { Badge } from '@/components/ui/badge';
@@ -38,6 +40,7 @@ import { AnnouncementBanner } from '@/components/admin/AnnouncementManager';
 
 export default function TutorDashboard() {
   const { user, checkUser } = useAuth();
+  const { isEnabled: featureEnabled, loading: featureLoading } = useFeatureFlags();
   const prices = useSubscriptionPrices();
   const price = prices.data?.find(row=>row.product==='tutor_pro')?.amount_cents;
   const subscriptionLabel = Number.isInteger(price) ? `R${(price/100).toFixed(2)}/month` : 'View current price';
@@ -221,20 +224,13 @@ export default function TutorDashboard() {
   return (
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
-        <div className="mb-4"><TutorEmailPreferences user={user} /></div>
-        <div className="mb-4 rounded-xl border bg-card p-4"><nav aria-label="Professional workspace tools" className="flex flex-wrap gap-x-5 gap-y-2">{['tutor', 'sace_tutor', 'student_tutor'].includes(user?.role) && <Link to="/assessments" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Assessment Centre</Link>}<Link to="/meetings" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Virtual Meetings</Link><Link to="/presentations" className="rounded-md font-semibold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2">Presentation Studio</Link></nav><p className="mt-1 text-sm text-muted-foreground">Assessment design, tutor reflection and professional development.</p></div>
-        {/* Header */}
-        <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-              Welcome back, {user.full_name?.split(' ')[0] || 'Tutor'} 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">Your professional tutoring workspace — everything in one place.</p>
-          </div>
-          <div className="flex items-center gap-2">
+        <WorkspaceHeader
+          title={<>Welcome back, {user.full_name?.split(' ')[0] || 'Tutor'}</>}
+          description="Plan lessons, manage bookings, and stay in touch with learners."
+          actions={<>
             {/* Verification Badge - Different for SACE vs Student Tutors */}
             {profile?.is_verified && (
-              profile?.sace_number ? (
+              user.role === 'sace_tutor' && profile?.sace_number ? (
                 <Badge className="bg-green-100 text-green-700 border-green-200 gap-1.5">
                   <ShieldCheck className="w-3.5 h-3.5" /> SACE Verified
                 </Badge>
@@ -253,8 +249,15 @@ export default function TutorDashboard() {
                 <Star className="w-3.5 h-3.5" /> Free Trial — {trialDaysLeft}d left
               </Badge>
             ) : null}
-          </div>
-        </div>
+          </>}
+        >
+          <nav aria-label="Professional workspace tools" className="flex flex-wrap gap-x-5 gap-y-1">
+            {['tutor', 'sace_tutor', 'student_tutor'].includes(user?.role) &&
+              <Link to="/assessments" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Assessment Centre</Link>}
+            <Link to="/meetings" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Virtual Meetings</Link>
+            <Link to="/presentations" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Presentation Studio</Link>
+          </nav>
+        </WorkspaceHeader>
 
         {/* Platform Announcements */}
         {announcements.length > 0 && (
@@ -263,6 +266,12 @@ export default function TutorDashboard() {
           </div>
         )}
 
+        {['sace_tutor', 'student_tutor', 'tutor'].includes(user?.role) && !featureLoading && featureEnabled('opportunities') && (
+          <Link to="/opportunities" className="mb-5 flex items-center justify-between gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4 hover:bg-primary/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary">
+            <span><strong className="block">Student Opportunities</strong><span className="text-sm text-muted-foreground">University applications, bursaries and NBT preparation</span></span>
+            <span className="text-sm font-semibold text-primary">Explore →</span>
+          </Link>
+        )}
         {/* Navigation Hub — sticky */}
         <div data-tour="dashboard-navigation" className="mb-6">
           <TutorQuickActions onAction={toggleSection} activeSection={activeSection} />
@@ -333,15 +342,24 @@ export default function TutorDashboard() {
         {/* My Reviews + Profile Editor */}
         {activeSection === 'reviews' && (
           <div className="mb-6 space-y-4">
+            <TutorEmailPreferences user={user} />
             <TutorReviews tutorEmail={user?.email} />
             {profile && <TutorProfileEditor profile={profile} user={user} onProfileUpdate={setProfile} />}
           </div>
         )}
 
-        {/* Live Sessions */}
         {activeSection === 'sessions' && (
-          <div className="mb-6 space-y-4">
+          <section aria-label="Live sessions workspace" className="mb-6">
             <UpcomingSessionsWidget user={user} />
+          </section>
+        )}
+
+        {activeSection === 'teaching-toolkit' && (
+          <section aria-labelledby="teaching-toolkit-heading" className="mb-6 space-y-4">
+            <div className="rounded-xl border bg-card p-4 sm:p-5">
+              <h2 id="teaching-toolkit-heading" className="font-playfair text-xl font-bold">Teaching Toolkit</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Prepare session plans, explore STEM simulations, and build quizzes for your learners.</p>
+            </div>
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Lesson Planner">
               <LessonPlanner user={user} />
             </DashboardPremiumGate>
@@ -349,12 +367,14 @@ export default function TutorDashboard() {
             <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Quiz Builder">
               <QuizBuilder user={user} />
             </DashboardPremiumGate>
-          </div>
+          </section>
         )}
 
         {/* Default overview when nothing is selected */}
         {!activeSection && (
           <div className="space-y-6">
+            <UpcomingSessionsWidget user={user} />
+
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
@@ -372,16 +392,13 @@ export default function TutorDashboard() {
               ))}
             </div>
 
-            {/* Upcoming Sessions */}
-            <UpcomingSessionsWidget user={user} />
-
             {/* Tutor Pro upsell */}
             {profile && !profile.is_premium && (
               <div className="bg-gradient-to-r from-primary/10 to-green-dark/10 border border-primary/20 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="flex-1">
                   <p className="font-playfair font-bold text-lg text-foreground">Go Tutor Pro — {subscriptionLabel}</p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Eliminate the 10% platform commission on all your bookings. Featured listing + advanced analytics.</p>
-                  <p className="text-xs text-muted-foreground mt-1">Use your email as reference on Yoco. Access starts after payment is confirmed.</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">Review the current Tutor Pro benefits and booking fee terms.</p>
+                  <p className="text-xs text-muted-foreground mt-1">See the available payment options on the Premium page.</p>
                 </div>
                 <Link to="/premium">
                   <Button className="bg-primary gap-2 whitespace-nowrap">

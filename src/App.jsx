@@ -9,6 +9,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from 'sonner';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
+import FeatureAccessGate from '@/components/FeatureAccessGate';
 import AppLayout from './components/layout/AppLayout';
 import ConnectivityNotice from './components/operations/ConnectivityNotice';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -370,7 +371,7 @@ const AuthenticatedApp = () => {
             element={
               <RequireAuthAndOnboarding>
                 <ProtectedRoute allowedRoles={['student', 'parent', 'sace_tutor', 'student_tutor', 'tutor', 'admin']}>
-                  <StudentOpportunities />
+                  <FeatureAccessGate featureKey="opportunities"><StudentOpportunities /></FeatureAccessGate>
                 </ProtectedRoute>
               </RequireAuthAndOnboarding>
             }

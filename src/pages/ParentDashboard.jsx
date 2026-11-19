@@ -1,3 +1,4 @@
+import WorkspaceHeader from '@/components/dashboard/WorkspaceHeader';
 import MessagingInbox from '@/components/messaging/MessagingInbox';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
 import { useDashboardSection } from '@/lib/useDashboardSection';
@@ -76,16 +77,10 @@ export default function ParentDashboard() {
     <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
 
-        <div className="mb-4 rounded-xl border bg-card p-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
-        {/* Header */}
-        <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-              Parent Dashboard 👨‍👩‍👧
-            </h1>
-            <p className="text-muted-foreground mt-1">Monitor your child's academic progress and connect with tutors.</p>
-          </div>
-          <div className="flex items-center gap-2">
+        <WorkspaceHeader
+          title="Parent Dashboard"
+          description="Follow your learner’s progress and connect with tutors."
+          actions={<>
             {isPremium && !isOnTrial ? (
               <Badge className="bg-secondary/20 text-amber-700 border-amber-200 gap-1.5 px-3 py-1.5">
                 <Star className="w-4 h-4 fill-current" /> Premium Member
@@ -101,8 +96,10 @@ export default function ParentDashboard() {
                 </Button>
               </Link>
             )}
-          </div>
-        </div>
+          </>}
+        >
+          <nav aria-label="Parent workspace tools"><Link to="/meetings" className="inline-flex min-h-11 items-center font-semibold text-primary hover:underline">Virtual Meetings</Link></nav>
+        </WorkspaceHeader>
 
         {/* Quick Nav */}
         <div data-tour="dashboard-navigation" className="mb-6">
@@ -219,7 +216,7 @@ export default function ParentDashboard() {
                   Upgrade to Parent Premium — {subscriptionLabel}
                 </Button>
               </Link>
-              <p className="text-xs text-muted-foreground">Use your email as reference. Access starts after payment is confirmed.</p>
+              <p className="text-xs text-muted-foreground">See the available payment options on the Premium page.</p>
             </div>
           </div>
         )}
@@ -227,10 +224,11 @@ export default function ParentDashboard() {
         {/* Default overview */}
         {!activeSection && (
           <div className="space-y-6">
+            <ParentChildLink user={user} />
             <div className="grid sm:grid-cols-3 gap-4">
               {[
-                { label: 'Subjects Available', value: '11', icon: BookOpen, color: 'bg-primary/10 text-primary' },
-                { label: 'Verified Tutors', value: tutors.length + '+', icon: Users, color: 'bg-blue-100 text-blue-700' },
+                { label: 'Subjects Available', value: SUBJECTS.length, icon: BookOpen, color: 'bg-primary/10 text-primary' },
+                { label: 'Verified Tutors', value: tutors.length, icon: Users, color: 'bg-blue-100 text-blue-700' },
                 { label: 'Grades Covered', value: '10 – 12', icon: TrendingUp, color: 'bg-green-100 text-green-700' },
               ].map(({ label, value, icon: Icon, color }) => (
                 <Card key={label} className="border-border">
@@ -243,23 +241,6 @@ export default function ParentDashboard() {
               ))}
             </div>
 
-            <ParentChildLink user={user} />
-
-            {!isPremium && (
-              <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-5">
-                <Star className="w-6 h-6 fill-amber-400 text-amber-400 mb-2" />
-                <p className="font-playfair font-bold text-lg text-foreground mb-1">Premium for Your Child</p>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Give your child access to all premium study materials, past papers & more — {subscriptionLabel}.
-                </p>
-                <Link to="/premium">
-                  <Button size="sm" className="bg-primary hover:bg-primary/90 w-full">
-                    Upgrade to Parent Premium — {subscriptionLabel}
-                  </Button>
-                </Link>
-                <p className="text-xs text-muted-foreground mt-2">Use your email as reference. Access starts after payment is confirmed.</p>
-              </div>
-            )}
           </div>
         )}
       </div>

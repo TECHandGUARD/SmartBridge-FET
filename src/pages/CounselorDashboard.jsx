@@ -1,3 +1,4 @@
+import WorkspaceHeader from '@/components/dashboard/WorkspaceHeader';
 import ReleaseGate from '@/components/operations/ReleaseGate';
 import { CounselorAssignment } from '@/components/counselor/CounselorAccess';
 import { dispatchNotifications } from '@/lib/action-notifications';
@@ -62,7 +63,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Users, GraduationCap, CheckCircle2, Clock, ChevronDown, ChevronUp, Mail, Search, RefreshCw, Loader2, AlertCircle, Building2 } from 'lucide-react';
+import { Users, GraduationCap, CheckCircle2, Clock, ChevronDown, ChevronUp, Mail, Search, RefreshCw, Loader2, AlertCircle } from 'lucide-react';
 const DOC_TYPES = CONFIG.DOC_TYPES;
 const STAGE_STYLES = {
   Saved: 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400',
@@ -315,40 +316,16 @@ function CounselorDashboardImplementation() {
     }).map(a => a.student_email));
     return uniqueStudents.size;
   }, [applications]);
-  return <div className="min-h-screen bg-background">
-      {}
-      <div className="bg-gradient-to-br from-primary via-green-dark to-navy text-white py-8 px-4">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                <Building2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h1 className="text-xl md:text-2xl font-bold font-playfair">
-                  Counselor Dashboard
-                </h1>
-                <p className="text-white/70 text-sm">
-                  Help learners take their next step after matric.
-                </p>
-              </div>
-            </div>
-            <Button size="sm" variant="outline" className="bg-white/10 text-white border-white/20 hover:bg-white/20" onClick={handleRefresh} disabled={loading || isRefreshing}>
-              <RefreshCw className={`h-3.5 w-3.5 mr-2 ${loading || isRefreshing ? 'animate-spin' : ''}`} />
-              {isRefreshing ? 'Syncing...' : 'Sync'}
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-5 pb-5">
-            <div className="flex items-center gap-2 mb-2"><CheckCircle2 className="h-4 w-4 text-primary" /><p className="font-semibold">Counsellor workspace is live</p></div>
-            <p className="text-sm text-muted-foreground">Track applications, spot approaching deadlines and review recorded document categories in one place.</p>
-            <p className="text-sm text-muted-foreground mt-2">{isStaffAdministrator ? 'To test: assign a registered staff account and learner below, approve sharing from the learner account, then sign in as the counsellor.' : 'Your roster contains learners who approved sharing. Open a learner card to review applications and record a reminder.'}</p>
-          </CardContent>
-        </Card>
+  return <div className="min-h-screen bg-background py-4 sm:py-8">
+      <div className="mx-auto max-w-6xl space-y-6 px-3 sm:px-6 lg:px-8">
+        <WorkspaceHeader
+          title="Counselor Dashboard"
+          description="Review learner applications, upcoming deadlines, and supporting documents."
+          actions={<Button size="sm" variant="outline" onClick={handleRefresh} disabled={loading || isRefreshing}>
+            <RefreshCw className={`mr-2 h-3.5 w-3.5 ${loading || isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Syncing…' : 'Sync'}
+          </Button>}
+        />
         {isStaffAdministrator && <CounselorAssignment />}
         {!isStaffAdministrator && <p className="text-sm text-muted-foreground">Only learners who approved sharing with you appear here. Ask your administrator to request an assignment if your roster is empty.</p>}
 

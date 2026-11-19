@@ -38,6 +38,7 @@ const project = process.env.TEST_SUPABASE_PROJECT || 'smartbridge-test';
         if (url.pathname === '/auth/v1/user') data = authUser;
         if (url.pathname === '/auth/v1/token') data = session;
         if (url.pathname === '/rest/v1/users') data = request.headers().accept?.includes('vnd.pgrst.object') ? profile : [profile];
+        if (url.pathname === '/rest/v1/rpc/my_feature_access') data = [{ feature_key: 'opportunities', is_enabled: true }];
         if (url.pathname === '/rest/v1/quizzes') {
           queries.push(url);
           assert.equal(url.searchParams.get('is_published'), 'eq.true');

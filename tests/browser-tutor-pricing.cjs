@@ -18,7 +18,8 @@ const assert=require('node:assert/strict');
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
 
  let tutorProfile={id:'tutor-1',user_id:profile.id,user_email:profile.email,full_name:profile.full_name,session_price_per_hour:100,hourly_rate:100,subjects:['Mathematics'],grades:['Grade 12'],is_verified:true,is_active:true,subject_rates:{},offers_free_intro:false,metadata:{}};
- const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let bookingRows=[];const checkoutCalls=[];
+ const learnerId='00000000-0000-4000-8000-000000000102';
+ const savedProfiles=[],bookingCalls=[];let failProfileSave=true;let opportunitiesEnabled=true;let bookingRows=[];const checkoutCalls=[];
  await context.route('**/*',route=>{const host=new URL(route.request().url()).hostname;return host==='127.0.0.1'||host==='smartbridge-test.supabase.co'?route.continue():route.abort();});
  await context.route('https://smartbridge-test.supabase.co/**',async route=>{
   const req=route.request(),url=new URL(req.url());let data=[],status=200;
@@ -33,6 +34,12 @@ const assert=require('node:assert/strict');
       if(failProfileSave) {failProfileSave=false;status=503;data={message:'Profile save temporarily unavailable'};}
       else {tutorProfile={...tutorProfile,...req.postDataJSON()};data=tutorProfile;}
     }
+  }
+  if(url.pathname==='/rest/v1/rpc/my_feature_access') {
+    data=[{feature_key:'opportunities',is_enabled:opportunitiesEnabled,locked_message:'Opportunities access is disabled for this account.'}];
+  }
+  if(url.pathname==='/rest/v1/rpc/messaging_contacts') {
+    data=[{user_id:learnerId,full_name:'Demo Learner',role:'student',can_send:true}];
   }
   if(url.pathname==='/rest/v1/tutor_directory') data=[tutorProfile];
   if(url.pathname==='/rest/v1/tutor_bookings') data=bookingRows;
@@ -55,7 +62,21 @@ const assert=require('node:assert/strict');
  await page.waitForURL('**/tutor-dashboard');
  for(const width of [375,1280]) {
   await page.setViewportSize({width,height:900});
-  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=reviews');
+  await page.goto('http://127.0.0.1:5173/tutor-dashboard?section=sessions');
+  const liveSessions=page.getByRole('region',{name:'Live sessions workspace'});
+  await liveSessions.getByText('Upcoming Sessions',{exact:true}).waitFor();
+  assert.equal(await liveSessions.getByText(/Lesson Planner|Quiz Builder/).count(),0);
+  await page.getByRole('button',{name:'Teaching Toolkit',exact:true}).click();
+  await page.waitForURL('**/tutor-dashboard?section=teaching-toolkit');
+  const toolkit=page.getByRole('region',{name:'Teaching Toolkit'});
+  await toolkit.waitFor();
+  await toolkit.getByText('Lesson Planner — Premium',{exact:true}).waitFor();
+  await toolkit.getByText('Quiz Builder — Premium',{exact:true}).waitFor();
+  assert.equal(await toolkit.getByText('Upcoming Sessions',{exact:true}).count(),0);
+  await page.reload();
+  await toolkit.waitFor();
+  await page.getByRole('button',{name:'My Profile & Reviews',exact:true}).click();
+  await page.getByRole('main').getByRole('link',{name:/Student Opportunities/}).waitFor();
   await page.getByText('Edit My Profile',{exact:true}).waitFor();
   await page.getByLabel('One-on-One Rate (ZAR / Hour)').fill('1200.50');
   await page.getByLabel('Mathematics (R/hour)').fill('20');
@@ -88,6 +109,24 @@ const assert=require('node:assert/strict');
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'Tutor profile fits width '+width);
   await page.screenshot({path:'/tmp/smartbridge-tutor-'+width+'.png',fullPage:true});
  }
+
+ opportunitiesEnabled=false;
+ await page.reload();
+ await page.getByText('Edit My Profile',{exact:true}).waitFor();
+ await page.getByRole('main').getByRole('link',{name:/Student Opportunities/}).waitFor({state:'hidden'});
+ await page.goto('http://127.0.0.1:5173/opportunities');
+ await page.getByRole('alert').filter({hasText:'Opportunities access is disabled for this account.'}).waitFor();
+ opportunitiesEnabled=true;
+ await page.reload();
+ await page.getByRole('heading',{name:'Student Opportunities',exact:true}).waitFor();
+ await page.getByRole('heading',{name:'Premium Feature',exact:true}).waitFor();
+ assert.equal(await page.getByRole('tab',{name:'My Applications',exact:true}).count(),0);
+ await page.getByRole('link',{name:'Message a learner',exact:true}).click();
+ await page.waitForURL('**/tutor-dashboard?section=messages');
+ await page.getByLabel('Conversation',{exact:true}).selectOption(learnerId);
+ await page.getByLabel('Your message',{exact:true}).waitFor();
+
+ console.log('PASS: allowed tutor sees Opportunities on mobile and desktop, revoked tutor is blocked from the route, and a refreshed grant restores route access');
 
  profile={...profile,role:'student'};
  await page.goto('http://127.0.0.1:5173/tutors');

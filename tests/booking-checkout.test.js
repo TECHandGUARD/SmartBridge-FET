@@ -1,3 +1,4 @@
+import { hasBookingEnded } from '../src/lib/booking-session.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {edgeRuntime,fakeClient} from './helpers/edge-runtime.js';
@@ -48,4 +49,17 @@ test('test payments cannot trigger provider refunds or refund settlement',async(
  assert.equal(result.status,409);assert.match(await result.text(),/Test payments cannot be refunded/);
  assert.equal(client.calls.some(call=>call.table==='settle_booking_refund'),false);
  assert.equal(client.calls.some(call=>call.table==='prepare_booking_refund'),false);
+});
+
+test('tutors can complete a same-day booking only after its scheduled end', () => {
+  const booking = { date: '2026-11-19', time: '14:00', duration_hours: 0.5, end_time: '2026-11-19T12:30:00Z' };
+  assert.equal(hasBookingEnded(booking, Date.parse('2026-11-19T12:29:59Z')), false);
+  assert.equal(hasBookingEnded(booking, Date.parse('2026-11-19T12:30:00Z')), true);
+});
+
+test('legacy bookings use their South African start time and duration', () => {
+  const booking = { date: '2026-11-19', time: '15:00:00', duration_hours: 1.5 };
+  assert.equal(hasBookingEnded(booking, Date.parse('2026-11-19T14:29:59Z')), false);
+  assert.equal(hasBookingEnded(booking, Date.parse('2026-11-19T14:30:00Z')), true);
+  assert.equal(hasBookingEnded({ ...booking, time: 'unknown' }, Date.parse('2026-11-20T12:00:00Z')), false);
 });

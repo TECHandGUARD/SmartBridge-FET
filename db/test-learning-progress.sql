@@ -1,7 +1,7 @@
 insert into auth.users(id,email,raw_user_meta_data) values
  ('00000000-0000-4000-8000-000000000901','learning-owner@example.invalid','{}'),
  ('00000000-0000-4000-8000-000000000902','learning-other@example.invalid','{}');
-update public.users set role='student',onboarding_complete=true where id in
+update public.users set role='student',onboarding_complete=true,trial_started_at=now() where id in
  ('00000000-0000-4000-8000-000000000901','00000000-0000-4000-8000-000000000902');
 insert into public.nbt_resources(title,url,is_active) values('Visible test guide','https://example.invalid/guide',true),('Draft test guide','https://example.invalid/draft',false);
 set local role authenticated;

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Calendar, BookOpen, CheckCircle2, Circle, ChevronDown, ChevronUp, ExternalLink, Zap, Clock, FileText, Globe, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -265,12 +265,15 @@ export default function NBTPrepPlanner({
   const [completedSessions, setCompletedSessions] = useState({});
   const [libraryResources, setLibraryResources] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const savePending = useRef(false);
   const loadData = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
     setLoading(true);
+    setLoadFailed(false);
     setCompletedSessions({});
     try {
       const {
@@ -298,7 +301,7 @@ export default function NBTPrepPlanner({
       }
     } catch (err) {
       console.error('Error loading NBT planner data:', err);
-      toast.error('Failed to load planner data');
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -314,8 +317,7 @@ export default function NBTPrepPlanner({
       } = await supabase.from('nbt_planner_progress').upsert({
         student_id: userId,
         student_email: userEmail,
-        completed_sessions: updatedSessions,
-        updated_at: new Date().toISOString()
+        completed_sessions: updatedSessions
       }, {
         onConflict: 'student_id'
       });
@@ -328,12 +330,18 @@ export default function NBTPrepPlanner({
     }
   };
   const handleToggle = async key => {
+    if (savePending.current) return;
+    savePending.current = true;
     const updated = {
       ...completedSessions,
       [key]: !completedSessions[key]
     };
     Object.keys(updated).forEach(k => !updated[k] && delete updated[k]);
-    if (await saveProgress(updated)) setCompletedSessions(updated);
+    try {
+      if (await saveProgress(updated)) setCompletedSessions(updated);
+    } finally {
+      savePending.current = false;
+    }
   };
   const totalSessions = WEEK_TEMPLATES.reduce((sum, w) => sum + w.sessions.length, 0);
   const completedCount = Object.values(completedSessions).filter(Boolean).length;
@@ -343,7 +351,11 @@ export default function NBTPrepPlanner({
         <Loader2 className="w-6 h-6 animate-spin text-primary" />
       </div>;
   }
-  if (!userEmail) {
+  if (loadFailed) return <div role="alert" className="space-y-3 py-8 text-center">
+    <p>Unable to load your NBT study plan.</p>
+    <Button variant="outline" onClick={loadData}>Try again</Button>
+  </div>;
+  if (!userId) {
     return <div className="text-center py-10 bg-muted/40 rounded-xl">
         <Calendar className="w-10 h-10 text-muted-foreground mx-auto mb-2" />
         <p className="font-medium">Please sign in to use the NBT Prep Planner</p>

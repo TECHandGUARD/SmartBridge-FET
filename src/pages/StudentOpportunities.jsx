@@ -1,7 +1,9 @@
 // src/pages/StudentOpportunities.jsx
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
+import { TUTOR_ROLES, getDashboardPath } from '@/lib/navigation';
 import {
   GraduationCap, BookOpen, Calendar, Download, Bot, Sparkles,
   ClipboardList, Zap, GitCompareArrows, CalendarCheck, Loader2, AlertCircle, RefreshCw, Star
@@ -129,6 +131,10 @@ export default function StudentOpportunities() {
   const [loading, setLoading] = useState(true);
   const [prospectusUrls, setProspectusUrls] = useState([]);
   const [error, setError] = useState(null);
+  const { isPremium, isOnTrial, trialDaysLeft, loading: premiumLoading, error: premiumError, refresh } = usePremiumAccess(user);
+  const isAdmin = user?.role === 'admin' || user?.is_super_admin === true;
+  const canUseLearnerTools = user?.role === 'student';
+  const isTutor = TUTOR_ROLES.includes(user?.role) && user.role !== 'tutor_pending';
   const [activeTab, setActiveTab] = useState('universities');
 
   // ============================================================
@@ -136,7 +142,7 @@ export default function StudentOpportunities() {
   // ============================================================
 
   const loadUserData = useCallback(async () => {
-    if (!user?.email) {
+    if (!isPremium || !CONFIG.ENABLE_AI_CHAT) {
       setLoading(false);
       return;
     }
@@ -165,7 +171,7 @@ export default function StudentOpportunities() {
     } finally {
       setLoading(false);
     }
-  }, [user?.email]);
+  }, [isPremium, user?.id]);
 
   useEffect(() => {
     loadUserData();
@@ -175,10 +181,6 @@ export default function StudentOpportunities() {
   // Computed Values
   // ============================================================
 
-  const isAdmin = user?.role === 'admin';
-  const { isPremium: hasPremiumAccess, isOnTrial, trialDaysLeft } = usePremiumAccess(user);
-  const isPremium = isAdmin || hasPremiumAccess;
-
   const currentYear = new Date().getFullYear();
   const prospectusYear = currentYear + 1;
   const universityCount = CONFIG.UNIVERSITY_COUNT;
@@ -187,10 +189,13 @@ export default function StudentOpportunities() {
   // Render States
   // ============================================================
 
-  if (loading) {
+  if (premiumLoading || loading) {
     return <LoadingState />;
   }
 
+  if (premiumError) {
+    return <ErrorState error="Unable to verify Premium access." onRetry={refresh} />;
+  }
   if (error) {
     return <ErrorState error={error} onRetry={loadUserData} />;
   }
@@ -237,6 +242,24 @@ export default function StudentOpportunities() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {(isTutor || canUseLearnerTools) && (
+          <section aria-labelledby="application-help" className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border bg-card p-4">
+            <div>
+              <h2 id="application-help" className="font-semibold">Application guidance</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {isTutor
+                  ? 'Choose an eligible learner in Messages to discuss university or bursary applications.'
+                  : 'Ask a verified tutor for help with a university or bursary application.'}
+              </p>
+            </div>
+            <Button asChild variant="outline">
+              <Link to={`${getDashboardPath(user)}?section=messages`}>
+                {isTutor ? 'Message a learner' : 'Message a tutor'}
+              </Link>
+            </Button>
+          </section>
+        )}
+
         {!isPremium ? (
           <PremiumGate />
         ) : (
@@ -245,7 +268,7 @@ export default function StudentOpportunities() {
             <div className="lg:col-span-2">
               <Tabs defaultValue="universities" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="w-full mb-6 flex flex-wrap h-auto gap-1 bg-muted/50 p-1 rounded-xl">
-                  {TABS.map((tab) => (
+                  {TABS.filter(tab => !['tracker', 'nbt-planner'].includes(tab.id) || canUseLearnerTools).map((tab) => (
                     <TabsTrigger
                       key={tab.id}
                       value={tab.id}
@@ -266,9 +289,9 @@ export default function StudentOpportunities() {
                   <NBTResources />
                 </TabsContent>
 
-                <TabsContent value="nbt-planner">
+                {canUseLearnerTools && <TabsContent value="nbt-planner">
                   <NBTPrepPlanner userEmail={user?.email} userId={user?.id} />
-                </TabsContent>
+                </TabsContent>}
 
                 <TabsContent value="prospectuses">
                   <ProspectusLibrary isAdmin={isAdmin} />
@@ -282,12 +305,12 @@ export default function StudentOpportunities() {
                   <PDFGuides isAdmin={isAdmin} />
                 </TabsContent>
 
-                <TabsContent value="tracker">
+                {canUseLearnerTools && <TabsContent value="tracker">
                   <ApplicationTracker userEmail={user?.email} />
-                </TabsContent>
+                </TabsContent>}
 
                 <TabsContent value="nbt-schedule">
-                  <NBTScheduler userEmail={user?.email} isAdmin={isAdmin} />
+                  <NBTScheduler userEmail={canUseLearnerTools ? user.email : undefined} isAdmin={isAdmin} />
                 </TabsContent>
 
                 <TabsContent value="compare">
