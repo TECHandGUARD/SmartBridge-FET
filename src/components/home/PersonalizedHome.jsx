@@ -1,4 +1,5 @@
 import FileLink from '@/components/operations/FileLink';
+import { useFeatureFlags } from '@/hooks/useFeatureFlags';
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
@@ -312,8 +313,14 @@ export default function PersonalizedHome({
   useEffect(() => {
     loadData();
   }, [loadData]);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags();
   const role = user?.role || 'user';
   const config = ROLE_CONFIG[role] || ROLE_CONFIG['student'];
+  const opportunitiesEnabled = !flagsLoading && isEnabled('opportunities');
+  const quickLinks = config.quickLinks.filter(link => link.path !== '/opportunities' || opportunitiesEnabled);
+  if (['sace_tutor', 'student_tutor', 'tutor'].includes(role) && opportunitiesEnabled) {
+    quickLinks.push({ label: 'Student Opportunities', path: '/opportunities', icon: Briefcase, desc: 'University applications, bursaries and NBT' });
+  }
   return <div className="min-h-screen bg-background">
       {isOnTrial && <TrialBanner trialDaysLeft={trialDaysLeft} />}
       {}
@@ -345,7 +352,7 @@ export default function PersonalizedHome({
         <section>
           <h2 className="font-playfair text-xl font-bold text-foreground mb-5">Quick Access</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {config.quickLinks.map(({
+            {quickLinks.map(({
             label,
             path,
             icon: Icon,

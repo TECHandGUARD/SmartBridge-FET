@@ -1,6 +1,7 @@
 import MarketingPanel from '@/components/admin/MarketingPanel';
 import StaffAccountsPanel from '@/components/admin/StaffAccountsPanel';
-import {Link} from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import WorkspaceHeader from '@/components/dashboard/WorkspaceHeader';
 import BookingActivitySummary from '@/components/tutor/BookingActivitySummary';
 import {paymentOrderSummary, loadPaymentOrders} from '@/lib/payment-reporting';
 import SponsorshipPanel from '@/components/admin/SponsorshipPanel';
@@ -22,10 +23,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Users, FileText, DollarSign, Activity, Shield, TrendingUp,
-  BookOpen, Mail, Send, Loader2, RefreshCw, Star, Megaphone, Database, Cpu,
-  BarChart2, Trophy, UserCheck, GraduationCap, ToggleLeft, ShieldCheck,
-  Settings, CheckCircle, XCircle, Clock
+  Users, FileText, DollarSign, Shield, TrendingUp,
+  BookOpen, Send, Loader2, RefreshCw, Star, Cpu, CheckCircle, XCircle, Clock
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -33,39 +32,49 @@ import { toast } from 'sonner';
 // 🔧 SOFT-CODED CONFIGURATION
 // ============================================================
 
-const ADMIN_MOBILE_SECTIONS = [
-  { value: 'registrations', label: 'Registrations' },
-  { value: 'staff-accounts', label: 'Staff Accounts' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'verification', label: 'Tutor Verification' },
-  { value: 'users', label: 'Users' },
-  { value: 'tutors', label: 'Tutor Analytics' },
-  { value: 'earnings', label: 'Earnings' },
-  { value: 'payouts', label: 'Booking Payments' },
-  { value: 'leaderboard', label: 'Leaderboard' },
-  { value: 'reports', label: 'Parent Reports' },
-  { value: 'content', label: 'Content' },
-  { value: 'sponsorship', label: 'Sponsored tutoring' },
-  { value: 'subscription-pricing', label: 'Subscription Prices' },
-  { value: 'legal-documents', label: 'Legal documents' },
-  { value: 'payment-gateways', label: 'Payment Gateways' },
-  { value: 'operations', label: 'Operations' },
-  { value: 'study-moderation', label: 'Study moderation' },
-  { value: 'assessment-moderation', label: 'Assessment approvals' },
-  { value: 'university-directory', label: 'Universities' },
-  { value: 'financial', label: 'Financial' },
-  { value: 'activity', label: 'Activity' },
-  { value: 'ratings', label: 'Ratings' },
-  { value: 'caps', label: 'CAPS Docs' },
-  { value: 'documents', label: 'Doc Verification' },
-  { value: 'opportunities', label: 'Opportunities' },
-  { value: 'user-viewer', label: 'User Viewer' },
-  { value: 'knowledge', label: 'Knowledge Base' },
-  { value: 'announcements', label: 'Announcements' },
-  { value: 'moderation', label: 'Moderation' },
-  { value: 'feature-flags', label: 'Feature Flags' },
-  { value: 'ai-config', label: 'AI Config' },
-  { value: 'system', label: 'System Test' }
+const ADMIN_TOOL_GROUPS = [
+  { label: 'People and access', tools: [
+    { value: 'registrations', label: 'Registrations' },
+    { value: 'users', label: 'Users' },
+    { value: 'user-viewer', label: 'User Viewer' },
+    { value: 'staff-accounts', label: 'Staff Accounts' },
+    { value: 'verification', label: 'Tutor Verification' },
+    { value: 'documents', label: 'Doc Verification' },
+    { value: 'tutors', label: 'Tutor Analytics' },
+  ] },
+  { label: 'Finance', tools: [
+    { value: 'financial', label: 'Financial' },
+    { value: 'earnings', label: 'Earnings' },
+    { value: 'payouts', label: 'Booking Payments' },
+    { value: 'subscription-pricing', label: 'Subscription Prices' },
+    { value: 'payment-gateways', label: 'Payment Gateways' },
+    { value: 'sponsorship', label: 'Sponsored tutoring' },
+  ] },
+  { label: 'Learning and content', tools: [
+    { value: 'content', label: 'Content' },
+    { value: 'caps', label: 'CAPS Docs' },
+    { value: 'knowledge', label: 'Knowledge Base' },
+    { value: 'opportunities', label: 'Opportunities' },
+    { value: 'university-directory', label: 'Universities' },
+    { value: 'assessment-moderation', label: 'Assessment approvals' },
+  ] },
+  { label: 'Community and growth', tools: [
+    { value: 'reports', label: 'Parent Reports' },
+    { value: 'moderation', label: 'Moderation' },
+    { value: 'study-moderation', label: 'Study moderation' },
+    { value: 'ratings', label: 'Ratings' },
+    { value: 'leaderboard', label: 'Leaderboard' },
+    { value: 'announcements', label: 'Announcements' },
+    { value: 'marketing', label: 'Marketing' },
+  ] },
+  { label: 'Platform settings', tools: [
+    { value: 'operations', label: 'Operations' },
+    { value: 'activity', label: 'Activity' },
+    { value: 'feature-flags', label: 'Feature Flags' },
+    { value: 'ai-config', label: 'AI Config' },
+    { value: 'legal-documents', label: 'Legal documents' },
+    { value: 'system', label: 'System Test' },
+  ] },
 ];
 
 const CONFIG = {
@@ -264,7 +273,16 @@ import SystemConfigPanel from '@/components/admin/SystemConfigPanel';
 // ============================================================
 
 export default function AdminDashboard() {
-  const [activeAdminTab, setActiveAdminTab] = useState('registrations');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTool = searchParams.get('section');
+  const activeAdminTab = ADMIN_TOOL_GROUPS.some(group => group.tools.some(tool => tool.value === requestedTool))
+    ? requestedTool
+    : 'registrations';
+  const setActiveAdminTab = value => setSearchParams(previous => {
+    const next = new URLSearchParams(previous);
+    next.set('section', value);
+    return next;
+  });
   const { user, isAdmin } = useAuth();
 
   // ---------- State ----------
@@ -740,32 +758,24 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen min-w-0 bg-background py-4 sm:py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-4 rounded-xl border bg-card p-4"><div className="flex flex-wrap gap-4"><Link to="/meetings" className="font-semibold text-primary">Virtual Meetings →</Link><Link to="/presentations" className="font-semibold text-primary">Presentation Studio →</Link></div><p className="mt-1 text-sm text-muted-foreground">Parent support, tutor reflection and professional development meetings.</p></div>
-        {/* Header */}
-        <div data-tour="dashboard-heading" className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-            <Shield className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div>
-            <h1 className="font-playfair text-3xl font-bold">{CONFIG.APP_NAME}</h1>
-            <p className="text-muted-foreground text-sm">Owner Control Panel — {totalUserCount.toLocaleString()} users</p>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="ml-auto gap-1.5"
-            onClick={() => loadDashboardData(true)}
-            disabled={refreshing}
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+        <WorkspaceHeader
+          title="Admin workspace"
+          description={`Manage ${CONFIG.APP_NAME} accounts, content, payments, and platform settings.`}
+          actions={<Button size="sm" variant="outline" className="gap-1.5" onClick={() => loadDashboardData(true)} disabled={refreshing}>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
             {refreshing ? CONFIG.MESSAGES.REFRESHING : CONFIG.MESSAGES.REFRESH}
-          </Button>
-        </div>
+          </Button>}
+        >
+          <nav aria-label="Admin workspace shortcuts" className="flex flex-wrap gap-x-5 gap-y-1">
+            <Link to="/meetings" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Virtual Meetings</Link>
+            <Link to="/presentations" className="inline-flex min-h-11 items-center text-sm font-semibold text-primary hover:underline">Presentation Studio</Link>
+          </nav>
+        </WorkspaceHeader>
 
         {/* Summary stats */}
-        <div data-tour="dashboard-stats" className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-8">
+        <dl data-tour="dashboard-stats" className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
           {[
             { label: 'Total Users', value: totalUserCount.toLocaleString(), icon: Users, color: 'bg-blue-100 text-blue-700' },
             { label: 'Premium Subs', value: subscriptions.filter(s => s.status === 'active').length, icon: TrendingUp, color: 'bg-amber-100 text-amber-700' },
@@ -773,68 +783,41 @@ export default function AdminDashboard() {
             { label: `Live payment receipts (${CONFIG.CURRENCY})`, value: paymentError ? 'Unavailable' : `${CONFIG.CURRENCY}${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'bg-green-100 text-green-700' },
             { label: 'Banner Clicks', value: bannerClicks.length, icon: TrendingUp, color: 'bg-purple-100 text-purple-700' }
           ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="border-border">
-              <CardContent className="pt-5 pb-4">
-                <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-2`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <p className="font-playfair text-2xl font-bold">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-              </CardContent>
-            </Card>
+            <div key={label} className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4">
+              <div className={`mb-2 flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              </div>
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-0.5 break-words font-playfair text-lg font-bold sm:text-xl">{value}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
 
-        <div className="mb-6 rounded-xl border p-4 space-y-1">
-          {paymentError ? <p role="alert">Payment totals could not load. Refresh to retry.</p> : <>
-            <p className="font-semibold">Test payments: {CONFIG.CURRENCY}{paymentSummary.testPaymentValue.toFixed(2)} · {paymentSummary.testPayments} verified</p>
-            <p className="text-sm">Test refunds confirmed: {CONFIG.CURRENCY}{paymentSummary.testRefundedValue.toFixed(2)} · {paymentSummary.testRefundsAwaitingConfirmation} awaiting provider confirmation</p>
-          </>}
-          <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded. Yoco refunds require live payments; test payments cannot be refunded.</p>
-        </div>
-        {/* Tabs Grid Navigation */}
-        <div data-tour="dashboard-navigation"><Tabs value={activeAdminTab} onValueChange={setActiveAdminTab}>
-          <div className="mb-4 lg:hidden">
-            <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
-            <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e=>setActiveAdminTab(e.target.value)}>
-              {ADMIN_MOBILE_SECTIONS.map(section=><option key={section.value} value={section.value}>{section.label}</option>)}
-            </select>
-          </div>
-          <TabsList className="mb-6 flex h-auto w-full max-w-full flex-nowrap justify-start gap-1 overflow-x-auto pb-2 lg:flex-wrap lg:overflow-visible">
-            <TabsTrigger value="registrations" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> Registrations</TabsTrigger>
-            <TabsTrigger value="marketing">Marketing</TabsTrigger>
-            <TabsTrigger value="staff-accounts">Staff Accounts</TabsTrigger>
-            <TabsTrigger value="verification" className="gap-1.5"><Shield className="w-3.5 h-3.5" /> Tutor Verification</TabsTrigger>
-            <TabsTrigger value="users" className="gap-1.5"><Users className="w-3.5 h-3.5" /> Users</TabsTrigger>
-            <TabsTrigger value="tutors" className="gap-1.5"><BarChart2 className="w-3.5 h-3.5" /> Tutor Analytics</TabsTrigger>
-            <TabsTrigger value="earnings" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Earnings</TabsTrigger>
-            <TabsTrigger value="payouts" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Booking Payments</TabsTrigger>
-            <TabsTrigger value="leaderboard" className="gap-1.5"><Trophy className="w-3.5 h-3.5" /> Leaderboard</TabsTrigger>
-            <TabsTrigger value="reports" className="gap-1.5"><Mail className="w-3.5 h-3.5" /> Parent Reports</TabsTrigger>
-            <TabsTrigger value="content" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Content</TabsTrigger>
-            <TabsTrigger value="sponsorship">Sponsored tutoring</TabsTrigger>
-            <TabsTrigger value="subscription-pricing">Subscription Prices</TabsTrigger>
-            <TabsTrigger value="legal-documents">Legal documents</TabsTrigger>
-            <TabsTrigger value="payment-gateways">Payment Gateways</TabsTrigger>
-            <TabsTrigger value="operations">Operations</TabsTrigger>
-            <TabsTrigger value="study-moderation">Study moderation</TabsTrigger>
-            <TabsTrigger value="assessment-moderation">Assessment approvals</TabsTrigger>
-            <TabsTrigger value="university-directory">Universities</TabsTrigger>
-            <TabsTrigger value="financial" className="gap-1.5"><DollarSign className="w-3.5 h-3.5" /> Financial</TabsTrigger>
-            <TabsTrigger value="activity" className="gap-1.5"><Activity className="w-3.5 h-3.5" /> Activity</TabsTrigger>
-            <TabsTrigger value="ratings" className="gap-1.5"><Star className="w-3.5 h-3.5" /> Ratings</TabsTrigger>
-            <TabsTrigger value="caps" className="gap-1.5"><BookOpen className="w-3.5 h-3.5" /> CAPS Docs</TabsTrigger>
-            <TabsTrigger value="documents" className="gap-1.5"><FileText className="w-3.5 h-3.5" /> Doc Verification</TabsTrigger>
-            <TabsTrigger value="opportunities" className="gap-1.5"><GraduationCap className="w-3.5 h-3.5" /> Opportunities</TabsTrigger>
-            <TabsTrigger value="user-viewer" className="gap-1.5"><UserCheck className="w-3.5 h-3.5" /> User Viewer</TabsTrigger>
-            <TabsTrigger value="knowledge" className="gap-1.5"><Database className="w-3.5 h-3.5" /> Knowledge Base</TabsTrigger>
-            <TabsTrigger value="announcements" className="gap-1.5"><Megaphone className="w-3.5 h-3.5" /> Announcements</TabsTrigger>
-            <TabsTrigger value="moderation" className="gap-1.5"><ShieldCheck className="w-3.5 h-3.5" /> Moderation</TabsTrigger>
-            <TabsTrigger value="feature-flags" className="gap-1.5"><ToggleLeft className="w-3.5 h-3.5" /> Feature Flags</TabsTrigger>
-            <TabsTrigger value="ai-config" className="gap-1.5"><Cpu className="w-3.5 h-3.5" /> AI Config</TabsTrigger>
-            <TabsTrigger value="system" className="gap-1.5"><Settings className="w-3.5 h-3.5" /> System Test</TabsTrigger>
-          </TabsList>
-
+        <div data-tour="dashboard-navigation">
+          <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab} orientation="vertical" activationMode="manual" className="min-w-0 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6">
+            <div className="lg:sticky lg:top-6">
+              <div className="mb-4 lg:hidden">
+                <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
+                <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e => setActiveAdminTab(e.target.value)}>
+                  {ADMIN_TOOL_GROUPS.map(group => <optgroup key={group.label} label={group.label}>
+                    {group.tools.map(tool => <option key={tool.value} value={tool.value}>{tool.label}</option>)}
+                  </optgroup>)}
+                </select>
+              </div>
+              <TabsList aria-label="Admin workspace navigation" className="hidden h-auto max-h-[calc(100dvh-3rem)] w-full flex-col items-stretch justify-start gap-4 overflow-y-auto overscroll-contain rounded-xl border bg-card p-3 lg:flex">
+                {ADMIN_TOOL_GROUPS.map(group => (
+                  <div key={group.label} role="group" aria-label={group.label} className="flex shrink-0 flex-col gap-0.5">
+                    <div aria-hidden="true" className="px-2 pb-1 text-xs font-semibold text-muted-foreground">{group.label}</div>
+                    {group.tools.map(tool => (
+                      <TabsTrigger key={tool.value} value={tool.value} className="min-h-9 justify-start whitespace-normal px-2 text-left data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none">
+                        {tool.label}
+                      </TabsTrigger>
+                    ))}
+                  </div>
+                ))}
+              </TabsList>
+            </div>
+            <div className="min-w-0">
           {/* ============================================================
               TAB CONTENT WITH ERROR BOUNDARIES
               ============================================================ */}
@@ -938,6 +921,13 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="payouts">
+        <div className="mb-6 rounded-xl border p-4 space-y-1">
+          {paymentError ? <p role="alert">Payment totals could not load. Refresh to retry.</p> : <>
+            <p className="font-semibold">Test payments: {CONFIG.CURRENCY}{paymentSummary.testPaymentValue.toFixed(2)} · {paymentSummary.testPayments} verified</p>
+            <p className="text-sm">Test refunds confirmed: {CONFIG.CURRENCY}{paymentSummary.testRefundedValue.toFixed(2)} · {paymentSummary.testRefundsAwaitingConfirmation} awaiting provider confirmation</p>
+          </>}
+          <p className="text-xs text-muted-foreground">Live receipts are verified payments less confirmed full refunds, including payments for canceled bookings awaiting refunds. They are not platform profit. Test amounts are simulated and excluded. Yoco refunds require live payments; test payments cannot be refunded.</p>
+        </div>
             <SafeSubComponent>
               <TutorPayoutDashboard />
             </SafeSubComponent>
@@ -1235,7 +1225,9 @@ export default function AdminDashboard() {
               </div>
             </SafeSubComponent>
           </TabsContent>
-        </Tabs></div>
+            </div>
+          </Tabs>
+        </div>
       </div>
     </div>
   );

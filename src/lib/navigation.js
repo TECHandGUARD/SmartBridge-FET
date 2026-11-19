@@ -27,8 +27,8 @@ export function getNavigation(user) {
   const forum = item('Forum', '/forum', 'forum');
   const common = [item('Invite a friend','/refer','users'), item('News & events','/news','book'), item('Home', '/', 'home'), item('Premium', '/premium', 'star')];
   if (user?.is_super_admin || user?.role === 'admin') return {
-    primary: [dashboard, aiBoardroom, featureMonitor, item('CAPS Admin', '/caps-admin', 'book'), resources, item('Counselor', '/counselor', 'users')],
-    secondary: [communication, ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), practice, careers],
+    primary: [dashboard, resources, item('Counselor', '/counselor', 'users'), communication],
+    secondary: [featureMonitor, item('CAPS Admin', '/caps-admin', 'book'), aiBoardroom, ...common, subjects, tutors, forum, item('Bookings', '/bookings', 'users'), item('Payout log', '/payout-log', 'dashboard'), practice, careers],
   };
   if (user?.staff_access?.enabled === true) return {primary:[dashboard,resources],secondary:[item('Home','/','home')]};
   if (user?.role === 'school_counselor') return { primary: [dashboard, resources], secondary: [item('Home', '/', 'home')] };

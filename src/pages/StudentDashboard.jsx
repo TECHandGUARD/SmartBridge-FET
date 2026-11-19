@@ -1,3 +1,4 @@
+import WorkspaceHeader from '@/components/dashboard/WorkspaceHeader';
 import MessagingInbox from '@/components/messaging/MessagingInbox';
 import { CounselorSharing } from '@/components/counselor/CounselorAccess';
 import useSubscriptionPrices from '@/hooks/useSubscriptionPrices';
@@ -198,15 +199,10 @@ export default function StudentDashboard() {
       <div className="mx-auto w-full max-w-6xl min-w-0 px-3 sm:px-6 lg:px-8">
         <CounselorSharing userId={user.id} />
 
-        {/* Header */}
-        <div data-tour="dashboard-heading" className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="font-playfair text-2xl font-bold leading-tight text-foreground sm:text-3xl">
-              Welcome back, {user.full_name?.split(' ')[0] || 'Student'}! 👋
-            </h1>
-            <p className="text-muted-foreground mt-1">Your learning journey continues here.</p>
-          </div>
-          <div className="flex items-center gap-2">
+        <WorkspaceHeader
+          title={<>Welcome back, {user.full_name?.split(' ')[0] || 'Student'}!</>}
+          description="Track your progress, plan your study time, and find learning resources."
+          actions={<>
             {isPremium && !isOnTrial ? (
               <Badge className="bg-secondary/20 text-amber-700 border-amber-200 gap-1.5 px-3 py-1.5">
                 <Star className="w-4 h-4 fill-current" /> Premium Member
@@ -222,8 +218,8 @@ export default function StudentDashboard() {
                 </Button>
               </Link>
             )}
-          </div>
-        </div>
+          </>}
+        />
 
         <ParentChildLink user={user} />
 
@@ -366,9 +362,9 @@ export default function StudentDashboard() {
             {/* Stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {[
-                { label: 'Subjects', value: '11', icon: BookOpen, color: 'bg-primary/10 text-primary' },
+                { label: 'Subjects', value: SUBJECTS.length, icon: BookOpen, color: 'bg-primary/10 text-primary' },
                 { label: 'Grades', value: '10–12', icon: GraduationCap, color: 'bg-blue-100 text-blue-700' },
-                { label: 'Resources', value: resources.length, icon: TrendingUp, color: 'bg-green-100 text-green-700' },
+                { label: 'Recent resources', value: resources.length, icon: TrendingUp, color: 'bg-green-100 text-green-700' },
                 { label: 'My Status', value: isPremium ? (isOnTrial ? 'Trial' : 'Premium') : 'Free', icon: Star, color: 'bg-amber-100 text-amber-700' },
               ].map(({ label, value, icon: Icon, color }) => (
                 <Card key={label} className="border-border">
@@ -383,10 +379,14 @@ export default function StudentDashboard() {
 
             {/* Recent Resources */}
             <Card className="border-border">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-playfair">Recent Resources</CardTitle>
+              <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 space-y-0 pb-3">
+                <CardTitle className="font-playfair text-base">Recent Resources</CardTitle>
+                <Button asChild variant="outline" size="sm">
+                  <Link to="/resources-library">Browse resources</Link>
+                </Button>
               </CardHeader>
               <CardContent className="space-y-2">
+                {resources.length === 0 && <p className="text-sm text-muted-foreground">There are no recent resources to show.</p>}
                 {resources.slice(0, 5).map((r) => (
                   <div key={r.id} className="flex items-center gap-2 text-sm">
                     <span className="text-base">{SUBJECTS.find(s => s.name === r.subject)?.icon || '📄'}</span>
@@ -399,21 +399,6 @@ export default function StudentDashboard() {
                 ))}
               </CardContent>
             </Card>
-
-            {/* Premium upsell if not subscribed */}
-            {!isPremium && (
-              <div className="bg-gradient-to-br from-primary to-green-dark rounded-2xl p-5 text-primary-foreground">
-                <Star className="w-6 h-6 fill-secondary text-secondary mb-2" />
-                <p className="font-playfair font-bold text-lg mb-1">Go Premium</p>
-                <p className="text-sm text-primary-foreground/80 mb-3">Unlock all resources, AI tools, past papers & more — {priceLabel}.</p>
-                <Link to="/premium">
-                  <Button size="sm" className="bg-secondary text-secondary-foreground hover:bg-secondary/90 w-full">
-                    Upgrade Now — {priceLabel}
-                  </Button>
-                </Link>
-                <p className="text-xs text-primary-foreground/60 mt-2">Use your email as payment reference. Access starts after payment is confirmed.</p>
-              </div>
-            )}
 
             {/* Account Deletion */}
             <ReleaseGate feature="accountDeletion">

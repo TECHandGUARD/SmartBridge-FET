@@ -16,6 +16,7 @@ const assert=require('node:assert/strict');
  const authUser={id:profile.id,email:profile.email,user_metadata:{full_name:profile.full_name},aud:'authenticated',role:'authenticated'};
  const session={access_token:'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAxMDEiLCJleHAiOjQxMDI0NDQ4MDAsInJvbGUiOiJhdXRoZW50aWNhdGVkIn0.test',refresh_token:'test-refresh',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:authUser};
  let failResult=true, failBooking=true, failOnboarding=false;
+ let opportunitiesEnabled=true;
  let hasPremium=false;let examRows=[];const examWrites=[];
  let topicRows=[];let nbtProgress=null;let failNbtSave=true;
  let priceRows=[{product:'student',amount_cents:2000,revision:1},{product:'parent',amount_cents:5000,revision:1},{product:'tutor_pro',amount_cents:15000,revision:1}];
@@ -54,6 +55,7 @@ const assert=require('node:assert/strict');
   if(url.pathname==='/rest/v1/rpc/get_counselor_sharing_requests') data=counselorLinkState?[{id:'00000000-0000-4000-8000-000000004021',school_name:'Fixture School',status:counselorLinkState}]:[];
   if(url.pathname==='/rest/v1/rpc/respond_counselor_link') {counselorLinkState=req.postDataJSON().decision;data=true;}
   if(url.pathname==='/auth/v1/user') data=authUser;
+  if(url.pathname==='/rest/v1/rpc/my_feature_access') data=[{feature_key:'opportunities',is_enabled:opportunitiesEnabled,locked_message:'Opportunities are currently locked.'}];
   if(url.pathname==='/auth/v1/token') data=session;
   if(url.pathname==='/rest/v1/users') data=req.headers().accept?.includes('vnd.pgrst.object')?profile:[profile];
   if(url.pathname==='/rest/v1/rpc/complete_onboarding') {if(failOnboarding){failOnboarding=false;await route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({message:'Setup temporarily unavailable. Please retry.'})});return;}writes.push(req.postDataJSON());const chosen=req.postDataJSON().requested_role;profile={...profile,role:chosen.includes('tutor')?'tutor_pending':chosen,onboarding_complete:true};data=profile;}
@@ -325,6 +327,25 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  await page.keyboard.press('Escape');
  await page.getByRole('navigation',{name:'Mobile legal and company information'}).getByRole('link',{name:'Legal documents'}).waitFor();
  console.log('PASS: verified tutor sees relevant mobile and legal navigation');
+ await page.getByRole('link',{name:/Student Opportunities.*Explore/}).waitFor();
+ await page.getByRole('button',{name:'Open navigation menu',exact:true}).click();
+ await page.getByRole('navigation',{name:'All SmartBridge pages'}).getByRole('link',{name:'Student Opportunities',exact:true}).click();
+ await page.getByRole('heading',{name:'Premium Feature',exact:true}).waitFor();
+ assert.equal(await page.getByRole('tab',{name:'Universities',exact:true}).count(),0);
+ hasPremium=true;
+ await page.reload();
+ await page.getByRole('tab',{name:'Universities',exact:true}).waitFor();
+ assert.equal(await page.getByRole('tab',{name:'My Applications',exact:true}).count(),0);
+ assert.equal(await page.getByRole('tab',{name:'NBT Planner',exact:true}).count(),0);
+ opportunitiesEnabled=false;
+ await page.reload();
+ await page.getByRole('alert').filter({hasText:'Opportunities are currently locked.'}).waitFor();
+ await page.goto('http://127.0.0.1:5173/tutor-dashboard');
+ await page.getByRole('button',{name:'Booking Requests',exact:true}).waitFor();
+ assert.equal(await page.getByRole('link',{name:/Student Opportunities.*Explore/}).count(),0);
+ opportunitiesEnabled=true;
+ hasPremium=false;
+ console.log('PASS: tutor Opportunities grant, mobile menu and dashboard, Premium boundary, learner-only tools and revocation');
  profile={...profile,role:'tutor'};
  await page.goto('http://127.0.0.1:5173/tutor-dashboard');
  await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
@@ -394,7 +415,13 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
    await page.goto('http://127.0.0.1:5173'+route);
    await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
    await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
-   const tabs=await page.getByRole('tab').all();
+   const adminTools=page.getByRole('tablist',{name:'Admin workspace navigation',exact:true});
+   if(route==='/admin') {
+    await adminTools.waitFor();
+    assert.equal(await adminTools.getByRole('group').count(),5);
+    assert.equal(await adminTools.getByRole('tab').count(),32);
+   }
+   const tabs=await (route==='/admin'?adminTools.getByRole('tab'):page.getByRole('tab')).all();
    for(const tab of tabs) {await tab.click();await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
    await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});}
   }
@@ -443,9 +470,11 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  bookingRows=[{id:'test-booking',tutor_email:profile.email,tutor_id:profile.id,student_email:'learner@example.test',subject:'Tourism',status:'cancelled',amount:150,payment_status:'test_paid',payment_mode:'test',date:'2099-12-01',time:'10:00',duration_hours:1}];
  paymentOrderRows=[{id:'test-order',product:'booking',booking_id:'test-booking',status:'paid',mode:'test',amount_cents:15000,refund_status:'requested'}];
  await page.goto('http://127.0.0.1:5173/admin');
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('payouts');
+ await page.waitForURL('**/admin?section=payouts');
+ await page.reload();
  await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
  await page.getByText('Test refunds confirmed: R0.00 · 0 awaiting provider confirmation',{exact:true}).waitFor();
- await page.locator('#admin-mobile-section').selectOption('payouts');
  await page.getByText('Yoco refunds require a payment made in live mode.',{exact:false}).waitFor();
  assert.equal(await page.getByRole('button',{name:/Refund full test/}).count(),0);
  for(const section of ['earnings','financial']){
@@ -460,7 +489,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  profile={...profile,role:'admin',is_super_admin:true};bookingRows=[];paymentOrderRows=[];
  await page.goto('http://127.0.0.1:5173/admin');
  console.log('PASS: canceled test payment activity stays visible in admin financial, earnings and tutor summaries');
- await page.getByRole('tab',{name:'Subscription Prices',exact:true}).click();
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('subscription-pricing');
  await page.getByLabel('New monthly price (ZAR)',{exact:true}).first().waitFor();
  await page.locator('#price-student').fill('37.50');
  await page.getByRole('button',{name:'Save Student Premium price',exact:true}).click();
@@ -471,7 +500,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  console.log('PASS: admin price save updates displayed subscription price');
  profile={...profile,role:'admin',is_super_admin:true};
  await page.goto('http://127.0.0.1:5173/admin');
- await page.getByRole('tab',{name:'Legal documents',exact:true}).click();
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('legal-documents');
  await page.getByLabel('Title',{exact:true}).fill('Tutor payment timetable');
  await page.getByLabel('Document key',{exact:true}).fill('test_tutor_payments');
  await page.getByLabel('Who can view this document?',{exact:true}).selectOption('tutor');

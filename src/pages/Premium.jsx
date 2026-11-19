@@ -59,7 +59,6 @@ const PLAN_TEMPLATES = [
     'Review published Tutor Pro commission terms',
     'Tutor directory listing',
     'Booking notifications when available',
-    'Review available tutor analytics',
     'Manage tutor resources within account limits',
     'Tutor profile management'
   ]

@@ -6,6 +6,7 @@ insert into auth.users(id,email,raw_user_meta_data) values
  ('00000000-0000-4000-8000-000000000804','mvp-inactive@example.invalid','{}');
 update public.users set role='student',onboarding_complete=true where id in
  ('00000000-0000-4000-8000-000000000801','00000000-0000-4000-8000-000000000802','00000000-0000-4000-8000-000000000804');
+update public.users set trial_started_at=now() where id='00000000-0000-4000-8000-000000000801';
 update public.users set role='admin',onboarding_complete=true where id='00000000-0000-4000-8000-000000000803';
 update public.users set is_active=false where id='00000000-0000-4000-8000-000000000804';
 insert into public.profiles(id,full_name,role) values
@@ -144,3 +145,56 @@ do $$ declare relation text; begin
    raise exception 'Historical RLS policy gap remains for %',relation; end if;
  end loop;
 end $$;
+
+-- Opportunity overrides use the account's verified identity and expose no email lists.
+reset role;
+update public.users set is_active=true where id='00000000-0000-4000-8000-000000000803';
+insert into public.feature_toggles(feature_key,label,is_enabled,enabled_for_emails,disabled_for_emails)
+ values('mvp-opportunities','Test Opportunities',false,array[' MVP-LEARNER@EXAMPLE.INVALID '],array[]::text[]);
+set local role authenticated;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000801","role":"authenticated"}',true);
+do $$ begin
+ if (select is_enabled from public.my_feature_access() where feature_key='mvp-opportunities') is distinct from true then
+  raise exception 'Allowlisted account could not open a globally disabled feature';
+ end if;
+ if exists(select 1 from public.feature_toggles) then raise exception 'Override lists are visible to non-admins'; end if;
+ if (select count(*) from public.my_feature_access() a where to_jsonb(a) ?| array['enabled_for_emails','disabled_for_emails'])<>0 then
+  raise exception 'Effective access RPC leaked override lists';
+ end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000802","role":"authenticated","email":"mvp-learner@example.invalid"}',true);
+do $$ begin
+ if (select is_enabled from public.my_feature_access() where feature_key='mvp-opportunities') is distinct from false then
+  raise exception 'Unlisted account got access using a conflicting JWT email';
+ end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000803","role":"authenticated"}',true);
+update public.feature_toggles set is_enabled=true,disabled_for_emails=array['mvp-learner@example.invalid'] where feature_key='mvp-opportunities';
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000801","role":"authenticated"}',true);
+do $$ begin
+ if (select is_enabled from public.my_feature_access() where feature_key='mvp-opportunities') is distinct from false then
+  raise exception 'Explicit deny did not override both global enablement and the allowlist';
+ end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000803","role":"authenticated"}',true);
+update public.feature_toggles set is_enabled=false,enabled_for_emails=array[]::text[],disabled_for_emails=array[]::text[]
+ where feature_key='mvp-opportunities';
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000801","role":"authenticated"}',true);
+do $$ begin
+ if (select is_enabled from public.my_feature_access() where feature_key='mvp-opportunities') is distinct from false then
+  raise exception 'Clearing the final override did not revoke access';
+ end if;
+end $$;
+select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000804","role":"authenticated"}',true);
+do $$ begin
+ begin perform public.my_feature_access(); raise exception 'Inactive account resolved feature access';
+ exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+set local role anon;
+do $$ begin
+ begin perform public.my_feature_access(); raise exception 'Anonymous role executed feature access';
+ exception when insufficient_privilege then null; end;
+end $$;
+reset role;
+select set_config('request.jwt.claims','{}',true);
