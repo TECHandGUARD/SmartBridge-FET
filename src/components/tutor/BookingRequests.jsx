@@ -1,4 +1,4 @@
-import { bookingSessionLink } from '@/lib/booking-session';
+import { bookingSessionLink, hasBookingEnded } from '@/lib/booking-session';
 import BookingActivitySummary from './BookingActivitySummary';
 import BookingPaymentStatus, {bookingFundingReady} from './BookingPaymentStatus';
 import { cancelBooking, arrangeIntroduction } from '@/lib/bookings';
@@ -187,17 +187,17 @@ export default function BookingRequests({
   const markComplete = async booking => {
     setProcessing(booking.id);
     try {
-      const {
-        error
-      } = await supabase.from('tutor_bookings').update({
+      const { data, error } = await supabase.from('tutor_bookings').update({
         status: 'completed',
         updated_at: new Date().toISOString()
-      }).eq('id', booking.id);
+      }).eq('id', booking.id).eq('tutor_id', user.id).eq('status', 'confirmed').select('id, status').maybeSingle();
       if (error) throw error;
-      setBookings(prev => prev.map(b => b.id === booking.id ? {
-        ...b,
-        status: 'completed'
-      } : b));
+      if (!data) {
+        await loadData();
+        toast.info('This booking could not be completed. Check its current status.');
+        return;
+      }
+      setBookings(prev => prev.map(b => b.id === data.id ? { ...b, status: data.status } : b));
       await logActivity('session_completed', booking);
       toast.success('Session marked as completed.');
       if (onBookingUpdate) onBookingUpdate();
@@ -515,7 +515,7 @@ export default function BookingRequests({
                           </a>}
 
                         {}
-                        {b.status === 'confirmed' && isPast && <Button size="sm" variant="outline" className="text-xs gap-1 h-8" disabled={isProcessing} onClick={() => markComplete(b)}>
+                        {b.status === 'confirmed' && hasBookingEnded(b) && <Button size="sm" variant="outline" className="text-xs gap-1 h-8" disabled={isProcessing} onClick={() => markComplete(b)}>
                             {isProcessing ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />}
                             Complete
                           </Button>}
