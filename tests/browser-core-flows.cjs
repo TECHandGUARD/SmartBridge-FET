@@ -394,7 +394,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
    await page.goto('http://127.0.0.1:5173'+route);
    await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
    await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
-   const adminTools=page.getByRole('tablist',{name:'Admin tools',exact:true});
+   const adminTools=page.getByRole('tablist',{name:'Admin workspace navigation',exact:true});
    if(route==='/admin') {
     await adminTools.waitFor();
     assert.equal(await adminTools.getByRole('group').count(),5);

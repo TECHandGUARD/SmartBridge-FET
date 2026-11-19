@@ -806,7 +806,7 @@ export default function AdminDashboard() {
                   </optgroup>)}
                 </select>
               </div>
-              <TabsList aria-label="Admin tools" className="hidden h-auto w-full flex-col items-stretch gap-4 rounded-xl border bg-card p-3 lg:flex">
+              <TabsList aria-label="Admin workspace navigation" className="hidden h-auto w-full flex-col items-stretch gap-4 rounded-xl border bg-card p-3 lg:flex">
                 {ADMIN_TOOL_GROUPS.map(group => (
                   <div key={group.label} role="group" aria-label={group.label} className="flex flex-col gap-0.5">
                     <div aria-hidden="true" className="px-2 pb-1 text-xs font-semibold text-muted-foreground">{group.label}</div>
