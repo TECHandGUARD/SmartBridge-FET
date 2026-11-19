@@ -394,7 +394,13 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
    await page.goto('http://127.0.0.1:5173'+route);
    await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
    await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});
-   const tabs=await page.getByRole('tab').all();
+   const adminTools=page.getByRole('tablist',{name:'Admin tools',exact:true});
+   if(route==='/admin') {
+    await adminTools.waitFor();
+    assert.equal(await adminTools.getByRole('group').count(),5);
+    assert.equal(await adminTools.getByRole('tab').count(),32);
+   }
+   const tabs=await (route==='/admin'?adminTools.getByRole('tab'):page.getByRole('tab')).all();
    for(const tab of tabs) {await tab.click();await page.waitForFunction(()=>document.body.innerText.trim().length>20 && !document.body.innerText.includes('Loading SmartBridge FET...'));
    await page.evaluate(()=>{for(const animation of document.getAnimations()){if(animation.effect?.getTiming().iterations!==Infinity){try{animation.finish()}catch{}}}});}
   }
@@ -443,9 +449,11 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  bookingRows=[{id:'test-booking',tutor_email:profile.email,tutor_id:profile.id,student_email:'learner@example.test',subject:'Tourism',status:'cancelled',amount:150,payment_status:'test_paid',payment_mode:'test',date:'2099-12-01',time:'10:00',duration_hours:1}];
  paymentOrderRows=[{id:'test-order',product:'booking',booking_id:'test-booking',status:'paid',mode:'test',amount_cents:15000,refund_status:'requested'}];
  await page.goto('http://127.0.0.1:5173/admin');
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('payouts');
+ await page.waitForURL('**/admin?section=payouts');
+ await page.reload();
  await page.getByText('Test payments: R150.00 · 1 verified',{exact:true}).waitFor();
  await page.getByText('Test refunds confirmed: R0.00 · 0 awaiting provider confirmation',{exact:true}).waitFor();
- await page.locator('#admin-mobile-section').selectOption('payouts');
  await page.getByText('Yoco refunds require a payment made in live mode.',{exact:false}).waitFor();
  assert.equal(await page.getByRole('button',{name:/Refund full test/}).count(),0);
  for(const section of ['earnings','financial']){
@@ -460,7 +468,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  profile={...profile,role:'admin',is_super_admin:true};bookingRows=[];paymentOrderRows=[];
  await page.goto('http://127.0.0.1:5173/admin');
  console.log('PASS: canceled test payment activity stays visible in admin financial, earnings and tutor summaries');
- await page.getByRole('tab',{name:'Subscription Prices',exact:true}).click();
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('subscription-pricing');
  await page.getByLabel('New monthly price (ZAR)',{exact:true}).first().waitFor();
  await page.locator('#price-student').fill('37.50');
  await page.getByRole('button',{name:'Save Student Premium price',exact:true}).click();
@@ -471,7 +479,7 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  console.log('PASS: admin price save updates displayed subscription price');
  profile={...profile,role:'admin',is_super_admin:true};
  await page.goto('http://127.0.0.1:5173/admin');
- await page.getByRole('tab',{name:'Legal documents',exact:true}).click();
+ await page.getByLabel('Admin tools',{exact:true}).selectOption('legal-documents');
  await page.getByLabel('Title',{exact:true}).fill('Tutor payment timetable');
  await page.getByLabel('Document key',{exact:true}).fill('test_tutor_payments');
  await page.getByLabel('Who can view this document?',{exact:true}).selectOption('tutor');
