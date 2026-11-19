@@ -775,7 +775,7 @@ export default function AdminDashboard() {
         </WorkspaceHeader>
 
         {/* Summary stats */}
-        <div data-tour="dashboard-stats" className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <dl data-tour="dashboard-stats" className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
           {[
             { label: 'Total Users', value: totalUserCount.toLocaleString(), icon: Users, color: 'bg-blue-100 text-blue-700' },
             { label: 'Premium Subs', value: subscriptions.filter(s => s.status === 'active').length, icon: TrendingUp, color: 'bg-amber-100 text-amber-700' },
@@ -783,21 +783,19 @@ export default function AdminDashboard() {
             { label: `Live payment receipts (${CONFIG.CURRENCY})`, value: paymentError ? 'Unavailable' : `${CONFIG.CURRENCY}${totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'bg-green-100 text-green-700' },
             { label: 'Banner Clicks', value: bannerClicks.length, icon: TrendingUp, color: 'bg-purple-100 text-purple-700' }
           ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label} className="border-border">
-              <CardContent className="pt-5 pb-4">
-                <div className={`w-9 h-9 rounded-xl ${color} flex items-center justify-center mb-2`}>
-                  <Icon className="w-4 h-4" />
-                </div>
-                <p className="font-playfair text-2xl font-bold">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-              </CardContent>
-            </Card>
+            <div key={label} className="min-w-0 rounded-xl border border-border bg-card p-3 sm:p-4">
+              <div className={`mb-2 flex h-7 w-7 items-center justify-center rounded-lg ${color}`}>
+                <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+              </div>
+              <dt className="text-xs text-muted-foreground">{label}</dt>
+              <dd className="mt-0.5 break-words font-playfair text-lg font-bold sm:text-xl">{value}</dd>
+            </div>
           ))}
-        </div>
+        </dl>
 
         <div data-tour="dashboard-navigation">
           <Tabs value={activeAdminTab} onValueChange={setActiveAdminTab} orientation="vertical" activationMode="manual" className="min-w-0 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:items-start lg:gap-6">
-            <div>
+            <div className="lg:sticky lg:top-6">
               <div className="mb-4 lg:hidden">
                 <label htmlFor="admin-mobile-section" className="mb-2 block text-sm font-semibold">Admin tools</label>
                 <select id="admin-mobile-section" className="min-h-12 w-full rounded-xl border border-input bg-card px-3 py-2 text-base text-foreground" value={activeAdminTab} onChange={e => setActiveAdminTab(e.target.value)}>
@@ -806,9 +804,9 @@ export default function AdminDashboard() {
                   </optgroup>)}
                 </select>
               </div>
-              <TabsList aria-label="Admin workspace navigation" className="hidden h-auto w-full flex-col items-stretch gap-4 rounded-xl border bg-card p-3 lg:flex">
+              <TabsList aria-label="Admin workspace navigation" className="hidden h-auto max-h-[calc(100dvh-3rem)] w-full flex-col items-stretch gap-4 overflow-y-auto overscroll-contain rounded-xl border bg-card p-3 lg:flex">
                 {ADMIN_TOOL_GROUPS.map(group => (
-                  <div key={group.label} role="group" aria-label={group.label} className="flex flex-col gap-0.5">
+                  <div key={group.label} role="group" aria-label={group.label} className="flex shrink-0 flex-col gap-0.5">
                     <div aria-hidden="true" className="px-2 pb-1 text-xs font-semibold text-muted-foreground">{group.label}</div>
                     {group.tools.map(tool => (
                       <TabsTrigger key={tool.value} value={tool.value} className="min-h-9 justify-start whitespace-normal px-2 text-left data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none">
