@@ -1,43 +1,26 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabaseClient';
 
-// The server resolves the current user's email against admin-managed overrides.
-// The browser never receives other users' allow/deny email lists.
-export function useFeatureFlags(userEmail) {
-  const [flags, setFlags] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-    Promise.resolve(supabase.rpc('my_feature_access'))
-      .then(({ data, error: fetchError }) => {
-        if (!active) return;
-        if (fetchError) { setError(fetchError); setFlags([]); }
-        else setFlags(data || []);
-        setLoading(false);
-      }).catch(err => {
-        if (!active) return;
-        setError(err);
-        setFlags([]);
-        setLoading(false);
-      });
-    return () => { active = false; };
-  }, [userEmail, version]);
+export const featureAccessQueryKey = ['feature-access'];
 
-  const getFeatureStatus = useCallback(key => {
-    const flag = flags.find(item => item.feature_key === key);
-    // A missing flag is unconfigured (enabled by default); fetch errors fail closed.
-    return { featureKey: key, globalEnabled: null, userOverride: null,
-      isEnabled: !error && flag?.is_enabled !== false,
-      lockedMessage: flag?.locked_message || 'This feature is currently unavailable.' };
-  }, [flags, error]);
-  const isEnabled = useCallback(key => getFeatureStatus(key).isEnabled, [getFeatureStatus]);
-  const getLockedMessage = useCallback(key => getFeatureStatus(key).lockedMessage, [getFeatureStatus]);
-  const hasUserOverride = useCallback(key => getFeatureStatus(key).userOverride !== null, [getFeatureStatus]);
-  const getFeatureKeys = useCallback(() => flags.map(flag => flag.feature_key), [flags]);
-  const invalidateCache = useCallback(() => setVersion(v => v + 1), []);
-  return { isEnabled, getLockedMessage, hasUserOverride, getFeatureKeys, getFeatureStatus, invalidateCache, loading, error, allGlobalFlags: flags, allUserOverrides: [] };
+export function useFeatureFlags(user) {
+  const { data, error, isPending } = useQuery({
+    queryKey: [...featureAccessQueryKey, user?.id, user?.email],
+    enabled: Boolean(user?.id),
+    refetchOnWindowFocus: true,
+    async queryFn({ signal }) {
+      const { data, error } = await supabase.rpc('my_feature_access').abortSignal(signal);
+      if (error) throw error;
+      if (!Array.isArray(data)) throw new Error('Invalid feature access response');
+      return data;
+    },
+  });
+
+  const getFlag = key => data?.find(flag => flag.feature_key === key);
+  return {
+    isEnabled: key => Boolean(user?.id && data && !error && getFlag(key)?.is_enabled !== false),
+    getLockedMessage: key => getFlag(key)?.locked_message || 'This feature is currently unavailable.',
+    loading: Boolean(user?.id && isPending),
+    error,
+  };
 }

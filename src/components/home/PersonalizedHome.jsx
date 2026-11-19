@@ -313,11 +313,12 @@ export default function PersonalizedHome({
   useEffect(() => {
     loadData();
   }, [loadData]);
-  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user?.email);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user);
   const role = user?.role || 'user';
   const config = ROLE_CONFIG[role] || ROLE_CONFIG['student'];
-  const quickLinks = [...config.quickLinks];
-  if (['sace_tutor', 'student_tutor', 'tutor'].includes(role) && !flagsLoading && isEnabled('opportunities')) {
+  const opportunitiesEnabled = !flagsLoading && isEnabled('opportunities');
+  const quickLinks = config.quickLinks.filter(link => link.path !== '/opportunities' || opportunitiesEnabled);
+  if (['sace_tutor', 'student_tutor', 'tutor'].includes(role) && opportunitiesEnabled) {
     quickLinks.push({ label: 'Student Opportunities', path: '/opportunities', icon: Briefcase, desc: 'University applications, bursaries and NBT' });
   }
   return <div className="min-h-screen bg-background">

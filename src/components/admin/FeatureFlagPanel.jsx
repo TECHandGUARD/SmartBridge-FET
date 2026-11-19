@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { featureAccessQueryKey } from '@/hooks/useFeatureFlags';
 import { supabase } from '@/lib/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,6 +77,7 @@ const DEFAULT_FEATURES = [{
   is_enabled: true
 }];
 export default function FeatureFlagPanel() {
+  const queryClient = useQueryClient();
   const [flags, setFlags] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(null);
@@ -153,7 +156,8 @@ export default function FeatureFlagPanel() {
         ...flag,
         id: result.id
       } : f));
-      toast.success(`${flag.label} ${flag.is_enabled ? 'enabled' : 'disabled'}`);
+      void queryClient.invalidateQueries({ queryKey: featureAccessQueryKey });
+      toast.success(`Saved settings for ${flag.label}`);
     } catch (err) {
       console.error('Failed to save feature flag:', err);
       toast.error(`Failed to save: ${err.message}`);
@@ -163,12 +167,7 @@ export default function FeatureFlagPanel() {
   };
   const toggleFlag = featureKey => {
     const flag = flags.find(f => f.feature_key === featureKey);
-    const updated = {
-      ...flag,
-      is_enabled: !flag.is_enabled
-    };
-    setFlags(prev => prev.map(f => f.feature_key === featureKey ? updated : f));
-    saveFlag(updated);
+    void saveFlag({ ...flag, is_enabled: flag.is_enabled === false });
   };
   const updateMessage = (featureKey, msg) => {
     setFlags(prev => prev.map(f => f.feature_key === featureKey ? {
@@ -277,7 +276,7 @@ export default function FeatureFlagPanel() {
                       <div className="flex flex-wrap gap-1">
                         {(flag.disabled_for_emails || []).map(email => <Badge key={email} variant="outline" className="text-xs gap-1 border-destructive/40 text-destructive">
                             {email}
-                            <button onClick={() => removeEmail(flag.feature_key, 'disabled_for_emails', email)}>
+                            <button type="button" aria-label={`Remove ${email} from the block list`} onClick={() => removeEmail(flag.feature_key, 'disabled_for_emails', email)}>
                               <X className="w-3 h-3" />
                             </button>
                           </Badge>)}
@@ -299,7 +298,7 @@ export default function FeatureFlagPanel() {
                       <div className="flex flex-wrap gap-1">
                         {(flag.enabled_for_emails || []).map(email => <Badge key={email} variant="outline" className="text-xs gap-1 border-green-400 text-green-700">
                             {email}
-                            <button onClick={() => removeEmail(flag.feature_key, 'enabled_for_emails', email)}>
+                            <button type="button" aria-label={`Remove ${email} from the allow list`} onClick={() => removeEmail(flag.feature_key, 'enabled_for_emails', email)}>
                               <X className="w-3 h-3" />
                             </button>
                           </Badge>)}
@@ -308,10 +307,10 @@ export default function FeatureFlagPanel() {
                   </div>
 
                   {}
-                  {(flag.disabled_for_emails?.length > 0 || flag.enabled_for_emails?.length > 0) && <Button size="sm" className="bg-primary gap-1.5" onClick={() => saveOverrides(flag.feature_key)} disabled={saving === flag.feature_key}>
+                  <Button size="sm" className="bg-primary gap-1.5" onClick={() => saveOverrides(flag.feature_key)} disabled={saving === flag.feature_key}>
                       {saving === flag.feature_key ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
                       Save User Overrides
-                    </Button>}
+                    </Button>
                 </div>}
             </CardContent>
           </Card>)}

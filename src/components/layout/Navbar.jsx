@@ -11,7 +11,7 @@ export default function Navbar({ user }) {
   const location = useLocation();
   const { signOut, isAdmin } = useAuth();
   const { primary, secondary } = getNavigation(user);
-  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user?.email);
+  const { isEnabled, loading: flagsLoading } = useFeatureFlags(user);
   const visibleSecondary = !flagsLoading && isEnabled('opportunities') && ['tutor','sace_tutor','student_tutor'].includes(user?.role) ? [...secondary, { label: 'Student Opportunities', path: '/opportunities' }] : secondary;
   const moreActive = visibleSecondary.some(link => isNavigationActive(location, link.path));
   return <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur-sm">
