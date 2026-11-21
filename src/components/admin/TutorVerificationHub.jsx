@@ -1,4 +1,4 @@
-import { approveAccount } from '@/lib/action-notifications';
+import { approveAccount, declineTutorApplication } from '@/lib/action-notifications';
 
 // ============================================================
 // Helper Functions
@@ -49,9 +49,19 @@ export default function TutorVerificationHub() {
         ascending: false
       });
       if (usersError) throw usersError;
-      const unverifiedProfiles = (allProfiles || []).filter(t => !t.is_verified);
-      const profileEmails = new Set((allProfiles || []).map(p => p.user_email));
-      const orphanedPending = (allUsers || []).filter(u => u.role === 'tutor_pending' && !profileEmails.has(u.email));
+      const usersById = new Map((allUsers || []).map(account => [account.id, account]));
+      const legacyByEmail = new Map((allUsers || []).map(account => [account.email, account]));
+      const unverifiedProfiles = (allProfiles || []).flatMap(profile => {
+        const account = profile.user_id ? usersById.get(profile.user_id) : legacyByEmail.get(profile.user_email);
+        return !profile.is_verified && !account?.tutor_application_declined_at
+          ? [{ ...profile, account_id: account?.id, account_role: account?.role }] : [];
+      });
+      const usersWithProfiles = new Set((allProfiles || []).map(profile =>
+        profile.user_id ?? legacyByEmail.get(profile.user_email)?.id
+      ));
+      const orphanedPending = (allUsers || []).filter(account =>
+        account.role === 'tutor_pending' && !account.tutor_application_declined_at && !usersWithProfiles.has(account.id)
+      );
       setPendingProfiles(unverifiedProfiles);
       setPendingUsers(orphanedPending);
       setLastRefresh(new Date());
@@ -70,9 +80,8 @@ export default function TutorVerificationHub() {
   const handleVerify = async tutor => {
     setProcessing(tutor.id);
     try {
-      const { data: account, error } = await supabase.from('users').select('id').eq('email', tutor.user_email).single();
-      if (error) throw error;
-      const result = await approveAccount(account.id, tutor.sace_number ? 'sace_tutor' : 'student_tutor');
+      if (!tutor.account_id) throw new Error('Applicant account unavailable');
+      const result = await approveAccount(tutor.account_id, tutor.sace_number ? 'sace_tutor' : 'student_tutor');
       toast.success(`Tutor approved. ${result.email.status === 'accepted' ? 'Email accepted by the provider.' : 'Email queued; delivery needs attention.'}`);
       setPendingProfiles(prev => prev.filter(t => t.id !== tutor.id));
     } catch (error) {
@@ -85,13 +94,9 @@ export default function TutorVerificationHub() {
   const handleReject = async tutor => {
     setProcessing(tutor.id);
     try {
-      await supabase.from('activity_log').insert({
-        event_type: 'tutor_rejected',
-        user_email: tutor.user_email,
-        description: `Admin rejected tutor: ${tutor.full_name}`
-      });
+      await declineTutorApplication(tutor.account_id);
       setPendingProfiles(prev => prev.filter(t => t.id !== tutor.id));
-      toast.success(`❌ ${tutor.full_name} rejected.`);
+      toast.success('Tutor application declined.');
     } catch (error) {
       console.error('Rejection error:', error);
       toast.error('Failed to reject tutor');
@@ -282,7 +287,7 @@ export default function TutorVerificationHub() {
                       </div>
                     </div>
                     <div className="flex gap-2 mt-3">
-                      <Button size="sm" variant="outline" className="flex-1 text-xs gap-1 text-red-700 border-red-200 hover:bg-red-50" disabled={!!processing} onClick={() => handleReject(tutor)}>
+                      <Button size="sm" variant="outline" className="flex-1 text-xs gap-1 text-red-700 border-red-200 hover:bg-red-50" disabled={!!processing || tutor.account_role !== 'tutor_pending'} onClick={() => handleReject(tutor)}>
                         {isLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                         Reject
                       </Button>

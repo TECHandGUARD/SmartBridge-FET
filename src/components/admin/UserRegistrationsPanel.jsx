@@ -1,4 +1,4 @@
-import { approveAccount } from '@/lib/action-notifications';
+import { approveAccount, declineTutorApplication } from '@/lib/action-notifications';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,7 +111,7 @@ export default function UserRegistrationsPanel() {
       const profile = tutorProfiles.find(p => p.user_id === u.id || p.user_email === u.email);
       const newRole = profile?.sace_number ? 'sace_tutor' : 'student_tutor';
       const result = await approveAccount(u.id, newRole);
-      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole, is_verified: true } : x));
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: newRole, is_verified: true, tutor_application_declined_at: null } : x));
       await load();
       toast.success(`Tutor approved. ${result.email.status === 'accepted' ? 'Email accepted by the provider.' : 'Email queued; delivery needs attention.'}`);
     } catch (err) {
@@ -125,19 +125,18 @@ export default function UserRegistrationsPanel() {
     const reason = rejectionReasons[u.id]?.trim() || '';
     setProcessingId(u.id + 'reject');
     try {
-      const {
-        error
-      } = await supabase.from('users').update({
-        role: 'user',
-        onboarding_complete: false,
-        updated_at: new Date().toISOString()
-      }).eq('id', u.id);
-      if (error) throw error;
-      setUsers(prev => prev.map(x => x.id === u.id ? {
-        ...x,
-        role: 'user',
-        onboarding_complete: false
-      } : x));
+      if (u.role === 'tutor_pending') {
+        const declinedAt = await declineTutorApplication(u.id);
+        setUsers(prev => prev.map(x => x.id === u.id ? { ...x, tutor_application_declined_at: declinedAt } : x));
+      } else {
+        const { error } = await supabase.from('users').update({
+          role: 'user',
+          onboarding_complete: false,
+          updated_at: new Date().toISOString()
+        }).eq('id', u.id);
+        if (error) throw error;
+        setUsers(prev => prev.map(x => x.id === u.id ? { ...x, role: 'user', onboarding_complete: false } : x));
+      }
       const {
         error: fnError
       } = await supabase.functions.invoke('notify-user-rejected', {
@@ -156,7 +155,7 @@ export default function UserRegistrationsPanel() {
         delete n[u.id];
         return n;
       });
-      toast.error(`${u.full_name || u.email} rejected. Rejection email sent.`);
+      toast.success(fnError ? 'Rejection saved. Email delivery failed.' : 'Rejection saved and email requested.');
     } catch (err) {
       console.error('Reject error:', err);
       toast.error(`Failed to reject: ${err.message}`);
@@ -169,7 +168,7 @@ export default function UserRegistrationsPanel() {
     const matchSearch = !q || u.email?.toLowerCase().includes(q) || u.full_name?.toLowerCase().includes(q);
     if (!matchSearch) return false;
     if (filter === 'stuck') return u.role === 'user';
-    if (filter === 'pending_tutor') return u.role === 'tutor_pending';
+    if (filter === 'pending_tutor') return u.role === 'tutor_pending' && !u.tutor_application_declined_at;
     if (filter === 'student') return u.role === 'student';
     if (filter === 'parent') return u.role === 'parent';
     if (filter === 'tutor') return ['sace_tutor', 'student_tutor'].includes(u.role);
@@ -177,7 +176,7 @@ export default function UserRegistrationsPanel() {
   });
   const counts = {
     stuck: users.filter(u => u.role === 'user').length,
-    pending_tutor: users.filter(u => u.role === 'tutor_pending').length,
+    pending_tutor: users.filter(u => u.role === 'tutor_pending' && !u.tutor_application_declined_at).length,
     student: users.filter(u => u.role === 'student').length,
     parent: users.filter(u => u.role === 'parent').length,
     tutor: users.filter(u => ['sace_tutor', 'student_tutor'].includes(u.role)).length
@@ -272,6 +271,7 @@ export default function UserRegistrationsPanel() {
                       <p className="text-xs text-muted-foreground">
                         Joined: {u.created_at ? new Date(u.created_at).toLocaleDateString('en-ZA') : '—'}
                         {' '} · Onboarding: {u.onboarding_complete ? '✅ Complete' : '❌ Incomplete'}
+                        {u.tutor_application_declined_at && ' · Tutor application declined'}
                       </p>
                       {}
                       {profile && <div className="mt-1.5 text-xs text-muted-foreground bg-muted/60 rounded-lg px-3 py-1.5 space-y-0.5">
@@ -299,10 +299,10 @@ export default function UserRegistrationsPanel() {
                       {}
                       {isPendingTutor && !isVerifiedTutor && <Button size="sm" className="h-7 px-3 text-xs bg-primary gap-1" disabled={processingId === u.id + 'verify'} onClick={() => verifyTutor(u)}>
                           <CheckCircle className="w-3 h-3" />
-                          {processingId === u.id + 'verify' ? 'Verifying…' : 'Verify & Activate'}
+                          {processingId === u.id + 'verify' ? 'Verifying…' : u.tutor_application_declined_at ? 'Approve after review' : 'Verify & Activate'}
                         </Button>}
                       {}
-                      {u.role !== 'admin' && rejectingUserId !== u.id && <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-red-700 border-red-200 hover:bg-red-50" disabled={!!processingId} onClick={() => setRejectingUserId(u.id)}>
+                      {u.role !== 'admin' && !u.tutor_application_declined_at && rejectingUserId !== u.id && <Button size="sm" variant="outline" className="h-7 px-2 text-xs text-red-700 border-red-200 hover:bg-red-50" disabled={!!processingId} onClick={() => setRejectingUserId(u.id)}>
                           <XCircle className="w-3 h-3 mr-1" /> Reject
                         </Button>}
                     </div>

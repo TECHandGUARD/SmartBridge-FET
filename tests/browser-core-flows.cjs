@@ -526,6 +526,13 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  assert.equal(legalRows.length,0);
  console.log('PASS: administrator document create, private audience guard, versioned edit and delete');
 
+ profile={...profile,role:'tutor_pending',is_super_admin:false,tutor_application_declined_at:'2026-11-18T12:00:00Z'};
+ await page.goto('http://127.0.0.1:5173/tutor-dashboard');
+ await page.getByRole('heading',{name:'Tutor application declined',exact:true}).waitFor();
+ assert.equal(await page.getByRole('button',{name:'Booking Requests',exact:true}).count(),0);
+ await page.getByRole('button',{name:'Check verification',exact:true}).click();
+ await page.getByRole('heading',{name:'Tutor application declined',exact:true}).waitFor();
+ console.log('PASS: a declined applicant sees the recorded outcome and remains outside the Tutor Hub');
  assert.deepEqual(errors,[]);
  assert.deepEqual(deferredRequests,[],'Deferred features must not query unfinished backend tables');
  assert.equal(await page.getByRole('button',{name:/Delete (My|Tutor) Account/}).count(),0,'Unimplemented permanent deletion must not be offered');
