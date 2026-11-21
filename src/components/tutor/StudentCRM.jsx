@@ -10,7 +10,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Users, Plus, ArrowLeft, Search, FileText, Save, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-const appName = import.meta.env.VITE_APP_NAME || 'SmartBridge FET';
 const MOOD_ICONS = {
   Engaged: '🔥',
   Struggling: '😓',
@@ -18,27 +17,32 @@ const MOOD_ICONS = {
   Confident: '💪',
   Neutral: '😊'
 };
+const NOTE_FIELDS = 'id,student_id,subject,session_date,note,strengths,areas_to_improve,next_steps,mood,created_at,is_shared_with_student';
+
+const emptyNote = () => ({
+  note: '',
+  subject: '',
+  session_date: '',
+  strengths: '',
+  areas_to_improve: '',
+  next_steps: '',
+  mood: 'Neutral',
+  is_shared_with_student: false
+});
+
 export default function StudentCRM({
   user
 }) {
   const [bookings, setBookings] = useState([]);
   const [notes, setNotes] = useState([]);
-  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedStudentId, setSelectedStudentId] = useState(null);
+  const [saveError, setSaveError] = useState(null);
   const [search, setSearch] = useState('');
   const [showAddNote, setShowAddNote] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [noteForm, setNoteForm] = useState({
-    note: '',
-    subject: '',
-    session_date: '',
-    strengths: '',
-    areas_to_improve: '',
-    next_steps: '',
-    mood: 'Neutral',
-    is_shared_with_student: false
-  });
+  const [noteForm, setNoteForm] = useState(emptyNote);
   const loadData = useCallback(async () => {
     if (!user?.id) {
       setLoading(false);
@@ -50,14 +54,14 @@ export default function StudentCRM({
       const {
         data: bookingsData,
         error: bookingsError
-      } = await supabase.from('tutor_bookings').select('*').eq('tutor_id', user.id).in('status', ['confirmed', 'completed']).order('date', {
+      } = await supabase.from('tutor_bookings').select('student_id,student_name,subject,date').eq('tutor_id', user.id).in('status', ['confirmed', 'completed']).order('date', {
         ascending: false
       });
       if (bookingsError) throw bookingsError;
       const {
         data: notesData,
         error: notesError
-      } = await supabase.from('student_notes').select('*').eq('tutor_id', user.id).order('created_at', {
+      } = await supabase.from('student_notes').select(NOTE_FIELDS).eq('tutor_id', user.id).order('created_at', {
         ascending: false
       });
       if (notesError) throw notesError;
@@ -77,22 +81,19 @@ export default function StudentCRM({
   const students = useMemo(() => {
     const map = {};
     bookings.forEach(b => {
-      const key = b.student_id || b.student_email;
+      const key = b.student_id;
       if (!key) return;
       if (!map[key]) {
         map[key] = {
-          id: b.student_id || null,
-          email: b.student_email,
-          name: b.student_name || b.student_email || 'Learner',
+          id: key,
+          name: b.student_name || 'Learner',
           sessions: 0,
           subjects: new Set(),
-          lastSession: null,
-          totalSpent: 0
+          lastSession: null
         };
       }
       map[key].sessions++;
       map[key].subjects.add(b.subject);
-      map[key].totalSpent += b.amount || 0;
       if (!map[key].lastSession || b.date > map[key].lastSession) {
         map[key].lastSession = b.date;
       }
@@ -102,25 +103,24 @@ export default function StudentCRM({
       subjects: [...s.subjects]
     })).sort((a, b) => (b.lastSession || '').localeCompare(a.lastSession || ''));
   }, [bookings]);
-  const filteredStudents = students.filter(s => `${s.name || ''} ${s.email || ''}`.toLowerCase().includes(search.toLowerCase()));
-  const studentNotes = selectedStudent ? notes.filter(n => n.student_id === selectedStudent.id || (!n.student_id && n.student_email === selectedStudent.email)).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
+  const selectedStudent = students.find(student => student.id === selectedStudentId);
+  const filteredStudents = students.filter(s => s.name.toLowerCase().includes(search.trim().toLowerCase()));
+  const studentNotes = selectedStudent ? notes.filter(n => n.student_id === selectedStudent.id).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()) : [];
   const handleAddNote = async () => {
+    if (!selectedStudent || saving) return;
     if (!noteForm.note.trim()) {
       toast.error('Please write a note.');
       return;
     }
     setSaving(true);
-    setError(null);
+    setSaveError(null);
     try {
       const {
         data,
         error: insertError
       } = await supabase.from('student_notes').insert({
-        tutor_email: user.email,
-        tutor_id: user.id || null,
+        tutor_id: user.id,
         student_id: selectedStudent.id,
-        student_email: selectedStudent.email,
-        student_name: selectedStudent.name || selectedStudent.email,
         note: noteForm.note.trim(),
         subject: noteForm.subject || null,
         session_date: noteForm.session_date || null,
@@ -129,38 +129,16 @@ export default function StudentCRM({
         next_steps: noteForm.next_steps || null,
         mood: noteForm.mood || 'Neutral',
         is_confidential: !noteForm.is_shared_with_student,
-        is_shared_with_student: noteForm.is_shared_with_student,
-        created_at: new Date().toISOString()
-      }).select().single();
+        is_shared_with_student: noteForm.is_shared_with_student
+      }).select(NOTE_FIELDS).single();
       if (insertError) throw insertError;
       setNotes(prev => [data, ...prev]);
-      await Promise.resolve(supabase.from('activity_log').insert({
-        event_type: 'student_note_added',
-        user_email: user.email,
-        user_id: user.id || null,
-        description: `Added note for ${selectedStudent.email}`,
-        metadata: {
-          student: selectedStudent.email,
-          subject: noteForm.subject || null,
-          mood: noteForm.mood || 'Neutral'
-        }
-      })).catch(() => {});
-      setNoteForm({
-        note: '',
-        subject: '',
-        session_date: '',
-        strengths: '',
-        areas_to_improve: '',
-        next_steps: '',
-        mood: 'Neutral',
-        is_shared_with_student: false
-      });
+      setNoteForm(emptyNote());
       setShowAddNote(false);
       toast.success('Session note saved!');
     } catch (err) {
       console.error('Error adding note:', err);
-      setError(err.message || 'Failed to save note');
-      toast.error('Failed to save note: ' + err.message);
+      setSaveError('Unable to save this note. Your draft is still here.');
     } finally {
       setSaving(false);
     }
@@ -218,13 +196,13 @@ export default function StudentCRM({
                 </p>
               </div> : <div className="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
                 {filteredStudents.map(s => {
-            const noteCount = notes.filter(n => n.student_email === s.email).length;
-            return <button key={s.email} onClick={() => setSelectedStudent(s)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
+            const noteCount = notes.filter(n => n.student_id === s.id).length;
+            return <button key={s.id} onClick={() => setSelectedStudentId(s.id)} className="w-full text-left p-3 rounded-xl hover:bg-muted/50 transition-colors flex items-center gap-3 border border-transparent hover:border-border">
                       <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm flex-shrink-0">
-                        {s.email[0].toUpperCase()}
+                        {s.name[0].toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold truncate">{s.email}</p>
+                        <p className="text-sm font-semibold truncate">{s.name}</p>
                         <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground mt-0.5">
                           <span>{s.sessions} sessions</span>
                           <span>•</span>
@@ -233,7 +211,6 @@ export default function StudentCRM({
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="text-xs font-semibold text-primary">R{s.totalSpent.toLocaleString()}</p>
                         {s.lastSession && <p className="text-[10px] text-muted-foreground">{s.lastSession}</p>}
                       </div>
                     </button>;
@@ -241,35 +218,33 @@ export default function StudentCRM({
               </div>}
           </div> : <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => {
-            setSelectedStudent(null);
+              <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Back to learners" disabled={saving} onClick={() => {
+            setSelectedStudentId(null);
+            setSaveError(null);
+            setNoteForm(emptyNote());
             setShowAddNote(false);
           }}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
               <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
-                {selectedStudent.email[0].toUpperCase()}
+                {selectedStudent.name[0].toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold truncate">{selectedStudent.email}</p>
+                <p className="text-sm font-semibold truncate">{selectedStudent.name}</p>
                 <p className="text-[10px] text-muted-foreground">
                   {selectedStudent.sessions} sessions · {selectedStudent.subjects.join(', ')}
                 </p>
               </div>
-              <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={() => setShowAddNote(!showAddNote)}>
+              <Button size="sm" className="bg-primary gap-1 h-7 text-xs" disabled={saving} onClick={() => setShowAddNote(!showAddNote)}>
                 <Plus className="w-3 h-3" /> Add Note
               </Button>
             </div>
 
             {}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">{selectedStudent.sessions}</p>
                 <p className="text-[10px] text-muted-foreground">Sessions</p>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
-                <p className="text-lg font-bold">R{selectedStudent.totalSpent.toLocaleString()}</p>
-                <p className="text-[10px] text-muted-foreground">Revenue</p>
               </div>
               <div className="bg-muted/50 rounded-lg p-2 text-center dark:bg-muted/20">
                 <p className="text-lg font-bold">{studentNotes.length}</p>
@@ -349,12 +324,13 @@ export default function StudentCRM({
                   />
                   <span><strong>Share this note with the learner</strong><span className="block text-muted-foreground">Notes stay private by default. Shared notes are visible to the learner in their account.</span></span>
                 </label>
+                {saveError && <p role="alert" className="text-sm text-destructive">{saveError}</p>}
                 <div className="flex gap-2">
                   <Button size="sm" className="bg-primary gap-1 h-7 text-xs" onClick={handleAddNote} disabled={saving || !selectedStudent.id}>
                     {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                     {saving ? 'Saving...' : 'Save Note'}
                   </Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setShowAddNote(false)}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" disabled={saving} onClick={() => { setShowAddNote(false); setSaveError(null); }}>
                     Cancel
                   </Button>
                 </div>
