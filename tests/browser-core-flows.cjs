@@ -78,6 +78,10 @@ const assert=require('node:assert/strict');
   }
   if(url.pathname==='/rest/v1/tutor_directory') data=[tutor];
   if(url.pathname==='/rest/v1/tutor_bookings') data=bookingRows;
+  if(url.pathname==='/rest/v1/rpc/my_tutor_earnings') {
+   assert.equal(profile.role,'tutor');
+   data=[{awaiting_payout:115.50,payouts_recorded:230.25,eligible_sessions:3}];
+  }
   if(url.pathname==='/rest/v1/payment_orders') data=paymentOrderRows;
   if(url.pathname==='/rest/v1/study_progress') data=sessions ? [{id:'progress-1',subject:'Mathematics',grade:'Grade 12',study_sessions:sessions,last_access:'2026-10-11'}] : [];
   if(url.pathname==='/rest/v1/rpc/create_booking') {
@@ -352,6 +356,15 @@ Maths example: $x^2 = 4$.`,sources:[{title:'Life Sciences textbook',page:12}],so
  assert.equal(new URL(page.url()).pathname,'/tutor-dashboard');
  assert.equal(await page.getByRole('heading',{name:'Tutor verification pending',exact:true}).count(),0);
  console.log('PASS: verified legacy tutor role reaches its dashboard');
+ await page.getByRole('button',{name:'View Earnings',exact:true}).click();
+ await page.waitForURL('**/tutor-dashboard?section=earnings');
+ await page.getByText('Awaiting payout',{exact:true}).waitFor();
+ const payouts=page.getByText('Payouts recorded',{exact:true}).locator('..');
+ assert.match(await payouts.innerText(),/230[,.]25/);
+ assert.equal(await page.getByRole('button',{name:/request payout/i}).count(),0);
+ await page.reload();
+ await page.getByText('Earnings and payouts',{exact:true}).waitFor();
+ console.log('PASS: tutor opens read-only earnings on mobile and reloads its direct link');
  profile={...profile,role:'student'};
  for(const width of [320,768,1024,1440]) {
   await page.setViewportSize({width,height:900});

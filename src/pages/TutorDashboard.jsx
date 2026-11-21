@@ -25,7 +25,6 @@ import MeetingLinks from '@/components/tutor/MeetingLinks';
 import StudentCRM from '@/components/tutor/StudentCRM';
 import TutorStudentProgressChart from '@/components/tutor/TutorStudentProgressChart';
 import TutorEarningsDashboard from '@/components/tutor/TutorEarningsDashboard';
-import TutorBusinessSummary from '@/components/tutor/TutorBusinessSummary';
 import ChatInbox from '@/components/tutor/ChatInbox';
 import BookingRequests from '@/components/tutor/BookingRequests';
 import TutorReviews from '@/components/tutor/TutorReviews';
@@ -318,10 +317,7 @@ export default function TutorDashboard() {
         {/* View Earnings */}
         {activeSection === 'earnings' && (
           <div className="mb-6 space-y-4">
-            <TutorBusinessSummary user={user} />
-            <DashboardPremiumGate isPremium={isPremium} isLoading={premLoading} featureName="Earnings Dashboard">
-              <TutorEarningsDashboard user={user} />
-            </DashboardPremiumGate>
+            <TutorEarningsDashboard user={user} />
           </div>
         )}
 
